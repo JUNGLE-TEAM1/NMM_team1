@@ -25,6 +25,7 @@
 | strict harness validation | `scripts/validate-harness.sh --strict` | passed | Harness validation passed |
 | harness flow check | `scripts/harness-flow-check.sh docs/workflows/feature/pr-issue-automation` | passed | shell syntax, default validation, strict validation, and workspace status passed |
 | GitHub Actions CI | PR #11 checks | passed | Initial harness/manifest jobs failed because `rg` was missing on runner; fixed by installing ripgrep, then harness/container-smoke/manifest-smoke passed |
+| stacked PR issue close | `scripts/prepare-pr.sh --close-issue docs/workflows/feature/pr-issue-automation` | passed | PR #11 was merged and issue #8 was already closed; sync.md records merged/CLOSED |
 
 ## CI/CD Gate / CI-CD 게이트
 

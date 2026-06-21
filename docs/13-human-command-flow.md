@@ -155,6 +155,7 @@ AI does:
 - With explicit approval, runs `scripts/prepare-pr.sh --push --create-pr <workspace>`.
 - Uses `Closes #123` style closing keyword so GitHub closes the linked issue when the PR is merged.
 - After merge, runs `scripts/prepare-pr.sh --check-issue <workspace>` and records `issue close status` in `sync.md`.
+- If a stacked PR was merged into a non-default branch and the linked issue remains open, runs `scripts/prepare-pr.sh --close-issue <workspace>` to close it with the merged PR as evidence.
 - If unrelated or expanded work appears mid-flow, records same-scope work in the current workspace; for scope changes, resolves `Scope Change Confirm` and creates a separate workspace when needed.
 
 ## 7) Recompare A Decision

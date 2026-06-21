@@ -15,6 +15,7 @@ integration branch는 branch 작업을 합치기 전에 이 파일을 읽는다.
 | `docs/11-git-sync-policy.md` | Issue/PR automation command policy and explicit remote-action gates documented | GitHub issue/PR state tracking is Git sync policy | Low; policy-only expansion |
 | `docs/13-human-command-flow.md` | PR handoff and issue close flow added in Korean-centered command style | Human command flow needs the new branch/PR behavior | Low; documentation-only |
 | `docs/08-development-workflow.md` | Branch switch checkpoint rule documented | Development workflow must prevent dirty changes from following later branches | Low; policy-only expansion |
+| `scripts/prepare-pr.sh` | `--close-issue` closes linked issue after merged stacked PR and records status | Stacked PR merge to a non-default branch may not auto-close issues | Low; explicit remote action only |
 | `scripts/validate-harness.sh` | Requires recurrence-prevention rule docs and harness flow check script | Strict validation should catch missing flow-check wiring | Low; validation-only |
 | `.github/pull_request_template.md` | Issue link, PR link, and issue close checklist added | PR reviewers need to verify issue close behavior | Low; checklist-only |
 

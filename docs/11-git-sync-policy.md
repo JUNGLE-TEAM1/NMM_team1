@@ -82,11 +82,16 @@ remote push나 PR 생성은 명시 플래그를 붙였을 때만 실행한다.
 scripts/prepare-pr.sh docs/workflows/feature/project-bootstrap
 scripts/prepare-pr.sh --push --create-pr docs/workflows/feature/project-bootstrap
 scripts/prepare-pr.sh --check-issue docs/workflows/feature/project-bootstrap
+scripts/prepare-pr.sh --close-issue docs/workflows/feature/project-bootstrap
 ```
 
 중간에 다른 작업이 끼어들면 같은 범위의 작업은 해당 workspace의 `notes.md`, `quality.md`, `sync.md`, `report.md`에 추가 기록한다.
 범위가 바뀌면 `Scope Change Confirm`을 해결하고, 필요하면 새 branch workspace를 만든다.
 새 branch workspace로 이동하는 순간 dirty worktree가 있으면 현재 branch에 checkpoint commit을 만든다.
+
+Stacked PR처럼 default branch가 아닌 feature branch로 merge되는 PR은 `Closes #123`만으로 issue close가 보장되지 않는다.
+PR merge 후 `scripts/prepare-pr.sh --check-issue <workspace>`로 issue 상태를 확인한다.
+PR이 merged이고 issue가 아직 open이면 `scripts/prepare-pr.sh --close-issue <workspace>`로 PR merge 근거 comment를 남기고 issue를 닫은 뒤 `sync.md`에 `merge status`와 `issue close status`를 기록한다.
 
 하네스 규칙을 추가하거나 branch/workspace 흐름 문제를 재발 방지 규칙으로 반영한 뒤에는 표준 흐름 검사를 실행한다.
 
