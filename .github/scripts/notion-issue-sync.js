@@ -265,6 +265,7 @@ async function fetchProject({ github, config }) {
         }
         nodes {
           id
+          createdAt
           updatedAt
           content {
             ... on Issue {
@@ -377,6 +378,7 @@ function normalizeProjectIssue({ item, project, config }) {
     title: issue.title,
     state: issue.state.toLowerCase(),
     issueUrl: issue.url,
+    projectItemCreatedAt: item.createdAt,
     projectItemUpdatedAt: item.updatedAt,
     body: issue.body || "",
     notionPageId: readNotionPageIdFromIssueBody(issue.body),
@@ -712,8 +714,7 @@ function shouldArchiveNotionMissingFromProject(row) {
 }
 
 function isRecentGitHubProjectChange(issue, config) {
-  const basis = maxIso(issue.projectItemUpdatedAt, issue.githubUpdatedAt, issue.updatedAt);
-  return isWithinMs(basis, new Date().toISOString(), config.recentGitHubChangeMs);
+  return isWithinMs(issue.projectItemCreatedAt, new Date().toISOString(), config.recentGitHubChangeMs);
 }
 
 async function ensureGitHubIssueHasNotionMarker({ github, config, issue, pageId }) {
