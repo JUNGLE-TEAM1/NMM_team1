@@ -24,11 +24,13 @@
 | harness validation | `scripts/validate-harness.sh` | passed | Harness validation passed |
 | strict harness validation | `scripts/validate-harness.sh --strict` | passed | Harness validation passed |
 | harness flow check | `scripts/harness-flow-check.sh docs/workflows/feature/sync-pr-finalization-guard` | passed | shell syntax, default validation, strict validation, workspace status passed |
+| PR finalization | `scripts/prepare-pr.sh --finalize docs/workflows/feature/sync-pr-finalization-guard` | passed | PR #15 merged and issue #14 already CLOSED; sync.md finalized |
+| GitHub Actions CI | PR #15 checks | passed | harness, container-smoke, manifest-smoke passed before merge |
 
 ## CI/CD Gate / CI-CD 게이트
 
 - CI required: no
-- CI result: local validation only; PR CI will run after handoff
+- CI result: local validation passed; PR #15 GitHub Actions passed
 - Deploy/publish required: no
 - Deployment confirmation: not applicable
 - Rollback/smoke notes: no deploy touched
