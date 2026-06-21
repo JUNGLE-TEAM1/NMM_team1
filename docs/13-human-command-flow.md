@@ -331,3 +331,22 @@ AI does:
 - Allows a documented manual smoke path as a temporary verification path when automated tests do not exist.
 - Proposes next Phase candidates.
 - Asks the human which Phase to run first.
+
+## 14) Add Recurrence-Prevention Harness Rule / 재발 방지 하네스 규칙 추가
+
+Human says:
+
+```text
+방금 같은 문제 다시 안 생기게 하네스 규칙으로 추가할지 물어보고 적용해
+```
+
+AI does:
+
+- Solves the immediate branch/workspace flow problem first.
+- Does not add a harness rule immediately after the fix.
+- Asks the human: "이번 문제를 재발 방지 하네스 규칙으로 추가할까요?"
+- Presents the issue cause, proposed rule, application location, and expected side effects or exceptions.
+- If approved, updates the relevant Source of Truth docs and needed script, validation, or status checks.
+- Runs `scripts/harness-flow-check.sh <workspace>` after applying the rule.
+- Records the check result in `quality.md`, `report.md`, and `decisions.md`.
+- If the rule is outside the current scope, resolves Scope Change Confirm before changing the harness.

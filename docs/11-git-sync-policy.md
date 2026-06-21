@@ -88,6 +88,15 @@ scripts/prepare-pr.sh --check-issue docs/workflows/feature/project-bootstrap
 범위가 바뀌면 `Scope Change Confirm`을 해결하고, 필요하면 새 branch workspace를 만든다.
 새 branch workspace로 이동하는 순간 dirty worktree가 있으면 현재 branch에 checkpoint commit을 만든다.
 
+하네스 규칙을 추가하거나 branch/workspace 흐름 문제를 재발 방지 규칙으로 반영한 뒤에는 표준 흐름 검사를 실행한다.
+
+```bash
+scripts/harness-flow-check.sh docs/workflows/<type>/<short-kebab-name>
+```
+
+이 검사는 shell syntax, 기본 harness validation, strict harness validation, workspace status를 한 번에 확인한다.
+push, PR 생성, merge, deploy처럼 원격 상태를 바꾸는 작업은 포함하지 않는다.
+
 For ready-for-review, complete, or integration-ready workspaces, Pre-Merge Sync must record either:
 
 - a result, or

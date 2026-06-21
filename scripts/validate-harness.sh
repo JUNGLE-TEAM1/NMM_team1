@@ -151,6 +151,7 @@ require_file ".github/pull_request_template.md"
 require_file ".github/workflows/harness-validation.example.yml"
 require_file "scripts/start-workflow.sh"
 require_file "scripts/status-workflow.sh"
+require_file "scripts/harness-flow-check.sh"
 
 while IFS= read -r -d '' dir; do
   require_file "${dir}/plan.md"
@@ -414,6 +415,10 @@ if ! rg -q "Integration Branch Rule" docs/08-development-workflow.md; then
   fail "docs/08-development-workflow.md does not mention Integration Branch Rule"
 fi
 
+if ! rg -q "재발 방지 하네스 규칙" docs/08-development-workflow.md; then
+  fail "docs/08-development-workflow.md does not mention recurrence-prevention harness rules"
+fi
+
 if ! rg -q "Integration Agreement" docs/09-collaboration-agreement.md; then
   fail "docs/09-collaboration-agreement.md does not mention Integration Agreement"
 fi
@@ -434,12 +439,20 @@ if ! rg -q "Git Sync Policy" docs/11-git-sync-policy.md; then
   fail "docs/11-git-sync-policy.md does not mention Git Sync Policy"
 fi
 
+if ! rg -q "harness-flow-check.sh" docs/11-git-sync-policy.md; then
+  fail "docs/11-git-sync-policy.md does not mention harness-flow-check.sh"
+fi
+
 if ! rg -q "Quality Gates" docs/12-quality-gates.md; then
   fail "docs/12-quality-gates.md does not mention Quality Gates"
 fi
 
 if ! rg -q "Human Command Flow" docs/13-human-command-flow.md; then
   fail "docs/13-human-command-flow.md does not mention Human Command Flow"
+fi
+
+if ! rg -q "재발 방지" docs/13-human-command-flow.md; then
+  fail "docs/13-human-command-flow.md does not mention recurrence-prevention flow"
 fi
 
 for section in \
@@ -566,6 +579,10 @@ fi
 
 if ! bash -n scripts/status-workflow.sh; then
   fail "scripts/status-workflow.sh has shell syntax errors"
+fi
+
+if ! bash -n scripts/harness-flow-check.sh; then
+  fail "scripts/harness-flow-check.sh has shell syntax errors"
 fi
 
 if [[ "$failures" -gt 0 ]]; then
