@@ -56,6 +56,50 @@ set_field() {
   mv "$tmp" "$file"
 }
 
+worktree_dirty() {
+  [[ -n "$(git status --porcelain --untracked-files=normal)" ]]
+}
+
+auto_commit_before_branch_switch() {
+  local target_branch="$1"
+  local current_branch
+
+  current_branch="$(git branch --show-current 2>/dev/null || true)"
+
+  if [[ -z "$current_branch" ]]; then
+    if worktree_dirty; then
+      echo "Cannot auto-commit before switching branches from a detached HEAD." >&2
+      echo "Commit manually, switch to a named branch, or use --no-checkout." >&2
+      exit 1
+    fi
+    return 0
+  fi
+
+  if [[ "$current_branch" == "$target_branch" ]]; then
+    return 0
+  fi
+
+  if ! worktree_dirty; then
+    return 0
+  fi
+
+  if [[ -n "$(git diff --name-only --diff-filter=U)" ]]; then
+    echo "Cannot auto-commit before switching branches because unresolved conflicts exist." >&2
+    echo "Resolve conflicts manually before starting another workflow." >&2
+    exit 1
+  fi
+
+  echo "Dirty worktree detected on ${current_branch}; creating checkpoint commit before switching to ${target_branch}."
+  git add -A
+
+  if git diff --cached --quiet; then
+    echo "No staged changes after git add -A; continuing without checkpoint commit."
+    return 0
+  fi
+
+  git commit -m "chore: checkpoint ${current_branch} before ${target_branch}"
+}
+
 dry_run=0
 checkout=1
 allow_dirty=0
@@ -73,6 +117,7 @@ while [[ $# -gt 0 ]]; do
       ;;
     --allow-dirty)
       allow_dirty=1
+      echo "Note: --allow-dirty is deprecated; dirty worktrees are checkpoint-committed before branch switches."
       shift
       ;;
     --create-issue)
@@ -148,16 +193,8 @@ if [[ "$checkout" -eq 1 ]] && ! git rev-parse --is-inside-work-tree >/dev/null 2
   exit 1
 fi
 
-if [[ "$checkout" -eq 1 ]] && [[ "$allow_dirty" -ne 1 ]] && ! git diff --quiet; then
-  echo "Refusing to switch branches with unstaged changes." >&2
-  echo "Commit, stash, or rerun with --no-checkout / --allow-dirty." >&2
-  exit 1
-fi
-
-if [[ "$checkout" -eq 1 ]] && [[ "$allow_dirty" -ne 1 ]] && [[ -n "$(git status --porcelain --untracked-files=normal)" ]]; then
-  echo "Refusing to switch branches with uncommitted or untracked changes." >&2
-  echo "Commit, stash, or rerun with --no-checkout / --allow-dirty." >&2
-  exit 1
+if [[ "$checkout" -eq 1 ]]; then
+  auto_commit_before_branch_switch "$branch_name"
 fi
 
 if [[ "$checkout" -eq 1 ]]; then

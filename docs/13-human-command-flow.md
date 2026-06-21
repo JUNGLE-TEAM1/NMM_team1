@@ -105,6 +105,7 @@ feature-a랑 feature-b 통합 브랜치 만들어서 합칠 항목 점검해
 
 AI does:
 
+- If moving from a dirty current branch to another branch workspace, lets `scripts/start-workflow.sh` checkpoint commit the current branch first.
 - Creates or opens an integration workspace.
 - Reads source branch `plan.md`, `shared-docs.md`, `report.md`, `quality.md`, `decisions.md`, `confirmations.md`, and `sync.md`.
 - Records source branch/base commit information in `sources.md`.

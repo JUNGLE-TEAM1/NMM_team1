@@ -18,8 +18,8 @@
 | Check | Command | Result | Evidence |
 | --- | --- | --- | --- |
 | lint | `bash -n scripts/start-workflow.sh scripts/status-workflow.sh scripts/prepare-pr.sh` | passed | shell syntax valid |
-| unit/focused test | `scripts/prepare-pr.sh --dry-run docs/workflows/feature/pr-issue-automation` | passed | PR body draft printed; no files or remote state changed |
-| integration/contract test | `scripts/status-workflow.sh docs/workflows/feature/pr-issue-automation` | passed | issue/PR sync fields displayed |
+| unit/focused test | `scripts/start-workflow.sh --dry-run feature sample-default-issue "Sample default issue"`; `scripts/prepare-pr.sh --dry-run docs/workflows/feature/pr-issue-automation` | passed | default issue flow and PR body draft printed; no files or remote state changed |
+| integration/contract test | temporary repo dirty switch with `bash ./start-workflow.sh --no-issue feature next-phase "Next phase"`; `scripts/status-workflow.sh docs/workflows/feature/pr-issue-automation` | passed | checkpoint commit created before branch switch; issue/PR sync fields displayed |
 | build/typecheck | not applicable | skipped | shell/doc-only workflow change |
 | harness validation | `scripts/validate-harness.sh` | passed | Harness validation passed |
 | strict harness validation | `scripts/validate-harness.sh --strict` | passed | Harness validation passed |

@@ -12,7 +12,8 @@ push, PR 생성, merge 같은 추가 원격 변경은 사람이 명시한 명령
 - Do not pull, merge, rebase, push, or create PRs without human confirmation.
 - Branch workspace를 만들 때 GitHub issue도 생성한다. 예외가 필요하면 `--no-issue`를 명시하고 이유를 `sync.md`에 기록한다.
 - Prefer feature branch push and PR review over direct push to `main`.
-- Do not sync while the worktree is dirty unless the human explicitly accepts the risk.
+- 다른 branch workspace로 이동하기 전에 worktree가 dirty이면 `scripts/start-workflow.sh`가 현재 branch에 checkpoint commit을 만든 뒤 이동한다.
+- 같은 branch workspace를 다시 여는 경우에는 자동 checkpoint commit을 만들지 않는다.
 
 ## 2) Phase Start Sync
 
@@ -26,7 +27,8 @@ git pull --ff-only
 scripts/start-workflow.sh feature project-bootstrap "Project bootstrap"
 ```
 
-If the worktree has uncommitted or untracked changes, stop and ask the human whether to commit, stash, use `--no-checkout`, or cancel.
+If the worktree has uncommitted or untracked changes while moving to another branch, `scripts/start-workflow.sh` creates a checkpoint commit on the current branch before switching.
+If unresolved conflicts exist or the repository is detached, stop and ask the human to resolve the state manually.
 
 Record the result in the workspace `sync.md` Start Sync section.
 
@@ -84,6 +86,7 @@ scripts/prepare-pr.sh --check-issue docs/workflows/feature/project-bootstrap
 
 중간에 다른 작업이 끼어들면 같은 범위의 작업은 해당 workspace의 `notes.md`, `quality.md`, `sync.md`, `report.md`에 추가 기록한다.
 범위가 바뀌면 `Scope Change Confirm`을 해결하고, 필요하면 새 branch workspace를 만든다.
+새 branch workspace로 이동하는 순간 dirty worktree가 있으면 현재 branch에 checkpoint commit을 만든다.
 
 For ready-for-review, complete, or integration-ready workspaces, Pre-Merge Sync must record either:
 

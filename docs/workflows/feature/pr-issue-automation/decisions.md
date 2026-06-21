@@ -14,6 +14,7 @@
 | Decision | Selected Option | Reason | Confirmed By / At |
 | --- | --- | --- | --- |
 | Issue/PR automation gate | Issue by default, explicit flags for push/PR | Team rule requires issue creation when a branch workspace is created; push, PR creation, merge, and issue state checks remain human-directed | User clarified team rule on 2026-06-22 |
+| Branch switch checkpoint | Auto-commit dirty current branch before switching | Prevents phase changes from leaking into later branch workspaces when a user asks to move on | User requested harness rule on 2026-06-22 |
 
 ## Deferred Decisions / 보류한 결정
 
