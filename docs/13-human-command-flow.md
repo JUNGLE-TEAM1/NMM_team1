@@ -112,7 +112,7 @@ AI does:
 - Runs `scripts/validate-harness.sh --integration`.
 - Asks for Integration Conflict Confirm when shared contracts disagree.
 
-## 6) Prepare PR
+## 6) Prepare PR And Issue Close / PR 준비와 이슈 닫힘
 
 Human says:
 
@@ -126,7 +126,35 @@ AI does:
 - Checks `.github/pull_request_template.md`.
 - Reports missing `sync.md`, `quality.md`, confirmation, or validation items.
 - Runs validation only when approved or already within the agreed verification scope.
-- Does not create, push, or merge PRs without human confirmation.
+- Linked GitHub issue가 있으면 `scripts/prepare-pr.sh <workspace>`로 `PR closing keyword`를 `sync.md`에 기록하고 PR body 초안을 만든다.
+- Does not create issues, push, create PRs, merge PRs, or close issues without human confirmation.
+
+Human says:
+
+```text
+브랜치 만들 때 이슈도 같이 생성해
+```
+
+AI does:
+
+- Runs `scripts/start-workflow.sh <type> <short-kebab-name> "<title>"`; GitHub issue creation is the team default.
+- Records `linked GitHub issue`, `issue link`, `issue creation result`, and `PR closing keyword` in `sync.md`.
+- If GitHub CLI is unavailable or unauthenticated, creates the local workspace and records the failure reason instead of blocking all work.
+- Uses `--no-issue` only for an intentional exception and records the reason in the workspace.
+
+Human says:
+
+```text
+PR 올리고 이슈 닫히는 것까지 진행해
+```
+
+AI does:
+
+- Runs `scripts/prepare-pr.sh <workspace>` first to update local PR closing keyword.
+- With explicit approval, runs `scripts/prepare-pr.sh --push --create-pr <workspace>`.
+- Uses `Closes #123` style closing keyword so GitHub closes the linked issue when the PR is merged.
+- After merge, runs `scripts/prepare-pr.sh --check-issue <workspace>` and records `issue close status` in `sync.md`.
+- If unrelated or expanded work appears mid-flow, records same-scope work in the current workspace; for scope changes, resolves `Scope Change Confirm` and creates a separate workspace when needed.
 
 ## 7) Recompare A Decision
 
