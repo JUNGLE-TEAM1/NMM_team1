@@ -35,6 +35,7 @@ report가 늘어나면 영역별 최신 report index를 작게 유지한다. 이
 | 영역 | 최신 report | 읽는 이유 |
 | --- | --- | --- |
 | Infra / MVP / 장기 Roadmap | [`phase-1-mvp-roadmap.md`](phase-1-mvp-roadmap.md) | 인프라 선행 원칙, XFlow 참고 MVP 범위, M0~M5 MVP milestone, M6~M15 장기 milestone, 다음 구현 Phase |
+| Infrastructure Foundation | [`phase-2-infrastructure-foundation.md`](phase-2-infrastructure-foundation.md) | CI/CD, Docker, Kubernetes, AWS approval gate foundation |
 
 ## 다음 Phase 문맥 로딩
 

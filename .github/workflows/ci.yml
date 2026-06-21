@@ -1,0 +1,65 @@
+name: AskLake CI
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  harness:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install ripgrep
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ripgrep
+
+      - name: Shell syntax
+        run: |
+          bash -n scripts/start-workflow.sh
+          bash -n scripts/status-workflow.sh
+          bash -n scripts/validate-harness.sh
+          bash -n scripts/prepare-pr.sh
+          bash -n scripts/harness-flow-check.sh
+
+      - name: Harness validation
+        run: |
+          scripts/validate-harness.sh
+          scripts/validate-harness.sh --strict
+
+  container-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build backend smoke image
+        run: |
+          docker build -f infra/docker/backend.Dockerfile -t asklake-backend:${{ github.sha }} .
+
+      - name: Build frontend smoke image
+        run: |
+          docker build -f infra/docker/frontend.Dockerfile -t asklake-frontend:${{ github.sha }} .
+
+  manifest-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install ripgrep
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ripgrep
+
+      - name: Check Kubernetes manifest shape
+        run: |
+          test -f infra/k8s/base/namespace.yaml
+          test -f infra/k8s/base/backend-deployment.yaml
+          test -f infra/k8s/base/frontend-deployment.yaml
+          rg -n "apiVersion:|kind:" infra/k8s/base

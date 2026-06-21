@@ -4,21 +4,106 @@ set -euo pipefail
 usage() {
   cat <<'USAGE'
 Usage:
-  scripts/start-workflow.sh [--dry-run] [--no-checkout] [--allow-dirty] <type> <short-kebab-name> "<title>"
+  scripts/start-workflow.sh [--dry-run] [--no-checkout] [--allow-dirty] [--no-issue] <type> <short-kebab-name> "<title>"
 
 Examples:
   scripts/start-workflow.sh feature task-board "Task board MVP"
   scripts/start-workflow.sh --dry-run feature project-bootstrap "Project bootstrap"
   scripts/start-workflow.sh --no-checkout fix invalid-task-title "Invalid task title handling"
+  scripts/start-workflow.sh --no-issue chore local-notes "Local notes only"
 
 Allowed types:
   feature, fix, docs, test, chore, hotfix
 USAGE
 }
 
+section_value() {
+  local file="$1"
+  local section="$2"
+  local label="$3"
+  awk -v section="$section" -v label="$label" '
+    $0 == section { in_section=1; next }
+    /^## / && in_section { exit }
+    in_section && index($0, label) == 1 {
+      value=$0
+      sub(label "[ \t]*", "", value)
+      gsub(/^[ \t]+|[ \t]+$/, "", value)
+      print value
+      exit
+    }
+  ' "$file"
+}
+
+set_field() {
+  local file="$1"
+  local label="$2"
+  local value="$3"
+  local tmp
+  tmp="$(mktemp)"
+  awk -v label="$label" -v value="$value" '
+    index($0, label) == 1 {
+      print label " " value
+      found=1
+      next
+    }
+    { print }
+    END {
+      if (!found) {
+        print label " " value
+      }
+    }
+  ' "$file" > "$tmp"
+  mv "$tmp" "$file"
+}
+
+worktree_dirty() {
+  [[ -n "$(git status --porcelain --untracked-files=normal)" ]]
+}
+
+auto_commit_before_branch_switch() {
+  local target_branch="$1"
+  local current_branch
+
+  current_branch="$(git branch --show-current 2>/dev/null || true)"
+
+  if [[ -z "$current_branch" ]]; then
+    if worktree_dirty; then
+      echo "Cannot auto-commit before switching branches from a detached HEAD." >&2
+      echo "Commit manually, switch to a named branch, or use --no-checkout." >&2
+      exit 1
+    fi
+    return 0
+  fi
+
+  if [[ "$current_branch" == "$target_branch" ]]; then
+    return 0
+  fi
+
+  if ! worktree_dirty; then
+    return 0
+  fi
+
+  if [[ -n "$(git diff --name-only --diff-filter=U)" ]]; then
+    echo "Cannot auto-commit before switching branches because unresolved conflicts exist." >&2
+    echo "Resolve conflicts manually before starting another workflow." >&2
+    exit 1
+  fi
+
+  echo "Dirty worktree detected on ${current_branch}; creating checkpoint commit before switching to ${target_branch}."
+  git add -A
+
+  if git diff --cached --quiet; then
+    echo "No staged changes after git add -A; continuing without checkpoint commit."
+    return 0
+  fi
+
+  git commit -m "chore: checkpoint ${current_branch} before ${target_branch}"
+}
+
 dry_run=0
 checkout=1
 allow_dirty=0
+create_issue=1
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -32,6 +117,15 @@ while [[ $# -gt 0 ]]; do
       ;;
     --allow-dirty)
       allow_dirty=1
+      echo "Note: --allow-dirty is deprecated; dirty worktrees are checkpoint-committed before branch switches."
+      shift
+      ;;
+    --create-issue)
+      create_issue=1
+      shift
+      ;;
+    --no-issue)
+      create_issue=0
       shift
       ;;
     -h|--help)
@@ -79,9 +173,17 @@ fi
 echo "Branch: ${branch_name}"
 echo "Workspace: ${workspace_dir}"
 echo "Title: ${title}"
+if [[ "$create_issue" -eq 1 ]]; then
+  echo "GitHub issue: create by team rule"
+else
+  echo "GitHub issue: skipped by --no-issue"
+fi
 
 if [[ "$dry_run" -eq 1 ]]; then
   echo "Dry run only. No branch or files created."
+  if [[ "$create_issue" -eq 1 ]]; then
+    echo "Dry run only. No GitHub issue created."
+  fi
   exit 0
 fi
 
@@ -91,16 +193,8 @@ if [[ "$checkout" -eq 1 ]] && ! git rev-parse --is-inside-work-tree >/dev/null 2
   exit 1
 fi
 
-if [[ "$checkout" -eq 1 ]] && [[ "$allow_dirty" -ne 1 ]] && ! git diff --quiet; then
-  echo "Refusing to switch branches with unstaged changes." >&2
-  echo "Commit, stash, or rerun with --no-checkout / --allow-dirty." >&2
-  exit 1
-fi
-
-if [[ "$checkout" -eq 1 ]] && [[ "$allow_dirty" -ne 1 ]] && [[ -n "$(git status --porcelain --untracked-files=normal)" ]]; then
-  echo "Refusing to switch branches with uncommitted or untracked changes." >&2
-  echo "Commit, stash, or rerun with --no-checkout / --allow-dirty." >&2
-  exit 1
+if [[ "$checkout" -eq 1 ]]; then
+  auto_commit_before_branch_switch "$branch_name"
 fi
 
 if [[ "$checkout" -eq 1 ]]; then
@@ -121,6 +215,67 @@ if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   current_branch="$(git branch --show-current 2>/dev/null || echo detached)"
   base_commit="$(git rev-parse --short HEAD 2>/dev/null || echo unborn)"
   sync_result="Workspace created from ${current_branch} at ${base_commit}; 자동 pull/merge/rebase는 실행하지 않음."
+fi
+
+issue_ref=""
+issue_link=""
+issue_creation_result="not requested"
+pr_closing_keyword=""
+sync_file="${workspace_dir}/sync.md"
+
+if [[ "$create_issue" -eq 1 ]]; then
+  issue_creation_result="skipped: GitHub CLI is not available"
+  existing_issue=""
+
+  if [[ -f "$sync_file" ]]; then
+    existing_issue="$(section_value "$sync_file" "## Push / PR" "- linked GitHub issue:")"
+  fi
+
+  if [[ -n "$existing_issue" ]]; then
+    issue_ref="$existing_issue"
+    if [[ "$existing_issue" =~ ^#([0-9]+)$ ]]; then
+      pr_closing_keyword="Closes ${existing_issue}"
+    fi
+    issue_creation_result="skipped: linked GitHub issue already recorded"
+  elif command -v gh >/dev/null 2>&1; then
+    if gh auth status >/dev/null 2>&1; then
+      issue_body_file="$(mktemp)"
+      cat > "$issue_body_file" <<EOF_ISSUE
+## AskLake branch workspace
+
+- Branch: \`${branch_name}\`
+- Workspace: \`${workspace_dir}\`
+- Title: ${title}
+
+## Scope
+
+이슈는 branch workspace와 PR closing keyword를 연결하기 위해 팀 규칙에 따라 \`scripts/start-workflow.sh\`가 생성했다.
+구체 범위와 검증 결과는 workspace 문서를 기준으로 업데이트한다.
+EOF_ISSUE
+
+      set +e
+      issue_output="$(gh issue create --title "$title" --body-file "$issue_body_file" 2>&1)"
+      issue_status=$?
+      set -e
+      rm -f "$issue_body_file"
+
+      if [[ "$issue_status" -eq 0 ]]; then
+        issue_link="$(printf '%s\n' "$issue_output" | tail -n 1)"
+        issue_number="$(printf '%s\n' "$issue_link" | sed -n 's#.*/issues/\([0-9][0-9]*\).*#\1#p')"
+        if [[ -n "$issue_number" ]]; then
+          issue_ref="#${issue_number}"
+          pr_closing_keyword="Closes ${issue_ref}"
+        else
+          issue_ref="$issue_link"
+        fi
+        issue_creation_result="created"
+      else
+        issue_creation_result="failed: ${issue_output//$'\n'/ }"
+      fi
+    else
+      issue_creation_result="skipped: GitHub CLI is not authenticated"
+    fi
+  fi
 fi
 
 if [[ ! -f "${workspace_dir}/plan.md" ]]; then
@@ -540,12 +695,20 @@ main 동기화와 integration readiness를 기록한다.
 
 ## Push / PR
 
-- linked GitHub issue:
-- PR closing keyword:
+- linked GitHub issue: ${issue_ref}
+- issue link: ${issue_link}
+- issue creation result: ${issue_creation_result}
+- PR closing keyword: ${pr_closing_keyword}
 - pushed branch:
 - PR link:
 - merge status:
+- issue close status:
 EOF_SYNC
+elif [[ "$create_issue" -eq 1 ]]; then
+  set_field "${workspace_dir}/sync.md" "- linked GitHub issue:" "$issue_ref"
+  set_field "${workspace_dir}/sync.md" "- issue link:" "$issue_link"
+  set_field "${workspace_dir}/sync.md" "- issue creation result:" "$issue_creation_result"
+  set_field "${workspace_dir}/sync.md" "- PR closing keyword:" "$pr_closing_keyword"
 fi
 
 echo "- ${workspace_dir}/report.md"

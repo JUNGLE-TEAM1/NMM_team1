@@ -19,7 +19,10 @@
 - [ ] `sync.md` Start Sync recorded
 - [ ] `sync.md` Pre-Merge Sync result 또는 deferral reason recorded
 - Linked GitHub issue:
+- Issue link:
 - [ ] linked issue가 있으면 PR body에 `Closes #123` 같은 closing keyword가 포함되어 있는가?
+- [ ] PR 생성 후 `sync.md`에 PR link와 pushed branch가 기록되었는가?
+- [ ] merge 후 linked issue close 상태를 확인했는가?
 - Notes:
 
 ## Quality Gates / 품질 게이트

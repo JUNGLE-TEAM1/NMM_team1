@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: asklake-backend
+  namespace: asklake-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: asklake-backend
+  template:
+    metadata:
+      labels:
+        app: asklake-backend
+    spec:
+      containers:
+        - name: backend
+          image: asklake-backend:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          env:
+            - name: APP_ENV
+              value: dev
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+

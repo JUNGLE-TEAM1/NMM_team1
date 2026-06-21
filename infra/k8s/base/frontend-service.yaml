@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: asklake-frontend
+  namespace: asklake-dev
+spec:
+  type: ClusterIP
+  selector:
+    app: asklake-frontend
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+

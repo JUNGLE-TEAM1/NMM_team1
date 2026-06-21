@@ -73,6 +73,8 @@ scripts/start-workflow.sh feature task-board "Task board MVP"
 
 branch 생성/전환 없이 파일만 만들려면 `--no-checkout`을 사용한다.
 branch 이름과 생성 파일만 미리 보려면 `--dry-run`을 사용한다.
+다른 branch workspace로 이동할 때 현재 worktree가 dirty이면 `scripts/start-workflow.sh`가 현재 branch에 checkpoint commit을 만든 뒤 이동한다.
+같은 branch workspace를 다시 여는 경우에는 checkpoint commit을 만들지 않는다.
 handoff, integration, PR readiness 전에 현재 workspace 상태를 요약하려면 `scripts/status-workflow.sh <workspace>`를 사용한다.
 
 ## 적용 모드
@@ -103,7 +105,28 @@ Workspace state 값:
 - Pre-Merge Sync: before completion/integration, re-check main freshness and record conflicts or validation.
 - Push / PR: prefer PR-based integration and record branch, PR link, and merge status in `sync.md`.
 - Linked Issue: when a branch maps to a GitHub issue, keep the existing branch/workspace name and record the issue plus PR closing keyword in `sync.md`.
+- Branch Switch Checkpoint: when moving from one branch workspace to another with dirty changes, checkpoint commit current branch before switching.
 - AI records sync status but does not run pull, merge, rebase, push, PR creation, or PR merge without human confirmation.
+
+## 재발 방지 하네스 규칙
+
+branch/workspace 흐름 중 문제가 발생하면 먼저 문제를 해결한다.
+문제 해결 직후 AI는 같은 유형의 재발을 막기 위한 하네스 규칙을 바로 추가하지 않고, 사람에게 아래 내용을 먼저 확인한다.
+
+- 문제 원인 요약
+- 재발 방지 규칙 후보
+- 적용 위치: 문서, 스크립트, validation, status 중 어디인지
+- 예상 부작용 또는 예외 상황
+
+사람이 승인하면 문서와 필요한 스크립트/validation/status를 업데이트한다.
+적용 후에는 반드시 아래 흐름 검사를 실행하고 현재 workspace의 `quality.md`, `report.md`, `decisions.md`에 증거를 기록한다.
+
+```bash
+scripts/harness-flow-check.sh docs/workflows/<type>/<short-kebab-name>
+```
+
+규칙 후보가 현재 branch 범위를 넘으면 `Scope Change Confirm`을 먼저 해결한다.
+원격 상태를 바꾸는 작업은 이 흐름 검사에 포함하지 않는다.
 
 ## 품질 게이트 규칙
 

@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: asklake-frontend
+  namespace: asklake-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: asklake-frontend
+  template:
+    metadata:
+      labels:
+        app: asklake-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: asklake-frontend:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
