@@ -1,11 +1,11 @@
-# Phase Reports
+# Phase 보고서
 
-`docs/reports/`는 NMM_team1 Phase 실행 증거를 남기는 공간이다. Source of Truth는 아니지만 Source of Truth를 따랐는지, 무엇을 검증했는지, 다음 작업자가 무엇을 알아야 하는지를 기록한다.
+`docs/reports/`는 AskLake Phase 실행 증거를 남기는 공간이다. Source of Truth는 아니지만 Source of Truth를 따랐는지, 무엇을 검증했는지, 다음 작업자가 무엇을 알아야 하는지를 기록한다.
 
 ## 역할
 
 - 무엇이 변경됐고 무엇을 검증했는지 기록한다.
-- `docs/05` acceptance criteria와 증거를 연결한다.
+- `docs/05` 수용 기준과 증거를 연결한다.
 - `docs/06` Regression Guard / Failure Scenario 확인 결과를 기록한다.
 - `docs/07` Manual Verification 결과를 기록한다.
 - `docs/08` 완료 게이트 충족 여부를 보여준다.
@@ -28,13 +28,13 @@
 
 ## Latest Report Index
 
-NMM_team1에 하네스를 적용한 뒤 아직 프로젝트 Phase report는 생성되지 않았다.
+AskLake에 하네스를 적용한 뒤 생성된 최신 Phase report를 아래 index에 유지한다.
 
 report가 늘어나면 영역별 최신 report index를 작게 유지한다. 이 index는 Source of Truth가 아니라 evidence 탐색용이다.
 
-| Area | Latest Report | Why Read This |
+| 영역 | 최신 report | 읽는 이유 |
 | --- | --- | --- |
-| Project Bootstrap | TBD | 첫 project-specific bootstrap report |
+| Infra / MVP / 장기 Roadmap | [`phase-1-mvp-roadmap.md`](phase-1-mvp-roadmap.md) | 인프라 선행 원칙, XFlow 참고 MVP 범위, M0~M5 MVP milestone, M6~M15 장기 milestone, 다음 구현 Phase |
 
 ## 다음 Phase 문맥 로딩
 
