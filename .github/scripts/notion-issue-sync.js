@@ -115,6 +115,8 @@ function buildConfig(context) {
     projectOwner,
     projectNumber,
     githubStatusField: process.env.GITHUB_PROJECT_STATUS_FIELD || "Status",
+    fallbackStatusOptionIds: parseStatusOptionIds(process.env.GITHUB_PROJECT_STATUS_OPTION_IDS),
+    projectStatusAliases: parseStatusAliases(process.env.GITHUB_PROJECT_STATUS_ALIASES),
     props: {
       title: process.env.NOTION_TITLE_PROPERTY || "Issue",
       issueUrl: process.env.NOTION_ISSUE_URL_PROPERTY || "Issue URL",
@@ -283,7 +285,11 @@ async function fetchProject({ github, config }) {
     fields: project.fields.nodes,
     items,
     statusField,
-    statusOptionsByName: new Map((statusField.options || []).map((option) => [option.name, option])),
+    fallbackStatusOptionIds: config.fallbackStatusOptionIds,
+    projectStatusAliases: config.projectStatusAliases,
+    statusOptionsByName: new Map(
+      (statusField.options || []).map((option) => [normalizeProjectStatusName(option.name), option]),
+    ),
   };
 }
 
@@ -414,13 +420,13 @@ async function syncNotionToGitHub({ github, notion, config, project, row, issue 
 
   let projectStatus = issue.projectStatus;
   if (row.projectStatus && row.projectStatus !== issue.projectStatus) {
-    await updateProjectStatus({
+    const syncedStatus = await updateProjectStatus({
       github,
       project,
       projectItemId: issue.projectItemId,
       statusName: row.projectStatus,
     });
-    projectStatus = row.projectStatus;
+    projectStatus = syncedStatus || row.projectStatus;
   }
 
   const updatedIssue = {
@@ -438,9 +444,21 @@ async function syncNotionToGitHub({ github, notion, config, project, row, issue 
 }
 
 async function updateProjectStatus({ github, project, projectItemId, statusName }) {
-  const option = project.statusOptionsByName.get(statusName);
+  const normalizedStatusName = normalizeProjectStatusName(statusName);
+  const aliasedStatusName = project.projectStatusAliases.get(normalizedStatusName) || statusName;
+  const normalizedAliasedStatusName = normalizeProjectStatusName(aliasedStatusName);
+  const option = project.statusOptionsByName.get(normalizedAliasedStatusName);
+  const fallbackOptionId = project.fallbackStatusOptionIds?.get(normalizedAliasedStatusName);
+  const optionId = option?.id || fallbackOptionId;
+
+  if (!optionId) {
+    const knownOptions = [...project.statusOptionsByName.keys()].join(", ") || "(none)";
+    console.warn(`Skipping unknown project status "${statusName}". Known GitHub options: ${knownOptions}`);
+    return null;
+  }
+
   if (!option) {
-    throw new Error(`Unknown project status "${statusName}".`);
+    console.warn(`Using fallback option id for project status "${aliasedStatusName}".`);
   }
 
   await github.graphql(
@@ -464,9 +482,11 @@ async function updateProjectStatus({ github, project, projectItemId, statusName 
       projectId: project.id,
       itemId: projectItemId,
       fieldId: project.statusField.id,
-      optionId: option.id,
+      optionId,
     },
   );
+
+  return aliasedStatusName;
 }
 
 async function fetchGitHubIssue({ github, config, issueNumber }) {
@@ -706,6 +726,42 @@ function parseIssueUrl(url) {
     repo: match[2],
     number: Number(match[3]),
   };
+}
+
+function parseStatusOptionIds(value) {
+  return parseStatusMap(value);
+}
+
+function parseStatusAliases(value) {
+  const aliases = parseStatusMap(value);
+
+  if (!aliases.has(normalizeProjectStatusName("비전"))) {
+    aliases.set(normalizeProjectStatusName("비전"), "Backlog");
+  }
+
+  return aliases;
+}
+
+function parseStatusMap(value) {
+  const map = new Map();
+  if (!value) {
+    return map;
+  }
+
+  const parsed = JSON.parse(value);
+  for (const [name, mappedValue] of Object.entries(parsed)) {
+    map.set(normalizeProjectStatusName(name), mappedValue);
+  }
+
+  return map;
+}
+
+function normalizeProjectStatusName(value) {
+  return String(value || "")
+    .normalize("NFKC")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
 }
 
 function isAfter(left, right) {
