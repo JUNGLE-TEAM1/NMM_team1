@@ -136,6 +136,8 @@ scripts/validate-harness.sh --integration
 
 - 제품 기능 구현 전에 CI/CD, Docker, Kubernetes, AWS foundation Phase를 먼저 진행한다.
 - 실제 AWS resource 생성, 비용 발생, 권한 변경은 사람 확인 뒤에만 실행한다.
+- AWS bootstrap readiness script는 기본 plan mode로 실행하고, resource 생성은 `--execute`와 승인 환경 값이 모두 있을 때만 실행한다.
+- GitHub Actions의 AWS 인증은 장기 access key보다 OIDC role assume 방식을 우선한다.
 - Docker image tag는 commit sha 또는 명시적 version을 포함한다.
 - Kubernetes manifest 또는 Helm chart는 secret 값을 직접 포함하지 않는다.
 - 배포 workflow는 build, test, image publish, deploy, smoke, rollback note를 분리해서 기록한다.

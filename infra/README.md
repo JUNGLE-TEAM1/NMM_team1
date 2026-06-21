@@ -16,10 +16,14 @@
 - `infra/docker/frontend.Dockerfile`: frontend smoke image 후보
 - `infra/k8s/base/`: namespace, deployment, service manifest 후보
 - `infra/aws/approval-checklist.md`: AWS resource 생성 전 승인 체크리스트
+- `infra/aws/bootstrap.env.example`: AWS bootstrap에 필요한 secret 없는 환경 값
+- `infra/aws/github-oidc-trust-policy.template.json`: GitHub Actions OIDC IAM role trust policy 템플릿
+- `infra/aws/ecr-lifecycle-policy.json`: ECR image cleanup 정책 후보
+- `infra/aws/eksctl.cluster.yaml.example`: EKS cluster 생성 config 후보
+- `infra/aws/readiness.md`: 승인 후 바로 실행할 AWS bootstrap 순서
 
 ## 다음 Phase에서 교체할 것
 
 - smoke image를 실제 React/FastAPI app image로 교체
 - 환경별 values 또는 overlay 추가
-- ECR/EKS/ECS/App Runner 중 실제 AWS target 결정
-
+- EKS 외 ECS/App Runner가 필요하면 별도 target decision과 template 추가

@@ -4,12 +4,12 @@
 
 ## 배포 target 결정
 
-- [ ] 후보: EKS
+- [x] 후보: EKS
 - [ ] 후보: ECS/Fargate
 - [ ] 후보: App Runner
 - [ ] 후보: EC2
-- [ ] 선택한 target:
-- [ ] 선택 이유:
+- [x] 선택한 target: EKS-ready bootstrap
+- [x] 선택 이유: 기존 Kubernetes manifest와 가장 직접적으로 연결되며, ECS/App Runner는 별도 decision으로 확장 가능하다.
 
 ## 비용 확인
 
@@ -22,18 +22,17 @@
 - [ ] AWS account id를 확인했다.
 - [ ] region을 확인했다.
 - [ ] 필요한 IAM role/policy를 최소 권한으로 정리했다.
-- [ ] GitHub OIDC 또는 배포 credential 방식을 정했다.
+- [x] GitHub OIDC 또는 배포 credential 방식을 정했다.
 
 ## 배포와 rollback
 
-- [ ] ECR repository 또는 image registry 전략을 정했다.
-- [ ] Kubernetes namespace 또는 service 환경 이름을 정했다.
-- [ ] smoke check 명령을 정했다.
-- [ ] rollback 절차를 정했다.
+- [x] ECR repository 또는 image registry 전략을 정했다.
+- [x] Kubernetes namespace 또는 service 환경 이름을 정했다.
+- [x] smoke check 명령을 정했다.
+- [x] rollback 절차를 정했다.
 
 ## 승인
 
 - [ ] 사람 승인 전까지 실제 resource를 만들지 않는다.
 - Approved by:
 - Approved at:
-

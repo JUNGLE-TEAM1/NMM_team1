@@ -1,0 +1,74 @@
+name: AskLake Dev Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Image tag to build, push, and deploy"
+        required: true
+      approved:
+        description: "Type APPROVED after AWS cost/IAM/rollback review"
+        required: true
+      dry_run:
+        description: "Keep true until the AWS target is approved and bootstrapped"
+        required: true
+        default: "true"
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy-dev:
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+      ECR_REPOSITORY_PREFIX: ${{ vars.ECR_REPOSITORY_PREFIX }}
+      EKS_CLUSTER_NAME: ${{ vars.EKS_CLUSTER_NAME }}
+      K8S_NAMESPACE: ${{ vars.K8S_NAMESPACE }}
+    steps:
+      - name: Require approval input
+        run: test "${{ inputs.approved }}" = "APPROVED"
+
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build smoke images
+        run: |
+          docker build -f infra/docker/backend.Dockerfile -t "$ECR_REPOSITORY_PREFIX/backend:${{ inputs.image_tag }}" .
+          docker build -f infra/docker/frontend.Dockerfile -t "$ECR_REPOSITORY_PREFIX/frontend:${{ inputs.image_tag }}" .
+
+      - name: Push smoke images
+        if: ${{ inputs.dry_run != 'true' }}
+        run: |
+          docker tag "$ECR_REPOSITORY_PREFIX/backend:${{ inputs.image_tag }}" "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY_PREFIX}/backend:${{ inputs.image_tag }}"
+          docker tag "$ECR_REPOSITORY_PREFIX/frontend:${{ inputs.image_tag }}" "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY_PREFIX}/frontend:${{ inputs.image_tag }}"
+          docker push "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY_PREFIX}/backend:${{ inputs.image_tag }}"
+          docker push "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY_PREFIX}/frontend:${{ inputs.image_tag }}"
+
+      - name: Deploy to EKS
+        if: ${{ inputs.dry_run != 'true' }}
+        run: |
+          aws eks --region "$AWS_REGION" update-kubeconfig --name "$EKS_CLUSTER_NAME"
+          kubectl apply -k infra/k8s/base
+          kubectl -n "$K8S_NAMESPACE" set image deploy/asklake-backend backend="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY_PREFIX}/backend:${{ inputs.image_tag }}"
+          kubectl -n "$K8S_NAMESPACE" set image deploy/asklake-frontend frontend="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY_PREFIX}/frontend:${{ inputs.image_tag }}"
+          kubectl -n "$K8S_NAMESPACE" rollout status deploy/asklake-backend
+          kubectl -n "$K8S_NAMESPACE" rollout status deploy/asklake-frontend
+
+      - name: Dry run summary
+        if: ${{ inputs.dry_run == 'true' }}
+        run: |
+          echo "Dry run only. AWS credentials were checked and images were built locally in the runner."
+          echo "Set dry_run=false only after infra/aws/approval-checklist.md is approved and AWS bootstrap is complete."
