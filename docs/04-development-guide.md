@@ -1,18 +1,18 @@
-# 04. Development Guide
+# 04. 개발 가이드
 
-This document defines development operating rules. Phase order and copyable prompts live in `docs/08-development-workflow.md`. Regression/failure criteria live in `docs/06-regression-and-failure-scenarios.md`. Manual verification lives in `docs/07-manual-verification-playbook.md`.
+이 문서는 AskLake 개발 운영 규칙을 정의한다. Phase 순서와 복사용 프롬프트는 `docs/08-development-workflow.md`, 회귀/실패 기준은 `docs/06-regression-and-failure-scenarios.md`, 수동 검증은 `docs/07-manual-verification-playbook.md`에 둔다.
 
-## 1) Development Principles
+## 1) 개발 원칙
 
-- Follow `docs/08` Phase order.
-- Follow `AGENTS.md` Context Loading Rule.
-- Follow `docs/15-context-budget-rule.md`: start with Lite Read, then escalate when risk appears.
-- Keep changes scoped to the current Phase.
-- Use reports as evidence, not Source of Truth.
+- `docs/08`의 Phase 순서를 따른다.
+- `AGENTS.md`의 Context Loading Rule을 따른다.
+- `docs/15-context-budget-rule.md`에 따라 Lite Read로 시작하고, 위험 신호가 있을 때만 문맥을 확장한다.
+- 변경은 현재 Phase 범위 안에 둔다.
+- report는 증거로 사용하고 Source of Truth로 사용하지 않는다.
 
-## 2) Branch Strategy
+## 2) 브랜치 전략
 
-Recommended branch types:
+권장 branch type:
 
 - `feature/[short-kebab-name]`
 - `fix/[short-kebab-name]`
@@ -20,70 +20,70 @@ Recommended branch types:
 - `test/[short-kebab-name]`
 - `chore/[short-kebab-name]`
 
-Branch naming rules:
+branch 이름 규칙:
 
-- Use lowercase kebab-case after the slash.
-- Keep the name short and behavior-focused.
-- Do not include spaces, personal names, dates, issue descriptions, or secrets.
-- Use the same branch name as the branch workspace path under `docs/workflows/`.
-- Do not change the branch name just to include a GitHub issue number; record linked issues in workspace `sync.md` instead.
+- slash 뒤에는 lowercase kebab-case를 사용한다.
+- 이름은 짧고 동작 중심으로 쓴다.
+- 공백, 개인 이름, 날짜, issue 설명, secret을 넣지 않는다.
+- branch 이름과 `docs/workflows/` 아래 workspace 경로를 맞춘다.
+- GitHub issue 번호를 넣기 위해 branch 이름을 바꾸지 않는다. linked issue는 workspace `sync.md`에 기록한다.
 
-Examples:
+예시:
 
 - Branch: `feature/task-board`
 - Workspace: `docs/workflows/feature/task-board/`
 - Branch: `feature/project-bootstrap`
 - Workspace: `docs/workflows/feature/project-bootstrap/`
 
-Create a branch workspace with:
+branch workspace 생성:
 
 ```bash
 scripts/start-workflow.sh feature project-bootstrap "Project bootstrap"
 ```
 
-## 3) Git Sync Rules
+## 3) Git sync 규칙
 
-`docs/11-git-sync-policy.md` is the Source of Truth for branch freshness and integration safety.
+branch 최신성, 통합 안전성의 Source of Truth는 `docs/11-git-sync-policy.md`다.
 
-- Start each Phase from the latest approved `main` state.
-- Use `git pull --ff-only` as the default main update command when the human approves a pull.
-- Do not sync with a dirty worktree.
-- Record start, mid-phase, pre-merge, and PR status in workspace `sync.md`.
-- If main changes during a Phase, stop and ask the human whether to rebase/merge now, continue and record risk, or split follow-up work.
-- Prefer PR-based integration over direct main push.
-- Do not automate merge, rebase, push, PR creation, or PR merge without a confirmation gate.
+- 각 Phase는 승인된 최신 `main` 상태에서 시작한다.
+- 사람이 pull을 승인하면 기본 main 갱신 명령은 `git pull --ff-only`를 사용한다.
+- dirty worktree에서는 sync하지 않는다.
+- 시작, 중간, pre-merge, PR 상태를 workspace `sync.md`에 기록한다.
+- Phase 중 main이 바뀌면 멈추고 rebase/merge, 위험 기록 후 계속 진행, follow-up 분리 중 무엇을 할지 확인한다.
+- direct main push보다 PR 기반 통합을 우선한다.
+- confirmation gate 없이 merge, rebase, push, PR 생성, PR merge를 자동 실행하지 않는다.
 
-## 4) Commit Rules
+## 4) Commit 규칙
 
 ```text
 <type>: <subject>
 ```
 
-Examples:
+예시:
 
 - `feat: add [feature]`
 - `fix: handle [case]`
 - `docs: update [document]`
 - `test: add [coverage]`
 
-## 5) Test Strategy
+## 5) 테스트 전략
 
-Use `docs/12-quality-gates.md` for TDD and CI/CD policy.
+TDD와 CI/CD 정책은 `docs/12-quality-gates.md`를 따른다.
 
-| Level | Target |
+| 수준 | 대상 |
 | --- | --- |
-| Unit | Markdown link and placeholder consistency where useful |
-| Integration | Cross-document Source of Truth consistency |
-| Smoke | `rg` checks for stale example artifacts or unintended placeholders |
-| E2E/manual | Project bootstrap walkthrough against `README.md`, `AGENTS.md`, and `docs/01~08` |
+| Unit | 필요한 경우 Markdown link와 placeholder 일관성 |
+| Integration | 문서 간 Source of Truth 일관성 |
+| Smoke | stale example artifact나 의도하지 않은 placeholder를 `rg`로 확인 |
+| E2E/manual | `README.md`, `AGENTS.md`, `docs/01~08` 기준 project bootstrap 흐름 확인 |
 
-TDD default:
+TDD 기본값:
 
-- Required for core logic, bug fixes, regression-prone behavior, and integration contracts.
-- Optional for documentation-only or low-risk mechanical changes.
-- Record failing-first evidence or skip reason in workspace `quality.md`.
+- core logic, bug fix, regression 위험 동작, integration contract에는 TDD를 적용한다.
+- 문서 전용 작업이나 낮은 위험의 기계적 변경에는 선택 사항이다.
+- failing-first 증거 또는 skip reason을 workspace `quality.md`에 기록한다.
 
-## 6) Local Run Commands
+## 6) 로컬 실행 명령
 
 ```bash
 rg -n "\\[[A-Z0-9_]+\\]" .
@@ -96,45 +96,54 @@ scripts/validate-harness.sh --strict
 scripts/validate-harness.sh --integration
 ```
 
-## 7) PR Checklist
+## 7) PR 체크리스트
 
-- [ ] Contributes to current Phase
-- [ ] Branch/work location matches `docs/08`
+- [ ] 현재 Phase에 기여한다.
+- [ ] Branch/work location이 `docs/08`과 맞는다.
 - [ ] `sync.md` records start sync and pre-merge sync status
 - [ ] If the branch has a linked GitHub issue, `sync.md` records it and the PR body includes `Closes #<issue-number>` or an equivalent closing keyword
-- [ ] main was checked before completion or risk was recorded
-- [ ] Tests/build/smoke/manual verification recorded
-- [ ] `scripts/status-workflow.sh <workspace>` reviewed before PR handoff
-- [ ] Regression Guard / Manual Verification checked
-- [ ] Docs updated only where needed
-- [ ] No secrets committed
-- [ ] Data/migration changes verified if applicable
+- [ ] 완료 전 main 상태를 확인했거나 위험을 기록했다.
+- [ ] test/build/smoke/manual verification 결과를 기록했다.
+- [ ] PR handoff 전 `scripts/status-workflow.sh <workspace>`를 확인했다.
+- [ ] Regression Guard / Manual Verification을 확인했다.
+- [ ] 필요한 문서만 업데이트했다.
+- [ ] secret을 commit하지 않았다.
+- [ ] data/migration 변경이 있으면 검증했다.
 
-## 8) Secret / Env Management
+## 8) Secret과 환경 변수 관리
 
-- Real secrets must not be committed.
-- Keep `.env.example` or equivalent updated.
-- Document required variables without real values.
+- 실제 secret은 commit하지 않는다.
+- `.env.example` 또는 동등한 예시 파일을 최신으로 유지한다.
+- 필요한 변수는 실제 값 없이 문서화한다.
 
-## 9) Migration / Data Change Rules
+## 9) Migration / 데이터 변경 규칙
 
-- Document schema/data changes in `docs/02` and `docs/03`.
-- Include upgrade/rollback notes.
-- Verify migration in local or test environment.
+- schema/data 변경은 `docs/02`와 `docs/03`에 기록한다.
+- upgrade/rollback note를 포함한다.
+- local 또는 test 환경에서 migration을 검증한다.
 
-## 10) CI/CD Quality Gates
+## 10) CI/CD 품질 게이트
 
-- Required jobs: lint/test/build or the nearest project-specific equivalents.
-- Harness jobs: `scripts/validate-harness.sh` and `scripts/validate-harness.sh --strict`.
-- Merge blocking criteria: PR checks pass, `sync.md` is current, `quality.md` records required evidence, and no required confirmation is pending.
-- Deployment smoke: required only when the project deploys or publishes.
-- Rollback notes: required for deployment, migration, or production-impacting changes.
-- CD commands stay behind human confirmation.
-- Optional CI example: `.github/workflows/harness-validation.example.yml`
+- 필수 job: lint/test/build 또는 프로젝트에 맞는 동등 명령.
+- 하네스 job: `scripts/validate-harness.sh`, `scripts/validate-harness.sh --strict`.
+- merge 차단 기준: PR check 통과, `sync.md` 최신, `quality.md` 필수 증거 기록, pending confirmation 없음.
+- deployment smoke: MVP 개발 시작 전부터 dev 배포 경로 기준으로 정의한다.
+- rollback note: deployment, migration, production 영향 변경에 필수다.
+- CD 명령은 사람 확인 뒤에만 실행한다.
+- 선택 CI 예시: `.github/workflows/harness-validation.example.yml`
 
-## 11) Deliverable Mapping
+## 11) 인프라 선행 개발 규칙
 
-| Deliverable | Source |
+- 제품 기능 구현 전에 CI/CD, Docker, Kubernetes, AWS foundation Phase를 먼저 진행한다.
+- 실제 AWS resource 생성, 비용 발생, 권한 변경은 사람 확인 뒤에만 실행한다.
+- Docker image tag는 commit sha 또는 명시적 version을 포함한다.
+- Kubernetes manifest 또는 Helm chart는 secret 값을 직접 포함하지 않는다.
+- 배포 workflow는 build, test, image publish, deploy, smoke, rollback note를 분리해서 기록한다.
+- local/container smoke가 실패하면 cloud deploy를 진행하지 않는다.
+
+## 12) 산출물 위치
+
+| 산출물 | 위치 |
 | --- | --- |
 | Change propagation layers | `docs/00-layer-map.md` |
 | Product scope | `docs/01-product-planning.md` |
