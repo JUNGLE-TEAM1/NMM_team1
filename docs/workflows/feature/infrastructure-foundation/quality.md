@@ -26,11 +26,12 @@
 | harness validation | `scripts/validate-harness.sh` | passed | 2026-06-22 실행 |
 | strict harness validation | `scripts/validate-harness.sh --strict` | passed | 2026-06-22 실행 |
 | harness flow check | `scripts/harness-flow-check.sh docs/workflows/feature/infrastructure-foundation` | passed | main 동기화 후 flow check 통과 |
+| GitHub Actions CI | PR #13 checks | passed | harness, container-smoke, manifest-smoke all passed before merge |
 
 ## CI/CD Gate / CI-CD 게이트
 
 - CI required: yes
-- CI result: `.github/workflows/ci.yml` 후보 추가, local equivalent checks와 PR 전 flow check 실행
+- CI result: `.github/workflows/ci.yml` 추가, local equivalent checks와 PR #13 GitHub Actions 통과
 - Deploy/publish required: no
 - Deployment confirmation: 실제 AWS deploy는 approval 전이라 실행하지 않음
 - Rollback/smoke notes: `infra/aws/approval-checklist.md`에 resource 삭제/rollback/smoke 확인 항목 기록

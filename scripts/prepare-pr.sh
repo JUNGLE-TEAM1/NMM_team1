@@ -4,14 +4,16 @@ set -euo pipefail
 usage() {
   cat <<'USAGE'
 Usage:
-  scripts/prepare-pr.sh [--dry-run] [--push] [--create-pr] [--check-issue] [--close-issue] docs/workflows/<type>/<short-kebab-name>
+  scripts/prepare-pr.sh [--dry-run] [--push] [--create-pr] [--check-issue] [--check-pr-sync] [--close-issue] [--finalize] docs/workflows/<type>/<short-kebab-name>
 
 Default behavior updates the workspace sync.md with the PR closing keyword and prints a PR body draft.
 Remote actions require explicit flags:
   --push        push the current branch to origin
   --create-pr   create a GitHub PR with gh
   --check-issue query linked GitHub issue state with gh
+  --check-pr-sync check local sync.md PR handoff fields before creating or merging a PR
   --close-issue close linked issue after the recorded PR is merged
+  --finalize    verify recorded PR is merged, close/check linked issue, and update sync.md
 USAGE
 }
 
@@ -19,7 +21,9 @@ dry_run=0
 push_branch=0
 create_pr=0
 check_issue=0
+check_pr_sync=0
 close_issue=0
+finalize=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -39,7 +43,17 @@ while [[ $# -gt 0 ]]; do
       check_issue=1
       shift
       ;;
+    --check-pr-sync)
+      check_pr_sync=1
+      shift
+      ;;
     --close-issue)
+      close_issue=1
+      shift
+      ;;
+    --finalize)
+      finalize=1
+      check_pr_sync=1
       close_issue=1
       shift
       ;;
@@ -132,6 +146,9 @@ fi
 
 linked_issue="$(section_value "$sync_file" "## Push / PR" "- linked GitHub issue:")"
 pr_link="$(section_value "$sync_file" "## Push / PR" "- PR link:")"
+pushed_branch="$(section_value "$sync_file" "## Push / PR" "- pushed branch:")"
+merge_status="$(section_value "$sync_file" "## Push / PR" "- merge status:")"
+issue_close_status="$(section_value "$sync_file" "## Push / PR" "- issue close status:")"
 issue_number=""
 if [[ "$linked_issue" =~ ^#([0-9]+)$ ]]; then
   issue_number="${BASH_REMATCH[1]}"
@@ -196,6 +213,43 @@ if [[ "$dry_run" -eq 1 ]]; then
   exit 0
 fi
 
+if [[ "$check_pr_sync" -eq 1 ]]; then
+  sync_failures=0
+
+  if [[ -n "$linked_issue" && -z "$closing_keyword" ]]; then
+    echo "PR sync check failed: linked issue is recorded but PR closing keyword cannot be derived." >&2
+    sync_failures=$((sync_failures + 1))
+  fi
+
+  if [[ -n "$linked_issue" ]] && [[ -z "$(section_value "$sync_file" "## Push / PR" "- PR closing keyword:")" ]]; then
+    echo "PR sync check failed: linked issue exists but PR closing keyword is empty in sync.md." >&2
+    sync_failures=$((sync_failures + 1))
+  fi
+
+  if [[ -n "$pr_link" && -z "$pushed_branch" ]]; then
+    echo "PR sync check failed: PR link exists but pushed branch is empty in sync.md." >&2
+    sync_failures=$((sync_failures + 1))
+  fi
+
+  if [[ -z "$pr_link" ]]; then
+    case "$merge_status" in
+      ""|"not created yet") ;;
+      *) echo "PR sync check failed: merge status is '${merge_status}' before a PR link is recorded." >&2; sync_failures=$((sync_failures + 1)) ;;
+    esac
+    case "$issue_close_status" in
+      ""|"not created yet") ;;
+      *) echo "PR sync check failed: issue close status is '${issue_close_status}' before a PR link is recorded." >&2; sync_failures=$((sync_failures + 1)) ;;
+    esac
+  fi
+
+  if [[ "$sync_failures" -gt 0 ]]; then
+    rm -f "$pr_body_file"
+    exit 1
+  fi
+
+  echo "PR sync check passed."
+fi
+
 if [[ -n "$closing_keyword" ]]; then
   set_field "$sync_file" "- PR closing keyword:" "$closing_keyword"
 fi
@@ -224,7 +278,7 @@ if [[ "$create_pr" -eq 1 ]]; then
   echo "Created PR: ${pr_link}"
 fi
 
-if [[ "$check_issue" -eq 1 || "$close_issue" -eq 1 ]]; then
+if [[ "$check_issue" -eq 1 || "$close_issue" -eq 1 || "$finalize" -eq 1 ]]; then
   if [[ -z "$issue_number" ]]; then
     echo "Cannot check issue state: linked GitHub issue is missing or unparseable." >&2
   elif ! command -v gh >/dev/null 2>&1; then
@@ -238,7 +292,7 @@ if [[ "$check_issue" -eq 1 || "$close_issue" -eq 1 ]]; then
   fi
 fi
 
-if [[ "$close_issue" -eq 1 ]]; then
+if [[ "$close_issue" -eq 1 || "$finalize" -eq 1 ]]; then
   if [[ -z "$issue_number" ]]; then
     echo "Cannot close issue: linked GitHub issue is missing or unparseable." >&2
     rm -f "$pr_body_file"
@@ -265,7 +319,7 @@ if [[ "$close_issue" -eq 1 ]]; then
 
   pr_state="$(gh pr view "$pr_number" --json state --jq .state)"
   if [[ "$pr_state" != "MERGED" ]]; then
-    echo "Cannot close issue: PR #${pr_number} state is ${pr_state}, expected MERGED." >&2
+    echo "Cannot finalize issue: PR #${pr_number} state is ${pr_state}, expected MERGED." >&2
     rm -f "$pr_body_file"
     exit 1
   fi

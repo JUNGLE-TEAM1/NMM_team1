@@ -80,9 +80,11 @@ remote push나 PR 생성은 명시 플래그를 붙였을 때만 실행한다.
 
 ```bash
 scripts/prepare-pr.sh docs/workflows/feature/project-bootstrap
+scripts/prepare-pr.sh --check-pr-sync docs/workflows/feature/project-bootstrap
 scripts/prepare-pr.sh --push --create-pr docs/workflows/feature/project-bootstrap
 scripts/prepare-pr.sh --check-issue docs/workflows/feature/project-bootstrap
 scripts/prepare-pr.sh --close-issue docs/workflows/feature/project-bootstrap
+scripts/prepare-pr.sh --finalize docs/workflows/feature/project-bootstrap
 ```
 
 중간에 다른 작업이 끼어들면 같은 범위의 작업은 해당 workspace의 `notes.md`, `quality.md`, `sync.md`, `report.md`에 추가 기록한다.
@@ -92,6 +94,8 @@ scripts/prepare-pr.sh --close-issue docs/workflows/feature/project-bootstrap
 Stacked PR처럼 default branch가 아닌 feature branch로 merge되는 PR은 `Closes #123`만으로 issue close가 보장되지 않는다.
 PR merge 후 `scripts/prepare-pr.sh --check-issue <workspace>`로 issue 상태를 확인한다.
 PR이 merged이고 issue가 아직 open이면 `scripts/prepare-pr.sh --close-issue <workspace>`로 PR merge 근거 comment를 남기고 issue를 닫은 뒤 `sync.md`에 `merge status`와 `issue close status`를 기록한다.
+PR 전에는 `scripts/prepare-pr.sh --check-pr-sync <workspace>`로 `sync.md`의 linked issue, closing keyword, pushed branch, PR link, merge/issue status 정적 일관성을 확인한다.
+PR merge 후에는 `scripts/prepare-pr.sh --finalize <workspace>`로 PR merged 상태와 issue close 상태를 확인하고 `sync.md`를 최종화한다.
 
 하네스 규칙을 추가하거나 branch/workspace 흐름 문제를 재발 방지 규칙으로 반영한 뒤에는 표준 흐름 검사를 실행한다.
 
