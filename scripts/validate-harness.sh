@@ -74,6 +74,72 @@ pre_merge_deferral() {
   ' "${dir}/sync.md"
 }
 
+section_value() {
+  local file="$1"
+  local section="$2"
+  local label="$3"
+  awk -v section="$section" -v label="$label" '
+    $0 == section { in_section=1; next }
+    /^## / && in_section { exit }
+    in_section && index($0, label) == 1 {
+      value=$0
+      sub(label "[ \t]*", "", value)
+      gsub(/^[ \t]+|[ \t]+$/, "", value)
+      print value
+      exit
+    }
+  ' "$file"
+}
+
+validate_sync_handoff() {
+  local dir="$1"
+  local sync_file="${dir}/sync.md"
+  local linked_issue
+  local closing_keyword
+  local pushed_branch
+  local pr_link
+  local merge_status
+  local issue_close_status
+
+  linked_issue="$(section_value "$sync_file" "## Push / PR" "- linked GitHub issue:")"
+  closing_keyword="$(section_value "$sync_file" "## Push / PR" "- PR closing keyword:")"
+  pushed_branch="$(section_value "$sync_file" "## Push / PR" "- pushed branch:")"
+  pr_link="$(section_value "$sync_file" "## Push / PR" "- PR link:")"
+  merge_status="$(section_value "$sync_file" "## Push / PR" "- merge status:")"
+  issue_close_status="$(section_value "$sync_file" "## Push / PR" "- issue close status:")"
+
+  if [[ -n "$linked_issue" && -z "$closing_keyword" ]]; then
+    fail "sync.md linked issue exists but PR closing keyword is missing: ${sync_file}"
+  fi
+
+  if [[ -n "$linked_issue" && "$linked_issue" =~ ^#([0-9]+)$ && "$closing_keyword" != *"#${BASH_REMATCH[1]}"* ]]; then
+    fail "sync.md PR closing keyword does not reference linked issue ${linked_issue}: ${sync_file}"
+  fi
+
+  if [[ -n "$pr_link" && -z "$pushed_branch" ]]; then
+    fail "sync.md PR link exists but pushed branch is missing: ${sync_file}"
+  fi
+
+  if [[ -z "$pr_link" ]]; then
+    case "$merge_status" in
+      ""|"not created yet") ;;
+      *) fail "sync.md merge status is set before PR link exists: ${sync_file}" ;;
+    esac
+    case "$issue_close_status" in
+      ""|"not created yet") ;;
+      *) fail "sync.md issue close status is set before PR link exists: ${sync_file}" ;;
+    esac
+  fi
+
+  if [[ "$merge_status" == open && "$issue_close_status" =~ ^CLOSED ]]; then
+    fail "sync.md issue is closed while merge status is still open: ${sync_file}"
+  fi
+
+  if [[ "$merge_status" =~ ^merged && "$issue_close_status" == open ]]; then
+    fail "sync.md PR is merged but issue close status is still open: ${sync_file}"
+  fi
+}
+
 is_ready_state() {
   case "$1" in
     ready-for-review|complete|integration-ready) return 0 ;;
@@ -277,6 +343,8 @@ while IFS= read -r -d '' dir; do
     fi
 
     if is_ready_state "$state"; then
+      validate_sync_handoff "$dir"
+
       if [[ "$q_status" == "draft" ]]; then
         fail "Quality gate status is still draft in ready workspace ${dir}/quality.md"
       fi
