@@ -105,6 +105,7 @@ feature-a랑 feature-b 통합 브랜치 만들어서 합칠 항목 점검해
 
 AI does:
 
+- If moving from a dirty current branch to another branch workspace, lets `scripts/start-workflow.sh` checkpoint commit the current branch first.
 - Creates or opens an integration workspace.
 - Reads source branch `plan.md`, `shared-docs.md`, `report.md`, `quality.md`, `decisions.md`, `confirmations.md`, and `sync.md`.
 - Records source branch/base commit information in `sources.md`.
@@ -112,7 +113,7 @@ AI does:
 - Runs `scripts/validate-harness.sh --integration`.
 - Asks for Integration Conflict Confirm when shared contracts disagree.
 
-## 6) Prepare PR
+## 6) Prepare PR And Issue Close / PR 준비와 이슈 닫힘
 
 Human says:
 
@@ -126,7 +127,35 @@ AI does:
 - Checks `.github/pull_request_template.md`.
 - Reports missing `sync.md`, `quality.md`, confirmation, or validation items.
 - Runs validation only when approved or already within the agreed verification scope.
-- Does not create, push, or merge PRs without human confirmation.
+- Linked GitHub issue가 있으면 `scripts/prepare-pr.sh <workspace>`로 `PR closing keyword`를 `sync.md`에 기록하고 PR body 초안을 만든다.
+- Does not create issues, push, create PRs, merge PRs, or close issues without human confirmation.
+
+Human says:
+
+```text
+브랜치 만들 때 이슈도 같이 생성해
+```
+
+AI does:
+
+- Runs `scripts/start-workflow.sh <type> <short-kebab-name> "<title>"`; GitHub issue creation is the team default.
+- Records `linked GitHub issue`, `issue link`, `issue creation result`, and `PR closing keyword` in `sync.md`.
+- If GitHub CLI is unavailable or unauthenticated, creates the local workspace and records the failure reason instead of blocking all work.
+- Uses `--no-issue` only for an intentional exception and records the reason in the workspace.
+
+Human says:
+
+```text
+PR 올리고 이슈 닫히는 것까지 진행해
+```
+
+AI does:
+
+- Runs `scripts/prepare-pr.sh <workspace>` first to update local PR closing keyword.
+- With explicit approval, runs `scripts/prepare-pr.sh --push --create-pr <workspace>`.
+- Uses `Closes #123` style closing keyword so GitHub closes the linked issue when the PR is merged.
+- After merge, runs `scripts/prepare-pr.sh --check-issue <workspace>` and records `issue close status` in `sync.md`.
+- If unrelated or expanded work appears mid-flow, records same-scope work in the current workspace; for scope changes, resolves `Scope Change Confirm` and creates a separate workspace when needed.
 
 ## 7) Recompare A Decision
 
@@ -302,3 +331,22 @@ AI does:
 - Allows a documented manual smoke path as a temporary verification path when automated tests do not exist.
 - Proposes next Phase candidates.
 - Asks the human which Phase to run first.
+
+## 14) Add Recurrence-Prevention Harness Rule / 재발 방지 하네스 규칙 추가
+
+Human says:
+
+```text
+방금 같은 문제 다시 안 생기게 하네스 규칙으로 추가할지 물어보고 적용해
+```
+
+AI does:
+
+- Solves the immediate branch/workspace flow problem first.
+- Does not add a harness rule immediately after the fix.
+- Asks the human: "이번 문제를 재발 방지 하네스 규칙으로 추가할까요?"
+- Presents the issue cause, proposed rule, application location, and expected side effects or exceptions.
+- If approved, updates the relevant Source of Truth docs and needed script, validation, or status checks.
+- Runs `scripts/harness-flow-check.sh <workspace>` after applying the rule.
+- Records the check result in `quality.md`, `report.md`, and `decisions.md`.
+- If the rule is outside the current scope, resolves Scope Change Confirm before changing the harness.

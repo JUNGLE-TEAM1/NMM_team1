@@ -1,6 +1,8 @@
 # 11. Git Sync Policy
 
-This document defines how branch workspaces stay aligned with `main` without hiding risky Git operations behind automation.
+이 문서는 branch workspace가 `main`과 동기화되고, GitHub issue/PR 상태를 추적하는 방식을 정의한다.
+branch workspace 생성은 팀 규칙상 GitHub issue 생성을 포함한다.
+push, PR 생성, merge 같은 추가 원격 변경은 사람이 명시한 명령으로만 실행한다.
 
 ## 1) Core Policy
 
@@ -8,8 +10,10 @@ This document defines how branch workspaces stay aligned with `main` without hid
 - Re-sync with `main` before a Phase is considered complete or integration-ready.
 - Use `git pull --ff-only` as the default pull policy.
 - Do not pull, merge, rebase, push, or create PRs without human confirmation.
+- Branch workspace를 만들 때 GitHub issue도 생성한다. 예외가 필요하면 `--no-issue`를 명시하고 이유를 `sync.md`에 기록한다.
 - Prefer feature branch push and PR review over direct push to `main`.
-- Do not sync while the worktree is dirty unless the human explicitly accepts the risk.
+- 다른 branch workspace로 이동하기 전에 worktree가 dirty이면 `scripts/start-workflow.sh`가 현재 branch에 checkpoint commit을 만든 뒤 이동한다.
+- 같은 branch workspace를 다시 여는 경우에는 자동 checkpoint commit을 만들지 않는다.
 
 ## 2) Phase Start Sync
 
@@ -23,7 +27,8 @@ git pull --ff-only
 scripts/start-workflow.sh feature project-bootstrap "Project bootstrap"
 ```
 
-If the worktree has uncommitted or untracked changes, stop and ask the human whether to commit, stash, use `--no-checkout`, or cancel.
+If the worktree has uncommitted or untracked changes while moving to another branch, `scripts/start-workflow.sh` creates a checkpoint commit on the current branch before switching.
+If unresolved conflicts exist or the repository is detached, stop and ask the human to resolve the state manually.
 
 Record the result in the workspace `sync.md` Start Sync section.
 
@@ -61,7 +66,36 @@ Preferred flow:
 feature branch push -> PR -> review -> merge to main
 ```
 
-Record pushed branch, PR link, and merge status in `sync.md`.
+Record pushed branch, PR link, merge status, and issue close status in `sync.md`.
+
+GitHub issue는 branch 생성 시 기본으로 만든다. 이 동작은 팀 규칙이며, `scripts/start-workflow.sh` 실행이 issue 생성까지 포함하는 시작 절차다.
+
+```bash
+scripts/start-workflow.sh feature project-bootstrap "Project bootstrap"
+scripts/start-workflow.sh --no-issue chore local-notes "Local notes only"
+```
+
+PR 준비 단계에서는 linked issue가 있으면 closing keyword를 `sync.md`와 PR 본문에 반영한다.
+remote push나 PR 생성은 명시 플래그를 붙였을 때만 실행한다.
+
+```bash
+scripts/prepare-pr.sh docs/workflows/feature/project-bootstrap
+scripts/prepare-pr.sh --push --create-pr docs/workflows/feature/project-bootstrap
+scripts/prepare-pr.sh --check-issue docs/workflows/feature/project-bootstrap
+```
+
+중간에 다른 작업이 끼어들면 같은 범위의 작업은 해당 workspace의 `notes.md`, `quality.md`, `sync.md`, `report.md`에 추가 기록한다.
+범위가 바뀌면 `Scope Change Confirm`을 해결하고, 필요하면 새 branch workspace를 만든다.
+새 branch workspace로 이동하는 순간 dirty worktree가 있으면 현재 branch에 checkpoint commit을 만든다.
+
+하네스 규칙을 추가하거나 branch/workspace 흐름 문제를 재발 방지 규칙으로 반영한 뒤에는 표준 흐름 검사를 실행한다.
+
+```bash
+scripts/harness-flow-check.sh docs/workflows/<type>/<short-kebab-name>
+```
+
+이 검사는 shell syntax, 기본 harness validation, strict harness validation, workspace status를 한 번에 확인한다.
+push, PR 생성, merge, deploy처럼 원격 상태를 바꾸는 작업은 포함하지 않는다.
 
 For ready-for-review, complete, or integration-ready workspaces, Pre-Merge Sync must record either:
 

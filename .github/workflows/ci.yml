@@ -14,11 +14,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install ripgrep
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ripgrep
+
       - name: Shell syntax
         run: |
           bash -n scripts/start-workflow.sh
           bash -n scripts/status-workflow.sh
           bash -n scripts/validate-harness.sh
+          bash -n scripts/prepare-pr.sh
+          bash -n scripts/harness-flow-check.sh
 
       - name: Harness validation
         run: |
@@ -45,10 +52,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install ripgrep
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ripgrep
+
       - name: Check Kubernetes manifest shape
         run: |
           test -f infra/k8s/base/namespace.yaml
           test -f infra/k8s/base/backend-deployment.yaml
           test -f infra/k8s/base/frontend-deployment.yaml
           rg -n "apiVersion:|kind:" infra/k8s/base
-
