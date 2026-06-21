@@ -316,6 +316,10 @@ while IFS= read -r -d '' dir; do
       fail "Recommended Next Action is missing in ${dir}/next-actions.md"
     fi
 
+    if is_ready_state "$state" && rg -q "workspace created|scope는 아직|Scope Confirm을 요청" "${dir}/next-actions.md"; then
+      fail "Ready workspace has stale starter next-actions text: ${dir}/next-actions.md"
+    fi
+
     if ! awk -F ':' '
       /^- base commit:/ {
         value=$0
@@ -481,6 +485,10 @@ fi
 
 if ! rg -q "Integration Branch Rule" docs/08-development-workflow.md; then
   fail "docs/08-development-workflow.md does not mention Integration Branch Rule"
+fi
+
+if ! rg -q "check-pr-sync" docs/08-development-workflow.md || ! rg -q "finalize" docs/08-development-workflow.md; then
+  fail "docs/08-development-workflow.md does not mention PR sync preflight/finalization gates"
 fi
 
 if ! rg -q "재발 방지 하네스 규칙" docs/08-development-workflow.md; then

@@ -26,6 +26,7 @@
 | harness flow check | `scripts/harness-flow-check.sh docs/workflows/feature/sync-pr-finalization-guard` | passed | shell syntax, default validation, strict validation, workspace status passed |
 | PR finalization | `scripts/prepare-pr.sh --finalize docs/workflows/feature/sync-pr-finalization-guard` | passed | PR #15 merged and issue #14 already CLOSED; sync.md finalized |
 | GitHub Actions CI | PR #15 checks | passed | harness, container-smoke, manifest-smoke passed before merge |
+| completion gate propagation | `scripts/harness-flow-check.sh docs/workflows/feature/sync-pr-finalization-guard` | passed | validates `docs/08` PR sync/finalization gate and completed-phase status recommendation |
 
 ## CI/CD Gate / CI-CD 게이트
 

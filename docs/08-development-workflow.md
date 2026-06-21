@@ -104,6 +104,8 @@ Workspace state 값:
 - Mid-Phase Sync: if upstream main changes or shared Source of Truth docs change, stop and ask for a sync decision.
 - Pre-Merge Sync: before completion/integration, re-check main freshness and record conflicts or validation.
 - Push / PR: prefer PR-based integration and record branch, PR link, and merge status in `sync.md`.
+- PR Sync Preflight: before PR handoff or PR creation, run `scripts/prepare-pr.sh --check-pr-sync <workspace>` to catch stale or contradictory `sync.md` Push / PR fields.
+- PR Finalization: after PR merge, run `scripts/prepare-pr.sh --finalize <workspace>` and record final merge/issue close status in `sync.md`.
 - Linked Issue: when a branch maps to a GitHub issue, keep the existing branch/workspace name and record the issue plus PR closing keyword in `sync.md`.
 - Branch Switch Checkpoint: when moving from one branch workspace to another with dirty changes, checkpoint commit current branch before switching.
 - AI records sync status but does not run pull, merge, rebase, push, PR creation, or PR merge without human confirmation.
@@ -263,13 +265,15 @@ The human can answer with a number or natural language, such as "1번으로 진�
 8. Human confirmation outcomes recorded where required.
 9. Next action menu updated for the human's next choice.
 10. `sync.md` records pre-merge sync status or a human-approved reason for deferral.
-11. `quality.md` records TDD status, branch checks, CI status, skipped checks, and CD gate if relevant.
-12. `decisions.md` records accepted/deferred high-impact decisions and rollback/revisit conditions.
-13. For integration branches, `scripts/validate-harness.sh --integration` completed or a human-approved deferral is recorded.
-14. Branch workspace `plan.md`, `notes.md`, or `report.md` updated where useful.
-15. No scope leak.
-16. Final report includes changed files, used skill/plugin/tool, verification, report path, next context, and remaining risks.
-17. Final report records Context Budget mode, primary context read, escalated context read, and intentionally omitted context.
+11. Before PR handoff, `scripts/prepare-pr.sh --check-pr-sync <workspace>` has passed or a reason is recorded.
+12. After PR merge, `scripts/prepare-pr.sh --finalize <workspace>` has updated `sync.md` with merged/closed status or a reason is recorded.
+13. `quality.md` records TDD status, branch checks, CI status, skipped checks, and CD gate if relevant.
+14. `decisions.md` records accepted/deferred high-impact decisions and rollback/revisit conditions.
+15. For integration branches, `scripts/validate-harness.sh --integration` completed or a human-approved deferral is recorded.
+16. Branch workspace `plan.md`, `notes.md`, or `report.md` updated where useful.
+17. No scope leak.
+18. Final report includes changed files, used skill/plugin/tool, verification, report path, next context, and remaining risks.
+19. Final report records Context Budget mode, primary context read, escalated context read, and intentionally omitted context.
 
 ready/complete workspace는 quality, decision, pre-merge sync 상태를 해결해야 한다. draft/in-progress workspace는 필수 섹션을 유지하는 한 계획 placeholder를 둘 수 있다.
 

@@ -370,6 +370,8 @@ elif [[ "$decision_status" == "none" && -f "$shared_docs" ]] && awk -F '|' '
   recommendation="Review shared-doc proposals and decide whether decisions.md needs an accepted/deferred decision."
 elif [[ "$workspace" == docs/workflows/*/integrate-* || "$workspace" == docs/workflows/*/*-integration ]]; then
   recommendation="Run scripts/validate-harness.sh --integration before integration completion."
+elif [[ "${merge_status:-}" =~ ^merged ]] && [[ "${issue_close_status:-}" =~ ^CLOSED ]]; then
+  recommendation="Phase is merged and linked issue is closed; choose the next phase or archive/cleanup follow-up."
 elif [[ "$pr_ready" == "yes" ]]; then
   recommendation="PR checklist appears ready; run validation before handoff."
 else
