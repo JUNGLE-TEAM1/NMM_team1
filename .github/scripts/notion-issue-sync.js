@@ -1,0 +1,730 @@
+const NOTION_API_BASE = "https://api.notion.com/v1";
+const NOTION_VERSION = process.env.NOTION_VERSION || "2022-06-28";
+const SYNC_GRACE_MS = Number(process.env.SYNC_GRACE_MS || 30_000);
+
+module.exports = async function sync({ github, context, core }) {
+  const config = buildConfig(context);
+  const notion = createNotionClient(config);
+
+  core.info(`Syncing ${config.repoFullName} with GitHub Project ${config.projectOwner}/${config.projectNumber}`);
+
+  const project = await fetchProject({ github, config });
+  const projectIssues = normalizeProjectIssues(project, config);
+  const notionRows = await fetchNotionRows({ notion, config });
+  const notionByIssueUrl = new Map();
+
+  for (const row of notionRows) {
+    if (row.issueUrl) {
+      notionByIssueUrl.set(row.issueUrl, row);
+    }
+  }
+
+  const seenNotionPages = new Set();
+  let createdNotion = 0;
+  let updatedNotion = 0;
+  let updatedGitHub = 0;
+  let createdIssues = 0;
+  let addedToProject = 0;
+
+  for (const issue of projectIssues) {
+    const row = notionByIssueUrl.get(issue.issueUrl);
+
+    if (!row) {
+      await createNotionIssuePage({ notion, config, issue, source: "GitHub" });
+      createdNotion += 1;
+      continue;
+    }
+
+    seenNotionPages.add(row.pageId);
+
+    const direction = chooseSyncDirection({ row, issue });
+    if (direction === "notion") {
+      await syncNotionToGitHub({ github, notion, config, project, row, issue });
+      updatedGitHub += 1;
+    } else if (direction === "github") {
+      await updateNotionIssuePage({ notion, config, pageId: row.pageId, issue, source: "GitHub" });
+      updatedNotion += 1;
+    }
+  }
+
+  for (const row of notionRows) {
+    if (seenNotionPages.has(row.pageId)) {
+      continue;
+    }
+
+    if (row.issueUrl) {
+      const parsed = parseIssueUrl(row.issueUrl);
+      if (!parsed || parsed.owner !== config.owner || parsed.repo !== config.repo) {
+        continue;
+      }
+
+      const issue = await fetchGitHubIssue({ github, config, issueNumber: parsed.number });
+      const projectIssue = await ensureProjectItem({ github, config, project, issue, wantedStatus: row.projectStatus });
+      await updateNotionIssuePage({ notion, config, pageId: row.pageId, issue: projectIssue, source: "GitHub" });
+      addedToProject += 1;
+      continue;
+    }
+
+    if (row.repoUrl === config.repoUrl && row.notionTitle) {
+      const issue = await createGitHubIssueFromNotion({ github, config, row });
+      const projectIssue = await ensureProjectItem({ github, config, project, issue, wantedStatus: row.projectStatus });
+      await updateNotionIssuePage({ notion, config, pageId: row.pageId, issue: projectIssue, source: "Notion" });
+      createdIssues += 1;
+    }
+  }
+
+  core.info(
+    [
+      `Created Notion pages: ${createdNotion}`,
+      `Updated Notion pages: ${updatedNotion}`,
+      `Updated GitHub issues/project items: ${updatedGitHub}`,
+      `Created GitHub issues from Notion: ${createdIssues}`,
+      `Added existing issues to project: ${addedToProject}`,
+    ].join("\n"),
+  );
+};
+
+function buildConfig(context) {
+  const notionToken = process.env.NOTION_TOKEN;
+  const notionDatabaseId = process.env.NOTION_DATABASE_ID;
+
+  if (!notionToken) {
+    throw new Error("Missing NOTION_TOKEN secret.");
+  }
+
+  if (!notionDatabaseId) {
+    throw new Error("Missing NOTION_DATABASE_ID secret.");
+  }
+
+  const owner = process.env.GITHUB_REPOSITORY_OWNER || context.repo.owner;
+  const repo = context.repo.repo;
+  const projectOwner = process.env.GITHUB_PROJECT_OWNER || owner;
+  const projectNumber = Number(process.env.GITHUB_PROJECT_NUMBER || 3);
+
+  if (!Number.isInteger(projectNumber) || projectNumber < 1) {
+    throw new Error(`Invalid GITHUB_PROJECT_NUMBER: ${process.env.GITHUB_PROJECT_NUMBER}`);
+  }
+
+  return {
+    notionToken,
+    notionDatabaseId,
+    owner,
+    repo,
+    repoFullName: `${owner}/${repo}`,
+    repoUrl: `https://github.com/${owner}/${repo}`,
+    projectOwner,
+    projectNumber,
+    githubStatusField: process.env.GITHUB_PROJECT_STATUS_FIELD || "Status",
+    props: {
+      title: process.env.NOTION_TITLE_PROPERTY || "Issue",
+      issueUrl: process.env.NOTION_ISSUE_URL_PROPERTY || "Issue URL",
+      repo: process.env.NOTION_REPO_PROPERTY || "Repo",
+      state: process.env.NOTION_STATE_PROPERTY || "State",
+      number: process.env.NOTION_NUMBER_PROPERTY || "Number",
+      labels: process.env.NOTION_LABELS_PROPERTY || "Labels",
+      assignees: process.env.NOTION_ASSIGNEES_PROPERTY || "Assignees",
+      projectStatus: process.env.NOTION_PROJECT_STATUS_PROPERTY || "Project Status",
+      created: process.env.NOTION_CREATED_PROPERTY || "Created",
+      updated: process.env.NOTION_UPDATED_PROPERTY || "Updated",
+      lastGitHubUpdated: process.env.NOTION_LAST_GITHUB_UPDATED_PROPERTY || "Last GitHub Updated",
+      lastSyncedAt: process.env.NOTION_LAST_SYNCED_AT_PROPERTY || "Last Synced At",
+      lastSyncSource: process.env.NOTION_LAST_SYNC_SOURCE_PROPERTY || "Last Sync Source",
+      syncError: process.env.NOTION_SYNC_ERROR_PROPERTY || "Sync Error",
+    },
+  };
+}
+
+function createNotionClient(config) {
+  return async function notionRequest(path, options = {}) {
+    const response = await fetch(`${NOTION_API_BASE}${path}`, {
+      method: options.method || "GET",
+      headers: {
+        Authorization: `Bearer ${config.notionToken}`,
+        "Content-Type": "application/json",
+        "Notion-Version": NOTION_VERSION,
+      },
+      body: options.body ? JSON.stringify(options.body) : undefined,
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Notion API ${response.status} ${response.statusText}: ${text}`);
+    }
+
+    return response.json();
+  };
+}
+
+async function fetchProject({ github, config }) {
+  const query = `
+    query($owner: String!, $number: Int!, $after: String) {
+      organization(login: $owner) {
+        projectV2(number: $number) {
+          ...ProjectParts
+        }
+      }
+    }
+
+    fragment ProjectParts on ProjectV2 {
+      id
+      title
+      fields(first: 100) {
+        nodes {
+          ... on ProjectV2Field {
+            id
+            name
+            dataType
+          }
+          ... on ProjectV2SingleSelectField {
+            id
+            name
+            dataType
+            options {
+              id
+              name
+            }
+          }
+          ... on ProjectV2IterationField {
+            id
+            name
+            dataType
+          }
+        }
+      }
+      items(first: 100, after: $after) {
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+        nodes {
+          id
+          updatedAt
+          content {
+            ... on Issue {
+              id
+              number
+              title
+              state
+              url
+              createdAt
+              updatedAt
+              repository {
+                name
+                nameWithOwner
+                url
+                owner {
+                  login
+                }
+              }
+              assignees(first: 50) {
+                nodes {
+                  login
+                }
+              }
+              labels(first: 50) {
+                nodes {
+                  name
+                }
+              }
+            }
+          }
+          fieldValues(first: 100) {
+            nodes {
+              ... on ProjectV2ItemFieldSingleSelectValue {
+                name
+                optionId
+                updatedAt
+                field {
+                  ... on ProjectV2FieldCommon {
+                    id
+                    name
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  let project = null;
+  let after = null;
+  const items = [];
+
+  do {
+    const result = await github.graphql(query, {
+      owner: config.projectOwner,
+      number: config.projectNumber,
+      after,
+    });
+
+    const pageProject = result.organization?.projectV2;
+    if (!pageProject) {
+      throw new Error(`Could not find organization project ${config.projectOwner}/${config.projectNumber}.`);
+    }
+
+    if (!project) {
+      project = pageProject;
+    }
+
+    items.push(...pageProject.items.nodes);
+    after = pageProject.items.pageInfo.hasNextPage ? pageProject.items.pageInfo.endCursor : null;
+  } while (after);
+
+  const statusField = project.fields.nodes.find((field) => field?.name === config.githubStatusField);
+  if (!statusField) {
+    throw new Error(`Project field "${config.githubStatusField}" was not found.`);
+  }
+
+  return {
+    id: project.id,
+    title: project.title,
+    fields: project.fields.nodes,
+    items,
+    statusField,
+    statusOptionsByName: new Map((statusField.options || []).map((option) => [option.name, option])),
+  };
+}
+
+function normalizeProjectIssues(project, config) {
+  return project.items
+    .filter((item) => item.content?.repository?.nameWithOwner === config.repoFullName)
+    .map((item) => normalizeProjectIssue({ item, project, config }));
+}
+
+function normalizeProjectIssue({ item, project, config }) {
+  const issue = item.content;
+  const statusValue = (item.fieldValues.nodes || []).find((value) => value?.field?.name === config.githubStatusField);
+  const githubUpdatedAt = maxIso(issue.updatedAt, item.updatedAt, statusValue?.updatedAt);
+
+  return {
+    nodeId: issue.id,
+    projectItemId: item.id,
+    number: issue.number,
+    title: issue.title,
+    state: issue.state.toLowerCase(),
+    issueUrl: issue.url,
+    repoUrl: issue.repository.url,
+    createdAt: issue.createdAt,
+    updatedAt: issue.updatedAt,
+    githubUpdatedAt,
+    labels: issue.labels.nodes.map((label) => label.name),
+    assignees: issue.assignees.nodes.map((assignee) => assignee.login),
+    projectStatus: statusValue?.name || null,
+    projectStatusOptionId: statusValue?.optionId || null,
+  };
+}
+
+async function fetchNotionRows({ notion, config }) {
+  const rows = [];
+  let startCursor = undefined;
+
+  do {
+    const body = {
+      page_size: 100,
+      filter: {
+        or: [
+          {
+            property: config.props.repo,
+            url: {
+              equals: config.repoUrl,
+            },
+          },
+          {
+            property: config.props.issueUrl,
+            url: {
+              contains: `${config.repoFullName}/issues/`,
+            },
+          },
+        ],
+      },
+    };
+
+    if (startCursor) {
+      body.start_cursor = startCursor;
+    }
+
+    const page = await notion(`/databases/${config.notionDatabaseId}/query`, {
+      method: "POST",
+      body,
+    });
+
+    rows.push(...page.results.map((result) => normalizeNotionRow(result, config)));
+    startCursor = page.has_more ? page.next_cursor : undefined;
+  } while (startCursor);
+
+  return rows;
+}
+
+function normalizeNotionRow(page, config) {
+  const props = config.props;
+
+  return {
+    pageId: page.id,
+    lastEditedAt: page.last_edited_time,
+    notionTitle: readTitle(page, props.title),
+    issueUrl: readUrl(page, props.issueUrl),
+    repoUrl: readUrl(page, props.repo),
+    state: normalizeState(readSelect(page, props.state)),
+    number: readNumber(page, props.number),
+    labels: splitList(readText(page, props.labels)),
+    assignees: splitList(readText(page, props.assignees)),
+    projectStatus: readSelect(page, props.projectStatus),
+    lastGitHubUpdatedAt: readDate(page, props.lastGitHubUpdated),
+    lastSyncedAt: readDate(page, props.lastSyncedAt),
+    lastSyncSource: readSelect(page, props.lastSyncSource),
+  };
+}
+
+function chooseSyncDirection({ row, issue }) {
+  const githubChanged = !row.lastGitHubUpdatedAt || isAfter(issue.githubUpdatedAt, row.lastGitHubUpdatedAt);
+  const notionChanged = row.lastSyncedAt && isAfter(row.lastEditedAt, row.lastSyncedAt);
+
+  if (githubChanged && notionChanged) {
+    return new Date(row.lastEditedAt).getTime() > new Date(issue.githubUpdatedAt).getTime() ? "notion" : "github";
+  }
+
+  if (notionChanged) {
+    return "notion";
+  }
+
+  if (githubChanged) {
+    return "github";
+  }
+
+  return "none";
+}
+
+async function syncNotionToGitHub({ github, notion, config, project, row, issue }) {
+  const title = stripIssuePrefix(row.notionTitle, issue.number);
+  const labels = row.labels;
+  const assignees = row.assignees;
+  const state = row.state || issue.state;
+
+  const { data } = await github.rest.issues.update({
+    owner: config.owner,
+    repo: config.repo,
+    issue_number: issue.number,
+    title: title || issue.title,
+    state,
+    labels,
+    assignees,
+  });
+
+  let projectStatus = issue.projectStatus;
+  if (row.projectStatus && row.projectStatus !== issue.projectStatus) {
+    await updateProjectStatus({
+      github,
+      project,
+      projectItemId: issue.projectItemId,
+      statusName: row.projectStatus,
+    });
+    projectStatus = row.projectStatus;
+  }
+
+  const updatedIssue = {
+    ...issue,
+    title: data.title,
+    state: data.state,
+    labels: data.labels.map((label) => label.name),
+    assignees: data.assignees.map((assignee) => assignee.login),
+    updatedAt: data.updated_at,
+    githubUpdatedAt: new Date().toISOString(),
+    projectStatus,
+  };
+
+  await updateNotionIssuePage({ notion, config, pageId: row.pageId, issue: updatedIssue, source: "Notion" });
+}
+
+async function updateProjectStatus({ github, project, projectItemId, statusName }) {
+  const option = project.statusOptionsByName.get(statusName);
+  if (!option) {
+    throw new Error(`Unknown project status "${statusName}".`);
+  }
+
+  await github.graphql(
+    `
+      mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+        updateProjectV2ItemFieldValue(
+          input: {
+            projectId: $projectId
+            itemId: $itemId
+            fieldId: $fieldId
+            value: { singleSelectOptionId: $optionId }
+          }
+        ) {
+          projectV2Item {
+            id
+          }
+        }
+      }
+    `,
+    {
+      projectId: project.id,
+      itemId: projectItemId,
+      fieldId: project.statusField.id,
+      optionId: option.id,
+    },
+  );
+}
+
+async function fetchGitHubIssue({ github, config, issueNumber }) {
+  const { data } = await github.rest.issues.get({
+    owner: config.owner,
+    repo: config.repo,
+    issue_number: issueNumber,
+  });
+
+  return issueFromRest(data, config);
+}
+
+async function createGitHubIssueFromNotion({ github, config, row }) {
+  const { data } = await github.rest.issues.create({
+    owner: config.owner,
+    repo: config.repo,
+    title: stripIssuePrefix(row.notionTitle, row.number),
+    labels: row.labels,
+    assignees: row.assignees,
+  });
+
+  return issueFromRest(data, config);
+}
+
+async function ensureProjectItem({ github, config, project, issue, wantedStatus }) {
+  const existing = project.items.find((item) => item.content?.url === issue.issueUrl);
+  let projectItemId = existing?.id;
+
+  if (!projectItemId) {
+    const result = await github.graphql(
+      `
+        mutation($projectId: ID!, $contentId: ID!) {
+          addProjectV2ItemById(input: { projectId: $projectId, contentId: $contentId }) {
+            item {
+              id
+            }
+          }
+        }
+      `,
+      {
+        projectId: project.id,
+        contentId: issue.nodeId,
+      },
+    );
+
+    projectItemId = result.addProjectV2ItemById.item.id;
+  }
+
+  if (wantedStatus) {
+    await updateProjectStatus({
+      github,
+      project,
+      projectItemId,
+      statusName: wantedStatus,
+    });
+  }
+
+  return {
+    ...issue,
+    projectItemId,
+    projectStatus: wantedStatus || issue.projectStatus || null,
+    githubUpdatedAt: new Date().toISOString(),
+  };
+}
+
+function issueFromRest(issue, config) {
+  return {
+    nodeId: issue.node_id,
+    projectItemId: null,
+    number: issue.number,
+    title: issue.title,
+    state: issue.state,
+    issueUrl: issue.html_url,
+    repoUrl: config.repoUrl,
+    createdAt: issue.created_at,
+    updatedAt: issue.updated_at,
+    githubUpdatedAt: issue.updated_at,
+    labels: issue.labels.map((label) => label.name),
+    assignees: issue.assignees.map((assignee) => assignee.login),
+    projectStatus: null,
+    projectStatusOptionId: null,
+  };
+}
+
+async function createNotionIssuePage({ notion, config, issue, source }) {
+  return notion("/pages", {
+    method: "POST",
+    body: {
+      parent: {
+        database_id: config.notionDatabaseId,
+      },
+      properties: buildNotionProperties({ config, issue, source }),
+    },
+  });
+}
+
+async function updateNotionIssuePage({ notion, config, pageId, issue, source }) {
+  return notion(`/pages/${pageId}`, {
+    method: "PATCH",
+    body: {
+      properties: buildNotionProperties({ config, issue, source }),
+    },
+  });
+}
+
+function buildNotionProperties({ config, issue, source }) {
+  const props = config.props;
+  const now = new Date().toISOString();
+  const properties = {
+    [props.title]: titleValue(`#${issue.number} ${issue.title}`),
+    [props.issueUrl]: urlValue(issue.issueUrl),
+    [props.repo]: urlValue(issue.repoUrl || config.repoUrl),
+    [props.state]: selectValue(issue.state),
+    [props.number]: numberValue(issue.number),
+    [props.labels]: richTextValue(issue.labels.join(", ")),
+    [props.assignees]: richTextValue(issue.assignees.join(", ")),
+    [props.created]: dateValue(issue.createdAt),
+    [props.updated]: dateValue(issue.updatedAt),
+    [props.lastGitHubUpdated]: dateValue(issue.githubUpdatedAt),
+    [props.lastSyncedAt]: dateValue(now),
+    [props.lastSyncSource]: selectValue(source),
+    [props.syncError]: richTextValue(""),
+  };
+
+  if (issue.projectStatus) {
+    properties[props.projectStatus] = selectValue(issue.projectStatus);
+  }
+
+  return properties;
+}
+
+function titleValue(content) {
+  return {
+    title: [
+      {
+        text: {
+          content: content.slice(0, 2000),
+        },
+      },
+    ],
+  };
+}
+
+function richTextValue(content) {
+  return {
+    rich_text: content
+      ? [
+          {
+            text: {
+              content: content.slice(0, 2000),
+            },
+          },
+        ]
+      : [],
+  };
+}
+
+function urlValue(url) {
+  return {
+    url: url || null,
+  };
+}
+
+function selectValue(name) {
+  return {
+    select: name ? { name } : null,
+  };
+}
+
+function numberValue(number) {
+  return {
+    number,
+  };
+}
+
+function dateValue(iso) {
+  return {
+    date: iso ? { start: iso } : null,
+  };
+}
+
+function readTitle(page, name) {
+  const prop = page.properties?.[name];
+  return (prop?.title || []).map((part) => part.plain_text).join("");
+}
+
+function readText(page, name) {
+  const prop = page.properties?.[name];
+  return (prop?.rich_text || []).map((part) => part.plain_text).join("");
+}
+
+function readUrl(page, name) {
+  return page.properties?.[name]?.url || null;
+}
+
+function readSelect(page, name) {
+  return page.properties?.[name]?.select?.name || null;
+}
+
+function readNumber(page, name) {
+  return page.properties?.[name]?.number ?? null;
+}
+
+function readDate(page, name) {
+  return page.properties?.[name]?.date?.start || null;
+}
+
+function splitList(value) {
+  return (value || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function stripIssuePrefix(title, number) {
+  const escapedNumber = number ? String(number).replace(/[.*+?^${}()|[\]\\]/g, "\\$&") : "\\d+";
+  return (title || "").replace(new RegExp(`^#${escapedNumber}\\s+`), "").trim();
+}
+
+function normalizeState(value) {
+  if (!value) {
+    return null;
+  }
+
+  const state = value.toLowerCase();
+  return state === "closed" ? "closed" : "open";
+}
+
+function parseIssueUrl(url) {
+  const match = /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/issues\/(\d+)/.exec(url || "");
+  if (!match) {
+    return null;
+  }
+
+  return {
+    owner: match[1],
+    repo: match[2],
+    number: Number(match[3]),
+  };
+}
+
+function isAfter(left, right) {
+  if (!left || !right) {
+    return false;
+  }
+
+  return new Date(left).getTime() > new Date(right).getTime() + SYNC_GRACE_MS;
+}
+
+function maxIso(...values) {
+  const times = values
+    .filter(Boolean)
+    .map((value) => new Date(value).getTime())
+    .filter((value) => Number.isFinite(value));
+
+  if (!times.length) {
+    return new Date().toISOString();
+  }
+
+  return new Date(Math.max(...times)).toISOString();
+}
