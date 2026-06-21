@@ -1,0 +1,30 @@
+# Example only. Do not enable real AWS deployment until the approval checklist is complete.
+name: AskLake Dev Deploy Example
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Image tag to deploy"
+        required: true
+      approved:
+        description: "Type APPROVED after cost/IAM/rollback review"
+        required: true
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  approval-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require explicit approval
+        run: |
+          test "${{ inputs.approved }}" = "APPROVED"
+
+      - name: Stop before real AWS actions
+        run: |
+          echo "This workflow is an example gate only."
+          echo "Add AWS auth, ECR push, kubectl/helm deploy, smoke, and rollback only after human approval."
+
