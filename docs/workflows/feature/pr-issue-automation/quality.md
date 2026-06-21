@@ -24,11 +24,12 @@
 | harness validation | `scripts/validate-harness.sh` | passed | Harness validation passed |
 | strict harness validation | `scripts/validate-harness.sh --strict` | passed | Harness validation passed |
 | harness flow check | `scripts/harness-flow-check.sh docs/workflows/feature/pr-issue-automation` | passed | shell syntax, default validation, strict validation, and workspace status passed |
+| GitHub Actions CI | PR #11 checks | pending | Initial harness/manifest jobs failed because `rg` was missing on runner; CI now installs ripgrep |
 
 ## CI/CD Gate / CI-CD 게이트
 
 - CI required: no
-- CI result: local validation only
+- CI result: local validation passed; PR #11 GitHub Actions rerun pending after ripgrep install fix
 - Deploy/publish required: no
 - Deployment confirmation: not applicable
 - Rollback/smoke notes: no deploy touched
