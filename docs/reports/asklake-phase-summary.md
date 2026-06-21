@@ -107,6 +107,7 @@ MVP 비용을 줄이려면 EKS를 바로 상시 운영하기보다 App Runner/EC
 
 - MVP 로드맵 report: `docs/reports/phase-1-mvp-roadmap.md`
 - 인프라 foundation report: `docs/reports/phase-2-infrastructure-foundation.md`
+- AWS 비용 추정: `docs/reports/aws-cost-estimate.md`
 - AWS readiness workspace: `docs/workflows/feature/aws-bootstrap-readiness/`
 - 하네스 workflow: `docs/08-development-workflow.md`
 - Git sync 정책: `docs/11-git-sync-policy.md`
