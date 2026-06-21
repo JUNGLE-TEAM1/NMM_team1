@@ -21,10 +21,10 @@ main 동기화와 integration readiness를 기록한다.
 ## Pre-Merge Sync
 
 - main commit: ef6e527
-- conflicts: not checked by merge/rebase
+- conflicts: none; merged `origin/main` after MVP roadmap PR #12
 - validation: shell syntax, manifest shape, harness validation
-- result: local validation path used; no pull/merge/rebase/push run
-- deferral reason: remote/branch-state changing git actions require human confirmation
+- result: `git merge --no-edit origin/main` completed; local validation to rerun before PR
+- deferral reason:
 
 ## Push / PR
 

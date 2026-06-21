@@ -20,14 +20,17 @@
 | workflow syntax | `bash -n scripts/start-workflow.sh scripts/status-workflow.sh scripts/validate-harness.sh` | passed | shell syntax 확인 |
 | Docker backend build | `docker build -f infra/docker/backend.Dockerfile -t asklake-backend:local .` | passed | `asklake-backend:local` image build 성공 |
 | Docker frontend build | `docker build -f infra/docker/frontend.Dockerfile -t asklake-frontend:local .` | passed | `asklake-frontend:local` image build 성공 |
+| Docker backend PR build | `docker build -f infra/docker/backend.Dockerfile -t asklake-backend:infra-pr .` | passed | PR 전 재검증 image build 성공 |
+| Docker frontend PR build | `docker build -f infra/docker/frontend.Dockerfile -t asklake-frontend:infra-pr .` | passed | PR 전 재검증 image build 성공 |
 | Kubernetes manifest shape | `rg -n "apiVersion:|kind:" infra/k8s/base` | passed | manifest 기본 shape 확인 |
 | harness validation | `scripts/validate-harness.sh` | passed | 2026-06-22 실행 |
 | strict harness validation | `scripts/validate-harness.sh --strict` | passed | 2026-06-22 실행 |
+| harness flow check | `scripts/harness-flow-check.sh docs/workflows/feature/infrastructure-foundation` | passed | main 동기화 후 flow check 통과 |
 
 ## CI/CD Gate / CI-CD 게이트
 
 - CI required: yes
-- CI result: `.github/workflows/ci.yml` 후보 추가, local equivalent checks 실행
+- CI result: `.github/workflows/ci.yml` 후보 추가, local equivalent checks와 PR 전 flow check 실행
 - Deploy/publish required: no
 - Deployment confirmation: 실제 AWS deploy는 approval 전이라 실행하지 않음
 - Rollback/smoke notes: `infra/aws/approval-checklist.md`에 resource 삭제/rollback/smoke 확인 항목 기록
