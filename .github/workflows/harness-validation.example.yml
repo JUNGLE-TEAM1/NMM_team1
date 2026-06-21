@@ -1,0 +1,20 @@
+# Example harness validation workflow for this repository.
+name: Harness Validation Example
+
+on:
+  workflow_dispatch:
+
+jobs:
+  harness:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Shell syntax
+        run: |
+          bash -n scripts/start-workflow.sh
+          bash -n scripts/validate-harness.sh
+          bash -n scripts/status-workflow.sh
+      - name: Harness validation
+        run: |
+          scripts/validate-harness.sh
+          scripts/validate-harness.sh --strict

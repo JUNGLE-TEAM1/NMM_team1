@@ -1,0 +1,558 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat <<'USAGE'
+Usage:
+  scripts/start-workflow.sh [--dry-run] [--no-checkout] [--allow-dirty] <type> <short-kebab-name> "<title>"
+
+Examples:
+  scripts/start-workflow.sh feature task-board "Task board MVP"
+  scripts/start-workflow.sh --dry-run feature project-bootstrap "Project bootstrap"
+  scripts/start-workflow.sh --no-checkout fix invalid-task-title "Invalid task title handling"
+
+Allowed types:
+  feature, fix, docs, test, chore, hotfix
+USAGE
+}
+
+dry_run=0
+checkout=1
+allow_dirty=0
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --dry-run)
+      dry_run=1
+      shift
+      ;;
+    --no-checkout)
+      checkout=0
+      shift
+      ;;
+    --allow-dirty)
+      allow_dirty=1
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+
+if [[ $# -ne 3 ]]; then
+  usage
+  exit 1
+fi
+
+branch_type="$1"
+branch_slug="$2"
+title="$3"
+branch_name="${branch_type}/${branch_slug}"
+workspace_dir="docs/workflows/${branch_type}/${branch_slug}"
+main_branch="main"
+
+case "$branch_type" in
+  feature|fix|docs|test|chore|hotfix) ;;
+  *)
+    echo "Invalid branch type: ${branch_type}" >&2
+    usage
+    exit 1
+    ;;
+esac
+
+if [[ ! "$branch_slug" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]]; then
+  echo "Invalid branch slug: ${branch_slug}" >&2
+  echo "Use lowercase kebab-case, for example: task-board or project-bootstrap" >&2
+  exit 1
+fi
+
+if [[ "$title" =~ [[:cntrl:]] ]]; then
+  echo "Invalid title: control characters are not allowed" >&2
+  exit 1
+fi
+
+echo "Branch: ${branch_name}"
+echo "Workspace: ${workspace_dir}"
+echo "Title: ${title}"
+
+if [[ "$dry_run" -eq 1 ]]; then
+  echo "Dry run only. No branch or files created."
+  exit 0
+fi
+
+if [[ "$checkout" -eq 1 ]] && ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  echo "Cannot create or switch branches outside a Git worktree." >&2
+  echo "Use --no-checkout to generate workflow files without Git branch operations." >&2
+  exit 1
+fi
+
+if [[ "$checkout" -eq 1 ]] && [[ "$allow_dirty" -ne 1 ]] && ! git diff --quiet; then
+  echo "Refusing to switch branches with unstaged changes." >&2
+  echo "Commit, stash, or rerun with --no-checkout / --allow-dirty." >&2
+  exit 1
+fi
+
+if [[ "$checkout" -eq 1 ]] && [[ "$allow_dirty" -ne 1 ]] && [[ -n "$(git status --porcelain --untracked-files=normal)" ]]; then
+  echo "Refusing to switch branches with uncommitted or untracked changes." >&2
+  echo "Commit, stash, or rerun with --no-checkout / --allow-dirty." >&2
+  exit 1
+fi
+
+if [[ "$checkout" -eq 1 ]]; then
+  if git rev-parse --verify --quiet "$branch_name" >/dev/null; then
+    git switch "$branch_name"
+  else
+    git switch -c "$branch_name"
+  fi
+fi
+
+mkdir -p "$workspace_dir"
+
+current_branch="not a git worktree"
+base_commit="unavailable"
+sync_result="Git sync not performed by start-workflow.sh; record approved pull/merge/rebase results here."
+
+if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  current_branch="$(git branch --show-current 2>/dev/null || echo detached)"
+  base_commit="$(git rev-parse --short HEAD 2>/dev/null || echo unborn)"
+  sync_result="Workspace created from ${current_branch} at ${base_commit}; 자동 pull/merge/rebase는 실행하지 않음."
+fi
+
+if [[ ! -f "${workspace_dir}/plan.md" ]]; then
+  cat > "${workspace_dir}/plan.md" <<EOF_PLAN
+# ${title} 계획
+
+## 브랜치
+
+- Branch: \`${branch_name}\`
+- Workspace: \`${workspace_dir}\`
+- Created: $(date +%Y-%m-%d)
+
+## 목표
+
+- 
+
+## 범위
+
+- 
+
+## 범위 제외
+
+- 
+
+## Source of Truth 문맥
+
+- \`AGENTS.md\`
+- \`docs/00-layer-map.md\`
+- \`docs/08-development-workflow.md\`
+- \`docs/12-quality-gates.md\`
+- \`docs/14-decision-option-brief.md\`
+- \`docs/15-context-budget-rule.md\`
+
+## 구현 프롬프트
+
+\`\`\`text
+@AGENTS.md @docs/00-layer-map.md @docs/08-development-workflow.md @docs/12-quality-gates.md @docs/14-decision-option-brief.md @docs/15-context-budget-rule.md
+
+이 branch workspace에 적힌 작업만 구현한다.
+기본은 Lite Read로 시작하고, 계약/데이터/보안/sync/quality/integration/decision 위험 신호가 있을 때만 문맥을 확장한다.
+core logic, regression 위험, integration contract, bug fix를 바꾸는 경우 TDD 적용 여부를 먼저 기록한다.
+고영향 선택은 구현 전에 Decision Option Brief로 정리한다.
+이 plan.md를 업데이트하지 않고 범위를 확장하지 않는다.
+\`\`\`
+
+## 검증 프롬프트
+
+\`\`\`text
+@AGENTS.md @docs/05-acceptance-scenarios-and-checklist.md @docs/06-regression-and-failure-scenarios.md @docs/07-manual-verification-playbook.md @docs/12-quality-gates.md
+
+branch 작업을 검증하고 \`quality.md\`와 workspace report에 증거를 기록한다.
+\`\`\`
+
+## 완료 기준
+
+- [ ] 범위 완료
+- [ ] TDD 상태 기록
+- [ ] Acceptance 확인
+- [ ] Regression/failure scenario 확인
+- [ ] Manual verification 기록
+- [ ] CI/check 명령과 결과 기록
+- [ ] Report 업데이트
+EOF_PLAN
+fi
+
+if [[ ! -f "${workspace_dir}/notes.md" ]]; then
+  cat > "${workspace_dir}/notes.md" <<EOF_NOTES
+# ${title} 노트
+
+## 진행 메모
+
+- 
+
+## 결정
+
+- 
+
+## 열린 질문
+
+- 
+
+## 링크 / 증거
+
+- 
+EOF_NOTES
+fi
+
+if [[ ! -f "${workspace_dir}/report.md" ]]; then
+  cat > "${workspace_dir}/report.md" <<EOF_REPORT
+# ${title} 보고서
+
+## Short Report / 짧은 보고
+
+- Type: ${branch_type}
+- Branch/work location: \`${branch_name}\`, \`${workspace_dir}\`
+- Date: $(date +%Y-%m-%d)
+- Workspace state: draft
+- Context Budget mode: Lite Read
+- Primary context read:
+- Escalated context read:
+- Context omitted intentionally:
+- Changed: 
+- Verified: 
+- Remaining: 
+- Next context: 
+- Risk: 
+EOF_REPORT
+fi
+
+if [[ ! -f "${workspace_dir}/quality.md" ]]; then
+  cat > "${workspace_dir}/quality.md" <<EOF_QUALITY
+# ${title} 품질 게이트
+
+이 파일은 이 branch의 TDD, check, CI/CD 증거를 기록한다.
+
+- Quality gate status: draft
+
+## TDD Plan / TDD 계획
+
+- Applies: TBD
+- Reason: 
+- Failing test first: 
+- Expected failure command/result: 
+- Pass command/result: 
+- Refactor notes: 
+
+## Branch Checks / 브랜치 검증
+
+| Check | Command | Result | Evidence |
+| --- | --- | --- | --- |
+| lint |  |  |  |
+| unit/focused test |  |  |  |
+| integration/contract test |  |  |  |
+| build/typecheck |  |  |  |
+| harness validation | \`scripts/validate-harness.sh\` |  |  |
+| strict harness validation | \`scripts/validate-harness.sh --strict\` |  |  |
+
+## CI/CD Gate / CI-CD 게이트
+
+- CI required: TBD
+- CI result: 
+- Deploy/publish required: no
+- Deployment confirmation: 
+- Rollback/smoke notes: 
+
+## Skipped Checks / 생략한 검증
+
+| Check | Reason | Human Confirmed |
+| --- | --- | --- |
+|  |  |  |
+EOF_QUALITY
+fi
+
+if [[ ! -f "${workspace_dir}/decisions.md" ]]; then
+  cat > "${workspace_dir}/decisions.md" <<EOF_DECISIONS
+# ${title} 결정 기록
+
+이 파일은 고영향 선택과 그 결과를 기록한다.
+후보 비교가 필요한 선택은 \`docs/14-decision-option-brief.md\` 형식을 사용한다.
+
+- Decision status: none
+
+## Decision Option Briefs / 결정 옵션 브리프
+
+- 
+
+## Accepted Decisions / 확정된 결정
+
+| Decision | Selected Option | Reason | Confirmed By / At |
+| --- | --- | --- | --- |
+|  |  |  |  |
+
+## Deferred Decisions / 보류한 결정
+
+| Decision | Deferred Reason | Revisit Trigger | Target Branch / Phase |
+| --- | --- | --- | --- |
+|  |  |  |  |
+
+## Revisit / Rollback Conditions / 재검토 또는 롤백 조건
+
+| Decision | Condition | Action |
+| --- | --- | --- |
+|  |  |  |
+EOF_DECISIONS
+fi
+
+echo "Created or confirmed workflow files:"
+echo "- ${workspace_dir}/plan.md"
+echo "- ${workspace_dir}/notes.md"
+if [[ ! -f "${workspace_dir}/shared-docs.md" ]]; then
+  cat > "${workspace_dir}/shared-docs.md" <<EOF_SHARED
+# ${title} 공유 문서 변경 제안
+
+branch 작업이 공유 Source of Truth 문서를 바꿔야 할 때 이 파일에 제안한다.
+integration branch는 branch 작업을 합치기 전에 이 파일을 읽는다.
+
+## Proposed Source Of Truth Changes / Source of Truth 변경 제안
+
+| File | Proposed Change | Reason | Merge Risk |
+| --- | --- | --- | --- |
+| \`docs/02-architecture.md\` |  |  |  |
+| \`docs/03-interface-reference.md\` |  |  |  |
+| \`docs/05-acceptance-scenarios-and-checklist.md\` |  |  |  |
+| \`docs/06-regression-and-failure-scenarios.md\` |  |  |  |
+| \`docs/07-manual-verification-playbook.md\` |  |  |  |
+
+## Integration Notes / 통합 메모
+
+- 
+
+## Conflicts To Resolve / 해결할 충돌
+
+- 
+EOF_SHARED
+fi
+
+if [[ ! -f "${workspace_dir}/sources.md" ]]; then
+  cat > "${workspace_dir}/sources.md" <<EOF_SOURCES
+# ${title} source branch 기록
+
+이 branch가 다른 branch workspace에 의존하거나 여러 branch를 통합할 때 사용한다.
+
+## Source Branch Workspaces / source branch workspace
+
+- 
+
+## Required Source Files / 읽어야 할 source 파일
+
+각 source branch에서 아래 파일을 읽는다.
+
+- \`plan.md\`
+- \`shared-docs.md\`
+- \`report.md\`
+- \`quality.md\`
+- \`decisions.md\`
+- \`confirmations.md\`
+- \`sync.md\`
+
+## Source Branch Base Records / source branch 기준 기록
+
+각 source branch를 읽은 Git 지점을 기록한다.
+
+| Source Branch | Workspace | Base Commit | Read At | Notes |
+| --- | --- | --- | --- | --- |
+|  |  |  |  |  |
+
+## Integration Notes / 통합 메모
+
+- 
+EOF_SOURCES
+fi
+
+if [[ ! -f "${workspace_dir}/confirmations.md" ]]; then
+  cat > "${workspace_dir}/confirmations.md" <<EOF_CONFIRM
+# ${title} 사람 확인 게이트
+
+AI가 멈추고 사람 확인을 받아야 하는 지점을 기록한다.
+
+## Scope Confirm / 범위 확인
+
+- Status: pending
+- Ask human to confirm:
+  - branch/workspace
+  - 포함 범위
+  - 제외 범위
+  - 영향받는 Source of Truth 문서
+- Human response: 
+
+## Contract Confirm / 계약 확인
+
+- Status: pending
+- Ask human to confirm:
+  - data model 변경
+  - interface/API/CLI/UI contract 변경
+  - external dependency
+  - 공유 Source of Truth 변경
+- Human response: 
+
+## Scope Change Confirm / 범위 변경 확인
+
+- Status: not needed
+- Ask human when:
+  - 작업이 \`plan.md\` 범위를 넘을 때
+  - 기능을 다른 branch로 분리해야 할 때
+  - 구현 중 새 제품 결정이 드러날 때
+- Human response: 
+
+## Verification Confirm / 검증 확인
+
+- Status: pending
+- Ask human to confirm:
+  - test/build/smoke 명령
+  - TDD 증거 또는 skip reason
+  - CI/check 명령
+  - manual verification 경로
+  - completion criteria
+- Human response: 
+
+## Quality Gate Confirm / 품질 게이트 확인
+
+- Status: pending
+- Ask human to confirm:
+  - TDD 적용 또는 의도적 생략
+  - 필요한 branch check와 CI gate
+  - 생략한 검증과 이유
+  - 관련 있는 deploy/publish gate
+- Human response: 
+
+## Git Sync Confirm / Git sync 확인
+
+- Status: pending
+- Ask human to confirm:
+  - 구현 전 start sync command/result
+  - mid-phase upstream change action
+  - 완료 전 pre-merge sync command/result
+- Human response: 
+
+## Sync Conflict Confirm / sync 충돌 확인
+
+- Status: not needed
+- Ask human when:
+  - Phase 중 main이 바뀐 경우
+  - 공유 Source of Truth 문서가 이 branch와 충돌하는 경우
+  - merge/rebase/pull/push/PR action이 필요한 경우
+- Human response: 
+
+## Completion Confirm / 완료 확인
+
+- Status: pending
+- Ask human to confirm:
+  - 변경 요약
+  - 검증 결과
+  - 남은 위험
+  - 다음 작업 문맥
+- Human response: 
+
+## Integration Conflict Confirm / 통합 충돌 확인
+
+- Status: not needed
+- Ask human when:
+  - 이 branch가 여러 source branch를 통합하는 경우
+  - 공유 data model 또는 interface 충돌이 있는 경우
+  - acceptance/regression/manual verification 경로가 충돌하는 경우
+- Human response: 
+EOF_CONFIRM
+fi
+
+if [[ ! -f "${workspace_dir}/next-actions.md" ]]; then
+  cat > "${workspace_dir}/next-actions.md" <<EOF_NEXT
+# ${title} 다음 행동 메뉴
+
+사람이 다음 협업 선택을 쉽게 고를 수 있도록 현재 상태와 선택지를 기록한다.
+
+## Current State / 현재 상태
+
+- State: workspace created
+- Summary: branch workspace는 생성되었고, scope는 아직 사람 확인이 필요하다.
+
+## Recommended Next Action / 권장 다음 행동
+
+- Scope Confirm을 요청한다.
+- Reason: branch/workspace, 포함 범위, 제외 범위, 영향받는 문서가 명확해지기 전에는 구현을 시작하지 않는다.
+
+## Options / 선택지
+
+1. 범위를 확인하고 Contract Confirm으로 진행한다.
+2. 구현 전에 범위를 수정한다.
+3. 일부 작업을 다른 branch로 분리한다.
+4. 이 workspace를 멈춘다.
+
+## Waiting On Human / 사람 응답 대기
+
+- 번호를 고르거나 자연어로 지시한다.
+
+## Last User Choice / 마지막 사용자 선택
+
+- 
+
+## Next AI Action / 다음 AI 행동
+
+- option 1이면 \`confirmations.md\`를 업데이트하고 공유 contract를 초안 작성 또는 확인한다.
+- option 2이면 \`plan.md\`와 \`shared-docs.md\`를 업데이트한다.
+- option 3이면 \`scripts/start-workflow.sh\`로 다른 workspace를 만든다.
+- option 4이면 pause reason을 \`notes.md\`에 기록한다.
+EOF_NEXT
+fi
+
+if [[ ! -f "${workspace_dir}/sync.md" ]]; then
+  cat > "${workspace_dir}/sync.md" <<EOF_SYNC
+# ${title} Git Sync
+
+main 동기화와 integration readiness를 기록한다.
+사람 확인 없이 pull, merge, rebase, push, PR action을 실행하지 않는다.
+
+## Start Sync / 시작 sync
+
+- main branch: ${main_branch}
+- current branch: ${current_branch}
+- base commit: ${base_commit}
+- pulled at:
+- command:
+- result: ${sync_result}
+
+## Mid-Phase Sync Checks / 진행 중 sync 확인
+
+| Checked At | Upstream Changes | Impacted Source of Truth | Action |
+| --- | --- | --- | --- |
+|  |  |  |  |
+
+## Pre-Merge Sync
+
+- main commit:
+- conflicts:
+- validation:
+- result:
+- deferral reason:
+
+## Push / PR
+
+- linked GitHub issue:
+- PR closing keyword:
+- pushed branch:
+- PR link:
+- merge status:
+EOF_SYNC
+fi
+
+echo "- ${workspace_dir}/report.md"
+echo "- ${workspace_dir}/quality.md"
+echo "- ${workspace_dir}/decisions.md"
+echo "- ${workspace_dir}/shared-docs.md"
+echo "- ${workspace_dir}/sources.md"
+echo "- ${workspace_dir}/confirmations.md"
+echo "- ${workspace_dir}/next-actions.md"
+echo "- ${workspace_dir}/sync.md"
