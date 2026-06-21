@@ -1,6 +1,8 @@
 const NOTION_API_BASE = "https://api.notion.com/v1";
 const NOTION_VERSION = process.env.NOTION_VERSION || "2022-06-28";
 const SYNC_GRACE_MS = Number(process.env.SYNC_GRACE_MS || 30_000);
+const DEFAULT_RECENT_GITHUB_CHANGE_MS = 15 * 60 * 1000;
+const NOTION_SYNC_MARKER_RE = /<!--\s*notion-sync:page-id=([a-zA-Z0-9-]+)\s*-->/i;
 
 module.exports = async function sync({ github, context, core }) {
   const config = buildConfig(context);
@@ -25,17 +27,56 @@ module.exports = async function sync({ github, context, core }) {
   let updatedGitHub = 0;
   let createdIssues = 0;
   let addedToProject = 0;
+  let removedProjectItems = 0;
+  let archivedNotion = 0;
+  let updatedMarkers = 0;
+
+  const deletedIssue = issueFromDeletedEvent(context, config);
+  if (deletedIssue) {
+    const row = notionByIssueUrl.get(deletedIssue.issueUrl);
+    if (row) {
+      await archiveNotionPage({ notion, pageId: row.pageId });
+      seenNotionPages.add(row.pageId);
+      archivedNotion += 1;
+    }
+  }
 
   for (const issue of projectIssues) {
     const row = notionByIssueUrl.get(issue.issueUrl);
 
     if (!row) {
-      await createNotionIssuePage({ notion, config, issue, source: "GitHub" });
+      if (issue.notionPageId || !isRecentGitHubProjectChange(issue, config)) {
+        if (await removeProjectItem({ github, project, projectItemId: issue.projectItemId })) {
+          removedProjectItems += 1;
+        }
+        if (await removeGitHubIssueNotionMarker({ github, config, issue })) {
+          updatedMarkers += 1;
+        }
+        continue;
+      }
+
+      const page = await createNotionIssuePage({ notion, config, issue, source: "GitHub" });
+      if (await ensureGitHubIssueHasNotionMarker({ github, config, issue, pageId: page.id })) {
+        updatedMarkers += 1;
+      }
       createdNotion += 1;
       continue;
     }
 
     seenNotionPages.add(row.pageId);
+    if (await ensureGitHubIssueHasNotionMarker({ github, config, issue, pageId: row.pageId })) {
+      updatedMarkers += 1;
+    }
+
+    if (isDeletedNotionRow(row)) {
+      if (await removeProjectItem({ github, project, projectItemId: issue.projectItemId })) {
+        removedProjectItems += 1;
+      }
+      if (await removeGitHubIssueNotionMarker({ github, config, issue })) {
+        updatedMarkers += 1;
+      }
+      continue;
+    }
 
     const direction = chooseSyncDirection({ row, issue });
     if (direction === "notion") {
@@ -58,8 +99,28 @@ module.exports = async function sync({ github, context, core }) {
         continue;
       }
 
-      const issue = await fetchGitHubIssue({ github, config, issueNumber: parsed.number });
+      const issue = await fetchGitHubIssueOrNull({ github, config, issueNumber: parsed.number });
+      if (!issue) {
+        await archiveNotionPage({ notion, pageId: row.pageId });
+        archivedNotion += 1;
+        continue;
+      }
+
+      if (shouldArchiveNotionMissingFromProject(row)) {
+        if (!isDeletedNotionRow(row)) {
+          await archiveNotionPage({ notion, pageId: row.pageId });
+          archivedNotion += 1;
+        }
+        if (await removeGitHubIssueNotionMarker({ github, config, issue })) {
+          updatedMarkers += 1;
+        }
+        continue;
+      }
+
       const projectIssue = await ensureProjectItem({ github, config, project, issue, wantedStatus: row.projectStatus });
+      if (await ensureGitHubIssueHasNotionMarker({ github, config, issue: projectIssue, pageId: row.pageId })) {
+        updatedMarkers += 1;
+      }
       await updateNotionIssuePage({ notion, config, pageId: row.pageId, issue: projectIssue, source: "GitHub" });
       addedToProject += 1;
       continue;
@@ -80,6 +141,9 @@ module.exports = async function sync({ github, context, core }) {
       `Updated GitHub issues/project items: ${updatedGitHub}`,
       `Created GitHub issues from Notion: ${createdIssues}`,
       `Added existing issues to project: ${addedToProject}`,
+      `Removed GitHub Project items: ${removedProjectItems}`,
+      `Archived Notion pages: ${archivedNotion}`,
+      `Updated GitHub sync markers: ${updatedMarkers}`,
     ].join("\n"),
   );
 };
@@ -115,6 +179,7 @@ function buildConfig(context) {
     projectOwner,
     projectNumber,
     githubStatusField: process.env.GITHUB_PROJECT_STATUS_FIELD || "Status",
+    recentGitHubChangeMs: parsePositiveNumber(process.env.GITHUB_RECENT_CHANGE_MS, DEFAULT_RECENT_GITHUB_CHANGE_MS),
     fallbackStatusOptionIds: parseStatusOptionIds(process.env.GITHUB_PROJECT_STATUS_OPTION_IDS),
     projectStatusAliases: parseStatusAliases(process.env.GITHUB_PROJECT_STATUS_ALIASES),
     props: {
@@ -208,6 +273,7 @@ async function fetchProject({ github, config }) {
               title
               state
               url
+              body
               createdAt
               updatedAt
               repository {
@@ -311,6 +377,9 @@ function normalizeProjectIssue({ item, project, config }) {
     title: issue.title,
     state: issue.state.toLowerCase(),
     issueUrl: issue.url,
+    projectItemUpdatedAt: item.updatedAt,
+    body: issue.body || "",
+    notionPageId: readNotionPageIdFromIssueBody(issue.body),
     repoUrl: issue.repository.url,
     createdAt: issue.createdAt,
     updatedAt: issue.updatedAt,
@@ -380,6 +449,8 @@ function normalizeNotionRow(page, config) {
     lastGitHubUpdatedAt: readDate(page, props.lastGitHubUpdated),
     lastSyncedAt: readDate(page, props.lastSyncedAt),
     lastSyncSource: readSelect(page, props.lastSyncSource),
+    archived: Boolean(page.archived),
+    inTrash: Boolean(page.in_trash),
   };
 }
 
@@ -406,14 +477,12 @@ async function syncNotionToGitHub({ github, notion, config, project, row, issue 
   const title = stripIssuePrefix(row.notionTitle, issue.number);
   const labels = row.labels;
   const assignees = row.assignees;
-  const state = row.state || issue.state;
 
   const { data } = await github.rest.issues.update({
     owner: config.owner,
     repo: config.repo,
     issue_number: issue.number,
     title: title || issue.title,
-    state,
     labels,
     assignees,
   });
@@ -499,11 +568,24 @@ async function fetchGitHubIssue({ github, config, issueNumber }) {
   return issueFromRest(data, config);
 }
 
+async function fetchGitHubIssueOrNull({ github, config, issueNumber }) {
+  try {
+    return await fetchGitHubIssue({ github, config, issueNumber });
+  } catch (error) {
+    if (error.status === 404 || error.status === 410) {
+      return null;
+    }
+
+    throw error;
+  }
+}
+
 async function createGitHubIssueFromNotion({ github, config, row }) {
   const { data } = await github.rest.issues.create({
     owner: config.owner,
     repo: config.repo,
     title: stripIssuePrefix(row.notionTitle, row.number),
+    body: buildNotionSyncMarker(row.pageId),
     labels: row.labels,
     assignees: row.assignees,
   });
@@ -552,6 +634,28 @@ async function ensureProjectItem({ github, config, project, issue, wantedStatus 
   };
 }
 
+async function removeProjectItem({ github, project, projectItemId }) {
+  if (!projectItemId) {
+    return false;
+  }
+
+  await github.graphql(
+    `
+      mutation($projectId: ID!, $itemId: ID!) {
+        deleteProjectV2Item(input: { projectId: $projectId, itemId: $itemId }) {
+          deletedItemId
+        }
+      }
+    `,
+    {
+      projectId: project.id,
+      itemId: projectItemId,
+    },
+  );
+
+  return true;
+}
+
 function issueFromRest(issue, config) {
   return {
     nodeId: issue.node_id,
@@ -560,6 +664,8 @@ function issueFromRest(issue, config) {
     title: issue.title,
     state: issue.state,
     issueUrl: issue.html_url,
+    body: issue.body || "",
+    notionPageId: readNotionPageIdFromIssueBody(issue.body),
     repoUrl: config.repoUrl,
     createdAt: issue.created_at,
     updatedAt: issue.updated_at,
@@ -571,6 +677,116 @@ function issueFromRest(issue, config) {
   };
 }
 
+function issueFromDeletedEvent(context, config) {
+  if (context.eventName !== "issues" || context.payload.action !== "deleted" || !context.payload.issue) {
+    return null;
+  }
+
+  const issue = context.payload.issue;
+  return {
+    nodeId: issue.node_id || null,
+    projectItemId: null,
+    number: issue.number,
+    title: issue.title,
+    state: issue.state || "open",
+    issueUrl: issue.html_url,
+    body: issue.body || "",
+    notionPageId: readNotionPageIdFromIssueBody(issue.body),
+    repoUrl: config.repoUrl,
+    createdAt: issue.created_at,
+    updatedAt: issue.updated_at,
+    githubUpdatedAt: new Date().toISOString(),
+    labels: (issue.labels || []).map((label) => label.name).filter(Boolean),
+    assignees: (issue.assignees || []).map((assignee) => assignee.login).filter(Boolean),
+    projectStatus: null,
+    projectStatusOptionId: null,
+  };
+}
+
+function isDeletedNotionRow(row) {
+  return Boolean(row.archived || row.inTrash);
+}
+
+function shouldArchiveNotionMissingFromProject(row) {
+  return Boolean(row.lastSyncedAt && !isAfter(row.lastEditedAt, row.lastSyncedAt));
+}
+
+function isRecentGitHubProjectChange(issue, config) {
+  const basis = maxIso(issue.projectItemUpdatedAt, issue.githubUpdatedAt, issue.updatedAt);
+  return isWithinMs(basis, new Date().toISOString(), config.recentGitHubChangeMs);
+}
+
+async function ensureGitHubIssueHasNotionMarker({ github, config, issue, pageId }) {
+  if (!pageId || issue.notionPageId === pageId) {
+    return false;
+  }
+
+  const body = upsertNotionSyncMarker(issue.body, pageId);
+  if (body === issue.body) {
+    return false;
+  }
+
+  await github.rest.issues.update({
+    owner: config.owner,
+    repo: config.repo,
+    issue_number: issue.number,
+    body,
+  });
+
+  issue.body = body;
+  issue.notionPageId = pageId;
+  return true;
+}
+
+async function removeGitHubIssueNotionMarker({ github, config, issue }) {
+  if (!issue.notionPageId) {
+    return false;
+  }
+
+  const body = removeNotionSyncMarker(issue.body);
+  if (body === issue.body) {
+    issue.notionPageId = null;
+    return false;
+  }
+
+  await github.rest.issues.update({
+    owner: config.owner,
+    repo: config.repo,
+    issue_number: issue.number,
+    body,
+  });
+
+  issue.body = body;
+  issue.notionPageId = null;
+  return true;
+}
+
+function readNotionPageIdFromIssueBody(body) {
+  return NOTION_SYNC_MARKER_RE.exec(body || "")?.[1] || null;
+}
+
+function buildNotionSyncMarker(pageId) {
+  return `<!-- notion-sync:page-id=${pageId} -->`;
+}
+
+function upsertNotionSyncMarker(body, pageId) {
+  const marker = buildNotionSyncMarker(pageId);
+  const content = body || "";
+
+  if (NOTION_SYNC_MARKER_RE.test(content)) {
+    return content.replace(NOTION_SYNC_MARKER_RE, marker);
+  }
+
+  return content ? `${content.trimEnd()}\n\n${marker}` : marker;
+}
+
+function removeNotionSyncMarker(body) {
+  return (body || "")
+    .replace(NOTION_SYNC_MARKER_RE, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 async function createNotionIssuePage({ notion, config, issue, source }) {
   return notion("/pages", {
     method: "POST",
@@ -579,6 +795,15 @@ async function createNotionIssuePage({ notion, config, issue, source }) {
         database_id: config.notionDatabaseId,
       },
       properties: buildNotionProperties({ config, issue, source }),
+    },
+  });
+}
+
+async function archiveNotionPage({ notion, pageId }) {
+  return notion(`/pages/${pageId}`, {
+    method: "PATCH",
+    body: {
+      archived: true,
     },
   });
 }
@@ -772,6 +997,20 @@ function isAfter(left, right) {
   return new Date(left).getTime() > new Date(right).getTime() + SYNC_GRACE_MS;
 }
 
+function isWithinMs(left, right, windowMs) {
+  if (!left || !right) {
+    return false;
+  }
+
+  const leftTime = new Date(left).getTime();
+  const rightTime = new Date(right).getTime();
+  if (!Number.isFinite(leftTime) || !Number.isFinite(rightTime)) {
+    return false;
+  }
+
+  return Math.abs(rightTime - leftTime) <= windowMs;
+}
+
 function maxIso(...values) {
   const times = values
     .filter(Boolean)
@@ -783,4 +1022,9 @@ function maxIso(...values) {
   }
 
   return new Date(Math.max(...times)).toISOString();
+}
+
+function parsePositiveNumber(value, fallback) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
