@@ -27,6 +27,7 @@ module.exports = async function sync({ github, context, core }) {
   let updatedGitHub = 0;
   let createdIssues = 0;
   let addedToProject = 0;
+  let reopenedProjectItems = 0;
   let removedProjectItems = 0;
   let archivedNotion = 0;
   let updatedMarkers = 0;
@@ -41,8 +42,47 @@ module.exports = async function sync({ github, context, core }) {
     }
   }
 
+  const reopenedIssue = issueFromReopenedEvent(context, config);
+  if (reopenedIssue && !projectIssues.some((issue) => issue.issueUrl === reopenedIssue.issueUrl)) {
+    const row = notionByIssueUrl.get(reopenedIssue.issueUrl);
+    const projectIssue = await ensureProjectItem({
+      github,
+      config,
+      project,
+      issue: reopenedIssue,
+      wantedStatus: config.reopenedProjectStatus,
+    });
+    reopenedProjectItems += 1;
+
+    if (row && !isDeletedNotionRow(row)) {
+      seenNotionPages.add(row.pageId);
+      if (await ensureGitHubIssueHasNotionMarker({ github, config, issue: projectIssue, pageId: row.pageId })) {
+        updatedMarkers += 1;
+      }
+      await updateNotionIssuePage({ notion, config, pageId: row.pageId, issue: projectIssue, source: "GitHub" });
+      updatedNotion += 1;
+    }
+  }
+
   for (const issue of projectIssues) {
     const row = notionByIssueUrl.get(issue.issueUrl);
+
+    if (issue.state === "closed") {
+      if (row) {
+        seenNotionPages.add(row.pageId);
+        if (!isDeletedNotionRow(row)) {
+          await archiveNotionPage({ notion, pageId: row.pageId });
+          archivedNotion += 1;
+        }
+      }
+      if (await removeProjectItem({ github, project, projectItemId: issue.projectItemId })) {
+        removedProjectItems += 1;
+      }
+      if (await removeGitHubIssueNotionMarker({ github, config, issue })) {
+        updatedMarkers += 1;
+      }
+      continue;
+    }
 
     if (!row) {
       if (issue.notionPageId || !isRecentGitHubProjectChange(issue, config)) {
@@ -106,6 +146,17 @@ module.exports = async function sync({ github, context, core }) {
         continue;
       }
 
+      if (issue.state === "closed") {
+        if (!isDeletedNotionRow(row)) {
+          await archiveNotionPage({ notion, pageId: row.pageId });
+          archivedNotion += 1;
+        }
+        if (await removeGitHubIssueNotionMarker({ github, config, issue })) {
+          updatedMarkers += 1;
+        }
+        continue;
+      }
+
       if (shouldArchiveNotionMissingFromProject(row)) {
         if (!isDeletedNotionRow(row)) {
           await archiveNotionPage({ notion, pageId: row.pageId });
@@ -141,6 +192,7 @@ module.exports = async function sync({ github, context, core }) {
       `Updated GitHub issues/project items: ${updatedGitHub}`,
       `Created GitHub issues from Notion: ${createdIssues}`,
       `Added existing issues to project: ${addedToProject}`,
+      `Reopened GitHub issues re-added to project: ${reopenedProjectItems}`,
       `Removed GitHub Project items: ${removedProjectItems}`,
       `Archived Notion pages: ${archivedNotion}`,
       `Updated GitHub sync markers: ${updatedMarkers}`,
@@ -179,6 +231,7 @@ function buildConfig(context) {
     projectOwner,
     projectNumber,
     githubStatusField: process.env.GITHUB_PROJECT_STATUS_FIELD || "Status",
+    reopenedProjectStatus: process.env.GITHUB_PROJECT_REOPENED_STATUS || "Ready",
     recentGitHubChangeMs: parsePositiveNumber(process.env.GITHUB_RECENT_CHANGE_MS, DEFAULT_RECENT_GITHUB_CHANGE_MS),
     fallbackStatusOptionIds: parseStatusOptionIds(process.env.GITHUB_PROJECT_STATUS_OPTION_IDS),
     projectStatusAliases: parseStatusAliases(process.env.GITHUB_PROJECT_STATUS_ALIASES),
@@ -684,7 +737,18 @@ function issueFromDeletedEvent(context, config) {
     return null;
   }
 
-  const issue = context.payload.issue;
+  return issueFromWebhookIssue(context.payload.issue, config);
+}
+
+function issueFromReopenedEvent(context, config) {
+  if (context.eventName !== "issues" || context.payload.action !== "reopened" || !context.payload.issue) {
+    return null;
+  }
+
+  return issueFromWebhookIssue(context.payload.issue, config);
+}
+
+function issueFromWebhookIssue(issue, config) {
   return {
     nodeId: issue.node_id || null,
     projectItemId: null,
