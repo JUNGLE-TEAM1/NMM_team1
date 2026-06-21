@@ -14,6 +14,7 @@
 | Decision | Selected Option | Reason | Confirmed By / At |
 | --- | --- | --- | --- |
 | PR sync guard split | Static checks in strict validation, remote checks in prepare-pr | Keeps CI deterministic while still catching sync.md inconsistency before PR and after merge | User approved on 2026-06-22 |
+| Branch issue default clarification | Document branch workspace issue creation as the team default and keep `--no-issue` as the explicit exception | Matches `scripts/start-workflow.sh` behavior and removes conflict with PR preparation wording | User confirmed on 2026-06-22 |
 
 ## Deferred Decisions / 보류한 결정
 

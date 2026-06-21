@@ -71,7 +71,8 @@ scripts/start-workflow.sh feature task-board "Task board MVP"
 - `next-actions.md`
 - `sync.md`
 
-branch 생성/전환 없이 파일만 만들려면 `--no-checkout`을 사용한다.
+branch 생성/전환 없이 workspace 파일만 만들려면 `--no-checkout`을 사용한다.
+GitHub issue 생성은 팀 기본 규칙이라 `--no-checkout`에서도 실행된다. 로컬 workspace만 만들 예외 상황이면 `--no-issue`를 함께 사용하고 이유를 `sync.md`에 기록한다.
 branch 이름과 생성 파일만 미리 보려면 `--dry-run`을 사용한다.
 다른 branch workspace로 이동할 때 현재 worktree가 dirty이면 `scripts/start-workflow.sh`가 현재 branch에 checkpoint commit을 만든 뒤 이동한다.
 같은 branch workspace를 다시 여는 경우에는 checkpoint commit을 만들지 않는다.
@@ -106,6 +107,7 @@ Workspace state 값:
 - Push / PR: prefer PR-based integration and record branch, PR link, and merge status in `sync.md`.
 - PR Sync Preflight: before PR handoff or PR creation, run `scripts/prepare-pr.sh --check-pr-sync <workspace>` to catch stale or contradictory `sync.md` Push / PR fields.
 - PR Finalization: after PR merge, run `scripts/prepare-pr.sh --finalize <workspace>` and record final merge/issue close status in `sync.md`.
+- Branch Issue Default: `scripts/start-workflow.sh` creates a GitHub issue by default for every branch workspace; use `--no-issue` only as an explicit exception.
 - Linked Issue: when a branch maps to a GitHub issue, keep the existing branch/workspace name and record the issue plus PR closing keyword in `sync.md`.
 - Branch Switch Checkpoint: when moving from one branch workspace to another with dirty changes, checkpoint commit current branch before switching.
 - AI records sync status but does not run pull, merge, rebase, push, PR creation, or PR merge without human confirmation.
@@ -437,11 +439,17 @@ Record skipped product runtime checks because this Phase is documentation-only.
 
 ### 완료 기준
 
-- [ ] MVP와 Non-MVP scope가 문서화되어 있다.
-- [ ] M0~M5 MVP/infrastructure milestone이 문서화되어 있다.
-- [ ] XFlow는 read-only inspiration으로만 언급된다.
-- [ ] acceptance, regression, manual verification, workflow 문서가 서로 맞는다.
-- [ ] Harness validation이 통과한다.
+- [x] MVP와 Non-MVP scope가 문서화되어 있다.
+- [x] M0~M5 MVP/infrastructure milestone이 문서화되어 있다.
+- [x] XFlow는 read-only inspiration으로만 언급된다.
+- [x] acceptance, regression, manual verification, workflow 문서가 서로 맞는다.
+- [x] Harness validation이 통과한다.
+
+### 완료 증거
+
+- PR: #12
+- Issue: #9 CLOSED
+- Report: `docs/reports/phase-1-mvp-roadmap.md`
 
 ## Phase 2 - 인프라 foundation (`feature/infrastructure-foundation`)
 
@@ -486,12 +494,19 @@ Record skipped cloud actions and approval requirements.
 
 ### 완료 기준
 
-- [ ] CI workflow 후보가 있다.
-- [ ] Docker build/run 전략이 있다.
-- [ ] Kubernetes manifest 또는 Helm 후보가 있다.
-- [ ] AWS 비용/권한/rollback approval gate가 기록되어 있다.
-- [ ] Secret이 commit되지 않았다.
-- [ ] Harness validation이 통과한다.
+- [x] CI workflow 후보가 있다.
+- [x] Docker build/run 전략이 있다.
+- [x] Kubernetes manifest 또는 Helm 후보가 있다.
+- [x] AWS 비용/권한/rollback approval gate가 기록되어 있다.
+- [x] Secret이 commit되지 않았다.
+- [x] Harness validation이 통과한다.
+
+### 완료 증거
+
+- PR: #13
+- Issue: #10 CLOSED
+- Report: `docs/reports/phase-2-infrastructure-foundation.md`
+- CI evidence: harness, container smoke, and manifest smoke checks passed before merge.
 
 ## Phase 3 - 첫 실제 기능 (`feature/<short-kebab-name>`)
 

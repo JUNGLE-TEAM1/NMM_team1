@@ -27,6 +27,7 @@
 | PR finalization | `scripts/prepare-pr.sh --finalize docs/workflows/feature/sync-pr-finalization-guard` | passed | PR #15 merged and issue #14 already CLOSED; sync.md finalized |
 | GitHub Actions CI | PR #15 checks | passed | harness, container-smoke, manifest-smoke passed before merge |
 | completion gate propagation | `scripts/harness-flow-check.sh docs/workflows/feature/sync-pr-finalization-guard` | passed | validates `docs/08` PR sync/finalization gate and completed-phase status recommendation |
+| development workflow completion cleanup | `bash -n scripts/*.sh`; `scripts/validate-harness.sh`; `scripts/validate-harness.sh --strict`; `scripts/status-workflow.sh docs/workflows/feature/sync-pr-finalization-guard` | passed | Phase 1/2 completion criteria checked, branch issue default clarified, template/issue exception validation added |
 
 ## CI/CD Gate / CI-CD 게이트
 

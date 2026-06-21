@@ -589,6 +589,18 @@ if ! rg -q "docs/16-existing-codebase-adoption.md" docs/08-development-workflow.
   fail "docs/08-development-workflow.md does not reference docs/16-existing-codebase-adoption.md"
 fi
 
+if ! rg -q "Phase N - \\[PHASE_NAME\\]" docs/08-development-workflow.md; then
+  fail "docs/08-development-workflow.md is missing the Phase 작성 형식 template"
+fi
+
+if ! rg -q -- "--no-issue" docs/08-development-workflow.md; then
+  fail "docs/08-development-workflow.md must document --no-issue as the explicit exception to default issue creation"
+fi
+
+if ! rg -q "Branch workspace issue creation remains the team default" docs/13-human-command-flow.md; then
+  fail "docs/13-human-command-flow.md must distinguish PR preparation from default branch issue creation"
+fi
+
 if ! rg -q "Existing Codebase Adoption|baseline \\+ next-change|docs/16-existing-codebase-adoption.md" README.md; then
   fail "README.md must mention Existing Codebase Adoption or baseline + next-change"
 fi

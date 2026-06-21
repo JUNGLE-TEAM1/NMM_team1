@@ -128,7 +128,7 @@ AI does:
 - Reports missing `sync.md`, `quality.md`, confirmation, or validation items.
 - Runs validation only when approved or already within the agreed verification scope.
 - Linked GitHub issue가 있으면 `scripts/prepare-pr.sh <workspace>`로 `PR closing keyword`를 `sync.md`에 기록하고 PR body 초안을 만든다.
-- Does not create issues, push, create PRs, merge PRs, or close issues without human confirmation.
+- Does not create extra issues during PR preparation, push, create PRs, merge PRs, or close issues without human confirmation. Branch workspace issue creation remains the team default in `scripts/start-workflow.sh`.
 
 Human says:
 
