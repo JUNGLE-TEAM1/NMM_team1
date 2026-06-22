@@ -117,6 +117,10 @@ Before PR handoff, run or review:
 scripts/status-workflow.sh docs/workflows/<type>/<short-kebab-name>
 ```
 
+If the workspace is complete and PR-ready, the handoff must present a choice menu instead of only asking whether to create a PR.
+The menu includes PR 진행, 추가 보강, 다음 Phase 이동, 보류, and 외부 실행 승인 단계 when relevant.
+Push, PR creation, merge, deploy, and AWS resource creation still require explicit human approval.
+
 Use `.github/pull_request_template.md` as the checklist when the project uses PRs.
 
 ## 6) Conflict Handling

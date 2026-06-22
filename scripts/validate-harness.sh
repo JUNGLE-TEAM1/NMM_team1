@@ -601,6 +601,14 @@ if ! rg -q "Branch workspace issue creation remains the team default" docs/13-hu
   fail "docs/13-human-command-flow.md must distinguish PR preparation from default branch issue creation"
 fi
 
+if ! rg -q "완료 후 handoff 선택지|completion handoff choice menu" docs/08-development-workflow.md docs/13-human-command-flow.md; then
+  fail "Completion handoff choice menu is not documented in workflow and human command flow"
+fi
+
+if ! rg -q "완료 \\+ PR 준비 상태입니다.*1 PR 진행.*2 추가 보강.*3 다음 Phase.*4 보류.*5 외부 실행 승인" scripts/status-workflow.sh; then
+  fail "scripts/status-workflow.sh must recommend completion handoff choices for complete PR-ready workspaces"
+fi
+
 if ! rg -q "Existing Codebase Adoption|baseline \\+ next-change|docs/16-existing-codebase-adoption.md" README.md; then
   fail "README.md must mention Existing Codebase Adoption or baseline + next-change"
 fi
@@ -672,6 +680,12 @@ fi
 if ! bash -n scripts/harness-flow-check.sh; then
   fail "scripts/harness-flow-check.sh has shell syntax errors"
 fi
+
+while IFS= read -r script_file; do
+  if ! bash -n "$script_file"; then
+    fail "${script_file} has shell syntax errors"
+  fi
+done < <(find scripts/aws -type f -name '*.sh' 2>/dev/null | sort || true)
 
 if [[ "$failures" -gt 0 ]]; then
   echo "Harness validation failed with ${failures} issue(s)." >&2

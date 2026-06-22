@@ -373,7 +373,7 @@ elif [[ "$workspace" == docs/workflows/*/integrate-* || "$workspace" == docs/wor
 elif [[ "${merge_status:-}" =~ ^merged ]] && [[ "${issue_close_status:-}" =~ ^CLOSED ]]; then
   recommendation="Phase is merged and linked issue is closed; choose the next phase or archive/cleanup follow-up."
 elif [[ "$pr_ready" == "yes" ]]; then
-  recommendation="PR checklist appears ready; run validation before handoff."
+  recommendation="완료 + PR 준비 상태입니다. 원격 작업 전 선택지를 제시하세요: 1 PR 진행, 2 추가 보강, 3 다음 Phase, 4 보류, 5 외부 실행 승인. 명시 승인 전 push/PR/merge/deploy는 실행하지 않습니다."
 else
   recommendation="Prepare Completion Confirm or PR checklist."
 fi
