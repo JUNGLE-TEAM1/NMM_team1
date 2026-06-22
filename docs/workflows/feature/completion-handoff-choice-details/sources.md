@@ -1,10 +1,10 @@
-# Internal step prompt standard source branch 기록
+# Completion handoff choice details source branch 기록
 
 이 branch가 다른 branch workspace에 의존하거나 여러 branch를 통합할 때 사용한다.
 
 ## Source Branch Workspaces / source branch workspace
 
--
+- 
 
 ## Required Source Files / 읽어야 할 source 파일
 
@@ -28,4 +28,4 @@
 
 ## Integration Notes / 통합 메모
 
--
+- 

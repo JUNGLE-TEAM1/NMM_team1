@@ -4,7 +4,7 @@
 
 ## Source Branch Workspaces / source branch workspace
 
-- 
+-
 
 ## Required Source Files / 읽어야 할 source 파일
 
@@ -28,4 +28,4 @@
 
 ## Integration Notes / 통합 메모
 
-- 
+-

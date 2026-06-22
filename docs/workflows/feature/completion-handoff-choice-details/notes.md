@@ -1,17 +1,17 @@
-# Branch switch and queue guard 노트
+# Completion handoff choice details 노트
 
 ## 진행 메모
 
--
+- 
 
 ## 결정
 
--
+- 
 
 ## 열린 질문
 
--
+- 
 
 ## 링크 / 증거
 
--
+- 
