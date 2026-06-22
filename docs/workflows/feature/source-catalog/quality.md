@@ -11,7 +11,7 @@
 - Failing test first: `backend/tests/test_source_catalog.py`를 구현 전에 정의했다. 구현 전에는 `create_app`, source/catalog endpoint, store 구현이 없어 실패하는 상태였다.
 - Expected failure command/result: `docker run --rm asklake-backend:m3-local python -m pytest`는 source/catalog import 또는 404 failure가 예상됐다.
 - Pass command/result: `docker run --rm asklake-backend:m3-local python -m pytest` -> 4 passed.
-- Refactor notes: API 응답 필드 `schema`는 유지하되 Pydantic 내부 field는 `columns` alias로 둬 BaseModel shadow warning을 제거했다. 이후 backend를 `api/services/ports/adapters/domain/core`, frontend를 `api/app/components/features`로 분리했다.
+- Refactor notes: API 응답 필드 `schema`는 유지하되 Pydantic 내부 field는 `columns` alias로 둬 BaseModel shadow warning을 제거했다. 이후 backend를 `api/services/ports/adapters/domain/core`, frontend를 `api/app/components/features`로 분리하고 `SourceConnector`, `PipelineRunner`, `ResultStore`, `core/container.py`를 추가했다.
 
 ## Branch Checks / 브랜치 검증
 

@@ -1,20 +1,18 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.adapters.sqlite_metadata_store import SQLiteMetadataStore
 from app.api.health import router as health_router
 from app.api.source_catalog import create_source_catalog_router
+from app.core.container import AppContainer
 from app.core.settings import Settings, get_settings
 from app.ports.metadata_store import MetadataStore
-from app.services.source_catalog import SourceCatalogService
 
 
 def create_app(store: MetadataStore | None = None, settings: Settings | None = None) -> FastAPI:
     app_settings = settings or get_settings()
     app = FastAPI(title=app_settings.app_name)
-    metadata_store = store or SQLiteMetadataStore(app_settings.metadata_url)
-    metadata_store.initialize()
-    catalog_service = SourceCatalogService(metadata_store)
+    container = AppContainer(app_settings, metadata_store=store)
+    container.metadata_store.initialize()
 
     app.add_middleware(
         CORSMiddleware,
@@ -25,6 +23,11 @@ def create_app(store: MetadataStore | None = None, settings: Settings | None = N
     )
 
     app.include_router(health_router)
-    app.include_router(create_source_catalog_router(metadata_store, catalog_service))
+    app.include_router(
+        create_source_catalog_router(
+            container.metadata_store,
+            container.source_catalog_service,
+        )
+    )
 
     return app

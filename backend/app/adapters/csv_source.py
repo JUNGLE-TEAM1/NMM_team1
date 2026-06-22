@@ -2,10 +2,18 @@ import csv
 from pathlib import Path
 
 from app.domain.schemas import ColumnSchema
+from app.domain.schemas import SourceCreate
 
 
 class CsvInspectionError(ValueError):
     pass
+
+
+class CsvSourceConnector:
+    source_type = "csv"
+
+    def inspect(self, source: SourceCreate) -> tuple[list[ColumnSchema], int, list[dict[str, object]]]:
+        return inspect_csv(source.path)
 
 
 def resolve_source_path(path: str) -> Path:

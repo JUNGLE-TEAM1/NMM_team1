@@ -53,10 +53,10 @@ M3 이후 backend는 교체 가능한 port/adapter 구조를 따른다.
 backend/app/
   api/       HTTP router와 HTTP error mapping
   services/  use case orchestration
-  ports/     MetadataStore 같은 Protocol/interface
+  ports/     MetadataStore, SourceConnector, PipelineRunner, ResultStore 같은 Protocol/interface
   adapters/  SQLite, CSV, future Postgres/Mongo/S3 구현체
   domain/    API/domain schema와 value object
-  core/      settings, app factory, dependency wiring
+  core/      settings, dependency container, app factory
 ```
 
 의존 방향:
@@ -67,7 +67,7 @@ adapters -> ports/domain
 core -> api/services/adapters
 ```
 
-API router는 SQLite, CSV, future PostgreSQL/MongoDB 같은 concrete implementation에 직접 의존하지 않는다. concrete implementation 선택은 `core/app_factory.py`에서 한다.
+API router는 SQLite, CSV, future PostgreSQL/MongoDB/S3/Spark 같은 concrete implementation에 직접 의존하지 않는다. concrete implementation 선택은 `core/container.py`에서 한다.
 
 ### Frontend Layering
 
@@ -92,6 +92,13 @@ feature component는 backend endpoint 문자열을 직접 조립하지 않고 `a
 - PostgreSQL 또는 MongoDB 전환은 `PostgresMetadataStore` 또는 `MongoMetadataStore` 구현체 추가로 처리하고, API response contract는 유지한다.
 - XFlow 참고: XFlow backend의 catalog/app metadata는 MongoDB/Beanie document model에 가깝지만, AskLake MVP는 MongoDB를 필수 인프라로 끌어오지 않고 경량 SQLite로 시작한다.
 
+### M4 확장 Port
+
+- `SourceConnector`: CSV/local file, future PostgreSQL/MySQL/MongoDB/S3 source inspection을 교체한다.
+- `PipelineRunner`: local in-process runner, future background worker, Spark, Airflow runner를 교체한다.
+- `ResultStore`: local file/container volume, SQLite/PostgreSQL table, future S3 result storage를 교체한다.
+- M3에서는 `CsvSourceConnector`만 실제 구현하고, `PipelineRunner`와 `ResultStore`는 M4에서 concrete implementation을 붙인다.
+
 ### 협업 하네스
 
 - 책임: 요구사항, Phase, 검증, PR 준비 상태를 기록한다.
@@ -109,6 +116,9 @@ feature component는 backend endpoint 문자열을 직접 조립하지 않고 `a
 | `PipelineRun` | object | run id, pipeline id, status, started/finished time, logs/error |
 | `CatalogDataset` | object | 결과 데이터 이름, schema, row count, sample/location |
 | `MetadataStore` | interface | source, catalog dataset, pipeline, run metadata를 저장/조회하는 backend 내부 경계 |
+| `SourceConnector` | interface | source type별 schema/sample inspection을 수행하는 backend 내부 경계 |
+| `PipelineRunner` | interface | pipeline 실행 방식을 local worker, Spark, Airflow 등으로 교체하기 위한 경계 |
+| `ResultStore` | interface | pipeline 결과 저장 위치를 local file, DB table, S3 등으로 교체하기 위한 경계 |
 | `DeploymentEnvironment` | object | local, dev, staging 후보 환경 이름과 endpoint, secret reference |
 | `BuildArtifact` | object | image tag, commit sha, build status, scan/test result |
 
