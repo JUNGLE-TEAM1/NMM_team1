@@ -159,6 +159,35 @@ AI does:
 - If a stacked PR was merged into a non-default branch and the linked issue remains open, runs `scripts/prepare-pr.sh --close-issue <workspace>` to close it with the merged PR as evidence.
 - For final handoff after merge, runs `scripts/prepare-pr.sh --finalize <workspace>` to verify PR merged state, issue close state, and final `sync.md` values.
 - If unrelated or expanded work appears mid-flow, records same-scope work in the current workspace; for scope changes, resolves `Scope Change Confirm` and creates a separate workspace when needed.
+- After PR merge/finalize, runs or summarizes `scripts/list-active-branches.sh` and reports remaining active branches, open PR branches, and cleanup candidates.
+
+Human says:
+
+```text
+다음 브랜치로 넘어가
+```
+
+AI does:
+
+- Summarizes current branch, target branch, worktree state, uncommitted changes, checkpoint commit expectation, target workspace, and switch reason.
+- Treats the explicit switch request as branch switch approval unless the summary shows unresolved conflicts or surprising dirty worktree risk.
+- If dirty worktree exists, tells the human that `scripts/start-workflow.sh` will checkpoint commit before switching.
+- If unresolved conflicts exist, stops and lists conflict files instead of switching.
+- After switching, reports current branch and workspace.
+
+Human says:
+
+```text
+PR 끝났어? 남은 브랜치 뭐 있어?
+```
+
+AI does:
+
+- Runs or summarizes `scripts/list-active-branches.sh`.
+- Reports branch name, ahead count, workspace path, workspace state, linked issue, PR link/open PR state, merge status, issue close status, and recommended next action.
+- Separates merged/closed branches as cleanup candidates.
+- Does not delete local or remote branches without explicit human approval.
+- If remaining work branches exist, offers: 1. 남은 브랜치 PR 진행, 2. 남은 브랜치 보류, 3. main에서 다음 Phase 시작, 4. cleanup 후보 정리 검토.
 
 Human says:
 

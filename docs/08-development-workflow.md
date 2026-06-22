@@ -77,6 +77,7 @@ branch 이름과 생성 파일만 미리 보려면 `--dry-run`을 사용한다.
 다른 branch workspace로 이동할 때 현재 worktree가 dirty이면 `scripts/start-workflow.sh`가 현재 branch에 checkpoint commit을 만든 뒤 이동한다.
 같은 branch workspace를 다시 여는 경우에는 checkpoint commit을 만들지 않는다.
 handoff, integration, PR readiness 전에 현재 workspace 상태를 요약하려면 `scripts/status-workflow.sh <workspace>`를 사용한다.
+여러 branch의 남은 작업 큐를 확인하려면 `scripts/list-active-branches.sh`를 사용한다.
 
 ## 적용 모드
 
@@ -110,6 +111,8 @@ Workspace state 값:
 - Branch Issue Default: `scripts/start-workflow.sh` creates a GitHub issue by default for every branch workspace; use `--no-issue` only as an explicit exception.
 - Linked Issue: when a branch maps to a GitHub issue, keep the existing branch/workspace name and record the issue plus PR closing keyword in `sync.md`.
 - Branch Switch Checkpoint: when moving from one branch workspace to another with dirty changes, checkpoint commit current branch before switching.
+- Branch Switch Confirm: before switching branch workspaces, summarize current branch, target branch, worktree state, uncommitted changes, checkpoint commit expectation, target workspace, and switch reason, then get human confirmation unless the user already gave an explicit switch/phase-start command.
+- Remaining Branch Queue: after PR merge/finalize, run or summarize `scripts/list-active-branches.sh` and tell the human whether active local branches, open PR branches, or merged cleanup candidates remain.
 - AI records sync status but does not run pull, merge, rebase, push, PR creation, or PR merge without human confirmation.
 
 ## 재발 방지 하네스 규칙

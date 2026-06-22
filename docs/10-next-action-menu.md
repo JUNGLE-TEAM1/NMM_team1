@@ -376,6 +376,19 @@ Waiting on you:
 - Next AI action: update the missing file or report the exact blocker.
 - Ask: "PR 체크리스트에서 빠진 항목을 먼저 채울까요, draft 위험으로 남길까요?"
 
+### Remaining Branch Queue
+
+- Current state: a PR was merged/finalized, a branch switch is about to happen, or the human asked what work branches remain.
+- Recommended next action: run or summarize `scripts/list-active-branches.sh`.
+- Options:
+  1. Continue a remaining active local branch.
+  2. Review an open PR branch.
+  3. Hold a remaining branch and record the reason.
+  4. Start the next Phase from `main`.
+  5. Review cleanup candidates.
+- Next AI action: report branch name, ahead count, workspace, workspace state, linked issue, PR state, merge status, issue close status, and recommended next action.
+- Ask: "남은 작업 브랜치가 있습니다. PR 진행, 보류, 다음 Phase, cleanup 검토 중 무엇을 할까요?"
+
 ### Semantic Validation Failed
 
 - Current state: strict or integration validation found a state-dependent semantic gap.
