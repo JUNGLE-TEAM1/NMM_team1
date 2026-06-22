@@ -50,6 +50,19 @@ Draft/in-progress workspaces can keep planning placeholders.
 Ready/complete/integration-ready workspaces must resolve quality, decision, and pre-merge sync status.
 Archived workspaces are treated as historical evidence.
 
+## Source of Truth Impact
+
+Every branch decides whether its changes affect shared Source of Truth.
+
+- `shared-docs.md`: proposes changed Source of Truth files in the `Proposed Source Of Truth Changes` table.
+- `decisions.md`: records whether each proposal is accepted/applied or deferred.
+- `quality.md`: records Source of Truth impact status and validation evidence.
+- `report.md`: summarizes which shared docs changed or why the change was deferred.
+
+Allowed impact statuses are `none`, `required`, `applied`, and `deferred`.
+When `shared-docs.md` proposes a `docs/...` file, strict validation expects that file to appear in the branch diff from the workspace base commit, unless a deferred decision records reason, revisit trigger, and target branch/phase.
+Only the table `File` column is treated as a proposal; explanatory text, historical reports, archived workspaces, and Integration Notes are not forced into edits.
+
 ## Create A Workspace
 
 ```bash

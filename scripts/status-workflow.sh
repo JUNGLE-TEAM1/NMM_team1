@@ -46,6 +46,89 @@ section_value() {
   ' "$file"
 }
 
+source_of_truth_files() {
+  local file="$1"
+  [[ -f "$file" ]] || return 0
+  awk -F '|' '
+    /^## Proposed Source Of Truth Changes/ { in_section=1; next }
+    /^## / && in_section { exit }
+    in_section && /^\|/ && $2 !~ /---|File/ {
+      value=$2
+      gsub(/^[ \t]+|[ \t]+$/, "", value)
+      gsub(/^`|`$/, "", value)
+      if (value ~ /^docs\/[^ ]+\.md$/) print value
+    }
+  ' "$file" | sort -u
+}
+
+changed_since_base() {
+  local base="$1"
+  local file="$2"
+  [[ -n "$base" && "$base" != "TBD" && "$base" != "unavailable" ]] || return 1
+  git rev-parse --verify --quiet "$base^{commit}" >/dev/null 2>&1 || return 1
+  if git diff --name-only "${base}..HEAD" -- "$file" | rg -q "^${file}$"; then
+    return 0
+  fi
+  git diff --name-only -- "$file" | rg -q "^${file}$"
+}
+
+has_source_of_truth_deferred_decision() {
+  local file="$1"
+  [[ -f "$file" ]] || return 1
+  awk -F '|' '
+    /^## Deferred Decisions/ { in_section=1; next }
+    /^## / && in_section { exit }
+    in_section && /^\|/ && $2 !~ /---|Decision/ {
+      reason=$3
+      revisit=$4
+      target=$5
+      gsub(/^[ \t]+|[ \t]+$/, "", reason)
+      gsub(/^[ \t]+|[ \t]+$/, "", revisit)
+      gsub(/^[ \t]+|[ \t]+$/, "", target)
+      if (reason != "" && reason != "TBD" && revisit != "" && revisit != "TBD" && target != "" && target != "TBD") found=1
+    }
+    END { exit found ? 0 : 1 }
+  ' "$file"
+}
+
+source_of_truth_status() {
+  local shared_file="$1"
+  local decisions_file="$2"
+  local sync_path="$3"
+  local base
+  local total=0
+  local applied=0
+  local deferred=0
+  local sot_file
+
+  base="$(first_value "$sync_path" "- base commit:")"
+
+  while IFS= read -r sot_file; do
+    [[ -n "$sot_file" ]] || continue
+    total=$((total + 1))
+    if changed_since_base "$base" "$sot_file"; then
+      applied=$((applied + 1))
+    elif has_source_of_truth_deferred_decision "$decisions_file"; then
+      deferred=$((deferred + 1))
+    fi
+  done < <(source_of_truth_files "$shared_file")
+
+  if [[ "$total" -eq 0 ]]; then
+    echo "none"
+    return 0
+  fi
+
+  if [[ "$applied" -eq "$total" ]]; then
+    echo "applied"
+  elif [[ "$deferred" -eq "$total" ]]; then
+    echo "deferred"
+  elif [[ $((applied + deferred)) -eq "$total" ]]; then
+    echo "mixed"
+  else
+    echo "unresolved"
+  fi
+}
+
 status_line() {
   local label="$1"
   local file="$2"
@@ -206,17 +289,19 @@ fi
 echo
 
 echo "Shared Source Of Truth"
-if [[ -f "$shared_docs" ]] && awk -F '|' '
-  /^\| `docs\// {
-    value=$3 $4
-    gsub(/^[ \t]+|[ \t]+$/, "", value)
-    if (value != "") found=1
-  }
-  END { exit found ? 0 : 1 }
-' "$shared_docs"; then
+source_of_truth_state="none"
+source_of_truth_count=0
+if [[ -f "$shared_docs" ]]; then
+  source_of_truth_count="$(source_of_truth_files "$shared_docs" | wc -l | awk '{$1=$1; print}')"
+  source_of_truth_state="$(source_of_truth_status "$shared_docs" "$decisions" "$sync_file")"
+fi
+if [[ "$source_of_truth_count" -gt 0 ]]; then
   echo "  - proposed changes: yes"
+  echo "  - proposal files: ${source_of_truth_count}"
+  echo "  - proposal status: ${source_of_truth_state}"
 else
   echo "  - proposed changes: none detected"
+  echo "  - proposal status: none"
 fi
 echo
 
@@ -359,6 +444,8 @@ elif [[ "$workspace_state" == "ready-for-review" || "$workspace_state" == "compl
   recommendation="Ask for Pre-Merge Sync before completion or PR."
 elif [[ "$closing_keyword_recorded" == "no" ]]; then
   recommendation="Record the PR closing keyword in sync.md so the linked issue closes after merge."
+elif [[ "${source_of_truth_state:-none}" == "unresolved" ]]; then
+  recommendation="Resolve Source of Truth proposals before PR: update the proposed docs or record deferred decisions with revisit trigger and target phase/branch."
 elif [[ "$decision_status" == "none" && -f "$shared_docs" ]] && awk -F '|' '
   /^\| `docs\// {
     value=$3 $4

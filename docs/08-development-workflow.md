@@ -105,6 +105,7 @@ Workspace state 값:
 - Start Sync: before implementation, check that work begins from the intended main/base and record it in `sync.md`.
 - Mid-Phase Sync: if upstream main changes or shared Source of Truth docs change, stop and ask for a sync decision.
 - Pre-Merge Sync: before completion/integration, re-check main freshness and record conflicts or validation.
+- Source of Truth Impact Gate: before completion, decide whether implementation, contract, API/schema, architecture, milestone, acceptance, or manual verification changes require shared Source of Truth updates.
 - Push / PR: prefer PR-based integration and record branch, PR link, and merge status in `sync.md`.
 - PR Sync Preflight: before PR handoff or PR creation, run `scripts/prepare-pr.sh --check-pr-sync <workspace>` to catch stale or contradictory `sync.md` Push / PR fields.
 - Automatic PR Creation: when a branch workspace is `complete`, pending confirmations are clear, PR checklist is ready, strict validation passes, linked issue and closing keyword exist, AI creates the PR without another question.
@@ -268,26 +269,54 @@ The human can answer with a number or natural language, such as "1번으로 진�
 
 1. Implementation or artifact exists.
 2. Tests/build/smoke/manual verification completed.
-3. Related docs updated only where needed.
-4. Acceptance criteria in `docs/05` checked.
-5. Failure Scenario reviewed.
-6. Manual Verification result recorded.
-7. Phase report created.
-8. Human confirmation outcomes recorded where required.
-9. Next action menu updated for the human's next choice.
-10. `sync.md` records pre-merge sync status or a human-approved reason for deferral.
-11. Before PR handoff, `scripts/prepare-pr.sh --check-pr-sync <workspace>` has passed or a reason is recorded.
-12. After PR merge, `scripts/prepare-pr.sh --finalize <workspace>` has updated `sync.md` with merged/closed status or a reason is recorded.
-13. `quality.md` records TDD status, branch checks, CI status, skipped checks, and CD gate if relevant.
-14. `decisions.md` records accepted/deferred high-impact decisions and rollback/revisit conditions.
-15. For integration branches, `scripts/validate-harness.sh --integration` completed or a human-approved deferral is recorded.
-16. Branch workspace `plan.md`, `notes.md`, or `report.md` updated where useful.
-17. No scope leak.
-18. Final report includes changed files, used skill/plugin/tool, verification, report path, next context, and remaining risks.
-19. Final report records Context Budget mode, primary context read, escalated context read, and intentionally omitted context.
-20. If the branch workspace is `complete`, pending confirmations are clear, and PR checklist is ready, AI presents a completion handoff choice menu before any remote action.
+3. Source of Truth Impact Gate completed: `shared-docs.md`, `decisions.md`, `quality.md`, and `report.md` record whether shared Source of Truth impact is `none`, `required`, `applied`, or `deferred`.
+4. Related docs updated only where needed.
+5. Acceptance criteria in `docs/05` checked.
+6. Failure Scenario reviewed.
+7. Manual Verification result recorded.
+8. Phase report created.
+9. Human confirmation outcomes recorded where required.
+10. Next action menu updated for the human's next choice.
+11. `sync.md` records pre-merge sync status or a human-approved reason for deferral.
+12. Before PR handoff, `scripts/prepare-pr.sh --check-pr-sync <workspace>` has passed or a reason is recorded.
+13. After PR merge, `scripts/prepare-pr.sh --finalize <workspace>` has updated `sync.md` with merged/closed status or a reason is recorded.
+14. `quality.md` records TDD status, branch checks, CI status, skipped checks, Source of Truth impact evidence, and CD gate if relevant.
+15. `decisions.md` records accepted/deferred high-impact decisions and rollback/revisit conditions.
+16. For integration branches, `scripts/validate-harness.sh --integration` completed or a human-approved deferral is recorded.
+17. Branch workspace `plan.md`, `notes.md`, or `report.md` updated where useful.
+18. No scope leak.
+19. Final report includes changed files, used skill/plugin/tool, verification, report path, next context, and remaining risks.
+20. Final report records Context Budget mode, primary context read, escalated context read, and intentionally omitted context.
+21. If the branch workspace is `complete`, pending confirmations are clear, and PR checklist is ready, AI presents a completion handoff choice menu before any remote action.
 
 ready/complete workspace는 quality, decision, pre-merge sync 상태를 해결해야 한다. draft/in-progress workspace는 필수 섹션을 유지하는 한 계획 placeholder를 둘 수 있다.
+
+## Source of Truth Impact Gate
+
+Branch 작업 중 아래 변경이 있으면 AI는 완료 전에 shared Source of Truth 영향도를 판정한다.
+
+- API, interface, schema, endpoint, data model, module boundary, architecture layer 변경
+- milestone, Phase, 완료 기준, acceptance, regression, manual verification 변경
+- 이미 구현된 기능 범위가 기존 문서의 예정, 미정, 후보 표현을 바꾸는 경우
+- 팀원이 다음 Phase를 시작할 때 기준으로 삼는 문서와 실제 코드가 달라질 수 있는 경우
+
+판정 결과는 다음 값 중 하나로 기록한다.
+
+- `none`: shared Source of Truth 영향 없음.
+- `required`: shared Source of Truth 변경 필요.
+- `applied`: 필요한 Source of Truth 문서 변경 완료.
+- `deferred`: 현재 범위 밖이라 보류. `decisions.md`에 deferred reason, revisit trigger, target branch/phase를 기록해야 한다.
+
+기록 위치:
+
+- `shared-docs.md`: `Proposed Source Of Truth Changes` 표의 `File` 컬럼에 실제 Source of Truth 문서 경로를 적는다.
+- `decisions.md`: 적용 또는 보류 결정을 기록한다.
+- `quality.md`: Source of Truth Impact Gate 검증 명령과 결과를 기록한다.
+- `report.md`: 최종 반영/보류 요약을 기록한다.
+
+`scripts/validate-harness.sh --strict`는 ready/complete/integration-ready workspace의 `shared-docs.md` 표에 적힌 `docs/...` 파일이 base commit 이후 실제 diff에 포함됐는지 확인한다. 실제 변경하지 않는 경우 `decisions.md`의 deferred decision에 reason, revisit trigger, target branch/phase가 있어야 한다.
+
+Historical report, 과거 workspace 기록, archive 문서는 자동 수정 대상으로 강제하지 않는다. 설명 문장이나 Integration Notes에 등장하는 경로만으로는 Source of Truth proposal로 보지 않고, `Proposed Source Of Truth Changes` 표의 `File` 컬럼만 검사한다.
 
 ## 완료 후 handoff 선택지
 

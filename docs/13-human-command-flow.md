@@ -124,6 +124,7 @@ PR 준비 상태 확인해
 AI does:
 
 - Runs `scripts/status-workflow.sh <workspace>`.
+- Checks Source of Truth Impact Gate before PR handoff; unresolved proposals must be applied or deferred first.
 - Checks `.github/pull_request_template.md`.
 - Reports missing `sync.md`, `quality.md`, confirmation, or validation items.
 - Runs validation only when approved or already within the agreed verification scope.
@@ -151,6 +152,7 @@ PR 올리고 이슈 닫히는 것까지 진행해
 
 AI does:
 
+- Resolves Source of Truth Impact Gate first; if required shared document changes exceed the current branch scope, asks for `Scope Change Confirm`.
 - Runs `scripts/prepare-pr.sh <workspace>` first to update local PR closing keyword.
 - Runs `scripts/prepare-pr.sh --check-pr-sync <workspace>` before creating or handing off the PR.
 - If the workspace is complete and PR-ready, runs `scripts/prepare-pr.sh --auto-pr <workspace>` without another question unless the human said not to create a PR.
@@ -169,6 +171,7 @@ Human says:
 
 AI does:
 
+- Checks whether the current branch has unresolved Source of Truth proposals before switching.
 - Summarizes current branch, target branch, worktree state, uncommitted changes, checkpoint commit expectation, target workspace, and switch reason.
 - Treats the explicit switch request as branch switch approval unless the summary shows unresolved conflicts or surprising dirty worktree risk.
 - If dirty worktree exists, tells the human that `scripts/start-workflow.sh` will checkpoint commit before switching.

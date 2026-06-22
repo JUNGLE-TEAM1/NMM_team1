@@ -74,6 +74,83 @@ pre_merge_deferral() {
   ' "${dir}/sync.md"
 }
 
+source_of_truth_files() {
+  local file="$1"
+  [[ -f "$file" ]] || return 0
+  awk -F '|' '
+    /^## Proposed Source Of Truth Changes/ { in_section=1; next }
+    /^## / && in_section { exit }
+    in_section && /^\|/ && $2 !~ /---|File/ {
+      value=$2
+      gsub(/^[ \t]+|[ \t]+$/, "", value)
+      gsub(/^`|`$/, "", value)
+      if (value ~ /^docs\/[^ ]+\.md$/) print value
+    }
+  ' "$file" | sort -u
+}
+
+changed_since_base() {
+  local base="$1"
+  local file="$2"
+  [[ -n "$base" && "$base" != "TBD" && "$base" != "unavailable" ]] || return 1
+  git rev-parse --verify --quiet "$base^{commit}" >/dev/null 2>&1 || return 1
+  if git diff --name-only "${base}..HEAD" -- "$file" | rg -q "^${file}$"; then
+    return 0
+  fi
+  git diff --name-only -- "$file" | rg -q "^${file}$"
+}
+
+has_source_of_truth_deferred_decision() {
+  local file="$1"
+  [[ -f "$file" ]] || return 1
+  awk -F '|' '
+    /^## Deferred Decisions/ { in_section=1; next }
+    /^## / && in_section { exit }
+    in_section && /^\|/ && $2 !~ /---|Decision/ {
+      reason=$3
+      revisit=$4
+      target=$5
+      gsub(/^[ \t]+|[ \t]+$/, "", reason)
+      gsub(/^[ \t]+|[ \t]+$/, "", revisit)
+      gsub(/^[ \t]+|[ \t]+$/, "", target)
+      if (reason != "" && reason != "TBD" && revisit != "" && revisit != "TBD" && target != "" && target != "TBD") found=1
+    }
+    END { exit found ? 0 : 1 }
+  ' "$file"
+}
+
+validate_source_of_truth_impact() {
+  local dir="$1"
+  local state="$2"
+  local shared_file="${dir}/shared-docs.md"
+  local decisions_file="${dir}/decisions.md"
+  local sync_file="${dir}/sync.md"
+  local base
+  local proposed_file
+  local proposal_count=0
+  local unresolved=0
+
+  proposal_count="$(source_of_truth_files "$shared_file" | wc -l | awk '{$1=$1; print}')"
+
+  if [[ "$proposal_count" -eq 0 ]]; then
+    return 0
+  fi
+
+  base="$(field_value "$sync_file" "- base commit:")"
+
+  while IFS= read -r proposed_file; do
+    [[ -n "$proposed_file" ]] || continue
+    if changed_since_base "$base" "$proposed_file"; then
+      continue
+    fi
+    if has_source_of_truth_deferred_decision "$decisions_file"; then
+      continue
+    fi
+    unresolved=$((unresolved + 1))
+    fail "Unresolved Source of Truth proposal '${proposed_file}' in ${shared_file}; update the file or record a deferred decision with revisit trigger and target branch/phase."
+  done < <(source_of_truth_files "$shared_file")
+}
+
 section_value() {
   local file="$1"
   local section="$2"
@@ -174,6 +251,7 @@ Default validation checks required harness files and references.
 Strict validation also checks completion-sensitive workspace quality:
 - no pending human confirmations
 - non-empty shared document proposals when shared-docs.md exists
+- unresolved Source of Truth proposals are applied or deferred
 - integration workspaces declare source branches
 - integration workspaces record source branch base information
 - sync.md records a base commit or explicit result
@@ -357,6 +435,7 @@ while IFS= read -r -d '' dir; do
 
     if is_ready_state "$state"; then
       validate_sync_handoff "$dir"
+      validate_source_of_truth_impact "$dir" "$state"
 
       if [[ "$q_status" == "draft" ]]; then
         fail "Quality gate status is still draft in ready workspace ${dir}/quality.md"

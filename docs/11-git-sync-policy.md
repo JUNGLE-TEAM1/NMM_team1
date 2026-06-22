@@ -62,6 +62,17 @@ Before completion or PR readiness:
 5. Run `scripts/validate-harness.sh --strict` and project verification.
 6. Record the result in `sync.md` Pre-Merge Sync.
 
+### Source of Truth Sync Preflight
+
+Before PR handoff, AI must compare Source of Truth proposals with the actual branch diff.
+
+- `shared-docs.md`의 `Proposed Source Of Truth Changes` 표에 `docs/...` 파일이 있으면 해당 파일은 base commit 이후 실제 diff에 포함되어야 한다.
+- 실제로 수정하지 않는 경우 `decisions.md`의 `Deferred Decisions`에 deferred reason, revisit trigger, target branch/phase를 기록해야 한다.
+- `quality.md`에는 Source of Truth Impact Gate 판정과 검증 명령을 기록한다.
+- `report.md`에는 최종적으로 적용한 Source of Truth 문서 또는 보류한 문서를 요약한다.
+
+`scripts/validate-harness.sh --strict`는 이 preflight를 자동으로 확인한다. 검사 대상은 `shared-docs.md`의 표 `File` 컬럼뿐이며, historical report, 과거 workspace, archive 문서, 설명 문장에 등장하는 경로는 자동 반영 대상으로 강제하지 않는다.
+
 ## 5) Push / PR
 
 Direct `main` push is discouraged.

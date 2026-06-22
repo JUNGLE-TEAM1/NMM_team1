@@ -31,6 +31,7 @@ Before a branch is considered complete:
 - TDD status is recorded in `quality.md`.
 - Unit or focused checks are run when applicable.
 - Integration or contract checks are run when the branch touches shared behavior.
+- Source of Truth Impact Gate evidence is recorded when implementation or documentation changes can alter shared project truth.
 - `scripts/validate-harness.sh` passes.
 - `scripts/validate-harness.sh --strict` passes before integration or PR readiness.
 - Manual verification evidence is recorded when user-visible behavior changes.
@@ -87,6 +88,8 @@ Each workspace uses `quality.md` to record:
 - implementation pass evidence
 - CI/check commands
 - CI/check result
+- Source of Truth impact: `none`, `required`, `applied`, or `deferred`
+- Source of Truth validation command/result when `shared-docs.md` proposes shared document changes
 - skipped checks and reasons
 - deployment or publish gate when relevant
 
