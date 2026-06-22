@@ -42,6 +42,16 @@
 - [ ] 관련 regression guard가 `docs/06`에 있다.
 - [ ] manual verification이 `docs/07` 또는 `docs/manual-verification/`에 있다.
 
+### M3 소스와 카탈로그
+
+- [ ] 첫 source type은 CSV/local file로 구현되어 있다.
+- [ ] metadata store는 SQLite로 시작한다.
+- [ ] backend 내부에 `MetadataStore` 경계가 있어 PostgreSQL 또는 MongoDB 구현체로 교체 가능한 구조다.
+- [ ] API에 노출되는 source/dataset id는 string UUID다.
+- [ ] source 등록/list/detail과 catalog list/detail API가 있다.
+- [ ] catalog detail은 schema, row count, sample rows, status를 반환한다.
+- [ ] 없는 file path 또는 읽을 수 없는 CSV는 ready dataset으로 표시하지 않는다.
+
 ## 4) 문서와 계약 일관성
 
 - [ ] `docs/02` architecture가 구현과 일치한다.

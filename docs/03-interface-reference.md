@@ -40,9 +40,9 @@
 | 단계 | Interface family | 후보 기능 | MVP 필수 여부 |
 | --- | --- | --- | --- |
 | M1~M3 | Health / App Shell | `/health`, frontend route, local config 확인 | 필수 |
-| M2~M5 | Source / Connection | create/list/test/preview connection, schema/sample preview | 일부 필수 |
+| M2~M5 | Source / Connection | CSV/local file create/list/detail, schema/sample preview | 일부 필수 |
 | M3~M7 | Pipeline / Run | pipeline create/update, run request, status/log/retry | 필수 |
-| M4~M8 | Catalog | dataset list/detail, schema/sample/row count, tags/domain | 일부 필수 |
+| M3~M8 | Catalog | dataset list/detail, schema/sample/row count, tags/domain | 일부 필수 |
 | M6 | Transform | select/drop/filter/union/sql transform config | 확장 |
 | M9 | Quality | quality run, rule result, score summary | 확장 |
 | M10 | Lineage / Visual Graph | graph nodes/edges, lineage read model | 확장 |
@@ -89,6 +89,56 @@
 - Related acceptance criteria: `docs/05`
 - Related regression/failure scenarios: `docs/06`
 
+### M3 Source / Catalog 계약
+
+- Type: API/UI/Internal store
+- Default source type: CSV/local file
+- Metadata store: SQLite implementation behind `MetadataStore`
+- Future store candidates: PostgreSQL 또는 MongoDB. API response contract는 유지한다.
+- ID rule: API에 노출되는 `source_id`, `dataset_id`는 string UUID로 둔다.
+- Required endpoints:
+
+```text
+POST /api/sources
+GET /api/sources
+GET /api/sources/{source_id}
+GET /api/catalog/datasets
+GET /api/catalog/datasets/{dataset_id}
+```
+
+- `POST /api/sources` minimum request:
+
+```json
+{
+  "name": "sample_orders",
+  "type": "csv",
+  "path": "samples/orders.csv"
+}
+```
+
+- Catalog dataset minimum response:
+
+```json
+{
+  "id": "dataset_001",
+  "name": "sample_orders",
+  "source_type": "csv",
+  "schema": [
+    { "name": "order_id", "type": "string" },
+    { "name": "amount", "type": "number" }
+  ],
+  "row_count": 100,
+  "sample": [
+    { "order_id": "A001", "amount": 12000 }
+  ],
+  "status": "ready"
+}
+```
+
+- Success behavior: CSV source metadata, inferred schema, row count, sample rows가 SQLite-backed catalog에 저장되고 UI에서 list/detail로 확인된다.
+- Failure behavior: file path가 없거나 읽을 수 없으면 4xx validation error를 반환하고, catalog에는 ready dataset으로 표시하지 않는다.
+- Excluded from M3: file upload UI, PostgreSQL connection, pipeline execution, transform, advanced catalog search/filter.
+
 ## 6) 내부 도구와 외부 연동
 
 ### Notion Issue Sync
@@ -100,6 +150,5 @@
 
 ## 7) 열린 이슈
 
-- 정확한 endpoint path, schema, storage 선택은 첫 구현 Phase에서 확정한다.
-- 첫 source type은 아직 열려 있다: PostgreSQL 또는 CSV/local file.
+- M3에서 file upload UI를 포함할지, sample path 등록으로 제한할지 결정한다.
 - 장기 milestone의 상세 schema는 각 구현 Phase에서 해당 interface family 단위로 확정한다.
