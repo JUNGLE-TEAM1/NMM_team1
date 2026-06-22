@@ -24,7 +24,7 @@
 ## CI/CD Gate / CI-CD 게이트
 
 - CI required: yes
-- CI result: PR 생성 후 GitHub Actions 확인 필요
+- CI result: GitHub Actions PR #32 all pass: harness 13s, manifest-smoke 12s, container-smoke 30s
 - Deploy/publish required: no
 - Deployment confirmation: not applicable
 - Rollback/smoke notes: 문서 변경만 포함하며 런타임 배포 없음

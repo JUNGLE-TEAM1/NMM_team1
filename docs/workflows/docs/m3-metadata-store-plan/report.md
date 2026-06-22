@@ -11,7 +11,7 @@
 - Escalated context read: XFlow `backend/database.py`, `backend/models.py`, `backend/routers/catalog.py`, `backend/services/catalog_service.py`
 - Context omitted intentionally: XFlow frontend catalog UI and distributed infra details are not needed for this M3 planning decision
 - Changed: M3 source/store/API scope, SQLite + `MetadataStore` boundary, XFlow MongoDB reference note, acceptance criteria
-- Verified: `scripts/validate-harness.sh`, `scripts/validate-harness.sh --strict`
+- Verified: `scripts/validate-harness.sh`, `scripts/validate-harness.sh --strict`, GitHub Actions PR #32 all pass
 - Remaining: next M3 implementation branch should create SQLite-backed store, CSV parser, source/catalog API, frontend list/detail
 - Next context: `feature/source-catalog`
 - Risk: SQLite is MVP-local and not production metadata storage. Store boundary and string UUIDs reduce future PostgreSQL/MongoDB migration risk.
