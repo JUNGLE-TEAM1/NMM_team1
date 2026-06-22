@@ -292,6 +292,7 @@ require_file "docs/13-human-command-flow.md"
 require_file "docs/14-decision-option-brief.md"
 require_file "docs/15-context-budget-rule.md"
 require_file "docs/16-existing-codebase-adoption.md"
+require_file "docs/18-harness-regression-policy.md"
 require_file "docs/workflows/README.md"
 require_file "docs/reports/README.md"
 require_file ".github/pull_request_template.md"
@@ -611,11 +612,19 @@ if ! rg -q "harness-flow-check.sh" docs/11-git-sync-policy.md; then
   fail "docs/11-git-sync-policy.md does not mention harness-flow-check.sh"
 fi
 
-if ! rg -q "Harness Test Update Gate" docs/08-development-workflow.md docs/12-quality-gates.md docs/13-human-command-flow.md docs/workflows/README.md; then
+if ! rg -q "Harness Test Update Gate" docs/08-development-workflow.md docs/12-quality-gates.md docs/13-human-command-flow.md docs/workflows/README.md docs/18-harness-regression-policy.md; then
   fail "Harness Test Update Gate is not documented across workflow, quality, human command flow, and workspace docs"
 fi
 
-if ! rg -q "scripts/test-harness.sh" docs/08-development-workflow.md docs/12-quality-gates.md docs/workflows/README.md .github/workflows/ci.yml; then
+if ! rg -q "Harness Regression Policy|docs/18-harness-regression-policy.md" docs/00-layer-map.md docs/12-quality-gates.md docs/workflows/README.md; then
+  fail "Harness Regression Policy Source of Truth is not registered and referenced"
+fi
+
+if ! rg -q "fetch-depth: 0" docs/18-harness-regression-policy.md .github/workflows/ci.yml; then
+  fail "Harness regression policy and CI must mention fetch-depth: 0"
+fi
+
+if ! rg -q "scripts/test-harness.sh" docs/08-development-workflow.md docs/12-quality-gates.md docs/workflows/README.md docs/18-harness-regression-policy.md .github/workflows/ci.yml; then
   fail "Harness regression test script is not documented and wired into CI"
 fi
 
@@ -733,7 +742,7 @@ if ! rg -q "cleanup-merged-branches.sh" scripts/prepare-pr.sh || ! rg -q "script
   fail "prepare-pr finalize must run scripts/cleanup-merged-branches.sh and policy must document it"
 fi
 
-if ! rg -q "git ls-remote --heads origin 'feature/\\*'.*git push origin --delete.*git branch -d.*git fetch --prune" docs/11-git-sync-policy.md; then
+if ! rg -q "allowed workspace branch 원격 조회.*git push origin --delete.*git branch -d.*git fetch --prune" docs/11-git-sync-policy.md; then
   fail "Automatic cleanup local/remote/prune command order is not documented"
 fi
 
@@ -745,7 +754,7 @@ if ! rg -q "AWS resource|cloud resource|external resources|별도 명시 승인"
   fail "Automatic cleanup must exclude AWS/cloud/external resource cleanup"
 fi
 
-if ! rg -q "Remote Feature Branches|Remote \\| Tracking|git ls-remote --heads origin 'feature/\\*'" scripts/list-active-branches.sh; then
+if ! rg -q "Remote Workspace Branches|workspace_branch_regex|Remote \\| Tracking" scripts/list-active-branches.sh; then
   fail "scripts/list-active-branches.sh must show local/remote/tracking branch cleanup context"
 fi
 
@@ -769,6 +778,10 @@ fi
 
 if ! rg -q "완료 \\+ PR 준비 상태입니다.*자동 PR 생성 대상입니다.*--auto-pr.*1 PR 진행\\(merge, finalize, issue close 확인, automatic branch cleanup\\).*2 추가 보강.*3 다음 Phase.*4 보류.*5 외부 실행 승인" scripts/status-workflow.sh; then
   fail "scripts/status-workflow.sh must recommend completion handoff choices for complete PR-ready workspaces"
+fi
+
+if ! rg -q "PR이 이미 열려 있습니다.*1 PR 진행\\(merge, finalize, issue close 확인, automatic branch cleanup\\).*2 추가 보강.*3 보류.*4 다음 Phase" scripts/status-workflow.sh; then
+  fail "scripts/status-workflow.sh must recommend existing PR choices before auto PR creation"
 fi
 
 if ! rg -q "Existing Codebase Adoption|baseline \\+ next-change|docs/16-existing-codebase-adoption.md" README.md; then

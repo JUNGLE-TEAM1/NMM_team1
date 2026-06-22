@@ -99,12 +99,7 @@ Each workspace uses `quality.md` to record:
 ## 7) Harness Regression Tests
 
 Harness behavior is tested with lightweight fixture regression tests.
-
-- `scripts/test-harness.sh` creates temporary Git repositories and workspaces.
-- Positive fixtures verify valid workspace and deferred/applied Source of Truth flows.
-- Negative fixtures verify unresolved Source of Truth proposals, broken PR sync fields, and missing pre-merge sync fail as expected.
-- Dry-run/local checks verify PR helper behavior without changing GitHub, cloud, deploy, or production state.
-- Full E2E flow tests that contact external services are reserved for explicit human-approved harness audit or release work.
+The detailed Source of Truth for the Harness Test Update Gate, fixture expectations, `scripts/test-harness.sh`, and external E2E boundaries is `docs/18-harness-regression-policy.md`.
 
 Reports summarize the result; `quality.md` keeps the working detail.
 

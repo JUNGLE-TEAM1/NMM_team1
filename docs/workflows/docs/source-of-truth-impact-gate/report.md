@@ -10,8 +10,8 @@
 - Primary context read: `docs/08-development-workflow.md`, `docs/11-git-sync-policy.md`, `docs/12-quality-gates.md`, `docs/13-human-command-flow.md`, `docs/workflows/README.md`, `scripts/status-workflow.sh`, `scripts/validate-harness.sh`
 - Escalated context read: current workspace files and previous source-of-truth-alignment workspace evidence
 - Context omitted intentionally: product runtime code, AWS/deploy files, unrelated historical reports
-- Changed: Source of Truth Impact Gate docs, Harness Test Update Gate docs, status display, strict validation guard, fixture regression test script, CI checkout depth/test wiring, workspace evidence
-- Verified: `bash -n scripts/*.sh`; `scripts/test-harness.sh`; `scripts/validate-harness.sh`; `scripts/validate-harness.sh --strict`; `scripts/status-workflow.sh docs/workflows/docs/source-of-truth-impact-gate`
+- Changed: Source of Truth Impact Gate docs, Harness Test Update Gate docs, `docs/18-harness-regression-policy.md`, status display, branch queue/cleanup prefix handling, strict validation guard, fixture regression test script, CI checkout depth/test wiring, workspace evidence
+- Verified: `bash -n scripts/*.sh`; `scripts/test-harness.sh` 11 fixture cases; `scripts/validate-harness.sh`; `scripts/validate-harness.sh --strict`; `scripts/status-workflow.sh docs/workflows/docs/source-of-truth-impact-gate`; `scripts/list-active-branches.sh`; `scripts/prepare-pr.sh --check-pr-sync docs/workflows/docs/source-of-truth-impact-gate`
 - Remaining: PR/CI/merge after human-approved PR flow
 - Next context: PR readiness for `docs/source-of-truth-impact-gate`
 - Risk: fixture tests are local/dry-run only; real GitHub PR/merge/deploy behavior remains governed by human-approved workflow commands

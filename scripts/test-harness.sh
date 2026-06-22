@@ -500,6 +500,31 @@ case_status_reports_sot() {
   )
 }
 
+case_existing_pr_status_does_not_recommend_auto_pr() {
+  local repo="${tmp_root}/existing-pr-status"
+  copy_repo "$repo"
+  (
+    cd "$repo"
+    local base
+    base="$(base_commit)"
+    local workspace="docs/workflows/test/harness-existing-pr"
+    write_common_workspace "$workspace" "complete" "passed" "accepted" "$base"
+    awk '
+      /^- pushed branch:/ { print "- pushed branch: test/harness-existing-pr"; next }
+      /^- PR link:/ { print "- PR link: https://example.invalid/pull/2"; next }
+      /^- merge status:/ { print "- merge status: open"; next }
+      /^- issue close status:/ { print "- issue close status: open"; next }
+      { print }
+    ' "${workspace}/sync.md" > "${workspace}/sync.md.tmp"
+    mv "${workspace}/sync.md.tmp" "${workspace}/sync.md"
+    git add "$workspace"
+    git commit -q -m "existing pr status fixture"
+    scripts/status-workflow.sh "$workspace" > /tmp/harness-existing-pr-status.out
+    rg -q "PR이 이미 열려 있습니다" /tmp/harness-existing-pr-status.out
+    ! rg -q "자동 PR 생성 대상입니다" /tmp/harness-existing-pr-status.out
+  )
+}
+
 case_prepare_pr_check_is_local() {
   local repo="${tmp_root}/prepare-pr"
   copy_repo "$repo"
@@ -513,6 +538,30 @@ case_prepare_pr_check_is_local() {
     git commit -q -m "prepare pr fixture"
     scripts/prepare-pr.sh --check-pr-sync "$workspace" >/tmp/harness-prepare-pr.out
     ! rg -q "Created PR|To https://|github.com/.*/pull/" /tmp/harness-prepare-pr.out
+  )
+}
+
+case_docs_branch_remote_tracking_is_reported() {
+  local repo="${tmp_root}/docs-branch"
+  local remote="${tmp_root}/docs-branch-origin.git"
+  copy_repo "$repo"
+  git init -q --bare "$remote"
+  (
+    cd "$repo"
+    git remote add origin "$remote"
+    git branch -M main
+    git push -q -u origin main
+    git checkout -q -b docs/harness-branch
+    local base
+    base="$(base_commit)"
+    local workspace="docs/workflows/docs/harness-branch"
+    write_common_workspace "$workspace" "complete" "passed" "accepted" "$base"
+    git add "$workspace"
+    git commit -q -m "docs branch fixture"
+    git push -q -u origin docs/harness-branch
+    scripts/list-active-branches.sh > /tmp/harness-docs-branch.out
+    rg -q "Remote Workspace Branches" /tmp/harness-docs-branch.out
+    rg -q '\| `docs/harness-branch` \|.*\| yes \| yes \| `docs/workflows/docs/harness-branch`' /tmp/harness-docs-branch.out
   )
 }
 
@@ -559,7 +608,9 @@ run_expect_success "deferred Source of Truth proposal passes" case_deferred_sot_
 run_expect_failure "PR link exists but pushed branch missing fails" case_pr_link_without_branch_fails
 run_expect_failure "complete workspace with missing pre-merge sync fails" case_missing_premerge_fails
 run_expect_success "status workflow reports Source of Truth proposal status" case_status_reports_sot
+run_expect_success "existing PR status does not recommend auto PR" case_existing_pr_status_does_not_recommend_auto_pr
 run_expect_success "prepare-pr check stays local" case_prepare_pr_check_is_local
+run_expect_success "docs branch remote and tracking status is reported" case_docs_branch_remote_tracking_is_reported
 run_expect_failure "missing harness regression script fails validation" case_missing_harness_test_script_fails
 run_expect_success "harness test skip record passes" case_harness_test_skip_record_passes
 

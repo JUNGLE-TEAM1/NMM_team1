@@ -24,6 +24,7 @@ Project-specific files may change, but the layer roles should stay stable.
 | Decision Option Brief | high-impact choice classification, candidate comparison, exclusion reasons, and recommendation format | `docs/14-decision-option-brief.md` |
 | Context Budget Rule | Lite/Escalate/Audit read modes for reducing token waste without skipping required context | `docs/15-context-budget-rule.md` |
 | Existing Codebase Adoption | baseline + next-change adoption mode for repos that already have codebase or operational inertia | `docs/16-existing-codebase-adoption.md` |
+| Harness Regression Policy | fixture regression tests and Harness Test Update Gate rules for harness changes | `docs/18-harness-regression-policy.md` |
 | Branch Workspaces | branch-specific working plans, notes, and reports | `docs/workflows/` |
 | Evidence | Phase reports, Hotfix reports, screenshots, logs, and latest-report index | `docs/reports/` |
 | External Summary | concise public or stakeholder-facing summary | `README.md` |
@@ -45,6 +46,7 @@ Use the earliest impacted layer as the start point, then review/update only the 
 | Decision option brief change | Workflow -> Collaboration Agreement -> Next Action Menu |
 | Context budget or context loading change | Workflow -> Collaboration Agreement -> Next Action Menu -> Human Command Flow -> Branch Workspaces -> Evidence |
 | Existing codebase adoption mode change | Workflow -> Collaboration Agreement -> Next Action Menu -> Human Command Flow -> Context Budget Rule -> Evidence |
+| Harness regression policy change | Quality Gates -> Harness Regression Policy -> Workflow -> Human Command Flow -> Branch Workspaces |
 | Acceptance scenario change | Acceptance -> Regression -> Manual Verification -> Workflow |
 | Regression/failure criteria change | Regression -> Manual Verification -> Workflow |
 | Manual verification change | Manual Verification -> Workflow |
@@ -129,6 +131,9 @@ layers:
   existing_codebase_adoption:
     files:
       - "docs/16-existing-codebase-adoption.md"
+  harness_regression_policy:
+    files:
+      - "docs/18-harness-regression-policy.md"
   branch_workspaces:
     files:
       - "docs/workflows/"

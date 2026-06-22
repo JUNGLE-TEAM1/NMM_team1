@@ -6,7 +6,7 @@ usage() {
 Usage:
   scripts/cleanup-merged-branches.sh [--dry-run]
 
-Automatically cleans merged/closed feature branches after PR finalize.
+Automatically cleans merged/closed workspace branches after PR finalize.
 This script only deletes Git branch refs. It never deletes deploy, AWS, cloud,
 database, or other external resources.
 USAGE
@@ -54,18 +54,20 @@ section_value() {
 }
 
 current_branch="$(git branch --show-current 2>/dev/null || true)"
+workspace_branch_regex='^(feature|fix|docs|test|chore|hotfix)/'
 remote_heads_file="$(mktemp)"
 local_branches_file="$(mktemp)"
 delete_remote_file="$(mktemp)"
 delete_local_file="$(mktemp)"
 trap 'rm -f "$remote_heads_file" "$local_branches_file" "$delete_remote_file" "$delete_local_file"' EXIT
 
-git ls-remote --heads origin 'feature/*' 2>/dev/null \
+git ls-remote --heads origin 2>/dev/null \
   | awk '{ sub("refs/heads/", "", $2); print $2 }' \
+  | awk -v regex="$workspace_branch_regex" '$0 ~ regex { print }' \
   | sort > "$remote_heads_file" || true
 
 git branch --format='%(refname:short)' \
-  | awk '/^feature\// { print }' \
+  | awk -v regex="$workspace_branch_regex" '$0 ~ regex { print }' \
   | sort > "$local_branches_file"
 
 echo "Merged Branch Cleanup"
@@ -78,7 +80,7 @@ while IFS= read -r workspace; do
   branch="${workspace#docs/workflows/}"
   sync_file="${workspace}/sync.md"
   [[ -f "$sync_file" ]] || continue
-  [[ "$branch" == feature/* ]] || continue
+  [[ "$branch" =~ $workspace_branch_regex ]] || continue
   [[ "$branch" != "$current_branch" ]] || continue
 
   merge_status="$(section_value "$sync_file" "## Push / PR" "- merge status:")"
@@ -138,8 +140,18 @@ echo
 echo "Cleanup verification"
 scripts/list-active-branches.sh
 echo
-echo "Local feature branches"
+echo "Local workspace branches"
 git branch --list 'feature/*'
+git branch --list 'fix/*'
+git branch --list 'docs/*'
+git branch --list 'test/*'
+git branch --list 'chore/*'
+git branch --list 'hotfix/*'
 echo
-echo "Remote feature branches"
+echo "Remote workspace branches"
 git ls-remote --heads origin 'feature/*'
+git ls-remote --heads origin 'fix/*'
+git ls-remote --heads origin 'docs/*'
+git ls-remote --heads origin 'test/*'
+git ls-remote --heads origin 'chore/*'
+git ls-remote --heads origin 'hotfix/*'

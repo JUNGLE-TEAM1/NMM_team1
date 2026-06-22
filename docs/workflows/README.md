@@ -74,6 +74,8 @@ Branches that change harness rules or harness scripts record test impact.
 
 Use `none` for non-harness work, `required` before tests are updated, `updated` after fixtures are added or changed, `skipped` for wording-only changes with a reason, and `deferred` only with a recorded revisit condition.
 
+Detailed fixture expectations, `scripts/test-harness.sh` usage, CI checkout requirements, and external E2E limits are defined in `docs/18-harness-regression-policy.md`.
+
 ## Create A Workspace
 
 ```bash
