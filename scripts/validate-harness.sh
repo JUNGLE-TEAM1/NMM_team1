@@ -97,6 +97,9 @@ changed_since_base() {
   if git diff --name-only "${base}..HEAD" -- "$file" | rg -q "^${file}$"; then
     return 0
   fi
+  if git diff --cached --name-only -- "$file" | rg -q "^${file}$"; then
+    return 0
+  fi
   git diff --name-only -- "$file" | rg -q "^${file}$"
 }
 
@@ -297,6 +300,7 @@ require_file "scripts/start-workflow.sh"
 require_file "scripts/status-workflow.sh"
 require_file "scripts/harness-flow-check.sh"
 require_file "scripts/list-active-branches.sh"
+require_file "scripts/test-harness.sh"
 
 while IFS= read -r -d '' dir; do
   require_file "${dir}/plan.md"
@@ -607,6 +611,14 @@ if ! rg -q "harness-flow-check.sh" docs/11-git-sync-policy.md; then
   fail "docs/11-git-sync-policy.md does not mention harness-flow-check.sh"
 fi
 
+if ! rg -q "Harness Test Update Gate" docs/08-development-workflow.md docs/12-quality-gates.md docs/13-human-command-flow.md docs/workflows/README.md; then
+  fail "Harness Test Update Gate is not documented across workflow, quality, human command flow, and workspace docs"
+fi
+
+if ! rg -q "scripts/test-harness.sh" docs/08-development-workflow.md docs/12-quality-gates.md docs/workflows/README.md .github/workflows/ci.yml; then
+  fail "Harness regression test script is not documented and wired into CI"
+fi
+
 if ! rg -q "Quality Gates" docs/12-quality-gates.md; then
   fail "docs/12-quality-gates.md does not mention Quality Gates"
 fi
@@ -833,6 +845,10 @@ fi
 
 if ! bash -n scripts/status-workflow.sh; then
   fail "scripts/status-workflow.sh has shell syntax errors"
+fi
+
+if ! bash -n scripts/test-harness.sh; then
+  fail "scripts/test-harness.sh has shell syntax errors"
 fi
 
 if ! bash -n scripts/harness-flow-check.sh; then

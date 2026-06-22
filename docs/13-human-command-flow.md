@@ -134,6 +134,22 @@ AI does:
 Human says:
 
 ```text
+하네스 규칙 수정해
+검증 규칙 추가해
+workflow 보강해
+```
+
+AI does:
+
+- Checks Harness Test Update Gate before completion.
+- Decides whether harness regression fixtures must be added or updated.
+- Runs `scripts/test-harness.sh` when harness behavior changes.
+- Records test impact, skip/deferred reason, and validation result in `quality.md`, `decisions.md`, and `report.md`.
+- Uses dry-run or local-only checks for PR/GitHub/deploy helpers; does not run remote-changing actions as part of tests.
+
+Human says:
+
+```text
 브랜치 만들 때 이슈도 같이 생성해
 ```
 

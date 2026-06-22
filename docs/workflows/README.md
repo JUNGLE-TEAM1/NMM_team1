@@ -63,6 +63,17 @@ Allowed impact statuses are `none`, `required`, `applied`, and `deferred`.
 When `shared-docs.md` proposes a `docs/...` file, strict validation expects that file to appear in the branch diff from the workspace base commit, unless a deferred decision records reason, revisit trigger, and target branch/phase.
 Only the table `File` column is treated as a proposal; explanatory text, historical reports, archived workspaces, and Integration Notes are not forced into edits.
 
+## Harness Test Impact
+
+Branches that change harness rules or harness scripts record test impact.
+
+- `quality.md`: records `Harness test impact` and the `scripts/test-harness.sh` result, or a skip reason.
+- `decisions.md`: records deferred fixture work with reason, revisit trigger, and target branch/phase.
+- `report.md`: summarizes added/updated fixtures and remaining test risk.
+- `notes.md`: can keep failure notes from CI or local fixture runs.
+
+Use `none` for non-harness work, `required` before tests are updated, `updated` after fixtures are added or changed, `skipped` for wording-only changes with a reason, and `deferred` only with a recorded revisit condition.
+
 ## Create A Workspace
 
 ```bash

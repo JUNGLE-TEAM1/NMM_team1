@@ -18,5 +18,6 @@ jobs:
           bash -n scripts/status-workflow.sh
       - name: Harness validation
         run: |
+          scripts/test-harness.sh
           scripts/validate-harness.sh
           scripts/validate-harness.sh --strict

@@ -10,8 +10,8 @@
 - Reason: 하네스 문서와 shell validation/status 스크립트 보강이며 제품 runtime logic은 변경하지 않는다.
 - Failing test first: not applicable
 - Expected failure command/result: not applicable
-- Pass command/result: `bash -n scripts/*.sh`, `scripts/validate-harness.sh`, `scripts/validate-harness.sh --strict`, `scripts/status-workflow.sh docs/workflows/docs/source-of-truth-impact-gate`
-- Refactor notes: SOT proposal 검사는 `shared-docs.md` 표의 `File` 컬럼만 대상으로 제한해 설명 문장/과거 기록 경로 오탐을 피한다.
+- Pass command/result: `bash -n scripts/*.sh`, `scripts/test-harness.sh`, `scripts/validate-harness.sh`, `scripts/validate-harness.sh --strict`, `scripts/status-workflow.sh docs/workflows/docs/source-of-truth-impact-gate`
+- Refactor notes: SOT proposal 검사는 `shared-docs.md` 표의 `File` 컬럼만 대상으로 제한해 설명 문장/과거 기록 경로 오탐을 피한다. 하네스 규칙 변경은 fixture regression test로 검증한다.
 
 ## Branch Checks / 브랜치 검증
 
@@ -20,6 +20,7 @@
 | shell syntax | `bash -n scripts/*.sh` | pass | shell syntax valid |
 | unit/focused test | `scripts/status-workflow.sh docs/workflows/docs/source-of-truth-impact-gate` | pass | displays Source of Truth proposal files/status as `applied` |
 | integration/contract test | `scripts/validate-harness.sh --strict` | pass | unresolved SOT proposal guard passes for applied proposals and existing workspaces |
+| harness regression test | `scripts/test-harness.sh` | pass | 9 fixture cases passed: SOT applied/unresolved/deferred, PR sync failure, missing pre-merge, status output, local PR check, missing regression script, skip record |
 | build/typecheck | not applicable | skipped | docs/shell harness change only |
 | harness validation | `scripts/validate-harness.sh` | pass | Harness validation passed |
 | strict harness validation | `scripts/validate-harness.sh --strict` | pass | Harness validation passed |
@@ -32,10 +33,17 @@
 - Validation command/result: `scripts/status-workflow.sh docs/workflows/docs/source-of-truth-impact-gate` reports proposal status `applied`; `scripts/validate-harness.sh --strict` passes.
 - Deferred items: retroactive quality evidence for old workspaces is deferred in `decisions.md`
 
+## Harness Test Update Gate
+
+- Harness test impact: updated
+- Added/updated tests: `scripts/test-harness.sh`, `tests/harness/fixtures/README.md`
+- Validation command/result: `scripts/test-harness.sh` passed, 9 fixture cases.
+- Remote safety: tests use temporary local Git repositories and do not call `gh issue create`, push, PR creation, merge, deploy, or cloud commands.
+
 ## CI/CD Gate / CI-CD 게이트
 
 - CI required: yes
-- CI result: PR CI passed after fixing harness checkout to `fetch-depth: 0`; harness, container-smoke, and manifest-smoke passed on run `27939251407`
+- CI result: local equivalent passed after adding harness regression tests; PR CI rerun pending after push
 - Deploy/publish required: no
 - Deployment confirmation: deploy/publish not required
 - Rollback/smoke notes: 문제 발생 시 하네스 문서/스크립트 변경만 되돌리면 된다. 외부 상태 변경 없음.

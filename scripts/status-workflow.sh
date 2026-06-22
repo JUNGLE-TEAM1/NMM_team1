@@ -69,6 +69,9 @@ changed_since_base() {
   if git diff --name-only "${base}..HEAD" -- "$file" | rg -q "^${file}$"; then
     return 0
   fi
+  if git diff --cached --name-only -- "$file" | rg -q "^${file}$"; then
+    return 0
+  fi
   git diff --name-only -- "$file" | rg -q "^${file}$"
 }
 
