@@ -389,6 +389,67 @@ M5 이후는 XFlow급 기능 볼륨을 AskLake 방식으로 구현하기 위한 
 
 Phase 제목에는 항상 branch 또는 작업 위치를 포함한다. branch 작업이 불가능하면 local path 또는 `local workspace`를 쓰고 Phase report에 이유를 설명한다.
 
+## 내부 단계별 프롬프트
+
+큰 Phase는 하나의 branch workspace 안에서 여러 내부 단계로 나눌 수 있다.
+내부 단계는 기본적으로 같은 branch와 같은 workspace에서 진행한다.
+단계가 현재 `plan.md` 범위를 넘으면 `Scope Change Confirm`을 먼저 해결한다.
+독립 배포, 독립 PR, 독립 ownership이 필요하면 새 branch workspace로 분리한다.
+
+내부 단계별 프롬프트의 기본 저장 위치는 현재 workspace의 `plan.md`다.
+섹션 이름은 `## 내부 단계별 프롬프트`를 사용한다.
+작은 Phase에서는 이 섹션을 `not needed`로 남겨도 된다.
+
+각 단계는 아래 구조를 따른다.
+
+~~~md
+## 내부 단계별 프롬프트
+
+### Step N - [STEP_NAME]
+
+#### 목표
+
+- [STEP_GOAL]
+
+#### 범위
+
+- [STEP_SCOPE]
+
+#### 범위 제외
+
+- [STEP_OUT_OF_SCOPE]
+
+#### 구현 프롬프트
+
+```text
+@AGENTS.md @[RELEVANT_DOCS]
+
+[IMPLEMENTATION_REQUEST]
+```
+
+#### 검증 프롬프트
+
+```text
+@AGENTS.md @[RELEVANT_DOCS]
+
+[VERIFICATION_REQUEST]
+```
+
+#### 완료 기준
+
+- [ ] [STEP_COMPLETION_CRITERION]
+~~~
+
+Workspace 파일 역할은 아래처럼 나눈다.
+
+- `plan.md`: Phase 전체 계획, 내부 단계별 프롬프트, 단계별 완료 기준.
+- `next-actions.md`: 현재 다음 단계와 사람 선택 메뉴.
+- `quality.md`: 단계별 검증 명령과 결과.
+- `report.md`: 최종 요약과 남은 위험.
+- `decisions.md`: 단계 중 발생한 고영향 결정.
+- `shared-docs.md`: Source of Truth 변경 제안.
+- `sync.md`: branch, issue, PR, merge 상태.
+
 ## Phase 0 - 프로젝트 부트스트랩 (`feature/project-bootstrap`)
 
 ### 목표

@@ -21,7 +21,7 @@ Examples:
 
 Each workspace contains:
 
-- `plan.md`: current branch goal, scope, prompts, and completion criteria
+- `plan.md`: current branch goal, scope, prompts, completion criteria, and optional `## 내부 단계별 프롬프트` for Step-level implementation/verification prompts
 - `notes.md`: running notes, decisions, open questions, and evidence links
 - `report.md`: branch-level report or short report
 - `quality.md`: TDD evidence, branch checks, CI/CD gate status, and skipped-check reasons

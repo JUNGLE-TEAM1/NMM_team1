@@ -236,6 +236,14 @@ while IFS= read -r -d '' dir; do
     fail "Workspace sources.md does not mention decisions.md handoff: ${dir}/sources.md"
   fi
 
+  if rg -q '^### Step ' "${dir}/plan.md"; then
+    for heading in "#### 구현 프롬프트" "#### 검증 프롬프트" "#### 완료 기준"; do
+      if ! rg -q "^${heading}$" "${dir}/plan.md"; then
+        fail "Workspace plan.md has Step sections but is missing ${heading}: ${dir}/plan.md"
+      fi
+    done
+  fi
+
   if [[ "$strict" -eq 1 ]]; then
     state="$(workspace_state "$dir")"
     q_status="$(quality_status "$dir")"
@@ -656,6 +664,14 @@ fi
 
 if ! rg -q "## 목표|## 범위|## 구현 프롬프트|## 검증 프롬프트|## 완료 기준" scripts/start-workflow.sh; then
   fail "scripts/start-workflow.sh does not generate Korean-centered workspace templates"
+fi
+
+if ! rg -q "내부 단계별 프롬프트" docs/08-development-workflow.md; then
+  fail "docs/08-development-workflow.md does not document internal step prompts"
+fi
+
+if ! rg -q "## 내부 단계별 프롬프트" scripts/start-workflow.sh; then
+  fail "scripts/start-workflow.sh does not generate an internal step prompt section"
 fi
 
 if ! rg -q "짧은 보고|검증 명령|수동 검증|최종 판단" docs/reports/_template.md; then

@@ -329,6 +329,46 @@ core logic, regression 위험, integration contract, bug fix를 바꾸는 경우
 branch 작업을 검증하고 \`quality.md\`와 workspace report에 증거를 기록한다.
 \`\`\`
 
+## 내부 단계별 프롬프트
+
+- not needed
+
+큰 Phase를 내부 단계로 나누는 경우 아래 양식을 사용한다. 작은 Phase는 이 섹션을 \`not needed\`로 둔다.
+
+### Step N - [STEP_NAME]
+
+#### 목표
+
+- [STEP_GOAL]
+
+#### 범위
+
+- [STEP_SCOPE]
+
+#### 범위 제외
+
+- [STEP_OUT_OF_SCOPE]
+
+#### 구현 프롬프트
+
+\`\`\`text
+@AGENTS.md @[RELEVANT_DOCS]
+
+[IMPLEMENTATION_REQUEST]
+\`\`\`
+
+#### 검증 프롬프트
+
+\`\`\`text
+@AGENTS.md @[RELEVANT_DOCS]
+
+[VERIFICATION_REQUEST]
+\`\`\`
+
+#### 완료 기준
+
+- [ ] [STEP_COMPLETION_CRITERION]
+
 ## 완료 기준
 
 - [ ] 범위 완료
