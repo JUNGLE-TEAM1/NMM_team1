@@ -21,7 +21,8 @@ AskLake의 MVP 후보는 XFlow를 참고한 경량 데이터 파이프라인 플
 - 아키텍처와 인터페이스 계약은 `docs/02-architecture.md`, `docs/03-interface-reference.md`에 기록한다.
 - 수용 기준, 회귀 기준, 수동 검증은 `docs/05`, `docs/06`, `docs/07`에 기록한다.
 - GitHub Issue / PR / Project / Notion sync 관련 파일은 `.github/` 아래에 둔다.
-- M2 앱 골격은 `backend/`, `frontend/`, `infra/docker/`, `docker-compose.yml`에 둔다.
+- MVP demo path는 source 등록, catalog 확인, pipeline 실행, result dataset 확인까지 동작한다.
+- 앱 코드는 `backend/`, `frontend/`, `infra/docker/`, `docker-compose.yml`에 둔다.
 
 ## 로컬 앱 실행
 
@@ -35,9 +36,20 @@ docker compose up
 - Container smoke: `scripts/smoke-container-app.sh`
 - Sample source path: `samples/orders.csv`
 
+## MVP 데모
+
+팀원 데모 흐름은 `docs/manual-verification/07-mvp-demo-script.md`를 따른다.
+
+Golden path:
+
+1. 샘플 CSV source를 등록한다.
+2. Catalog 상세에서 schema, row count, sample rows를 확인한다.
+3. Pipeline Run에서 기본 선택 컬럼으로 실행한다.
+4. result dataset의 status, row count, 저장 위치를 확인한다.
+
 ## 기존 코드베이스 적용 방식
 
-현재 `main`은 제품 코드가 없는 초기 상태다. MVP 구현이 시작되면 `docs/08-development-workflow.md`의 Phase 순서와 branch workspace 방식으로 진행한다. 나중에 기존 코드가 생긴 뒤 하네스를 다시 붙일 때는 `Existing Codebase Adoption` 또는 `baseline + next-change` 방식을 따른다.
+현재 `main`은 AskLake MVP skeleton과 최소 pipeline run을 포함한다. 이후 기능은 `docs/08-development-workflow.md`의 Phase 순서와 branch workspace 방식으로 진행한다. 나중에 기존 코드가 더 커진 뒤 하네스를 다시 붙일 때는 `Existing Codebase Adoption` 또는 `baseline + next-change` 방식을 따른다.
 
 ## 라이선스
 

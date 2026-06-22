@@ -9,7 +9,7 @@ export function SourceCatalog() {
   const [sources, setSources] = useState([]);
   const [datasets, setDatasets] = useState([]);
   const [selectedDatasetId, setSelectedDatasetId] = useState(null);
-  const [form, setForm] = useState({ name: "sample_orders", path: "samples/orders.csv" });
+  const [form, setForm] = useState(() => ({ name: makeDemoSourceName(), path: "samples/orders.csv" }));
   const [notice, setNotice] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -22,12 +22,15 @@ export function SourceCatalog() {
     refreshCatalog();
   }, []);
 
-  async function refreshCatalog() {
+  async function refreshCatalog(preferredDatasetId = selectedDatasetId) {
     try {
       const [nextSources, nextDatasets] = await Promise.all([listSources(), listCatalogDatasets()]);
       setSources(nextSources);
       setDatasets(nextDatasets);
-      if (!selectedDatasetId && nextDatasets.length > 0) {
+      const hasPreferred = nextDatasets.some((dataset) => dataset.id === preferredDatasetId);
+      if (hasPreferred) {
+        setSelectedDatasetId(preferredDatasetId);
+      } else if (nextDatasets.length > 0) {
         setSelectedDatasetId(nextDatasets[0].id);
       }
     } catch (error) {
@@ -44,7 +47,8 @@ export function SourceCatalog() {
       const payload = await createSource(form);
       setSelectedDatasetId(payload.dataset.id);
       setNotice(`${payload.source.name} 등록 완료`);
-      await refreshCatalog();
+      setForm({ ...form, name: makeDemoSourceName() });
+      await refreshCatalog(payload.dataset.id);
     } catch (error) {
       setNotice(error.message);
     } finally {
@@ -57,14 +61,14 @@ export function SourceCatalog() {
       <section className="toolbar">
         <form className="source-form" onSubmit={registerSource}>
           <label>
-            <span>Source name</span>
+            <span>Source 이름</span>
             <input
               value={form.name}
               onChange={(event) => setForm({ ...form, name: event.target.value })}
             />
           </label>
           <label>
-            <span>CSV path</span>
+            <span>CSV 경로</span>
             <input
               value={form.path}
               onChange={(event) => setForm({ ...form, path: event.target.value })}
@@ -110,7 +114,7 @@ export function SourceCatalog() {
         <div className="panel detail-panel">
           <div className="panel-title">
             <TableProperties size={18} aria-hidden="true" />
-            <h2>Catalog Detail</h2>
+            <h2>Catalog 상세</h2>
           </div>
           {selectedDataset ? (
             <CatalogDetail dataset={selectedDataset} />
@@ -120,7 +124,19 @@ export function SourceCatalog() {
         </div>
       </section>
 
-      <PipelineRunPanel datasets={datasets} onRunComplete={refreshCatalog} />
+      <PipelineRunPanel
+        datasets={datasets}
+        activeDatasetId={selectedDatasetId}
+        onRunComplete={refreshCatalog}
+      />
     </>
   );
+}
+
+function makeDemoSourceName() {
+  return `sample_orders_${demoSuffix()}`;
+}
+
+function demoSuffix() {
+  return Date.now().toString(36).slice(-6);
 }

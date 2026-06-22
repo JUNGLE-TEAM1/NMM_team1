@@ -32,6 +32,7 @@
 - [데이터 흐름](manual-verification/04-data-flow.md)
 - [통합](manual-verification/05-integration.md)
 - [실패 시나리오](manual-verification/06-failure-scenarios.md)
+- [MVP 데모 스크립트](manual-verification/07-mvp-demo-script.md)
 
 ## AskLake 최소 수동 점검
 
@@ -60,13 +61,14 @@
 
 ## MVP 데이터 파이프라인 수동 점검
 
-1. local app을 실행하고 frontend와 backend health가 열리는지 확인한다.
-2. 샘플 데이터 소스를 등록한다.
-3. 컬럼 선택 또는 row filter가 포함된 최소 pipeline을 만든다.
-4. pipeline run을 실행한다.
-5. run status가 success 또는 failed로 명확히 표시되는지 확인한다.
-6. success인 경우 catalog에서 schema, row count, sample 또는 저장 위치를 확인한다.
-7. 실패 케이스 하나를 실행해 failed 상태와 오류 메시지가 표시되는지 확인한다.
+1. `docs/manual-verification/07-mvp-demo-script.md`의 사전 조건을 확인한다.
+2. local app을 실행하고 frontend와 backend health가 열리는지 확인한다.
+3. 샘플 데이터 소스를 등록한다.
+4. 컬럼 선택 또는 row filter가 포함된 최소 pipeline을 만든다.
+5. pipeline run을 실행한다.
+6. run status가 success 또는 failed로 명확히 표시되는지 확인한다.
+7. success인 경우 catalog에서 schema, row count, sample 또는 저장 위치를 확인한다.
+8. 실패 케이스 하나를 실행해 failed 상태와 오류 메시지가 표시되는지 확인한다.
 
 ## Phase Report 기록 형식
 
