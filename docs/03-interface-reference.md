@@ -41,11 +41,11 @@
 | --- | --- | --- | --- |
 | M1~M3 | Health / App Shell | `/health`, frontend route, local config 확인 | 필수 |
 | M2~M5 | Source / Connection | CSV/local file create/list/detail, schema/sample preview | 일부 필수 |
-| M3~M7 | Pipeline / Run | pipeline create/update, run request, status/log/retry | 필수 |
+| M3~M8 | Pipeline / Run | pipeline create/update, run request, status/log/retry | 필수 |
 | M3~M8 | Catalog | dataset list/detail, schema/sample/row count, tags/domain | 일부 필수 |
-| M6 | Transform | select/drop/filter/union/sql transform config | 확장 |
-| M9 | Quality | quality run, rule result, score summary | 확장 |
-| M10 | Lineage / Visual Graph | graph nodes/edges, lineage read model | 확장 |
+| M7 | Transform | select/drop/filter/union/sql transform config | 확장 |
+| M10 | Quality | quality run, rule result, score summary | 확장 |
+| M11 | Lineage / Visual Graph | graph nodes/edges, lineage read model | 확장 |
 | M11 | SQL Lab | query execute, query history, result preview | 확장 |
 | M12 | AI Assistant | schema context, SQL draft, explanation assist | 승인 gate 후 확장 |
 | M13~M15 | Distributed / Cloud | CDC, Airflow, Spark, S3, OpenSearch, Trino, Kubernetes | 별도 승인 필요 |
@@ -82,12 +82,32 @@
 ### MVP 파이프라인 계약
 
 - Type: API/UI/Job
-- Input: registered source, transform config, target config
+- Input: registered source dataset, `select_fields` transform config, target dataset name
 - Output: `PipelineRun` with `queued`, `running`, `success`, or `failed` status
 - Success behavior: 결과 dataset metadata가 catalog에 보인다.
 - Failure behavior: run status와 error message가 보이고 partial output은 ready로 표시하지 않는다.
 - Related acceptance criteria: `docs/05`
 - Related regression/failure scenarios: `docs/06`
+- Current MVP endpoints:
+
+```text
+POST /api/pipelines
+GET /api/pipelines
+GET /api/pipelines/{pipeline_id}
+POST /api/pipelines/{pipeline_id}/runs
+GET /api/pipeline-runs/{run_id}
+```
+
+- `POST /api/pipelines` minimum request:
+
+```json
+{
+  "name": "orders_amounts",
+  "source_dataset_id": "dataset_uuid",
+  "select_fields": ["order_id", "amount"],
+  "target_name": "orders_amounts_result"
+}
+```
 
 ### M3 Source / Catalog 계약
 
@@ -150,5 +170,5 @@ GET /api/catalog/datasets/{dataset_id}
 
 ## 7) 열린 이슈
 
-- M3에서 file upload UI를 포함할지, sample path 등록으로 제한할지 결정한다.
+- M3는 sample path 등록으로 제한한다. file upload UI는 실제 사용자 데이터 입력이 필요해질 때 별도 Phase에서 결정한다.
 - 장기 milestone의 상세 schema는 각 구현 Phase에서 해당 interface family 단위로 확정한다.
