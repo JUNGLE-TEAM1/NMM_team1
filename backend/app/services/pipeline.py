@@ -1,6 +1,7 @@
 import sqlite3
 
-from app.domain.schemas import CatalogDataset, ColumnSchema, PipelineCreate, PipelineRecord, PipelineRunRecord
+from app.domain.schemas import CatalogDataset, PipelineCreate, PipelineRecord, PipelineRunRecord
+from app.domain.transforms import apply_select_fields, find_missing_fields
 from app.ports.metadata_store import MetadataStore
 from app.ports.result_store import ResultStore
 from app.ports.source_connector import SourceConnector
@@ -26,8 +27,7 @@ class PipelineService:
         if source_dataset is None:
             raise PipelineValidationError("Source dataset not found")
 
-        available_fields = {column.name for column in source_dataset.columns}
-        missing_fields = [field for field in pipeline.select_fields if field not in available_fields]
+        missing_fields = find_missing_fields(source_dataset.columns, pipeline.select_fields)
         if missing_fields:
             raise PipelineValidationError(f"Unknown select fields: {', '.join(missing_fields)}")
 
@@ -49,8 +49,7 @@ class PipelineService:
             source_dataset = self._get_source_dataset(pipeline)
             connector = self._get_connector(source_dataset)
             source_schema, source_rows = connector.read_rows(source_dataset)
-            result_schema = select_schema(source_schema, pipeline.select_fields)
-            result_rows = select_rows(source_rows, pipeline.select_fields)
+            result_schema, result_rows = apply_select_fields(source_schema, source_rows, pipeline.select_fields)
             result_dataset_id = f"run-{run.id}"
             result_location = self.result_store.write_rows(result_dataset_id, result_rows)
             sample = result_rows[:5]
@@ -89,12 +88,3 @@ class PipelineService:
         if connector is None:
             raise PipelineValidationError(f"Unsupported source type: {dataset.source_type}")
         return connector
-
-
-def select_schema(schema: list[ColumnSchema], fields: list[str]) -> list[ColumnSchema]:
-    by_name = {column.name: column for column in schema}
-    return [by_name[field] for field in fields]
-
-
-def select_rows(rows: list[dict[str, object]], fields: list[str]) -> list[dict[str, object]]:
-    return [{field: row.get(field, "") for field in fields} for row in rows]

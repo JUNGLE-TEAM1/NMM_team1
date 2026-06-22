@@ -75,13 +75,16 @@ M3 이후 frontend는 app shell, API client, feature UI를 나눈다.
 
 ```text
 frontend/src/
-  api/               backend client
+  api/               resource별 backend client와 shared http client
   app/               app shell and global styles
   components/        shared UI components
-  features/catalog/  source form, catalog list/detail
+  features/catalog/  source form, catalog list/detail, catalog state hook
+  features/pipeline/ pipeline run panel and run state hook
 ```
 
 feature component는 backend endpoint 문자열을 직접 조립하지 않고 `api/asklakeClient.js`를 통해 호출한다.
+`asklakeClient.js`는 legacy re-export entrypoint로 유지하고, 신규 코드는 `sourceApi`, `catalogApi`, `pipelineApi` 같은 resource별 client를 우선 사용한다.
+화면 component는 가능한 한 form/list/panel 렌더링에 집중하고, fetch/selection/run orchestration은 feature hook에 둔다.
 
 ### Metadata Store 경계
 
