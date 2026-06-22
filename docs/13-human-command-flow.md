@@ -170,12 +170,12 @@ AI does:
 
 - Runs `scripts/status-workflow.sh <workspace>`.
 - If workspace is `complete`, pending confirmations are clear, and PR checklist is ready, reports branch, linked issue, PR closing keyword, local validation result, remaining remote work, and any external approval need.
-- Presents the completion handoff choice menu:
-  - 1. PR 진행: branch push 후 PR 생성.
-  - 2. 추가 보강: 문서/테스트/구현 보강 후 재검증.
-  - 3. 다음 Phase로 이동: 현재 branch는 유지하고 다음 branch workspace 시작.
-  - 4. 보류: push/PR 없이 현재 상태 유지.
-  - 5. 외부 실행 승인 단계: AWS resource 생성, deploy, merge 등 별도 승인 작업이 남아 있으면 approval checklist부터 진행.
+- Presents the completion handoff choice menu with a short explanation for each choice:
+  - 1. PR 진행: final validation, push, PR creation, CI check, merge when approved, issue close check, and finalize. If the human says "PR만 올려줘", stop after PR creation and do not merge.
+  - 2. 추가 보강: name 1-5 concrete hardening candidates such as weak tests, unclear docs, cost risk, missing manual verification, or unclear next-phase contract. Explain the benefit and delay tradeoff.
+  - 3. 다음 Phase: do not silently skip the current PR-ready branch. Ask whether to merge it first or intentionally hold it, then create the next workspace.
+  - 4. 보류: do not push or create a PR. Record the hold reason and resume condition in `next-actions.md`.
+  - 5. 외부 실행 승인 단계: check approval checklist, expected cost, rollback, smoke test, secrets, and permissions before AWS/deploy/migration work.
 - Does not run `git push`, PR creation, merge, deploy, or AWS resource creation until the human explicitly selects and approves that remote/external action.
 - If the human chooses additional work that exceeds current scope, resolves `Scope Change Confirm` first.
 - If the human chooses hold, records the hold reason and resume condition in `next-actions.md`.

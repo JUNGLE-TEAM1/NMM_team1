@@ -605,7 +605,19 @@ if ! rg -q "완료 후 handoff 선택지|completion handoff choice menu" docs/08
   fail "Completion handoff choice menu is not documented in workflow and human command flow"
 fi
 
-if ! rg -q "완료 \\+ PR 준비 상태입니다.*1 PR 진행.*2 추가 보강.*3 다음 Phase.*4 보류.*5 외부 실행 승인" scripts/status-workflow.sh; then
+if ! rg -q "진행 절차|장점|주의사항" docs/08-development-workflow.md; then
+  fail "docs/08-development-workflow.md must explain completion handoff choice procedure, advantages, and cautions"
+fi
+
+if ! rg -q "PR만.*PR creation|merge.*finalize" docs/13-human-command-flow.md; then
+  fail "docs/13-human-command-flow.md must distinguish PR-only from merge/finalize flow"
+fi
+
+if ! rg -q "Complete And PR Ready|추가 보강|다음 Phase|보류|외부 실행 승인" docs/10-next-action-menu.md; then
+  fail "docs/10-next-action-menu.md must include complete PR-ready choice details"
+fi
+
+if ! rg -q "완료 \\+ PR 준비 상태입니다.*선택지별 절차/장점/주의사항.*1 PR 진행.*2 추가 보강.*3 다음 Phase.*4 보류.*5 외부 실행 승인" scripts/status-workflow.sh; then
   fail "scripts/status-workflow.sh must recommend completion handoff choices for complete PR-ready workspaces"
 fi
 

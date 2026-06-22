@@ -286,13 +286,40 @@ Branch workspace가 `complete`이고 pending confirmation이 없으며 PR checkl
 
 현재 상태에는 branch 이름, linked GitHub issue, PR closing keyword, local validation 결과, 남은 remote 작업, 외부 실행/배포/cloud approval 필요 여부를 포함한다.
 
-선택지는 현재 branch에 맞게 아래 항목을 포함한다.
+선택지는 이름만 나열하지 않는다.
+AI는 각 선택지마다 진행 절차, 선택하면 좋은 상황, 장점, 주의사항 또는 단점, 원격/외부 상태 변경 여부를 함께 설명한다.
+현재 branch 상황에 맞지 않는 선택지는 숨기거나 권장하지 않음으로 표시한다.
 
-1. PR 진행: branch push 후 PR 생성.
-2. 추가 보강: 문서, 테스트, 구현을 더 보강하고 다시 검증.
-3. 다음 Phase로 이동: 현재 branch는 유지하고 다음 branch workspace 시작.
-4. 보류: push/PR 없이 현재 상태 유지.
-5. 외부 실행 승인 단계: AWS resource 생성, deploy, merge 등 별도 승인 작업이 남아 있으면 approval checklist부터 진행.
+1. PR 진행
+   - 진행 절차: 최종 validation -> branch push -> PR 생성 -> CI 확인 -> CI 통과 시 merge -> linked issue close 확인 -> `scripts/prepare-pr.sh --finalize <workspace>` -> finalization 기록 commit/push.
+   - 선택하면 좋은 상황: 현재 branch를 main에 반영해도 되고 CI/리뷰 흐름으로 넘길 준비가 된 경우.
+   - 장점: 변경이 main에 들어가 다음 Phase가 같은 기준에서 시작된다.
+   - 주의사항 또는 단점: 원격 상태가 바뀐다. 사용자가 "PR만 올려줘"라고 하면 PR 생성까지만 하고 merge 전 멈춘다.
+   - 원격/외부 상태 변경 여부: push, PR 생성, merge, issue close/finalize가 포함될 수 있으므로 사람 명시 승인 필요.
+2. 추가 보강
+   - 진행 절차: AI가 현재 애매한 점이나 보강 여지를 1~5개 제시하고, 선택된 문서/테스트/구현/비용/위험 설명/검증 증거를 보강한 뒤 다시 검증한다.
+   - 선택하면 좋은 상황: 테스트 부족, 문서 모호함, 비용 위험, 수동 검증 부족, 다음 Phase 전 계약 모호성이 남은 경우.
+   - 장점: PR 품질과 팀 이해도가 올라간다.
+   - 주의사항 또는 단점: merge가 늦어진다. 현재 branch 범위를 넘으면 `Scope Change Confirm`을 먼저 해결한다.
+   - 원격/외부 상태 변경 여부: 기본 없음. push/PR/deploy가 필요해지면 별도 승인 필요.
+3. 다음 Phase
+   - 진행 절차: 현재 branch를 먼저 PR/merge할지, 또는 명시적으로 보류할지 확인한 뒤 다음 branch workspace를 만든다.
+   - 선택하면 좋은 상황: 현재 branch가 이미 main에 반영됐거나, 보류 이유와 재개 조건이 명확하고 다음 독립 작업을 시작해야 하는 경우.
+   - 장점: 다음 작업으로 빠르게 전환할 수 있다.
+   - 주의사항 또는 단점: PR-ready branch를 merge하지 않고 다음 Phase로 가면 변경이 main에 없어 중복/충돌 위험이 있다.
+   - 원격/외부 상태 변경 여부: 새 branch workspace 생성은 issue 생성이 기본으로 포함된다. branch switch 시 dirty worktree는 checkpoint 규칙을 따른다.
+4. 보류
+   - 진행 절차: push/PR/merge 없이 멈추고 보류 이유와 재개 조건을 `next-actions.md`에 기록한다.
+   - 선택하면 좋은 상황: 리뷰어/팀 결정, 비용/보안 승인, 외부 계정/권한, 일정 조율을 기다리는 경우.
+   - 장점: 불완전하거나 위험한 변경을 원격에 올리지 않는다.
+   - 주의사항 또는 단점: 오래 방치되면 main과 drift가 생긴다.
+   - 원격/외부 상태 변경 여부: 없음.
+5. 외부 실행 승인 단계
+   - 진행 절차: 관련 approval checklist, 예상 비용, rollback, smoke test, secret/권한 상태를 확인한 뒤 승인된 외부 작업만 실행한다.
+   - 선택하면 좋은 상황: AWS resource 생성, deploy, migration, merge train 등 repo 밖 상태를 바꾸는 작업이 남은 경우.
+   - 장점: 실제 환경 검증으로 넘어갈 수 있다.
+   - 주의사항 또는 단점: 비용, 권한, 운영 리스크가 생긴다.
+   - 원격/외부 상태 변경 여부: 있음. 사람 명시 승인 필요.
 
 사람이 PR 진행을 명시 승인하기 전까지 `git push`와 PR 생성은 실행하지 않는다.
 추가 보강이 현재 branch 범위를 넘으면 `Scope Change Confirm`을 먼저 해결한다.

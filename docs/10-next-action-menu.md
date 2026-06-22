@@ -376,6 +376,39 @@ Waiting on you:
 - Next AI action: update the missing file or report the exact blocker.
 - Ask: "PR 체크리스트에서 빠진 항목을 먼저 채울까요, draft 위험으로 남길까요?"
 
+### Complete And PR Ready
+
+- Current state: workspace is `complete`, pending confirmations are clear, and PR checklist is ready.
+- Recommended next action: explain the completion handoff choices with procedure, good-fit situation, advantage, caution/tradeoff, and remote/external state-change impact.
+- Options:
+  1. PR 진행
+     - Procedure: final validation -> branch push -> PR creation -> CI check -> merge if approved -> linked issue close check -> `prepare-pr --finalize` -> finalization record commit/push.
+     - Good fit: this branch should become the next main baseline.
+     - Advantage: next Phase starts from main with this work included.
+     - Caution: remote state changes. If the human says "PR만", stop after PR creation.
+  2. 추가 보강
+     - Procedure: list 1-5 concrete hardening candidates, update selected docs/tests/code/evidence, rerun validation.
+     - Good fit: docs, tests, cost notes, manual verification, or next-phase contract are still a little ambiguous.
+     - Advantage: higher PR quality and easier team review.
+     - Caution: delays merge; scope expansion requires Scope Change Confirm.
+  3. 다음 Phase
+     - Procedure: ask whether to merge the current PR-ready branch first or intentionally hold it, then create the next workspace.
+     - Good fit: the current branch is already merged, or the team intentionally wants to defer it while starting independent work.
+     - Advantage: keeps momentum.
+     - Caution: starting the next Phase before merging can cause duplicate work or conflicts because main does not contain this branch.
+  4. 보류
+     - Procedure: stop without push/PR/merge and record hold reason plus resume condition in `next-actions.md`.
+     - Good fit: waiting on reviewer, cost/security approval, account permission, or schedule decision.
+     - Advantage: avoids publishing risky or incomplete work.
+     - Caution: branch can drift from main if left too long.
+  5. 외부 실행 승인 단계
+     - Procedure: check approval checklist, expected cost, rollback, smoke test, secrets, and permissions before external work.
+     - Good fit: AWS resource creation, deploy, migration, or other outside-repo state change is next.
+     - Advantage: enables real environment verification.
+     - Caution: creates cost, permission, and operations risk; explicit human approval required.
+- Next AI action: ask the human to choose an option. Do not push, create PRs, merge, deploy, or create AWS resources before explicit approval.
+- Ask: "완료된 branch입니다. 선택지별 절차와 장단점은 위와 같고, 어떤 방향으로 진행할까요?"
+
 ### Semantic Validation Failed
 
 - Current state: strict or integration validation found a state-dependent semantic gap.
