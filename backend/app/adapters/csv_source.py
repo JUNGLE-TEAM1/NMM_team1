@@ -1,7 +1,7 @@
 import csv
 from pathlib import Path
 
-from app.schemas import ColumnSchema
+from app.domain.schemas import ColumnSchema
 
 
 class CsvInspectionError(ValueError):

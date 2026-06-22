@@ -11,7 +11,7 @@
 - Failing test first: `backend/tests/test_source_catalog.py`를 구현 전에 정의했다. 구현 전에는 `create_app`, source/catalog endpoint, store 구현이 없어 실패하는 상태였다.
 - Expected failure command/result: `docker run --rm asklake-backend:m3-local python -m pytest`는 source/catalog import 또는 404 failure가 예상됐다.
 - Pass command/result: `docker run --rm asklake-backend:m3-local python -m pytest` -> 4 passed.
-- Refactor notes: API 응답 필드 `schema`는 유지하되 Pydantic 내부 field는 `columns` alias로 둬 BaseModel shadow warning을 제거했다.
+- Refactor notes: API 응답 필드 `schema`는 유지하되 Pydantic 내부 field는 `columns` alias로 둬 BaseModel shadow warning을 제거했다. 이후 backend를 `api/services/ports/adapters/domain/core`, frontend를 `api/app/components/features`로 분리했다.
 
 ## Branch Checks / 브랜치 검증
 
@@ -19,7 +19,7 @@
 | --- | --- | --- | --- |
 | shell syntax | `bash -n scripts/*.sh scripts/aws/*.sh` | pass | 모든 shell script syntax 통과 |
 | unit/focused test | `docker run --rm asklake-backend:m3-local python -m pytest` | pass | health + source/catalog tests 4 passed |
-| integration/contract test | `scripts/smoke-container-app.sh` | pass | backend/frontend image build, compose up, source 등록, catalog 조회 통과 |
+| integration/contract test | `scripts/smoke-container-app.sh` | pass | modularized backend/frontend image build, compose up, source 등록, catalog 조회 통과 |
 | build/typecheck | `scripts/smoke-container-app.sh` | pass | frontend Vite production build 성공 |
 | harness validation | `scripts/validate-harness.sh` | pending final run | completion 기록 후 실행 |
 | strict harness validation | `scripts/validate-harness.sh --strict` | pending final run | completion 기록 후 실행 |

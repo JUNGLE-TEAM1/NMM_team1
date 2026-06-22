@@ -16,6 +16,7 @@
 | Metadata store boundary | `MetadataStore` protocol + `SQLiteMetadataStore` | Keeps MVP local while preserving future PostgreSQL/MongoDB implementations. | User requested M3 진행 / 2026-06-22 |
 | First source implementation | CSV/local file path | No secrets or external DB needed; enough to prove source/catalog flow. | User requested M3 진행 / 2026-06-22 |
 | Frontend M3 scope | Source form + catalog list/detail in app shell | Gives a usable first-screen workflow without building pipeline UI yet. | User requested M3 진행 / 2026-06-22 |
+| Layer modularization | backend `api/services/ports/adapters/domain/core`, frontend `api/app/components/features` | Keeps M4 pipeline runner/result storage/source connector parts replaceable. | User requested modularization / 2026-06-22 |
 
 ## Deferred Decisions / 보류한 결정
 
@@ -23,6 +24,7 @@
 | --- | --- | --- | --- |
 | File upload UI | Keep out of M3 implementation | Sample path registration is enough for MVP source/catalog proof. | M3/M5 demo review |
 | PostgreSQL/MongoDB store | Defer implementation | Store boundary exists, but extra DB infra is not needed for M3. | M6/M9/M15 |
+| Pipeline runner/result storage ports | Defer implementation | M4 should introduce these boundaries with actual pipeline behavior. | M4 |
 
 ## Revisit / Rollback Conditions / 재검토 또는 롤백 조건
 

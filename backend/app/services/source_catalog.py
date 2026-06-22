@@ -1,6 +1,6 @@
-from app.csv_inspector import inspect_csv
-from app.metadata_store import MetadataStore
-from app.schemas import CatalogDataset, SourceCreate, SourceRecord
+from app.adapters.csv_source import inspect_csv
+from app.domain.schemas import CatalogDataset, SourceCreate, SourceRecord
+from app.ports.metadata_store import MetadataStore
 
 
 class SourceCatalogService:

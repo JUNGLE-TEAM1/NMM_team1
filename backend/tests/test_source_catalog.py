@@ -3,8 +3,8 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from app.main import create_app
-from app.metadata_store import SQLiteMetadataStore
+from app.adapters.sqlite_metadata_store import SQLiteMetadataStore
+from app.core.app_factory import create_app
 
 
 def make_client() -> TestClient:

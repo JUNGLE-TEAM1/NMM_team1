@@ -8,6 +8,7 @@ integration branch는 branch 작업을 합치기 전에 이 파일을 읽는다.
 | File | Proposed Change | Reason | Merge Risk |
 | --- | --- | --- | --- |
 | `docs/04-development-guide.md` | M3 source/catalog API curl examples added | Team members need a quick API verification path. | 낮음 |
+| `docs/02-architecture.md` | backend/frontend layer layout and dependency direction added | M4 before pipeline work needs replaceable module boundaries. | 중간: future code should follow the dependency direction |
 | `docs/06-regression-and-failure-scenarios.md` | Source Catalog Ready State guard added | Missing CSV must not become ready dataset. | 낮음 |
 | `docs/07-manual-verification-playbook.md` | Source Catalog manual verification added | UI/API manual verification path is now available. | 낮음 |
 | `README.md` | Sample source path recorded | New contributors need the default sample path. | 낮음 |
