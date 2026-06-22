@@ -1,0 +1,6 @@
+order_id,customer,amount,status
+A001,Kim,12000,paid
+A002,Lee,8500,pending
+A003,Park,31400,paid
+A004,Choi,17000,failed
+A005,Jung,22100,paid

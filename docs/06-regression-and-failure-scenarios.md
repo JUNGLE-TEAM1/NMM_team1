@@ -77,6 +77,16 @@
 | Verification method | `scripts/smoke-container-app.sh` |
 | Related docs/interface/Phase | `docs/03`, `docs/04`, `docs/08`, M2 `feature/container-app-skeleton` |
 
+### Source Catalog Ready State
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | CSV source 등록 결과가 schema, row count, sample rows와 함께 catalog ready dataset으로 표시된다. |
+| Failure condition | 없는 CSV path가 ready dataset으로 저장되거나, 등록된 CSV의 schema/sample이 catalog detail에서 사라진다. |
+| Expected behavior | 정상 CSV는 ready catalog dataset이 되고, 없는 file path는 4xx validation error로 끝나며 catalog에 저장되지 않는다. |
+| Verification method | `docker run --rm asklake-backend:<tag> python -m pytest`; `scripts/smoke-container-app.sh` |
+| Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07`, M3 `feature/source-catalog` |
+
 ## 기능 실패 시나리오
 
 ### 예시 산출물이 다시 들어오는 경우

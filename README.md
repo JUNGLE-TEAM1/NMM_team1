@@ -33,6 +33,7 @@ docker compose up
 - Frontend: `http://localhost:3000`
 - Backend health: `http://localhost:8000/health`
 - Container smoke: `scripts/smoke-container-app.sh`
+- Sample source path: `samples/orders.csv`
 
 ## 기존 코드베이스 적용 방식
 

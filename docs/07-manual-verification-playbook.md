@@ -50,6 +50,14 @@
 4. `curl -fsS http://localhost:13000/`가 AskLake frontend HTML을 반환하는지 확인한다.
 5. 확인 뒤 `docker compose -p asklake_m2_visual down --remove-orphans`로 내린다.
 
+## Source Catalog 수동 점검
+
+1. `docker compose up`으로 backend/frontend를 실행한다.
+2. frontend에서 `sample_orders`, `samples/orders.csv`를 등록한다.
+3. catalog detail에서 schema, row count, sample rows, ready status를 확인한다.
+4. `curl -fsS http://localhost:8000/api/catalog/datasets`로 API 결과를 확인한다.
+5. 없는 path로 source 등록을 시도해 ready dataset으로 저장되지 않는지 확인한다.
+
 ## MVP 데이터 파이프라인 수동 점검
 
 1. local app을 실행하고 frontend와 backend health가 열리는지 확인한다.

@@ -119,6 +119,15 @@ BACKEND_PORT=18001 FRONTEND_PORT=13001 scripts/smoke-container-app.sh
 BACKEND_PORT=8001 FRONTEND_PORT=3001 docker compose up
 ```
 
+M3 source/catalog API 확인:
+
+```bash
+curl -fsS -H "Content-Type: application/json" \
+  -d '{"name":"sample_orders","type":"csv","path":"samples/orders.csv"}' \
+  http://localhost:8000/api/sources
+curl -fsS http://localhost:8000/api/catalog/datasets
+```
+
 개별 runtime 실행:
 
 ```bash
