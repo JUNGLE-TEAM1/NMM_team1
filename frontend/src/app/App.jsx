@@ -1,0 +1,39 @@
+import { useEffect, useState } from "react";
+
+import { getHealth } from "../api/asklakeClient";
+import { StatusPill } from "../components/StatusPill";
+import { SourceCatalog } from "../features/catalog/SourceCatalog";
+import "./styles.css";
+
+export function App() {
+  const [health, setHealth] = useState({ state: "loading", message: "확인 중" });
+
+  useEffect(() => {
+    refreshHealth();
+  }, []);
+
+  async function refreshHealth() {
+    try {
+      const payload = await getHealth();
+      setHealth({ state: "ok", message: `${payload.service} ${payload.status}` });
+    } catch (error) {
+      setHealth({ state: "error", message: error.message });
+    }
+  }
+
+  return (
+    <main className="app-shell">
+      <section className="workspace">
+        <div className="title-row">
+          <div>
+            <p className="eyebrow">AskLake M3</p>
+            <h1>Source Catalog</h1>
+          </div>
+          <StatusPill health={health} />
+        </div>
+
+        <SourceCatalog />
+      </section>
+    </main>
+  );
+}

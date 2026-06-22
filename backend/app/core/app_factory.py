@@ -1,0 +1,33 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from app.api.health import router as health_router
+from app.api.source_catalog import create_source_catalog_router
+from app.core.container import AppContainer
+from app.core.settings import Settings, get_settings
+from app.ports.metadata_store import MetadataStore
+
+
+def create_app(store: MetadataStore | None = None, settings: Settings | None = None) -> FastAPI:
+    app_settings = settings or get_settings()
+    app = FastAPI(title=app_settings.app_name)
+    container = AppContainer(app_settings, metadata_store=store)
+    container.metadata_store.initialize()
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=app_settings.cors_origins,
+        allow_credentials=False,
+        allow_methods=["GET", "POST"],
+        allow_headers=["*"],
+    )
+
+    app.include_router(health_router)
+    app.include_router(
+        create_source_catalog_router(
+            container.metadata_store,
+            container.source_catalog_service,
+        )
+    )
+
+    return app

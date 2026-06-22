@@ -7,4 +7,6 @@ frontend/dist
 __pycache__
 .pytest_cache
 .venv
+data
+backend/data
 *.pyc
