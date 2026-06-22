@@ -34,5 +34,5 @@ main 동기화와 integration readiness를 기록한다.
 - PR closing keyword: Closes #16
 - pushed branch: feature/aws-bootstrap-readiness
 - PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/17
-- merge status:
-- issue close status:
+- merge status: merged
+- issue close status: CLOSED
