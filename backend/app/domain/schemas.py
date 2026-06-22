@@ -44,3 +44,32 @@ class CatalogDataset(BaseModel):
 class SourceRegistration(BaseModel):
     source: SourceRecord
     dataset: CatalogDataset
+
+
+class PipelineCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=80)
+    source_dataset_id: str = Field(min_length=1)
+    select_fields: list[str] = Field(min_length=1)
+    target_name: str = Field(min_length=1, max_length=80)
+
+
+class PipelineRecord(BaseModel):
+    id: str
+    name: str
+    source_dataset_id: str
+    select_fields: list[str]
+    target_name: str
+    created_at: str
+
+
+class PipelineRunRecord(BaseModel):
+    id: str
+    pipeline_id: str
+    status: Literal["queued", "running", "success", "failed"]
+    result_dataset_id: str | None = None
+    result_location: str | None = None
+    row_count: int | None = None
+    error_message: str | None = None
+    logs: list[str] = []
+    created_at: str
+    updated_at: str

@@ -1,7 +1,7 @@
 import csv
 from pathlib import Path
 
-from app.domain.schemas import ColumnSchema
+from app.domain.schemas import CatalogDataset, ColumnSchema
 from app.domain.schemas import SourceCreate
 
 
@@ -14,6 +14,9 @@ class CsvSourceConnector:
 
     def inspect(self, source: SourceCreate) -> tuple[list[ColumnSchema], int, list[dict[str, object]]]:
         return inspect_csv(source.path)
+
+    def read_rows(self, dataset: CatalogDataset) -> tuple[list[ColumnSchema], list[dict[str, object]]]:
+        return read_csv_rows(dataset.path)
 
 
 def resolve_source_path(path: str) -> Path:
@@ -67,6 +70,34 @@ def inspect_csv(path: str, sample_size: int = 5) -> tuple[list[ColumnSchema], in
         for field in fieldnames
     ]
     return schema, row_count, [coerce_row(row, schema) for row in rows]
+
+
+def read_csv_rows(path: str) -> tuple[list[ColumnSchema], list[dict[str, object]]]:
+    resolved = resolve_source_path(path)
+    raw_rows: list[dict[str, str]] = []
+
+    try:
+        with resolved.open(newline="", encoding="utf-8") as csv_file:
+            reader = csv.DictReader(csv_file)
+            if not reader.fieldnames:
+                raise CsvInspectionError(f"CSV file has no header: {path}")
+
+            fieldnames = [field.strip() for field in reader.fieldnames]
+            values_by_column: dict[str, list[str]] = {field: [] for field in fieldnames}
+            for row in reader:
+                cleaned = {field: (row.get(field) or "") for field in fieldnames}
+                raw_rows.append(cleaned)
+                for field, value in cleaned.items():
+                    if value != "":
+                        values_by_column[field].append(value)
+    except UnicodeDecodeError as error:
+        raise CsvInspectionError(f"CSV file must be UTF-8 encoded: {path}") from error
+
+    schema = [
+        ColumnSchema(name=field, type=infer_column_type(values_by_column[field]))
+        for field in fieldnames
+    ]
+    return schema, [coerce_row(row, schema) for row in raw_rows]
 
 
 def infer_column_type(values: list[str]) -> str:

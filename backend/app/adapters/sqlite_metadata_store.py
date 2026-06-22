@@ -5,7 +5,15 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
-from app.domain.schemas import CatalogDataset, ColumnSchema, SourceCreate, SourceRecord
+from app.domain.schemas import (
+    CatalogDataset,
+    ColumnSchema,
+    PipelineCreate,
+    PipelineRecord,
+    PipelineRunRecord,
+    SourceCreate,
+    SourceRecord,
+)
 
 
 class SQLiteMetadataStore:
@@ -43,6 +51,31 @@ class SQLiteMetadataStore:
                     error_message TEXT,
                     created_at TEXT NOT NULL,
                     FOREIGN KEY(source_id) REFERENCES sources(id)
+                );
+
+                CREATE TABLE IF NOT EXISTS pipelines (
+                    id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL UNIQUE,
+                    source_dataset_id TEXT NOT NULL,
+                    select_fields_json TEXT NOT NULL,
+                    target_name TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    FOREIGN KEY(source_dataset_id) REFERENCES catalog_datasets(id)
+                );
+
+                CREATE TABLE IF NOT EXISTS pipeline_runs (
+                    id TEXT PRIMARY KEY,
+                    pipeline_id TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    result_dataset_id TEXT,
+                    result_location TEXT,
+                    row_count INTEGER,
+                    error_message TEXT,
+                    logs_json TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    FOREIGN KEY(pipeline_id) REFERENCES pipelines(id),
+                    FOREIGN KEY(result_dataset_id) REFERENCES catalog_datasets(id)
                 );
                 """
             )
@@ -111,6 +144,133 @@ class SQLiteMetadataStore:
             row = connection.execute("SELECT * FROM catalog_datasets WHERE id = ?", (dataset_id,)).fetchone()
         return dataset_from_row(row) if row else None
 
+    def create_pipeline(self, pipeline: PipelineCreate) -> PipelineRecord:
+        pipeline_id = str(uuid.uuid4())
+        created_at = now_iso()
+
+        with self.connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO pipelines (id, name, source_dataset_id, select_fields_json, target_name, created_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    pipeline_id,
+                    pipeline.name,
+                    pipeline.source_dataset_id,
+                    json.dumps(pipeline.select_fields, ensure_ascii=False),
+                    pipeline.target_name,
+                    created_at,
+                ),
+            )
+
+        return self.get_pipeline(pipeline_id)  # type: ignore[return-value]
+
+    def list_pipelines(self) -> list[PipelineRecord]:
+        with self.connect() as connection:
+            rows = connection.execute("SELECT * FROM pipelines ORDER BY created_at DESC").fetchall()
+        return [pipeline_from_row(row) for row in rows]
+
+    def get_pipeline(self, pipeline_id: str) -> PipelineRecord | None:
+        with self.connect() as connection:
+            row = connection.execute("SELECT * FROM pipelines WHERE id = ?", (pipeline_id,)).fetchone()
+        return pipeline_from_row(row) if row else None
+
+    def create_pipeline_run(self, pipeline_id: str) -> PipelineRunRecord:
+        run_id = str(uuid.uuid4())
+        created_at = now_iso()
+        with self.connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO pipeline_runs (
+                    id, pipeline_id, status, result_dataset_id, result_location, row_count,
+                    error_message, logs_json, created_at, updated_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (run_id, pipeline_id, "queued", None, None, None, None, "[]", created_at, created_at),
+            )
+        return self.get_pipeline_run(run_id)  # type: ignore[return-value]
+
+    def update_pipeline_run(
+        self,
+        run_id: str,
+        status: str,
+        result_dataset_id: str | None = None,
+        result_location: str | None = None,
+        row_count: int | None = None,
+        error_message: str | None = None,
+        logs: list[str] | None = None,
+    ) -> PipelineRunRecord:
+        updated_at = now_iso()
+        with self.connect() as connection:
+            connection.execute(
+                """
+                UPDATE pipeline_runs
+                SET status = ?,
+                    result_dataset_id = ?,
+                    result_location = ?,
+                    row_count = ?,
+                    error_message = ?,
+                    logs_json = ?,
+                    updated_at = ?
+                WHERE id = ?
+                """,
+                (
+                    status,
+                    result_dataset_id,
+                    result_location,
+                    row_count,
+                    error_message,
+                    json.dumps(logs or [], ensure_ascii=False),
+                    updated_at,
+                    run_id,
+                ),
+            )
+        return self.get_pipeline_run(run_id)  # type: ignore[return-value]
+
+    def get_pipeline_run(self, run_id: str) -> PipelineRunRecord | None:
+        with self.connect() as connection:
+            row = connection.execute("SELECT * FROM pipeline_runs WHERE id = ?", (run_id,)).fetchone()
+        return pipeline_run_from_row(row) if row else None
+
+    def create_result_dataset(
+        self,
+        name: str,
+        source_id: str,
+        source_type: str,
+        path: str,
+        schema: list[ColumnSchema],
+        row_count: int,
+        sample: list[dict[str, object]],
+    ) -> CatalogDataset:
+        dataset_id = str(uuid.uuid4())
+        created_at = now_iso()
+        with self.connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO catalog_datasets (
+                    id, source_id, name, source_type, path, schema_json, row_count,
+                    sample_json, status, error_message, created_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    dataset_id,
+                    source_id,
+                    name,
+                    source_type,
+                    path,
+                    json.dumps([column.model_dump() for column in schema], ensure_ascii=False),
+                    row_count,
+                    json.dumps(sample, ensure_ascii=False),
+                    "ready",
+                    None,
+                    created_at,
+                ),
+            )
+        return self.get_catalog_dataset(dataset_id)  # type: ignore[return-value]
+
     def connect(self) -> sqlite3.Connection:
         connection = sqlite3.connect(self.database_path)
         connection.row_factory = sqlite3.Row
@@ -155,4 +315,30 @@ def dataset_from_row(row: sqlite3.Row) -> CatalogDataset:
         status=row["status"],
         error_message=row["error_message"],
         created_at=row["created_at"],
+    )
+
+
+def pipeline_from_row(row: sqlite3.Row) -> PipelineRecord:
+    return PipelineRecord(
+        id=row["id"],
+        name=row["name"],
+        source_dataset_id=row["source_dataset_id"],
+        select_fields=json.loads(row["select_fields_json"]),
+        target_name=row["target_name"],
+        created_at=row["created_at"],
+    )
+
+
+def pipeline_run_from_row(row: sqlite3.Row) -> PipelineRunRecord:
+    return PipelineRunRecord(
+        id=row["id"],
+        pipeline_id=row["pipeline_id"],
+        status=row["status"],
+        result_dataset_id=row["result_dataset_id"],
+        result_location=row["result_location"],
+        row_count=row["row_count"],
+        error_message=row["error_message"],
+        logs=json.loads(row["logs_json"]),
+        created_at=row["created_at"],
+        updated_at=row["updated_at"],
     )

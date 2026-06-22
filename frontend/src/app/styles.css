@@ -15,7 +15,8 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -106,7 +107,8 @@ label {
   font-weight: 700;
 }
 
-input {
+input,
+select {
   width: 100%;
   min-height: 42px;
   padding: 0 12px;
@@ -124,6 +126,7 @@ button {
 }
 
 .source-form button,
+.pipeline-form button,
 .icon-button {
   display: inline-flex;
   align-items: center;
@@ -136,6 +139,11 @@ button {
 }
 
 .source-form button:disabled {
+  cursor: wait;
+  opacity: 0.68;
+}
+
+.pipeline-form button:disabled {
   cursor: wait;
   opacity: 0.68;
 }
@@ -158,6 +166,58 @@ button {
   grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
   gap: 16px;
   align-items: start;
+}
+
+.pipeline-panel {
+  min-height: 0;
+  margin-top: 16px;
+}
+
+.pipeline-form {
+  display: grid;
+  grid-template-columns: minmax(170px, 1fr) minmax(160px, 1fr) minmax(180px, 1fr) minmax(180px, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.notice.compact {
+  margin: 12px 0 0;
+}
+
+.run-summary {
+  display: grid;
+  grid-template-columns: 150px 120px minmax(0, 1fr);
+  gap: 10px;
+  margin: 14px 0 0;
+}
+
+.run-summary div {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #d8e1e4;
+  border-radius: 8px;
+  background: #f8fbfc;
+}
+
+.run-summary dt {
+  color: #62737a;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.run-summary dd {
+  margin: 6px 0 0;
+  overflow-wrap: anywhere;
+  color: #17262c;
+  font-weight: 900;
+}
+
+.run-summary dd.success {
+  color: #176044;
+}
+
+.run-summary dd.failed {
+  color: #8d2626;
 }
 
 .panel {
@@ -323,7 +383,9 @@ tr:last-child td {
   }
 
   .source-form,
+  .pipeline-form,
   .catalog-grid,
+  .run-summary,
   .metrics {
     grid-template-columns: 1fr;
   }
