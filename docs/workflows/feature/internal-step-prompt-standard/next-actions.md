@@ -14,7 +14,7 @@
 
 ## Options / 선택지
 
-1. PR 진행: branch push 후 PR 생성.
+1. PR 진행: final validation, push, PR 생성, CI 확인, merge, finalize, issue close 확인까지 진행.
 2. 추가 보강: 내부 Step 양식이나 validation을 더 조정.
 3. 다음 Phase 이동: M2 `feature/container-app-skeleton` 시작.
 4. 보류: push/PR 없이 현재 상태 유지.

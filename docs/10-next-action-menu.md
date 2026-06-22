@@ -382,10 +382,10 @@ Waiting on you:
 - Recommended next action: explain the completion handoff choices with procedure, good-fit situation, advantage, caution/tradeoff, and remote/external state-change impact.
 - Options:
   1. PR 진행
-     - Procedure: final validation -> branch push -> PR creation -> CI check -> merge if approved -> linked issue close check -> `prepare-pr --finalize` -> finalization record commit/push.
+     - Procedure: final validation -> branch push -> PR creation -> CI check -> merge -> linked issue close check -> `prepare-pr --finalize` -> finalization record commit/push.
      - Good fit: this branch should become the next main baseline.
      - Advantage: next Phase starts from main with this work included.
-     - Caution: remote state changes. If the human says "PR만", stop after PR creation.
+     - Caution: remote state changes. If CI fails, conflicts appear, required review is missing, scope drift appears, or the human says "PR만", stop before merge and report back.
   2. 추가 보강
      - Procedure: list 1-5 concrete hardening candidates, update selected docs/tests/code/evidence, rerun validation.
      - Good fit: docs, tests, cost notes, manual verification, or next-phase contract are still a little ambiguous.

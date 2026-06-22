@@ -14,7 +14,7 @@
 
 ## Options / 선택지
 
-1. PR 진행: final validation, push, PR 생성, CI 확인, 승인된 merge/finalize까지 진행.
+1. PR 진행: final validation, push, PR 생성, CI 확인, merge, finalize, issue close 확인까지 진행.
 2. 추가 보강: branch queue 출력이나 validation guard를 더 다듬고 재검증.
 3. 남은 브랜치 확인: `scripts/list-active-branches.sh` 결과를 보고 다음 PR 순서 결정.
 4. 보류: push/PR 없이 보류 이유와 재개 조건 기록.

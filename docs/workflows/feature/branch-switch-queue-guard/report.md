@@ -12,6 +12,6 @@
 - Context omitted intentionally: product runtime, remote branch deletion, remote PR actions
 - Changed: added branch switch confirmation rule, remaining branch queue rule, read-only `scripts/list-active-branches.sh`, and validation guards.
 - Verified: `bash -n scripts/*.sh scripts/aws/*.sh`, `scripts/list-active-branches.sh`, `scripts/validate-harness.sh`, `scripts/validate-harness.sh --strict`, `scripts/status-workflow.sh docs/workflows/feature/branch-switch-queue-guard`, `scripts/prepare-pr.sh --check-pr-sync docs/workflows/feature/branch-switch-queue-guard`, `git diff --check`
-- Remaining: push/PR only after explicit human approval
+- Remaining: merged/finalized; no PR handoff remains
 - Next context: after each PR finalize, summarize remaining branch queue before choosing next work
 - Risk: queue classification is advisory; deletion/cleanup remains manual approval only
