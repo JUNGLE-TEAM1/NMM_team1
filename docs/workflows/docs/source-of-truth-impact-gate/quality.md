@@ -43,7 +43,7 @@
 ## CI/CD Gate / CI-CD 게이트
 
 - CI required: yes
-- CI result: local equivalent passed after adding harness regression tests; PR CI rerun pending after push
+- CI result: PR CI passed after adding harness regression tests; harness, container-smoke, and manifest-smoke passed on run `27940050899`
 - Deploy/publish required: no
 - Deployment confirmation: deploy/publish not required
 - Rollback/smoke notes: 문제 발생 시 하네스 문서/스크립트 변경만 되돌리면 된다. 외부 상태 변경 없음.
