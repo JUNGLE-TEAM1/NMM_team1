@@ -64,13 +64,24 @@ echo
 
 open_pr_status="available"
 open_pr_file="$(mktemp)"
-trap 'rm -f "$open_pr_file"' EXIT
+remote_heads_file="$(mktemp)"
+remote_tracking_file="$(mktemp)"
+trap 'rm -f "$open_pr_file" "$remote_heads_file" "$remote_tracking_file"' EXIT
 
 if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
   gh pr list --state open --json number,headRefName,url --jq '.[] | [.headRefName, .number, .url] | @tsv' > "$open_pr_file"
 else
   open_pr_status="skipped: GitHub CLI unavailable or unauthenticated"
 fi
+
+git ls-remote --heads origin 'feature/*' 2>/dev/null \
+  | awk '{ sub("refs/heads/", "", $2); print $2 }' \
+  | sort > "$remote_heads_file" || true
+
+git branch -r --format='%(refname:short)' 2>/dev/null \
+  | sed 's#^origin/##' \
+  | awk '/^feature\// { print }' \
+  | sort > "$remote_tracking_file" || true
 
 echo "Open PRs"
 if [[ "$open_pr_status" != "available" ]]; then
@@ -82,9 +93,17 @@ else
 fi
 echo
 
+echo "Remote Feature Branches"
+if [[ ! -s "$remote_heads_file" ]]; then
+  echo "  - none"
+else
+  sed 's/^/  - /' "$remote_heads_file"
+fi
+echo
+
 echo "Branches"
-printf '| Branch | Ahead | Workspace | State | Issue | PR | Merge | Issue Close | Category | Recommended Next Action |\n'
-printf '| --- | ---: | --- | --- | --- | --- | --- | --- | --- | --- |\n'
+printf '| Branch | Ahead | Local | Remote | Tracking | Workspace | State | Issue | PR | Merge | Issue Close | Category | Recommended Next Action |\n'
+printf '| --- | ---: | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |\n'
 
 while IFS= read -r branch; do
   [[ "$branch" != "main" ]] || continue
@@ -102,6 +121,16 @@ while IFS= read -r branch; do
   merge_status=""
   issue_close_status=""
   open_pr_info=""
+  local_present="yes"
+  remote_present="no"
+  tracking_present="no"
+
+  if grep -Fxq "$branch" "$remote_heads_file"; then
+    remote_present="yes"
+  fi
+  if grep -Fxq "$branch" "$remote_tracking_file"; then
+    tracking_present="yes"
+  fi
 
   if [[ -d "$workspace" ]]; then
     workspace_cell="$workspace"
@@ -142,9 +171,12 @@ while IFS= read -r branch; do
     recommendation="prepare PR or hold with reason"
   fi
 
-  printf '| `%s` | %s | `%s` | %s | %s | %s | %s | %s | %s | %s |\n' \
+  printf '| `%s` | %s | %s | %s | %s | `%s` | %s | %s | %s | %s | %s | %s | %s |\n' \
     "$branch" \
     "$ahead" \
+    "$local_present" \
+    "$remote_present" \
+    "$tracking_present" \
     "$workspace_cell" \
     "${state:-unknown}" \
     "${issue:-missing}" \

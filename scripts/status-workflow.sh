@@ -373,7 +373,7 @@ elif [[ "$workspace" == docs/workflows/*/integrate-* || "$workspace" == docs/wor
 elif [[ "${merge_status:-}" =~ ^merged ]] && [[ "${issue_close_status:-}" =~ ^CLOSED ]]; then
   recommendation="Phase is merged and linked issue is closed; choose the next phase or archive/cleanup follow-up."
 elif [[ "$pr_ready" == "yes" ]]; then
-  recommendation="완료 + PR 준비 상태입니다. 선택지별 절차/장점/주의사항을 설명하세요: 1 PR 진행(push, PR 생성, CI 확인, merge, finalize, issue close 확인), 2 추가 보강, 3 다음 Phase, 4 보류, 5 외부 실행 승인(deploy/AWS 등 별도 승인)."
+  recommendation="완료 + PR 준비 상태입니다. 자동 PR 생성 대상입니다: scripts/prepare-pr.sh --auto-pr <workspace>로 push/PR 생성/PR 기록/CI 확인을 진행하세요. 이후 선택지: 1 PR 진행(merge, finalize, issue close 확인, automatic branch cleanup), 2 추가 보강, 3 다음 Phase, 4 보류, 5 외부 실행 승인(deploy/AWS 등 별도 승인)."
 else
   recommendation="Prepare Completion Confirm or PR checklist."
 fi
