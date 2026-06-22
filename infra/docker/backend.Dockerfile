@@ -2,29 +2,14 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-RUN cat > /app/server.py <<'PY'
-from http.server import BaseHTTPRequestHandler, HTTPServer
-import json
+ENV PYTHONUNBUFFERED=1
 
+COPY backend/requirements.txt ./requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-class Handler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        if self.path == "/health":
-            body = json.dumps({"service": "asklake-backend", "status": "ok"}).encode()
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("Content-Length", str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
-            return
-        self.send_response(404)
-        self.end_headers()
-
-
-HTTPServer(("0.0.0.0", 8000), Handler).serve_forever()
-PY
+COPY backend/app ./app
+COPY backend/tests ./tests
 
 EXPOSE 8000
 
-CMD ["python", "/app/server.py"]
-
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

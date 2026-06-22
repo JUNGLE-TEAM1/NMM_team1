@@ -42,6 +42,14 @@
 5. `docs/workflows/`에 실제 branch와 연결되지 않은 stale example workspace가 없는지 확인한다.
 6. PR handoff 전에 linked GitHub issue가 workspace `sync.md`에 기록되어 있는지 확인한다.
 
+## Container App Skeleton 수동 점검
+
+1. `scripts/smoke-container-app.sh`를 실행한다.
+2. 필요하면 `BACKEND_PORT=18000 FRONTEND_PORT=13000 COMPOSE_PROJECT_NAME=asklake_m2_visual docker compose -p asklake_m2_visual up -d`로 앱을 띄운다.
+3. `curl -fsS http://localhost:18000/health`가 `status: ok` contract를 반환하는지 확인한다.
+4. `curl -fsS http://localhost:13000/`가 AskLake frontend HTML을 반환하는지 확인한다.
+5. 확인 뒤 `docker compose -p asklake_m2_visual down --remove-orphans`로 내린다.
+
 ## MVP 데이터 파이프라인 수동 점검
 
 1. local app을 실행하고 frontend와 backend health가 열리는지 확인한다.

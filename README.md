@@ -21,6 +21,18 @@ AskLake의 MVP 후보는 XFlow를 참고한 경량 데이터 파이프라인 플
 - 아키텍처와 인터페이스 계약은 `docs/02-architecture.md`, `docs/03-interface-reference.md`에 기록한다.
 - 수용 기준, 회귀 기준, 수동 검증은 `docs/05`, `docs/06`, `docs/07`에 기록한다.
 - GitHub Issue / PR / Project / Notion sync 관련 파일은 `.github/` 아래에 둔다.
+- M2 앱 골격은 `backend/`, `frontend/`, `infra/docker/`, `docker-compose.yml`에 둔다.
+
+## 로컬 앱 실행
+
+```bash
+docker compose build
+docker compose up
+```
+
+- Frontend: `http://localhost:3000`
+- Backend health: `http://localhost:8000/health`
+- Container smoke: `scripts/smoke-container-app.sh`
 
 ## 기존 코드베이스 적용 방식
 

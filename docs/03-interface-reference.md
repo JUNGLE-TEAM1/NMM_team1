@@ -4,7 +4,7 @@
 
 ## 1) 공통 규칙
 
-- Base URL / command namespace / entrypoint: 향후 local backend 후보 `http://localhost:8000/api`
+- Base URL / command namespace / entrypoint: local backend `http://localhost:8000/api`
 - Request/response format: API는 JSON, 사람 작업 흐름은 browser UI
 - Naming conventions: code identifier는 원문을 유지하고, 협업 문서는 한국어로 작성한다.
 - Pagination/sorting/filtering: catalog list 검색/filter는 MVP 이후 확장 후보이며 첫 pipeline run에는 필수가 아니다.
@@ -29,6 +29,7 @@
 | 인터페이스 | 타입 | 목적 |
 | --- | --- | --- |
 | GitHub PR body closing keyword | PR metadata | Linked issue가 있으면 `Closes #<issue-number>` 또는 동등한 closing keyword를 포함한다. |
+| Health API | API | frontend/backend/container/Kubernetes smoke에서 앱 기동 상태를 확인한다. |
 | Connection API | API | 데이터 소스를 등록하고 목록을 조회한다. |
 | Pipeline API | API | source, transform, target으로 구성된 파이프라인을 생성/조회한다. |
 | Pipeline Run API | API/Job | 파이프라인 실행을 요청하고 상태/로그를 조회한다. |
@@ -60,6 +61,23 @@
 - Failure behavior: issue가 열린 상태로 남을 수 있으므로 PR 전에 수정한다.
 - Related acceptance criteria: `docs/05`
 - Related regression/failure scenarios: `docs/06`
+
+### Health API
+
+- Type: API
+- Endpoint: `GET /health`, `GET /api/health`
+- Output:
+
+```json
+{
+  "service": "asklake-backend",
+  "status": "ok",
+  "app": "AskLake"
+}
+```
+
+- Success behavior: local backend, frontend app, Docker Compose smoke, Kubernetes readiness probe가 기동 상태를 확인할 수 있다.
+- Failure behavior: API가 200을 반환하지 않으면 frontend는 확인 필요 상태를 보여주고 container/cloud deploy smoke는 실패로 처리한다.
 
 ### MVP 파이프라인 계약
 
