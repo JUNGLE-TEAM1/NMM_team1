@@ -35,7 +35,7 @@
 ## CI/CD Gate / CI-CD 게이트
 
 - CI required: yes
-- CI result: initial PR CI harness failed due shallow checkout base commit lookup; fixed with `fetch-depth: 0`, rerun pending
+- CI result: PR CI passed after fixing harness checkout to `fetch-depth: 0`; harness, container-smoke, and manifest-smoke passed on run `27939251407`
 - Deploy/publish required: no
 - Deployment confirmation: deploy/publish not required
 - Rollback/smoke notes: 문제 발생 시 하네스 문서/스크립트 변경만 되돌리면 된다. 외부 상태 변경 없음.
