@@ -1,9 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Play, Workflow } from "lucide-react";
 
 import { createPipeline, runPipeline } from "../../api/asklakeClient";
 
-export function PipelineRunPanel({ datasets, onRunComplete }) {
+export function PipelineRunPanel({ datasets, activeDatasetId, onRunComplete }) {
   const sourceDatasets = useMemo(
     () => datasets.filter((dataset) => dataset.source_type !== "pipeline_result"),
     [datasets],
@@ -12,14 +12,19 @@ export function PipelineRunPanel({ datasets, onRunComplete }) {
   const selectedDataset =
     sourceDatasets.find((dataset) => dataset.id === selectedDatasetId) || sourceDatasets[0];
   const defaultFields = selectedDataset?.schema.slice(0, 2).map((column) => column.name).join(", ") || "";
-  const [form, setForm] = useState({
-    name: "orders_amounts",
-    selectFields: "",
-    targetName: "orders_amounts_result",
-  });
+  const [form, setForm] = useState(() => makePipelineForm());
   const [run, setRun] = useState(null);
   const [notice, setNotice] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    const activeSource = sourceDatasets.find((dataset) => dataset.id === activeDatasetId);
+    if (activeSource) {
+      setSelectedDatasetId(activeSource.id);
+    } else if (!selectedDatasetId && sourceDatasets.length > 0) {
+      setSelectedDatasetId(sourceDatasets[0].id);
+    }
+  }, [activeDatasetId, selectedDatasetId, sourceDatasets]);
 
   async function submitPipeline(event) {
     event.preventDefault();
@@ -46,7 +51,8 @@ export function PipelineRunPanel({ datasets, onRunComplete }) {
       const nextRun = await runPipeline(pipeline.id);
       setRun(nextRun);
       setNotice(`${pipeline.name} 실행 ${nextRun.status}`);
-      await onRunComplete?.();
+      setForm(makePipelineForm(selectedDataset?.name));
+      await onRunComplete?.(nextRun.result_dataset_id || selectedDataset.id);
     } catch (error) {
       setNotice(error.message);
     } finally {
@@ -76,14 +82,14 @@ export function PipelineRunPanel({ datasets, onRunComplete }) {
           </select>
         </label>
         <label>
-          <span>Pipeline name</span>
+          <span>Pipeline 이름</span>
           <input
             value={form.name}
             onChange={(event) => setForm({ ...form, name: event.target.value })}
           />
         </label>
         <label>
-          <span>Select fields</span>
+          <span>선택 컬럼</span>
           <input
             placeholder={defaultFields}
             value={form.selectFields}
@@ -123,4 +129,14 @@ export function PipelineRunPanel({ datasets, onRunComplete }) {
       ) : null}
     </section>
   );
+}
+
+function makePipelineForm(sourceName = "orders") {
+  const suffix = Date.now().toString(36).slice(-6);
+  const baseName = sourceName.replace(/[^a-zA-Z0-9_]/g, "_").slice(0, 42) || "orders";
+  return {
+    name: `${baseName}_pipeline_${suffix}`,
+    selectFields: "",
+    targetName: `${baseName}_result_${suffix}`,
+  };
 }
