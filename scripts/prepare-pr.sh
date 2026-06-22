@@ -13,7 +13,7 @@ Remote actions require explicit flags:
   --check-issue query linked GitHub issue state with gh
   --check-pr-sync check local sync.md PR handoff fields before creating or merging a PR
   --close-issue close linked issue after the recorded PR is merged
-  --finalize    verify recorded PR is merged, close/check linked issue, and update sync.md
+  --finalize    verify recorded PR is merged, close/check linked issue, update sync.md, and run automatic merged branch cleanup
 USAGE
 }
 
@@ -334,6 +334,10 @@ if [[ "$close_issue" -eq 1 || "$finalize" -eq 1 ]]; then
     set_field "$sync_file" "- merge status:" "merged"
     set_field "$sync_file" "- issue close status:" "CLOSED"
     echo "Closed issue #${issue_number} after PR #${pr_number} merge."
+  fi
+
+  if [[ "$finalize" -eq 1 ]]; then
+    scripts/cleanup-merged-branches.sh
   fi
 fi
 
