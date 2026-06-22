@@ -28,7 +28,7 @@
 ## CI/CD Gate / CI-CD 게이트
 
 - CI required: yes
-- CI result: local CI-equivalent checks pass; GitHub Actions는 PR 생성 후 확인 필요
+- CI result: GitHub Actions PR #30 all pass: harness 14s, manifest-smoke 14s, container-smoke 37s
 - Deploy/publish required: no
 - Deployment confirmation: AWS/ECR/EKS push/deploy는 이번 branch에서 실행하지 않음
 - Rollback/smoke notes: 문제 발생 시 `docker compose down --remove-orphans`로 local container를 내리고 이전 Dockerfile/compose 변경을 되돌린다. `scripts/smoke-container-app.sh`는 로컬 포트 충돌을 피하려고 기본 18000/13000 포트를 사용한다.
