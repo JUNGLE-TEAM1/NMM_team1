@@ -379,7 +379,7 @@ Waiting on you:
 ### Complete And PR Ready
 
 - Current state: workspace is `complete`, pending confirmations are clear, and PR checklist is ready.
-- Recommended next action: explain the completion handoff choices with procedure, good-fit situation, advantage, caution/tradeoff, and remote/external state-change impact.
+- Recommended next action: automatically create the PR after final validation and PR sync checks, then explain the remaining choices with procedure, good-fit situation, advantage, caution/tradeoff, and remote/external state-change impact.
 - Options:
   1. PR 진행
      - Procedure: final validation -> branch push -> PR creation -> CI check -> merge -> linked issue close check -> `prepare-pr --finalize` -> automatic merged branch cleanup -> finalization record commit/push.
@@ -407,6 +407,7 @@ Waiting on you:
      - Advantage: enables real environment verification.
      - Caution: creates cost, permission, and operations risk; explicit human approval required.
 - Next AI action: ask the human to choose an option. If the human chooses `PR 진행`, continue through push, PR creation, CI check, merge, finalize, linked issue close verification, and automatic merged branch cleanup unless a stop condition appears.
+- Auto PR action: if no PR exists yet and the human did not opt out, run `scripts/prepare-pr.sh --auto-pr <workspace>`, record/push the PR link, check CI, and report the PR link plus remaining choices.
 - Ask: "완료된 branch입니다. 선택지별 절차와 장단점은 위와 같고, 어떤 방향으로 진행할까요?"
 
 ### Remaining Branch Queue

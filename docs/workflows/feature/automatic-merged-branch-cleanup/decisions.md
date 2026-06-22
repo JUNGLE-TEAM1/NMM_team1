@@ -13,6 +13,7 @@
 
 | Decision | Selected Option | Reason | Confirmed By / At |
 | --- | --- | --- | --- |
+| Automatic PR creation timing | Auto-create PR for complete PR-ready workspaces, but keep merge/finalize/cleanup behind `PR 진행` | Faster workflow while preserving main-merge control | Codex / 2026-06-22 |
 | Automatic cleanup timing | Run cleanup from `prepare-pr --finalize` after merged/closed verification | Makes `PR 진행` end-to-end and avoids leaving merged branches behind | Codex / 2026-06-22 |
 
 ## Deferred Decisions / 보류한 결정

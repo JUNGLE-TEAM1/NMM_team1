@@ -12,15 +12,17 @@
 
 ## 범위
 
+- `scripts/prepare-pr.sh --auto-pr`를 추가해 complete + PR-ready workspace의 자동 PR 생성을 지원한다.
 - `scripts/prepare-pr.sh --finalize` 성공 후 `scripts/cleanup-merged-branches.sh`를 실행한다.
 - `scripts/cleanup-merged-branches.sh`를 추가해 merged/closed feature branch의 원격 branch, 로컬 branch, stale remote-tracking ref를 정리한다.
 - `scripts/list-active-branches.sh`에 local/remote/tracking 상태를 표시한다.
-- `docs/08-development-workflow.md`, `docs/11-git-sync-policy.md`, `docs/13-human-command-flow.md`, `docs/10-next-action-menu.md`에 자동 cleanup 규칙을 전파한다.
+- `docs/08-development-workflow.md`, `docs/11-git-sync-policy.md`, `docs/13-human-command-flow.md`, `docs/10-next-action-menu.md`에 자동 PR 생성과 자동 cleanup 규칙을 전파한다.
 - `scripts/validate-harness.sh`에 자동 cleanup 규칙 누락 검사를 추가한다.
 
 ## 범위 제외
 
 - `git branch -D` 강제 삭제 자동 실행.
+- merge/finalize/branch cleanup을 자동 PR 생성에 포함.
 - AWS, cloud, deploy, database, external resource cleanup.
 - 제품 런타임 변경.
 

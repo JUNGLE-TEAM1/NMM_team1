@@ -622,6 +622,22 @@ if ! rg -q "automatic merged branch cleanup|자동 merged branch cleanup|cleanup
   fail "Automatic merged branch cleanup is not documented across workflow docs and prepare-pr"
 fi
 
+if ! rg -q "Automatic PR Creation|자동 PR 생성|--auto-pr" docs/08-development-workflow.md docs/10-next-action-menu.md docs/11-git-sync-policy.md docs/13-human-command-flow.md scripts/prepare-pr.sh; then
+  fail "Automatic PR creation policy is not documented across workflow docs and prepare-pr"
+fi
+
+if ! rg -q "PR 올리지 마|로컬에만 둬|PR은 나중에|draft만" docs/08-development-workflow.md docs/11-git-sync-policy.md docs/13-human-command-flow.md; then
+  fail "Automatic PR creation opt-out phrases are not documented"
+fi
+
+if ! rg -q "merge/finalize/branch cleanup은 포함하지 않는다|not part of automatic PR creation|merge, finalize, issue close, and branch cleanup are not part" docs/08-development-workflow.md docs/11-git-sync-policy.md; then
+  fail "Automatic PR creation must be separated from merge/finalize/cleanup"
+fi
+
+if ! rg -q -- "--auto-pr" scripts/prepare-pr.sh || ! rg -q "auto_pr=1" scripts/prepare-pr.sh; then
+  fail "scripts/prepare-pr.sh must provide --auto-pr"
+fi
+
 if ! rg -q "cleanup-merged-branches.sh" scripts/prepare-pr.sh || ! rg -q "scripts/cleanup-merged-branches.sh" docs/11-git-sync-policy.md; then
   fail "prepare-pr finalize must run scripts/cleanup-merged-branches.sh and policy must document it"
 fi
@@ -660,7 +676,7 @@ if ! rg -q "Complete And PR Ready|추가 보강|다음 Phase|보류|외부 실�
   fail "docs/10-next-action-menu.md must include complete PR-ready choice details"
 fi
 
-if ! rg -q "완료 \\+ PR 준비 상태입니다.*선택지별 절차/장점/주의사항.*1 PR 진행\\(push, PR 생성, CI 확인, merge, finalize, issue close 확인, automatic branch cleanup\\).*2 추가 보강.*3 다음 Phase.*4 보류.*5 외부 실행 승인" scripts/status-workflow.sh; then
+if ! rg -q "완료 \\+ PR 준비 상태입니다.*자동 PR 생성 대상입니다.*--auto-pr.*1 PR 진행\\(merge, finalize, issue close 확인, automatic branch cleanup\\).*2 추가 보강.*3 다음 Phase.*4 보류.*5 외부 실행 승인" scripts/status-workflow.sh; then
   fail "scripts/status-workflow.sh must recommend completion handoff choices for complete PR-ready workspaces"
 fi
 

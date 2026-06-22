@@ -107,6 +107,8 @@ Workspace state 값:
 - Pre-Merge Sync: before completion/integration, re-check main freshness and record conflicts or validation.
 - Push / PR: prefer PR-based integration and record branch, PR link, and merge status in `sync.md`.
 - PR Sync Preflight: before PR handoff or PR creation, run `scripts/prepare-pr.sh --check-pr-sync <workspace>` to catch stale or contradictory `sync.md` Push / PR fields.
+- Automatic PR Creation: when a branch workspace is `complete`, pending confirmations are clear, PR checklist is ready, strict validation passes, linked issue and closing keyword exist, AI creates the PR without another question.
+- Auto PR Scope: automatic PR creation runs final local validation, branch push, PR creation, `sync.md` PR link/status recording, PR-record commit/push, and CI/check status reporting.
 - PR Finalization: after PR merge, run `scripts/prepare-pr.sh --finalize <workspace>` and record final merge/issue close status in `sync.md`; finalize also runs automatic merged branch cleanup.
 - Branch Issue Default: `scripts/start-workflow.sh` creates a GitHub issue by default for every branch workspace; use `--no-issue` only as an explicit exception.
 - Linked Issue: when a branch maps to a GitHub issue, keep the existing branch/workspace name and record the issue plus PR closing keyword in `sync.md`.
@@ -117,6 +119,7 @@ Workspace state 값:
 - Cleanup Scope: branch cleanup only changes Git branch refs. It never deletes deploy, AWS, cloud, database, or external resources.
 - Cleanup Guard: use `git branch -d` only; if safe local deletion fails, stop and ask before `git branch -D`.
 - AI records sync status but does not run pull, merge, rebase, push, PR creation, or PR merge without human confirmation.
+- Exception: automatic PR creation is a team default for complete PR-ready branch workspaces; merge/finalize/cleanup still requires a human `PR 진행`, `머지해`, `진행해`, or equivalent command.
 
 ## 재발 방지 하네스 규칙
 
@@ -328,8 +331,11 @@ AI는 각 선택지마다 진행 절차, 선택하면 좋은 상황, 장점, 주
    - 원격/외부 상태 변경 여부: 있음. 사람 명시 승인 필요.
 
 사람이 `PR 진행`을 명시하면 해당 branch의 push, PR 생성, CI 확인, merge, finalize, linked issue close 확인, merged branch cleanup까지 승인한 것으로 본다.
+완료 조건을 만족한 branch workspace는 `PR 진행` 명령이 없어도 자동으로 PR 생성까지 진행한다.
+자동 PR 생성은 merge, finalize, issue close, automatic branch cleanup을 포함하지 않는다.
 단, CI 실패, merge conflict, required review 미충족, scope drift, deploy/AWS resource 생성, 데이터 변경/마이그레이션 같은 추가 위험이 발견되면 멈추고 사람에게 보고한다.
 사람이 `PR 생성만`, `초안 PR`, `머지는 보류`처럼 제한하면 그 제한을 우선한다.
+사람이 `PR 올리지 마`, `로컬에만 둬`, `보류`, `PR은 나중에`, `draft만`이라고 명시하면 자동 PR 생성을 하지 않는다.
 추가 보강이 현재 branch 범위를 넘으면 `Scope Change Confirm`을 먼저 해결한다.
 다음 Phase로 이동하면 branch switch/checkpoint 규칙을 따른다.
 보류를 선택하면 `next-actions.md`에 보류 이유와 재개 조건을 기록한다.

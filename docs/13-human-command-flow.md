@@ -153,7 +153,7 @@ AI does:
 
 - Runs `scripts/prepare-pr.sh <workspace>` first to update local PR closing keyword.
 - Runs `scripts/prepare-pr.sh --check-pr-sync <workspace>` before creating or handing off the PR.
-- With explicit approval, runs `scripts/prepare-pr.sh --push --create-pr <workspace>`.
+- If the workspace is complete and PR-ready, runs `scripts/prepare-pr.sh --auto-pr <workspace>` without another question unless the human said not to create a PR.
 - Uses `Closes #123` style closing keyword so GitHub closes the linked issue when the PR is merged.
 - After merge, runs `scripts/prepare-pr.sh --check-issue <workspace>` and records `issue close status` in `sync.md`.
 - If a stacked PR was merged into a non-default branch and the linked issue remains open, runs `scripts/prepare-pr.sh --close-issue <workspace>` to close it with the merged PR as evidence.
@@ -199,6 +199,8 @@ AI does:
 
 - Runs `scripts/status-workflow.sh <workspace>`.
 - If workspace is `complete`, pending confirmations are clear, and PR checklist is ready, reports branch, linked issue, PR closing keyword, local validation result, remaining remote work, and any external approval need.
+- For complete PR-ready workspaces, creates the PR automatically with `scripts/prepare-pr.sh --auto-pr <workspace>` unless the human said "PR 올리지 마", "로컬에만 둬", "보류", "PR은 나중에", or "draft만".
+- After automatic PR creation, reports PR link, linked issue, CI/check state, and remaining choices.
 - Presents the completion handoff choice menu with a short explanation for each choice:
   - 1. PR 진행: final validation, push, PR creation, CI check, merge, issue close check, finalize, and automatic merged branch cleanup. If the human says "PR만 올려줘", stop after PR creation and do not merge.
   - 2. 추가 보강: name 1-5 concrete hardening candidates such as weak tests, unclear docs, cost risk, missing manual verification, or unclear next-phase contract. Explain the benefit and delay tradeoff.
@@ -206,6 +208,7 @@ AI does:
   - 4. 보류: do not push or create a PR. Record the hold reason and resume condition in `next-actions.md`.
   - 5. 외부 실행 승인 단계: check approval checklist, expected cost, rollback, smoke test, secrets, and permissions before AWS/deploy/migration work.
 - Treats a human `PR 진행` selection as approval for that branch's push, PR creation, CI check, merge, PR finalize, linked issue close verification, and automatic merged branch cleanup.
+- Treats `머지해`, `진행해`, and `이 PR 마무리해` as approval for merge/finalize/issue close/automatic branch cleanup when an open PR already exists.
 - Stops and reports back instead of merging if CI fails, merge conflicts exist, required review is missing, scope drift appears, deployment/AWS resource creation is involved, or the human limited the command to PR creation/draft/hold merge.
 - Automatic merged branch cleanup only deletes Git branch refs with `git push origin --delete`, `git branch -d`, and `git fetch --prune`; it never deletes AWS, cloud, deploy, database, or external resources.
 - If `git branch -d` fails, does not run `git branch -D` without separate human confirmation.

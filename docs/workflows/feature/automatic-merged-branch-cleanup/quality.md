@@ -10,7 +10,7 @@
 - Reason: harness/documentation/shell workflow change; no product runtime logic.
 - Failing test first: not applicable
 - Expected failure command/result: not applicable
-- Pass command/result: shell syntax, cleanup dry-run, list-active-branches output, harness validation, strict validation, workspace status, diff check
+- Pass command/result: shell syntax, prepare-pr dry-run, cleanup dry-run, list-active-branches output, harness validation, strict validation, workspace status, diff check
 - Refactor notes: cleanup is isolated in `scripts/cleanup-merged-branches.sh`; `prepare-pr --finalize` calls it only after PR merged and issue close state are verified.
 
 ## Branch Checks / 브랜치 검증
@@ -19,6 +19,7 @@
 | --- | --- | --- | --- |
 | lint | `bash -n scripts/*.sh scripts/aws/*.sh` | passed | shell syntax |
 | unit/focused test | `scripts/cleanup-merged-branches.sh --dry-run` | passed | no deletion in dry-run; targets reported |
+| unit/focused test | `scripts/prepare-pr.sh --dry-run docs/workflows/feature/automatic-merged-branch-cleanup` | passed | PR handoff body renders without remote state change |
 | integration/contract test | `scripts/list-active-branches.sh` | passed | shows local/remote/tracking columns |
 | build/typecheck | not applicable | skipped | no product code changed |
 | harness validation | `scripts/validate-harness.sh` | passed | Harness validation passed |

@@ -82,11 +82,14 @@ scripts/start-workflow.sh --no-issue chore local-notes "Local notes only"
 ```
 
 PR 준비 단계에서는 linked issue가 있으면 closing keyword를 `sync.md`와 PR 본문에 반영한다.
-remote push나 PR 생성은 명시 플래그를 붙였을 때만 실행한다.
+complete + PR-ready workspace의 remote push와 PR 생성은 팀 기본 자동화로 실행할 수 있다.
+자동 PR 생성은 `scripts/prepare-pr.sh --auto-pr <workspace>`를 사용하며, merge/finalize/branch cleanup은 포함하지 않는다.
+사람이 `PR 올리지 마`, `로컬에만 둬`, `보류`, `PR은 나중에`, `draft만`이라고 명시하면 자동 PR 생성을 하지 않는다.
 
 ```bash
 scripts/prepare-pr.sh docs/workflows/feature/project-bootstrap
 scripts/prepare-pr.sh --check-pr-sync docs/workflows/feature/project-bootstrap
+scripts/prepare-pr.sh --auto-pr docs/workflows/feature/project-bootstrap
 scripts/prepare-pr.sh --push --create-pr docs/workflows/feature/project-bootstrap
 scripts/prepare-pr.sh --check-issue docs/workflows/feature/project-bootstrap
 scripts/prepare-pr.sh --close-issue docs/workflows/feature/project-bootstrap
@@ -139,7 +142,10 @@ scripts/list-active-branches.sh
 
 If the workspace is complete and PR-ready, the handoff must present a choice menu instead of only asking whether to create a PR.
 The menu includes PR 진행, 추가 보강, 다음 Phase 이동, 보류, and 외부 실행 승인 단계 when relevant.
+Complete PR-ready workspaces create a PR automatically after final local validation and PR sync checks pass.
+Automatic PR creation reports the PR link, linked issue, CI/check status, and remaining choices.
 `PR 진행` means final validation, push, PR creation, CI check, merge, PR finalize, linked issue close verification, and automatic merged branch cleanup for the current branch.
+Merge, finalize, issue close, and branch cleanup are not part of automatic PR creation; they require `PR 진행`, `머지해`, `진행해`, or equivalent explicit human command.
 Stop and report back if CI fails, merge conflicts exist, required review is missing, scope drift appears, deployment/AWS resource creation is involved, or the human limited the command to PR creation/draft/hold merge.
 Deploy and AWS resource creation still require separate explicit human approval.
 

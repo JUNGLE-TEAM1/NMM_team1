@@ -4,12 +4,13 @@ set -euo pipefail
 usage() {
   cat <<'USAGE'
 Usage:
-  scripts/prepare-pr.sh [--dry-run] [--push] [--create-pr] [--check-issue] [--check-pr-sync] [--close-issue] [--finalize] docs/workflows/<type>/<short-kebab-name>
+  scripts/prepare-pr.sh [--dry-run] [--push] [--create-pr] [--auto-pr] [--check-issue] [--check-pr-sync] [--close-issue] [--finalize] docs/workflows/<type>/<short-kebab-name>
 
 Default behavior updates the workspace sync.md with the PR closing keyword and prints a PR body draft.
 Remote actions require explicit flags:
   --push        push the current branch to origin
   --create-pr   create a GitHub PR with gh
+  --auto-pr     run PR sync check, push the branch, and create a PR for complete PR-ready work
   --check-issue query linked GitHub issue state with gh
   --check-pr-sync check local sync.md PR handoff fields before creating or merging a PR
   --close-issue close linked issue after the recorded PR is merged
@@ -20,6 +21,7 @@ USAGE
 dry_run=0
 push_branch=0
 create_pr=0
+auto_pr=0
 check_issue=0
 check_pr_sync=0
 close_issue=0
@@ -36,6 +38,13 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     --create-pr)
+      create_pr=1
+      shift
+      ;;
+    --auto-pr)
+      auto_pr=1
+      check_pr_sync=1
+      push_branch=1
       create_pr=1
       shift
       ;;
@@ -247,6 +256,20 @@ if [[ "$check_pr_sync" -eq 1 ]]; then
     exit 1
   fi
 
+  if [[ "$auto_pr" -eq 1 ]]; then
+    workspace_state="$(first_value "$report_file" "- Workspace state:")"
+    if [[ "$workspace_state" != "complete" && "$workspace_state" != "ready-for-review" && "$workspace_state" != "integration-ready" ]]; then
+      echo "Auto PR failed: workspace state is '${workspace_state:-missing}', expected complete, ready-for-review, or integration-ready." >&2
+      rm -f "$pr_body_file"
+      exit 1
+    fi
+    if [[ -z "$linked_issue" || -z "$closing_keyword" ]]; then
+      echo "Auto PR failed: linked issue and closing keyword are required." >&2
+      rm -f "$pr_body_file"
+      exit 1
+    fi
+  fi
+
   echo "PR sync check passed."
 fi
 
@@ -272,10 +295,17 @@ if [[ "$create_pr" -eq 1 ]]; then
     exit 1
   fi
 
-  pr_output="$(gh pr create --title "$title" --body-file "$pr_body_file" 2>&1)"
-  pr_link="$(printf '%s\n' "$pr_output" | tail -n 1)"
+  if gh pr view "$branch" --json url --jq .url >/dev/null 2>&1; then
+    pr_link="$(gh pr view "$branch" --json url --jq .url)"
+    echo "Existing PR: ${pr_link}"
+  else
+    pr_output="$(gh pr create --title "$title" --body-file "$pr_body_file" 2>&1)"
+    pr_link="$(printf '%s\n' "$pr_output" | tail -n 1)"
+    echo "Created PR: ${pr_link}"
+  fi
   set_field "$sync_file" "- PR link:" "$pr_link"
-  echo "Created PR: ${pr_link}"
+  set_field "$sync_file" "- merge status:" "open"
+  set_field "$sync_file" "- issue close status:" "open"
 fi
 
 if [[ "$check_issue" -eq 1 || "$close_issue" -eq 1 || "$finalize" -eq 1 ]]; then
