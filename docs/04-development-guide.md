@@ -96,6 +96,28 @@ scripts/validate-harness.sh --strict
 scripts/validate-harness.sh --integration
 ```
 
+제품 앱 local/container 실행:
+
+```bash
+docker compose build
+docker compose up
+curl -fsS http://localhost:8000/health
+curl -fsS http://localhost:3000/
+scripts/smoke-container-app.sh
+```
+
+개별 runtime 실행:
+
+```bash
+cd backend
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+
+cd frontend
+npm install
+npm run dev
+```
+
 ## 7) PR 체크리스트
 
 - [ ] 현재 Phase에 기여한다.

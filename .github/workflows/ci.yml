@@ -38,13 +38,21 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Build backend smoke image
+      - name: Build backend image
         run: |
           docker build -f infra/docker/backend.Dockerfile -t asklake-backend:${{ github.sha }} .
 
-      - name: Build frontend smoke image
+      - name: Test backend health contract
+        run: |
+          docker run --rm asklake-backend:${{ github.sha }} python -m pytest
+
+      - name: Build frontend image
         run: |
           docker build -f infra/docker/frontend.Dockerfile -t asklake-frontend:${{ github.sha }} .
+
+      - name: Run compose smoke
+        run: |
+          scripts/smoke-container-app.sh
 
   manifest-smoke:
     runs-on: ubuntu-latest

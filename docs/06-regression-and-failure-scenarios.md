@@ -67,6 +67,16 @@
 | Verification method | 실패하는 sample source/transform으로 run을 실행하고 UI/API 상태를 확인한다. |
 | Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07` |
 
+### Container App Health
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | backend health API와 frontend 정적 앱이 container-first 실행 경로에서 응답한다. |
+| Failure condition | `GET /health` 또는 `GET /api/health`가 200/ok contract를 반환하지 않거나 frontend container가 `/`를 제공하지 않는다. |
+| Expected behavior | `scripts/smoke-container-app.sh`가 backend/frontend image build, compose up, health/frontend curl을 통과한다. |
+| Verification method | `scripts/smoke-container-app.sh` |
+| Related docs/interface/Phase | `docs/03`, `docs/04`, `docs/08`, M2 `feature/container-app-skeleton` |
+
 ## 기능 실패 시나리오
 
 ### 예시 산출물이 다시 들어오는 경우
