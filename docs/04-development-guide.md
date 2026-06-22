@@ -106,6 +106,19 @@ curl -fsS http://localhost:3000/
 scripts/smoke-container-app.sh
 ```
 
+M2 container 포트 기준:
+
+- 일반 개발용 Docker Compose는 backend `8000`, frontend `3000`을 기본 포트로 사용한다.
+- 자동 smoke 검증은 로컬의 다른 프로젝트와 충돌하지 않도록 backend `18000`, frontend `13000`을 기본 포트로 사용한다.
+- 필요한 경우 `BACKEND_PORT`, `FRONTEND_PORT` 환경 변수로 override한다.
+
+예시:
+
+```bash
+BACKEND_PORT=18001 FRONTEND_PORT=13001 scripts/smoke-container-app.sh
+BACKEND_PORT=8001 FRONTEND_PORT=3001 docker compose up
+```
+
 개별 runtime 실행:
 
 ```bash

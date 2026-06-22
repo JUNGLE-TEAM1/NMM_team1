@@ -8,7 +8,8 @@ integration branch는 branch 작업을 합치기 전에 이 파일을 읽는다.
 | File | Proposed Change | Reason | Merge Risk |
 | --- | --- | --- | --- |
 | `docs/03-interface-reference.md` | Health API contract를 `/health`, `/api/health`로 구체화 | M2 backend/frontend/container smoke가 같은 contract를 봐야 한다. | 낮음 |
-| `docs/04-development-guide.md` | Docker Compose와 개별 backend/frontend 실행 명령 추가 | 팀원이 M2 앱 skeleton을 바로 실행할 수 있어야 한다. | 낮음 |
+| `docs/04-development-guide.md` | Docker Compose와 개별 backend/frontend 실행 명령, 개발/smoke 포트 정책 추가 | 팀원이 M2 앱 skeleton을 바로 실행하고 포트 충돌을 피할 수 있어야 한다. | 낮음 |
+| `docs/01-product-planning.md` | M2 완료 기준에 개발 기본 포트와 smoke 전용 포트 분리 명시 | 마일스톤 완료 기준에서 포트 정책이 누락되지 않아야 한다. | 낮음 |
 | `docs/06-regression-and-failure-scenarios.md` | Container App Health 회귀 보호 추가 | M2 health/container smoke가 이후 Phase에서 깨지지 않아야 한다. | 낮음 |
 | `docs/07-manual-verification-playbook.md` | Container App Skeleton 수동 점검 절차 추가 | 자동 smoke 외에 사람이 실행/응답을 확인하는 경로가 필요하다. | 낮음 |
 | `README.md` | M2 앱 골격 위치와 local 실행 URL 추가 | 프로젝트 진입점에서 현재 실행 방법을 볼 수 있어야 한다. | 낮음 |
