@@ -159,6 +159,35 @@ AI does:
 - If a stacked PR was merged into a non-default branch and the linked issue remains open, runs `scripts/prepare-pr.sh --close-issue <workspace>` to close it with the merged PR as evidence.
 - For final handoff after merge, runs `scripts/prepare-pr.sh --finalize <workspace>` to verify PR merged state, issue close state, and final `sync.md` values.
 - If unrelated or expanded work appears mid-flow, records same-scope work in the current workspace; for scope changes, resolves `Scope Change Confirm` and creates a separate workspace when needed.
+- After PR merge/finalize, runs or summarizes `scripts/list-active-branches.sh` and reports remaining active branches, open PR branches, and cleanup candidates.
+
+Human says:
+
+```text
+다음 브랜치로 넘어가
+```
+
+AI does:
+
+- Summarizes current branch, target branch, worktree state, uncommitted changes, checkpoint commit expectation, target workspace, and switch reason.
+- Treats the explicit switch request as branch switch approval unless the summary shows unresolved conflicts or surprising dirty worktree risk.
+- If dirty worktree exists, tells the human that `scripts/start-workflow.sh` will checkpoint commit before switching.
+- If unresolved conflicts exist, stops and lists conflict files instead of switching.
+- After switching, reports current branch and workspace.
+
+Human says:
+
+```text
+PR 끝났어? 남은 브랜치 뭐 있어?
+```
+
+AI does:
+
+- Runs or summarizes `scripts/list-active-branches.sh`.
+- Reports branch name, ahead count, workspace path, workspace state, linked issue, PR link/open PR state, merge status, issue close status, and recommended next action.
+- Separates merged/closed branches as cleanup candidates.
+- Does not delete local or remote branches without explicit human approval.
+- If remaining work branches exist, offers: 1. 남은 브랜치 PR 진행, 2. 남은 브랜치 보류, 3. main에서 다음 Phase 시작, 4. cleanup 후보 정리 검토.
 
 Human says:
 
@@ -171,12 +200,13 @@ AI does:
 - Runs `scripts/status-workflow.sh <workspace>`.
 - If workspace is `complete`, pending confirmations are clear, and PR checklist is ready, reports branch, linked issue, PR closing keyword, local validation result, remaining remote work, and any external approval need.
 - Presents the completion handoff choice menu with a short explanation for each choice:
-  - 1. PR 진행: final validation, push, PR creation, CI check, merge when approved, issue close check, and finalize. If the human says "PR만 올려줘", stop after PR creation and do not merge.
+  - 1. PR 진행: final validation, push, PR creation, CI check, merge, issue close check, and finalize. If the human says "PR만 올려줘", stop after PR creation and do not merge.
   - 2. 추가 보강: name 1-5 concrete hardening candidates such as weak tests, unclear docs, cost risk, missing manual verification, or unclear next-phase contract. Explain the benefit and delay tradeoff.
   - 3. 다음 Phase: do not silently skip the current PR-ready branch. Ask whether to merge it first or intentionally hold it, then create the next workspace.
   - 4. 보류: do not push or create a PR. Record the hold reason and resume condition in `next-actions.md`.
   - 5. 외부 실행 승인 단계: check approval checklist, expected cost, rollback, smoke test, secrets, and permissions before AWS/deploy/migration work.
-- Does not run `git push`, PR creation, merge, deploy, or AWS resource creation until the human explicitly selects and approves that remote/external action.
+- Treats a human `PR 진행` selection as approval for that branch's push, PR creation, CI check, merge, PR finalize, and linked issue close verification.
+- Stops and reports back instead of merging if CI fails, merge conflicts exist, required review is missing, scope drift appears, deployment/AWS resource creation is involved, or the human limited the command to PR creation/draft/hold merge.
 - If the human chooses additional work that exceeds current scope, resolves `Scope Change Confirm` first.
 - If the human chooses hold, records the hold reason and resume condition in `next-actions.md`.
 

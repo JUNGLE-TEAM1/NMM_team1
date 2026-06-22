@@ -12,6 +12,7 @@
 - Context omitted intentionally: product runtime, AWS runtime, remote PR actions
 - Changed: completion handoff choices now require procedure, good-fit situation, advantage, caution/tradeoff, and remote/external state-change explanation.
 - Verified: shell syntax, harness validation, strict validation, workspace status, diff check
-- Remaining: push/PR only after explicit human approval
+- Remaining: PR 진행 approved by human; push, PR, CI check, merge, finalize, and issue close verification follow the updated handoff rule
+- Main sync: merged `main` at `7e19892` and resolved completion handoff wording conflicts
 - Next context: M2 start can rely on clearer complete-branch handoff choices
 - Risk: longer choice explanations should stay concise in conversation; status script only reminds AI to explain details from docs.

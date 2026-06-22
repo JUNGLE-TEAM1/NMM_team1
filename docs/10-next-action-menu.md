@@ -406,8 +406,21 @@ Waiting on you:
      - Good fit: AWS resource creation, deploy, migration, or other outside-repo state change is next.
      - Advantage: enables real environment verification.
      - Caution: creates cost, permission, and operations risk; explicit human approval required.
-- Next AI action: ask the human to choose an option. Do not push, create PRs, merge, deploy, or create AWS resources before explicit approval.
+- Next AI action: ask the human to choose an option. If the human chooses `PR 진행`, continue through push, PR creation, CI check, merge, finalize, and linked issue close verification unless a stop condition appears.
 - Ask: "완료된 branch입니다. 선택지별 절차와 장단점은 위와 같고, 어떤 방향으로 진행할까요?"
+
+### Remaining Branch Queue
+
+- Current state: a PR was merged/finalized, a branch switch is about to happen, or the human asked what work branches remain.
+- Recommended next action: run or summarize `scripts/list-active-branches.sh`.
+- Options:
+  1. Continue a remaining active local branch.
+  2. Review an open PR branch.
+  3. Hold a remaining branch and record the reason.
+  4. Start the next Phase from `main`.
+  5. Review cleanup candidates.
+- Next AI action: report branch name, ahead count, workspace, workspace state, linked issue, PR state, merge status, issue close status, and recommended next action.
+- Ask: "남은 작업 브랜치가 있습니다. PR 진행, 보류, 다음 Phase, cleanup 검토 중 무엇을 할까요?"
 
 ### Semantic Validation Failed
 

@@ -77,6 +77,7 @@ branch 이름과 생성 파일만 미리 보려면 `--dry-run`을 사용한다.
 다른 branch workspace로 이동할 때 현재 worktree가 dirty이면 `scripts/start-workflow.sh`가 현재 branch에 checkpoint commit을 만든 뒤 이동한다.
 같은 branch workspace를 다시 여는 경우에는 checkpoint commit을 만들지 않는다.
 handoff, integration, PR readiness 전에 현재 workspace 상태를 요약하려면 `scripts/status-workflow.sh <workspace>`를 사용한다.
+여러 branch의 남은 작업 큐를 확인하려면 `scripts/list-active-branches.sh`를 사용한다.
 
 ## 적용 모드
 
@@ -110,6 +111,8 @@ Workspace state 값:
 - Branch Issue Default: `scripts/start-workflow.sh` creates a GitHub issue by default for every branch workspace; use `--no-issue` only as an explicit exception.
 - Linked Issue: when a branch maps to a GitHub issue, keep the existing branch/workspace name and record the issue plus PR closing keyword in `sync.md`.
 - Branch Switch Checkpoint: when moving from one branch workspace to another with dirty changes, checkpoint commit current branch before switching.
+- Branch Switch Confirm: before switching branch workspaces, summarize current branch, target branch, worktree state, uncommitted changes, checkpoint commit expectation, target workspace, and switch reason, then get human confirmation unless the user already gave an explicit switch/phase-start command.
+- Remaining Branch Queue: after PR merge/finalize, run or summarize `scripts/list-active-branches.sh` and tell the human whether active local branches, open PR branches, or merged cleanup candidates remain.
 - AI records sync status but does not run pull, merge, rebase, push, PR creation, or PR merge without human confirmation.
 
 ## 재발 방지 하네스 규칙
@@ -321,12 +324,14 @@ AI는 각 선택지마다 진행 절차, 선택하면 좋은 상황, 장점, 주
    - 주의사항 또는 단점: 비용, 권한, 운영 리스크가 생긴다.
    - 원격/외부 상태 변경 여부: 있음. 사람 명시 승인 필요.
 
-사람이 PR 진행을 명시 승인하기 전까지 `git push`와 PR 생성은 실행하지 않는다.
+사람이 `PR 진행`을 명시하면 해당 branch의 push, PR 생성, CI 확인, merge, finalize, linked issue close 확인까지 승인한 것으로 본다.
+단, CI 실패, merge conflict, required review 미충족, scope drift, deploy/AWS resource 생성, 데이터 변경/마이그레이션 같은 추가 위험이 발견되면 멈추고 사람에게 보고한다.
+사람이 `PR 생성만`, `초안 PR`, `머지는 보류`처럼 제한하면 그 제한을 우선한다.
 추가 보강이 현재 branch 범위를 넘으면 `Scope Change Confirm`을 먼저 해결한다.
 다음 Phase로 이동하면 branch switch/checkpoint 규칙을 따른다.
 보류를 선택하면 `next-actions.md`에 보류 이유와 재개 조건을 기록한다.
 외부 실행 승인 단계는 관련 approval checklist와 명시 승인을 먼저 확인한다.
-merge, deploy, AWS resource 생성은 사람의 명시 승인 없이 실행하지 않는다.
+deploy, AWS resource 생성은 사람의 별도 명시 승인 없이 실행하지 않는다.
 
 ## 우선순위
 
@@ -410,6 +415,67 @@ M5 이후는 XFlow급 기능 볼륨을 AskLake 방식으로 구현하기 위한 
 ~~~
 
 Phase 제목에는 항상 branch 또는 작업 위치를 포함한다. branch 작업이 불가능하면 local path 또는 `local workspace`를 쓰고 Phase report에 이유를 설명한다.
+
+## 내부 단계별 프롬프트
+
+큰 Phase는 하나의 branch workspace 안에서 여러 내부 단계로 나눌 수 있다.
+내부 단계는 기본적으로 같은 branch와 같은 workspace에서 진행한다.
+단계가 현재 `plan.md` 범위를 넘으면 `Scope Change Confirm`을 먼저 해결한다.
+독립 배포, 독립 PR, 독립 ownership이 필요하면 새 branch workspace로 분리한다.
+
+내부 단계별 프롬프트의 기본 저장 위치는 현재 workspace의 `plan.md`다.
+섹션 이름은 `## 내부 단계별 프롬프트`를 사용한다.
+작은 Phase에서는 이 섹션을 `not needed`로 남겨도 된다.
+
+각 단계는 아래 구조를 따른다.
+
+~~~md
+## 내부 단계별 프롬프트
+
+### Step N - [STEP_NAME]
+
+#### 목표
+
+- [STEP_GOAL]
+
+#### 범위
+
+- [STEP_SCOPE]
+
+#### 범위 제외
+
+- [STEP_OUT_OF_SCOPE]
+
+#### 구현 프롬프트
+
+```text
+@AGENTS.md @[RELEVANT_DOCS]
+
+[IMPLEMENTATION_REQUEST]
+```
+
+#### 검증 프롬프트
+
+```text
+@AGENTS.md @[RELEVANT_DOCS]
+
+[VERIFICATION_REQUEST]
+```
+
+#### 완료 기준
+
+- [ ] [STEP_COMPLETION_CRITERION]
+~~~
+
+Workspace 파일 역할은 아래처럼 나눈다.
+
+- `plan.md`: Phase 전체 계획, 내부 단계별 프롬프트, 단계별 완료 기준.
+- `next-actions.md`: 현재 다음 단계와 사람 선택 메뉴.
+- `quality.md`: 단계별 검증 명령과 결과.
+- `report.md`: 최종 요약과 남은 위험.
+- `decisions.md`: 단계 중 발생한 고영향 결정.
+- `shared-docs.md`: Source of Truth 변경 제안.
+- `sync.md`: branch, issue, PR, merge 상태.
 
 ## Phase 0 - 프로젝트 부트스트랩 (`feature/project-bootstrap`)
 

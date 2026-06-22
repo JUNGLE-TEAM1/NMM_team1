@@ -16,14 +16,14 @@ main 동기화와 integration readiness를 기록한다.
 
 | Checked At | Upstream Changes | Impacted Source of Truth | Action |
 | --- | --- | --- | --- |
-|  |  |  |  |
+| 2026-06-22 | `main` advanced from `0235fa8` to `7e19892` | PR 진행/merge finalize rules, branch queue guard, internal step prompt standard | Merged `main` into `feature/completion-handoff-choice-details`; resolved completion handoff wording conflicts |
 
 ## Pre-Merge Sync
 
-- main commit: 0235fa8
-- conflicts: none detected against current origin/main
+- main commit: 7e19892
+- conflicts: resolved in completion handoff sections and validation/status recommendation text
 - validation: shell syntax, harness validation, strict validation, workspace status, diff check
-- result: origin/main unchanged from Start Sync; no pull/merge/rebase needed
+- result: `main` merged into branch to align with latest harness rules before PR
 - deferral reason:
 
 ## Push / PR
