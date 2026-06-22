@@ -134,7 +134,9 @@ scripts/list-active-branches.sh
 
 If the workspace is complete and PR-ready, the handoff must present a choice menu instead of only asking whether to create a PR.
 The menu includes PR 진행, 추가 보강, 다음 Phase 이동, 보류, and 외부 실행 승인 단계 when relevant.
-Push, PR creation, merge, deploy, and AWS resource creation still require explicit human approval.
+`PR 진행` means final validation, push, PR creation, CI check, merge, PR finalize, and linked issue close verification for the current branch.
+Stop and report back if CI fails, merge conflicts exist, required review is missing, scope drift appears, deployment/AWS resource creation is involved, or the human limited the command to PR creation/draft/hold merge.
+Deploy and AWS resource creation still require separate explicit human approval.
 
 Use `.github/pull_request_template.md` as the checklist when the project uses PRs.
 

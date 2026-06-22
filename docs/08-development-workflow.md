@@ -291,18 +291,20 @@ Branch workspace가 `complete`이고 pending confirmation이 없으며 PR checkl
 
 선택지는 현재 branch에 맞게 아래 항목을 포함한다.
 
-1. PR 진행: branch push 후 PR 생성.
+1. PR 진행: final validation, branch push, PR 생성, CI 확인, merge, PR finalize, linked issue close 확인까지 진행.
 2. 추가 보강: 문서, 테스트, 구현을 더 보강하고 다시 검증.
 3. 다음 Phase로 이동: 현재 branch는 유지하고 다음 branch workspace 시작.
 4. 보류: push/PR 없이 현재 상태 유지.
-5. 외부 실행 승인 단계: AWS resource 생성, deploy, merge 등 별도 승인 작업이 남아 있으면 approval checklist부터 진행.
+5. 외부 실행 승인 단계: AWS resource 생성, deploy 등 PR merge 밖의 별도 승인 작업이 남아 있으면 approval checklist부터 진행.
 
-사람이 PR 진행을 명시 승인하기 전까지 `git push`와 PR 생성은 실행하지 않는다.
+사람이 `PR 진행`을 명시하면 해당 branch의 push, PR 생성, CI 확인, merge, finalize, linked issue close 확인까지 승인한 것으로 본다.
+단, CI 실패, merge conflict, required review 미충족, scope drift, deploy/AWS resource 생성, 데이터 변경/마이그레이션 같은 추가 위험이 발견되면 멈추고 사람에게 보고한다.
+사람이 `PR 생성만`, `초안 PR`, `머지는 보류`처럼 제한하면 그 제한을 우선한다.
 추가 보강이 현재 branch 범위를 넘으면 `Scope Change Confirm`을 먼저 해결한다.
 다음 Phase로 이동하면 branch switch/checkpoint 규칙을 따른다.
 보류를 선택하면 `next-actions.md`에 보류 이유와 재개 조건을 기록한다.
 외부 실행 승인 단계는 관련 approval checklist와 명시 승인을 먼저 확인한다.
-merge, deploy, AWS resource 생성은 사람의 명시 승인 없이 실행하지 않는다.
+deploy, AWS resource 생성은 사람의 별도 명시 승인 없이 실행하지 않는다.
 
 ## 우선순위
 
