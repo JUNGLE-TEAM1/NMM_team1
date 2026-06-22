@@ -26,8 +26,8 @@ export function App() {
       <section className="workspace">
         <div className="title-row">
           <div>
-            <p className="eyebrow">AskLake M3</p>
-            <h1>Source Catalog</h1>
+            <p className="eyebrow">AskLake M4</p>
+            <h1>Pipeline Run</h1>
           </div>
           <StatusPill health={health} />
         </div>

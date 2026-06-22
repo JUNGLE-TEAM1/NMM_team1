@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Database, FilePlus2, RefreshCw, TableProperties } from "lucide-react";
 
 import { createSource, listCatalogDatasets, listSources } from "../../api/asklakeClient";
+import { PipelineRunPanel } from "../pipeline/PipelineRunPanel";
 import { CatalogDetail } from "./CatalogDetail";
 
 export function SourceCatalog() {
@@ -118,6 +119,8 @@ export function SourceCatalog() {
           )}
         </div>
       </section>
+
+      <PipelineRunPanel datasets={datasets} onRunComplete={refreshCatalog} />
     </>
   );
 }

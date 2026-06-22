@@ -8,6 +8,7 @@ BACKEND_URL="${BACKEND_URL:-http://localhost:${BACKEND_PORT}/health}"
 FRONTEND_URL="${FRONTEND_URL:-http://localhost:${FRONTEND_PORT}/}"
 SOURCE_URL="${SOURCE_URL:-http://localhost:${BACKEND_PORT}/api/sources}"
 CATALOG_URL="${CATALOG_URL:-http://localhost:${BACKEND_PORT}/api/catalog/datasets}"
+PIPELINE_URL="${PIPELINE_URL:-http://localhost:${BACKEND_PORT}/api/pipelines}"
 
 export BACKEND_PORT FRONTEND_PORT
 
@@ -26,9 +27,16 @@ for _ in $(seq 1 30); do
       -H "Content-Type: application/json" \
       -d '{"name":"sample_orders_smoke","type":"csv","path":"samples/orders.csv"}' \
       "${SOURCE_URL}")"
+    dataset_id="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["dataset"]["id"])' <<<"${source_response}")"
+    pipeline_response="$(curl -fsS \
+      -H "Content-Type: application/json" \
+      -d "{\"name\":\"sample_pipeline_smoke\",\"source_dataset_id\":\"${dataset_id}\",\"select_fields\":[\"order_id\",\"amount\"],\"target_name\":\"sample_pipeline_result\"}" \
+      "${PIPELINE_URL}")"
+    pipeline_id="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])' <<<"${pipeline_response}")"
+    run_response="$(curl -fsS -X POST "${PIPELINE_URL}/${pipeline_id}/runs")"
     catalog_response="$(curl -fsS "${CATALOG_URL}")"
 
-    if [[ "$source_response" == *'"row_count":5'* && "$catalog_response" == *'"sample_orders_smoke"'* ]]; then
+    if [[ "$source_response" == *'"row_count":5'* && "$run_response" == *'"status":"success"'* && "$catalog_response" == *'"sample_pipeline_result"'* ]]; then
       echo "AskLake container smoke passed"
       exit 0
     fi
