@@ -64,7 +64,7 @@
 1. `docs/manual-verification/07-mvp-demo-script.md`의 사전 조건을 확인한다.
 2. local app을 실행하고 frontend와 backend health가 열리는지 확인한다.
 3. 샘플 데이터 소스를 등록한다.
-4. 컬럼 선택 또는 row filter가 포함된 최소 pipeline을 만든다.
+4. `select_fields` 컬럼 선택 기반 최소 pipeline을 만든다.
 5. pipeline run을 실행한다.
 6. run status가 success 또는 failed로 명확히 표시되는지 확인한다.
 7. success인 경우 catalog에서 schema, row count, sample 또는 저장 위치를 확인한다.

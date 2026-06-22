@@ -53,7 +53,7 @@ M3 이후 backend는 교체 가능한 port/adapter 구조를 따른다.
 backend/app/
   api/       HTTP router와 HTTP error mapping
   services/  use case orchestration
-  ports/     MetadataStore, SourceConnector, PipelineRunner, ResultStore 같은 Protocol/interface
+  ports/     MetadataStore, SourceConnector, ResultStore 같은 Protocol/interface
   adapters/  SQLite, CSV, future Postgres/Mongo/S3 구현체
   domain/    API/domain schema와 value object
   core/      settings, dependency container, app factory
@@ -95,12 +95,13 @@ feature component는 backend endpoint 문자열을 직접 조립하지 않고 `a
 - PostgreSQL 또는 MongoDB 전환은 `PostgresMetadataStore` 또는 `MongoMetadataStore` 구현체 추가로 처리하고, API response contract는 유지한다.
 - XFlow 참고: XFlow backend의 catalog/app metadata는 MongoDB/Beanie document model에 가깝지만, AskLake MVP는 MongoDB를 필수 인프라로 끌어오지 않고 경량 SQLite로 시작한다.
 
-### M4 확장 Port
+### M4 실행 경계
 
 - `SourceConnector`: CSV/local file, future PostgreSQL/MySQL/MongoDB/S3 source inspection을 교체한다.
-- `PipelineRunner`: local in-process runner, future background worker, Spark, Airflow runner를 교체한다.
+- `PipelineService`: 현재 MVP pipeline run을 동기 실행한다. source connector, transform, result store, metadata store를 조합한다.
+- `PipelineRunner`: future background worker, Spark, Airflow runner 후보 경계다. 현재 MVP runtime에는 아직 주입하지 않는다.
 - `ResultStore`: local file/container volume, SQLite/PostgreSQL table, future S3 result storage를 교체한다.
-- M3에서는 `CsvSourceConnector`만 실제 구현하고, `PipelineRunner`와 `ResultStore`는 M4에서 concrete implementation을 붙인다.
+- M4에서는 `CsvSourceConnector`, `PipelineService`, local CSV `ResultStore`를 붙였다. 비동기/job runner는 M8 이후 확장 후보로 둔다.
 
 ### 협업 하네스
 
@@ -120,7 +121,8 @@ feature component는 backend endpoint 문자열을 직접 조립하지 않고 `a
 | `CatalogDataset` | object | 결과 데이터 이름, schema, row count, sample/location |
 | `MetadataStore` | interface | source, catalog dataset, pipeline, run metadata를 저장/조회하는 backend 내부 경계 |
 | `SourceConnector` | interface | source type별 schema/sample inspection을 수행하는 backend 내부 경계 |
-| `PipelineRunner` | interface | pipeline 실행 방식을 local worker, Spark, Airflow 등으로 교체하기 위한 경계 |
+| `PipelineService` | service | MVP pipeline run을 동기 실행하고 source/transform/result/catalog 경계를 조합 |
+| `PipelineRunner` | future interface | pipeline 실행 방식을 background worker, Spark, Airflow 등으로 교체하기 위한 후보 경계 |
 | `ResultStore` | interface | pipeline 결과 저장 위치를 local file, DB table, S3 등으로 교체하기 위한 경계 |
 | `DeploymentEnvironment` | object | local, dev, staging 후보 환경 이름과 endpoint, secret reference |
 | `BuildArtifact` | object | image tag, commit sha, build status, scan/test result |
@@ -145,8 +147,8 @@ feature component는 backend endpoint 문자열을 직접 조립하지 않고 `a
 3. User -> UI: source, transform, target 정의
 4. UI -> API: pipeline 저장
 5. User -> API: pipeline run 요청
-6. API -> runner: local transform 실행
-7. runner -> storage: 결과 데이터 저장
+6. API -> PipelineService: local transform 실행
+7. PipelineService -> storage: 결과 데이터 저장
 8. API -> catalog: schema/row count/sample 기록
 9. UI -> User: run status와 catalog result 표시
 ```
