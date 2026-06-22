@@ -27,7 +27,7 @@
 ## CI/CD Gate / CI-CD 게이트
 
 - CI required: yes
-- CI result: PR 생성 후 GitHub Actions 확인 필요
+- CI result: GitHub Actions PR #34 all pass: harness 15s, manifest-smoke 14s, container-smoke 35s
 - Deploy/publish required: no
 - Deployment confirmation: AWS/ECR/EKS push/deploy는 이번 branch에서 실행하지 않음
 - Rollback/smoke notes: 문제 발생 시 `docker compose down --remove-orphans`로 local container를 내리고 SQLite local data는 `data/` 또는 container 내부 ephemeral file을 삭제한다.
