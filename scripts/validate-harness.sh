@@ -218,6 +218,7 @@ require_file ".github/workflows/harness-validation.example.yml"
 require_file "scripts/start-workflow.sh"
 require_file "scripts/status-workflow.sh"
 require_file "scripts/harness-flow-check.sh"
+require_file "scripts/list-active-branches.sh"
 
 while IFS= read -r -d '' dir; do
   require_file "${dir}/plan.md"
@@ -609,11 +610,19 @@ if ! rg -q "Branch workspace issue creation remains the team default" docs/13-hu
   fail "docs/13-human-command-flow.md must distinguish PR preparation from default branch issue creation"
 fi
 
+if ! rg -q "Branch Switch Confirm|Branch switch confirmation|브랜치 전환" docs/08-development-workflow.md docs/11-git-sync-policy.md docs/13-human-command-flow.md; then
+  fail "Branch switch confirmation is not documented across workflow, sync policy, and human command flow"
+fi
+
+if ! rg -q "Remaining Branch Queue|남은 작업 브랜치|list-active-branches.sh" docs/08-development-workflow.md docs/11-git-sync-policy.md docs/13-human-command-flow.md docs/10-next-action-menu.md; then
+  fail "Remaining branch queue flow is not documented across workflow docs"
+fi
+
 if ! rg -q "완료 후 handoff 선택지|completion handoff choice menu" docs/08-development-workflow.md docs/13-human-command-flow.md; then
   fail "Completion handoff choice menu is not documented in workflow and human command flow"
 fi
 
-if ! rg -q "완료 \\+ PR 준비 상태입니다.*1 PR 진행.*2 추가 보강.*3 다음 Phase.*4 보류.*5 외부 실행 승인" scripts/status-workflow.sh; then
+if ! rg -q "완료 \\+ PR 준비 상태입니다.*1 PR 진행\\(push, PR 생성, CI 확인, merge, finalize, issue close 확인\\).*2 추가 보강.*3 다음 Phase.*4 보류.*5 외부 실행 승인" scripts/status-workflow.sh; then
   fail "scripts/status-workflow.sh must recommend completion handoff choices for complete PR-ready workspaces"
 fi
 
@@ -695,6 +704,10 @@ fi
 
 if ! bash -n scripts/harness-flow-check.sh; then
   fail "scripts/harness-flow-check.sh has shell syntax errors"
+fi
+
+if ! bash -n scripts/list-active-branches.sh; then
+  fail "scripts/list-active-branches.sh has shell syntax errors"
 fi
 
 while IFS= read -r script_file; do
