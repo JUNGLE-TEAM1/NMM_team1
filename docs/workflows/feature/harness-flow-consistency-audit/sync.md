@@ -34,5 +34,5 @@ main 동기화와 integration readiness를 기록한다.
 - PR closing keyword: Closes #24
 - pushed branch: origin/feature/harness-flow-consistency-audit
 - PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/25
-- merge status: open
-- issue close status: open
+- merge status: merged
+- issue close status: CLOSED
