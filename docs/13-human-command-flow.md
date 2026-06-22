@@ -124,11 +124,28 @@ PR 준비 상태 확인해
 AI does:
 
 - Runs `scripts/status-workflow.sh <workspace>`.
+- Checks Source of Truth Impact Gate before PR handoff; unresolved proposals must be applied or deferred first.
 - Checks `.github/pull_request_template.md`.
 - Reports missing `sync.md`, `quality.md`, confirmation, or validation items.
 - Runs validation only when approved or already within the agreed verification scope.
 - Linked GitHub issue가 있으면 `scripts/prepare-pr.sh <workspace>`로 `PR closing keyword`를 `sync.md`에 기록하고 PR body 초안을 만든다.
 - Does not create extra issues during PR preparation, push, create PRs, merge PRs, or close issues without human confirmation. Branch workspace issue creation remains the team default in `scripts/start-workflow.sh`.
+
+Human says:
+
+```text
+하네스 규칙 수정해
+검증 규칙 추가해
+workflow 보강해
+```
+
+AI does:
+
+- Checks Harness Test Update Gate before completion.
+- Decides whether harness regression fixtures must be added or updated.
+- Runs `scripts/test-harness.sh` when harness behavior changes.
+- Records test impact, skip/deferred reason, and validation result in `quality.md`, `decisions.md`, and `report.md`.
+- Uses dry-run or local-only checks for PR/GitHub/deploy helpers; does not run remote-changing actions as part of tests.
 
 Human says:
 
@@ -151,6 +168,7 @@ PR 올리고 이슈 닫히는 것까지 진행해
 
 AI does:
 
+- Resolves Source of Truth Impact Gate first; if required shared document changes exceed the current branch scope, asks for `Scope Change Confirm`.
 - Runs `scripts/prepare-pr.sh <workspace>` first to update local PR closing keyword.
 - Runs `scripts/prepare-pr.sh --check-pr-sync <workspace>` before creating or handing off the PR.
 - If the workspace is complete and PR-ready, runs `scripts/prepare-pr.sh --auto-pr <workspace>` without another question unless the human said not to create a PR.
@@ -169,6 +187,7 @@ Human says:
 
 AI does:
 
+- Checks whether the current branch has unresolved Source of Truth proposals before switching.
 - Summarizes current branch, target branch, worktree state, uncommitted changes, checkpoint commit expectation, target workspace, and switch reason.
 - Treats the explicit switch request as branch switch approval unless the summary shows unresolved conflicts or surprising dirty worktree risk.
 - If dirty worktree exists, tells the human that `scripts/start-workflow.sh` will checkpoint commit before switching.

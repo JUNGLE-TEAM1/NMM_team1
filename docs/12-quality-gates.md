@@ -31,6 +31,8 @@ Before a branch is considered complete:
 - TDD status is recorded in `quality.md`.
 - Unit or focused checks are run when applicable.
 - Integration or contract checks are run when the branch touches shared behavior.
+- Source of Truth Impact Gate evidence is recorded when implementation or documentation changes can alter shared project truth.
+- Harness Test Update Gate evidence is recorded when harness rules, scripts, or CI harness jobs change.
 - `scripts/validate-harness.sh` passes.
 - `scripts/validate-harness.sh --strict` passes before integration or PR readiness.
 - Manual verification evidence is recorded when user-visible behavior changes.
@@ -87,8 +89,17 @@ Each workspace uses `quality.md` to record:
 - implementation pass evidence
 - CI/check commands
 - CI/check result
+- Source of Truth impact: `none`, `required`, `applied`, or `deferred`
+- Source of Truth validation command/result when `shared-docs.md` proposes shared document changes
+- Harness test impact: `none`, `required`, `updated`, `skipped`, or `deferred`
+- Harness regression command/result, usually `scripts/test-harness.sh`, when harness behavior changes
 - skipped checks and reasons
 - deployment or publish gate when relevant
+
+## 7) Harness Regression Tests
+
+Harness behavior is tested with lightweight fixture regression tests.
+The detailed Source of Truth for the Harness Test Update Gate, fixture expectations, `scripts/test-harness.sh`, and external E2E boundaries is `docs/18-harness-regression-policy.md`.
 
 Reports summarize the result; `quality.md` keeps the working detail.
 

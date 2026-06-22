@@ -54,6 +54,7 @@ section_value() {
 
 current_branch="$(git branch --show-current 2>/dev/null || true)"
 main_ref="origin/main"
+workspace_branch_regex='^(feature|fix|docs|test|chore|hotfix)/'
 
 echo "Active Branch Queue"
 echo "==================="
@@ -69,18 +70,22 @@ remote_tracking_file="$(mktemp)"
 trap 'rm -f "$open_pr_file" "$remote_heads_file" "$remote_tracking_file"' EXIT
 
 if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
-  gh pr list --state open --json number,headRefName,url --jq '.[] | [.headRefName, .number, .url] | @tsv' > "$open_pr_file"
+  if ! gh pr list --state open --json number,headRefName,url --jq '.[] | [.headRefName, .number, .url] | @tsv' > "$open_pr_file" 2>/dev/null; then
+    open_pr_status="skipped: GitHub PR list unavailable for this remote"
+    : > "$open_pr_file"
+  fi
 else
   open_pr_status="skipped: GitHub CLI unavailable or unauthenticated"
 fi
 
-git ls-remote --heads origin 'feature/*' 2>/dev/null \
+git ls-remote --heads origin 2>/dev/null \
   | awk '{ sub("refs/heads/", "", $2); print $2 }' \
+  | awk -v regex="$workspace_branch_regex" '$0 ~ regex { print }' \
   | sort > "$remote_heads_file" || true
 
 git branch -r --format='%(refname:short)' 2>/dev/null \
   | sed 's#^origin/##' \
-  | awk '/^feature\// { print }' \
+  | awk -v regex="$workspace_branch_regex" '$0 ~ regex { print }' \
   | sort > "$remote_tracking_file" || true
 
 echo "Open PRs"
@@ -93,7 +98,7 @@ else
 fi
 echo
 
-echo "Remote Feature Branches"
+echo "Remote Workspace Branches"
 if [[ ! -s "$remote_heads_file" ]]; then
   echo "  - none"
 else

@@ -74,6 +74,86 @@ pre_merge_deferral() {
   ' "${dir}/sync.md"
 }
 
+source_of_truth_files() {
+  local file="$1"
+  [[ -f "$file" ]] || return 0
+  awk -F '|' '
+    /^## Proposed Source Of Truth Changes/ { in_section=1; next }
+    /^## / && in_section { exit }
+    in_section && /^\|/ && $2 !~ /---|File/ {
+      value=$2
+      gsub(/^[ \t]+|[ \t]+$/, "", value)
+      gsub(/^`|`$/, "", value)
+      if (value ~ /^docs\/[^ ]+\.md$/) print value
+    }
+  ' "$file" | sort -u
+}
+
+changed_since_base() {
+  local base="$1"
+  local file="$2"
+  [[ -n "$base" && "$base" != "TBD" && "$base" != "unavailable" ]] || return 1
+  git rev-parse --verify --quiet "$base^{commit}" >/dev/null 2>&1 || return 1
+  if git diff --name-only "${base}..HEAD" -- "$file" | rg -q "^${file}$"; then
+    return 0
+  fi
+  if git diff --cached --name-only -- "$file" | rg -q "^${file}$"; then
+    return 0
+  fi
+  git diff --name-only -- "$file" | rg -q "^${file}$"
+}
+
+has_source_of_truth_deferred_decision() {
+  local file="$1"
+  [[ -f "$file" ]] || return 1
+  awk -F '|' '
+    /^## Deferred Decisions/ { in_section=1; next }
+    /^## / && in_section { exit }
+    in_section && /^\|/ && $2 !~ /---|Decision/ {
+      reason=$3
+      revisit=$4
+      target=$5
+      gsub(/^[ \t]+|[ \t]+$/, "", reason)
+      gsub(/^[ \t]+|[ \t]+$/, "", revisit)
+      gsub(/^[ \t]+|[ \t]+$/, "", target)
+      if (reason != "" && reason != "TBD" && revisit != "" && revisit != "TBD" && target != "" && target != "TBD") found=1
+    }
+    END { exit found ? 0 : 1 }
+  ' "$file"
+}
+
+validate_source_of_truth_impact() {
+  local dir="$1"
+  local state="$2"
+  local shared_file="${dir}/shared-docs.md"
+  local decisions_file="${dir}/decisions.md"
+  local sync_file="${dir}/sync.md"
+  local base
+  local proposed_file
+  local proposal_count=0
+  local unresolved=0
+
+  proposal_count="$(source_of_truth_files "$shared_file" | wc -l | awk '{$1=$1; print}')"
+
+  if [[ "$proposal_count" -eq 0 ]]; then
+    return 0
+  fi
+
+  base="$(field_value "$sync_file" "- base commit:")"
+
+  while IFS= read -r proposed_file; do
+    [[ -n "$proposed_file" ]] || continue
+    if changed_since_base "$base" "$proposed_file"; then
+      continue
+    fi
+    if has_source_of_truth_deferred_decision "$decisions_file"; then
+      continue
+    fi
+    unresolved=$((unresolved + 1))
+    fail "Unresolved Source of Truth proposal '${proposed_file}' in ${shared_file}; update the file or record a deferred decision with revisit trigger and target branch/phase."
+  done < <(source_of_truth_files "$shared_file")
+}
+
 section_value() {
   local file="$1"
   local section="$2"
@@ -174,6 +254,7 @@ Default validation checks required harness files and references.
 Strict validation also checks completion-sensitive workspace quality:
 - no pending human confirmations
 - non-empty shared document proposals when shared-docs.md exists
+- unresolved Source of Truth proposals are applied or deferred
 - integration workspaces declare source branches
 - integration workspaces record source branch base information
 - sync.md records a base commit or explicit result
@@ -211,6 +292,7 @@ require_file "docs/13-human-command-flow.md"
 require_file "docs/14-decision-option-brief.md"
 require_file "docs/15-context-budget-rule.md"
 require_file "docs/16-existing-codebase-adoption.md"
+require_file "docs/18-harness-regression-policy.md"
 require_file "docs/workflows/README.md"
 require_file "docs/reports/README.md"
 require_file ".github/pull_request_template.md"
@@ -219,6 +301,7 @@ require_file "scripts/start-workflow.sh"
 require_file "scripts/status-workflow.sh"
 require_file "scripts/harness-flow-check.sh"
 require_file "scripts/list-active-branches.sh"
+require_file "scripts/test-harness.sh"
 
 while IFS= read -r -d '' dir; do
   require_file "${dir}/plan.md"
@@ -357,6 +440,7 @@ while IFS= read -r -d '' dir; do
 
     if is_ready_state "$state"; then
       validate_sync_handoff "$dir"
+      validate_source_of_truth_impact "$dir" "$state"
 
       if [[ "$q_status" == "draft" ]]; then
         fail "Quality gate status is still draft in ready workspace ${dir}/quality.md"
@@ -528,6 +612,22 @@ if ! rg -q "harness-flow-check.sh" docs/11-git-sync-policy.md; then
   fail "docs/11-git-sync-policy.md does not mention harness-flow-check.sh"
 fi
 
+if ! rg -q "Harness Test Update Gate" docs/08-development-workflow.md docs/12-quality-gates.md docs/13-human-command-flow.md docs/workflows/README.md docs/18-harness-regression-policy.md; then
+  fail "Harness Test Update Gate is not documented across workflow, quality, human command flow, and workspace docs"
+fi
+
+if ! rg -q "Harness Regression Policy|docs/18-harness-regression-policy.md" docs/00-layer-map.md docs/12-quality-gates.md docs/workflows/README.md; then
+  fail "Harness Regression Policy Source of Truth is not registered and referenced"
+fi
+
+if ! rg -q "fetch-depth: 0" docs/18-harness-regression-policy.md .github/workflows/ci.yml; then
+  fail "Harness regression policy and CI must mention fetch-depth: 0"
+fi
+
+if ! rg -q "scripts/test-harness.sh" docs/08-development-workflow.md docs/12-quality-gates.md docs/workflows/README.md docs/18-harness-regression-policy.md .github/workflows/ci.yml; then
+  fail "Harness regression test script is not documented and wired into CI"
+fi
+
 if ! rg -q "Quality Gates" docs/12-quality-gates.md; then
   fail "docs/12-quality-gates.md does not mention Quality Gates"
 fi
@@ -642,7 +742,7 @@ if ! rg -q "cleanup-merged-branches.sh" scripts/prepare-pr.sh || ! rg -q "script
   fail "prepare-pr finalize must run scripts/cleanup-merged-branches.sh and policy must document it"
 fi
 
-if ! rg -q "git ls-remote --heads origin 'feature/\\*'.*git push origin --delete.*git branch -d.*git fetch --prune" docs/11-git-sync-policy.md; then
+if ! rg -q "allowed workspace branch 원격 조회.*git push origin --delete.*git branch -d.*git fetch --prune" docs/11-git-sync-policy.md; then
   fail "Automatic cleanup local/remote/prune command order is not documented"
 fi
 
@@ -654,7 +754,7 @@ if ! rg -q "AWS resource|cloud resource|external resources|별도 명시 승인"
   fail "Automatic cleanup must exclude AWS/cloud/external resource cleanup"
 fi
 
-if ! rg -q "Remote Feature Branches|Remote \\| Tracking|git ls-remote --heads origin 'feature/\\*'" scripts/list-active-branches.sh; then
+if ! rg -q "Remote Workspace Branches|workspace_branch_regex|Remote \\| Tracking" scripts/list-active-branches.sh; then
   fail "scripts/list-active-branches.sh must show local/remote/tracking branch cleanup context"
 fi
 
@@ -678,6 +778,10 @@ fi
 
 if ! rg -q "완료 \\+ PR 준비 상태입니다.*자동 PR 생성 대상입니다.*--auto-pr.*1 PR 진행\\(merge, finalize, issue close 확인, automatic branch cleanup\\).*2 추가 보강.*3 다음 Phase.*4 보류.*5 외부 실행 승인" scripts/status-workflow.sh; then
   fail "scripts/status-workflow.sh must recommend completion handoff choices for complete PR-ready workspaces"
+fi
+
+if ! rg -q "PR이 이미 열려 있습니다.*1 PR 진행\\(merge, finalize, issue close 확인, automatic branch cleanup\\).*2 추가 보강.*3 보류.*4 다음 Phase" scripts/status-workflow.sh; then
+  fail "scripts/status-workflow.sh must recommend existing PR choices before auto PR creation"
 fi
 
 if ! rg -q "Existing Codebase Adoption|baseline \\+ next-change|docs/16-existing-codebase-adoption.md" README.md; then
@@ -754,6 +858,10 @@ fi
 
 if ! bash -n scripts/status-workflow.sh; then
   fail "scripts/status-workflow.sh has shell syntax errors"
+fi
+
+if ! bash -n scripts/test-harness.sh; then
+  fail "scripts/test-harness.sh has shell syntax errors"
 fi
 
 if ! bash -n scripts/harness-flow-check.sh; then
