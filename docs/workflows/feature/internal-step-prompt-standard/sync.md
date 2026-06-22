@@ -16,14 +16,14 @@ main 동기화와 integration readiness를 기록한다.
 
 | Checked At | Upstream Changes | Impacted Source of Truth | Action |
 | --- | --- | --- | --- |
-|  |  |  |  |
+| 2026-06-22 | `main` advanced from `0235fa8` to `ae18929` | PR 진행/merge finalize rules, branch queue guard docs/scripts | Merged `main` into `feature/internal-step-prompt-standard`; no conflicts |
 
 ## Pre-Merge Sync
 
-- main commit: 0235fa8
-- conflicts: none detected against current origin/main
+- main commit: ae18929
+- conflicts: none detected while merging current `main`
 - validation: shell syntax, start-workflow dry-run, harness validation, strict validation, diff check
-- result: origin/main unchanged from Start Sync; no pull/merge/rebase needed
+- result: `main` merged into branch to align with latest harness rules before PR
 - deferral reason:
 
 ## Push / PR

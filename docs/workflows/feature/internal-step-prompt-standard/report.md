@@ -12,6 +12,6 @@
 - Context omitted intentionally: product runtime and M2 implementation files
 - Changed: internal Step prompt standard, new workspace `plan.md` template section, validation guard, workspace README role description
 - Verified: shell syntax, start-workflow dry-run, harness validation, strict validation, workspace status, diff check
-- Remaining: push/PR only after explicit human approval
+- Remaining: PR 진행 approved by human; push, PR, CI check, merge, finalize, and issue close verification follow the updated handoff rule
 - Next context: M2 `feature/container-app-skeleton` can record Step prompts in `plan.md`
 - Risk: validation only checks Step structure when `### Step` appears; it does not force small phases to use internal steps
