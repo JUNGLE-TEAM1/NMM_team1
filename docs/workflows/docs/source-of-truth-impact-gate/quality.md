@@ -23,6 +23,7 @@
 | build/typecheck | not applicable | skipped | docs/shell harness change only |
 | harness validation | `scripts/validate-harness.sh` | pass | Harness validation passed |
 | strict harness validation | `scripts/validate-harness.sh --strict` | pass | Harness validation passed |
+| CI checkout parity | `.github/workflows/ci.yml` harness checkout `fetch-depth: 0` | pass | CI can access workspace base commits for SOT diff validation |
 
 ## Source of Truth Impact Gate
 
@@ -34,7 +35,7 @@
 ## CI/CD Gate / CI-CD 게이트
 
 - CI required: yes
-- CI result: local equivalent passed; PR CI는 PR 생성 후 확인 필요
+- CI result: initial PR CI harness failed due shallow checkout base commit lookup; fixed with `fetch-depth: 0`, rerun pending
 - Deploy/publish required: no
 - Deployment confirmation: deploy/publish not required
 - Rollback/smoke notes: 문제 발생 시 하네스 문서/스크립트 변경만 되돌리면 된다. 외부 상태 변경 없음.
