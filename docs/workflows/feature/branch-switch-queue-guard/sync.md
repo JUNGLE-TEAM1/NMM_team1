@@ -34,5 +34,5 @@ main 동기화와 integration readiness를 기록한다.
 - PR closing keyword: Closes #20
 - pushed branch: origin/feature/branch-switch-queue-guard
 - PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/21
-- merge status: open
-- issue close status: open
+- merge status: merged
+- issue close status: CLOSED
