@@ -45,7 +45,7 @@
 ## CI/CD Gate / CI-CD 게이트
 
 - CI required: yes
-- CI result: PR CI must rerun after this local commit/push; previous PR CI passed on run `27940111983`
+- CI result: PR CI passed on run `27941961566`; harness, container-smoke, and manifest-smoke succeeded before merge.
 - Deploy/publish required: no
 - Deployment confirmation: deploy/publish not required
 - Rollback/smoke notes: 문제 발생 시 하네스 문서/스크립트 변경만 되돌리면 된다. 외부 상태 변경 없음.
