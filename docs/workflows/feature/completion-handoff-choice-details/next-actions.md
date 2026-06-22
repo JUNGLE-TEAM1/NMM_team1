@@ -14,7 +14,7 @@
 
 ## Options / 선택지
 
-1. PR 진행: final validation, push, PR 생성, CI 확인, 승인된 merge/finalize까지 진행.
+1. PR 진행: final validation, push, PR 생성, CI 확인, merge, finalize, issue close 확인까지 진행.
 2. 추가 보강: 선택지 설명이나 validation guard를 더 다듬고 재검증.
 3. 다음 Phase 이동: 이 branch를 merge하거나 명시 보류한 뒤 M2 workspace 시작.
 4. 보류: push/PR 없이 보류 이유와 재개 조건 기록.
