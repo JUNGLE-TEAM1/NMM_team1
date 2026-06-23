@@ -23,7 +23,7 @@ main 동기화와 integration readiness를 기록한다.
 - main commit: 6014d8c
 - conflicts: none detected for local docs validation; existing unrelated/untracked worktree changes remain and require PR packaging decision
 - validation: `scripts/validate-harness.sh`, `scripts/validate-harness.sh --strict`, `scripts/harness-flow-check.sh`, `scripts/test-harness.sh`
-- result: local validation passed; branch packaging approved by user command "진행해"; PR creation pending
+- result: local validation passed; branch pushed and PR #45 created
 - deferral reason:
 
 ## Push / PR
@@ -32,7 +32,7 @@ main 동기화와 integration readiness를 기록한다.
 - issue link: 
 - issue creation result: not requested
 - PR closing keyword: 
-- pushed branch:
-- PR link:
-- merge status:
-- issue close status:
+- pushed branch: docs/milestone-planning-layer
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/45
+- merge status: open
+- issue close status: not linked
