@@ -1,0 +1,58 @@
+schema_version: 1
+
+milestone:
+  id: target-mvp
+  status: planned
+  last_update: 2026-06-24
+  runtime_implementation: not_started
+  parallel_execution_approval: required
+
+first_parallel_wave:
+  status: proposed
+  approval_required: true
+  workstreams:
+    - catalog_trust
+    - source_connector
+    - job_orchestrator
+    - query_policy
+  guardrails:
+    - Query/Policy remains mock/fake only until real policy and data access are approved.
+    - Parallel worktree/thread/branch creation requires a separate human checkpoint.
+    - R0.5 is a planning and contract baseline, not runtime implementation evidence.
+
+workstreams:
+  - id: catalog_trust
+    status: ready
+    branch: feature/trust-state-model
+    blockers: []
+    handoff: .milestones/target-mvp/handoffs/catalog_trust.md
+  - id: source_connector
+    status: ready
+    branch: feature/source-expansion
+    blockers: []
+    handoff: .milestones/target-mvp/handoffs/source_connector.md
+  - id: job_orchestrator
+    status: ready
+    branch: feature/control-plane-job-state
+    blockers: []
+    handoff: .milestones/target-mvp/handoffs/job_orchestrator.md
+  - id: query_policy
+    status: ready_with_mock
+    branch: feature/query-policy-preflight
+    blockers: []
+    handoff: .milestones/target-mvp/handoffs/query_policy.md
+  - id: ask_evidence
+    status: ready_with_mock
+    branch: feature/ask-evidence
+    blockers: []
+    handoff: .milestones/target-mvp/handoffs/ask_evidence.md
+  - id: recovery_operate
+    status: ready_with_fixture
+    branch: feature/recovery-impact
+    blockers: []
+    handoff: .milestones/target-mvp/handoffs/recovery_operate.md
+  - id: packaging
+    status: ready
+    branch: feature/packaging-dev-lite
+    blockers: []
+    handoff: .milestones/target-mvp/handoffs/packaging.md

@@ -1,0 +1,284 @@
+schema_version: 1
+
+milestone:
+  id: target-mvp
+  title: "AskLake Target MVP Workstream Pool"
+  status: planned
+  execution_mode: parallel_workstream
+  integration_owner: main_thread
+
+objective: "Trusted Dataset -> Query/Ask -> Evidence -> Recovery 신뢰 루프를 shared contract 기반 병렬 workstream으로 구현한다."
+
+planning_notes:
+  runtime_implementation: not_started
+  actual_parallel_execution_requires_human_approval: true
+  first_parallel_wave:
+    status: proposed
+    workstreams: [catalog_trust, source_connector, job_orchestrator, query_policy]
+    guardrails:
+      - Query/Policy stays inside the mock/fake policy boundary until real policy/data access is approved.
+      - Creating parallel worktrees, branches, or thread handoffs requires a separate human checkpoint.
+      - Contract changes must update this manifest and the matching Source of Truth document before implementation.
+
+context_documents:
+  required:
+    - id: interface
+      path: docs/03-interface-reference.md
+      purpose: shared contract baseline
+      applies_to: [all]
+      authority: api_contract
+    - id: workflow
+      path: docs/08-development-workflow.md
+      purpose: workstream pool and integration spine
+      applies_to: [all]
+      authority: execution
+    - id: acceptance
+      path: docs/05-acceptance-scenarios-and-checklist.md
+      purpose: checkpoint acceptance
+      applies_to: [all]
+      authority: acceptance
+    - id: regression
+      path: docs/06-regression-and-failure-scenarios.md
+      purpose: failure guards
+      applies_to: [all]
+      authority: regression
+    - id: parallel_protocol
+      path: docs/17-parallel-milestone-protocol.md
+      purpose: parallel execution protocol
+      applies_to: [all]
+      authority: execution
+  optional:
+    - id: manual_verification
+      path: docs/07-manual-verification-playbook.md
+      purpose: human verification candidates
+      applies_to: [all]
+      authority: verification
+  authority_rules:
+    execution: manifest
+    product_requirements: product_docs
+    architecture: docs/02-architecture.md
+    api_contract: docs/03-interface-reference.md
+
+workstreams:
+  - id: catalog_trust
+    alias: R1
+    branch_candidate: feature/trust-state-model
+    type: backend_frontend
+    owner: unassigned
+    status: ready
+    scope:
+      paths:
+        - backend/app/domain/**
+        - backend/app/services/**
+        - backend/app/api/**
+        - frontend/src/features/catalog/**
+        - docs/workflows/feature/trust-state-model/**
+    depends_on: [contract_baseline]
+    handoff: .milestones/target-mvp/handoffs/catalog_trust.md
+    contracts: [Dataset, DatasetStatus, TrustGateResult]
+    deliverables:
+      - dataset trust status
+      - publish gate reason
+    conflict_policy: owns_scope_only
+
+  - id: source_connector
+    alias: R3
+    branch_candidate: feature/source-expansion
+    type: backend
+    owner: unassigned
+    status: ready
+    scope:
+      paths:
+        - backend/app/adapters/**
+        - backend/app/ports/**
+        - backend/app/services/**
+        - docs/workflows/feature/source-expansion/**
+    depends_on: [contract_baseline]
+    handoff: .milestones/target-mvp/handoffs/source_connector.md
+    contracts: [SourceConnection, SchemaSnapshot]
+    deliverables:
+      - one selected non-baseline source connector
+      - schema discovery result
+    conflict_policy: owns_scope_only
+
+  - id: job_orchestrator
+    alias: R2
+    branch_candidate: feature/control-plane-job-state
+    type: backend
+    owner: unassigned
+    status: ready
+    scope:
+      paths:
+        - backend/app/domain/**
+        - backend/app/services/**
+        - backend/app/ports/**
+        - docs/workflows/feature/control-plane-job-state/**
+    depends_on: [contract_baseline]
+    handoff: .milestones/target-mvp/handoffs/job_orchestrator.md
+    contracts: [JobRun, TaskRun, AuditEvent]
+    deliverables:
+      - job/task state
+      - audit event write path
+    conflict_policy: owns_scope_only
+
+  - id: query_policy
+    alias: R4
+    branch_candidate: feature/query-policy-preflight
+    type: backend_frontend
+    owner: unassigned
+    status: ready_with_mock
+    scope:
+      paths:
+        - backend/app/domain/**
+        - backend/app/services/**
+        - backend/app/api/**
+        - frontend/src/features/**
+        - docs/workflows/feature/query-policy-preflight/**
+    depends_on: [contract_baseline]
+    handoff: .milestones/target-mvp/handoffs/query_policy.md
+    contracts: [DatasetStatus, PolicyDecision, QueryExecution]
+    deliverables:
+      - allow deny mask policy preflight
+      - query execution evidence reference
+    conflict_policy: contract_changes_require_manifest_update
+
+  - id: ask_evidence
+    alias: R5
+    branch_candidate: feature/ask-evidence
+    type: backend_frontend
+    owner: unassigned
+    status: ready_with_mock
+    scope:
+      paths:
+        - backend/app/domain/**
+        - backend/app/services/**
+        - backend/app/api/**
+        - frontend/src/features/**
+        - docs/workflows/feature/ask-evidence/**
+    depends_on: [contract_baseline]
+    handoff: .milestones/target-mvp/handoffs/ask_evidence.md
+    contracts: [EvidenceItem, RetrievalTrace, PolicyDecision]
+    deliverables:
+      - deterministic ask route
+      - evidence or deferred answer
+    conflict_policy: contract_changes_require_manifest_update
+
+  - id: recovery_operate
+    alias: R6
+    branch_candidate: feature/recovery-impact
+    type: backend_frontend
+    owner: unassigned
+    status: ready_with_fixture
+    scope:
+      paths:
+        - backend/app/domain/**
+        - backend/app/services/**
+        - backend/app/api/**
+        - frontend/src/features/**
+        - docs/workflows/feature/recovery-impact/**
+    depends_on: [contract_baseline]
+    handoff: .milestones/target-mvp/handoffs/recovery_operate.md
+    contracts: [AssetImpact, RecoveryAction, JobRun, AuditEvent]
+    deliverables:
+      - impact summary
+      - retry rerun backfill record
+    conflict_policy: contract_changes_require_manifest_update
+
+  - id: packaging
+    alias: R7
+    branch_candidate: feature/packaging-dev-lite
+    type: infra
+    owner: unassigned
+    status: ready
+    scope:
+      paths:
+        - infra/**
+        - docker-compose.yml
+        - scripts/**
+        - docs/workflows/feature/packaging-dev-lite/**
+    depends_on: [contract_baseline]
+    handoff: .milestones/target-mvp/handoffs/packaging.md
+    contracts: [ModuleHealth]
+    deliverables:
+      - local/container health
+      - secret/config validation
+    conflict_policy: owns_scope_only
+
+contracts:
+  api:
+    - Dataset
+    - TrustGateResult
+    - SourceConnection
+    - JobRun
+    - PolicyDecision
+    - QueryExecution
+    - EvidenceItem
+    - RecoveryAction
+    - ModuleHealth
+  schemas:
+    - DatasetStatus
+    - SchemaSnapshot
+    - TaskRun
+    - AuditEvent
+    - RetrievalTrace
+    - AssetImpact
+  events:
+    - SourceConnected
+    - RunStarted
+    - RunSucceeded
+    - QualityFailed
+    - DatasetPublished
+    - DatasetDegraded
+    - AccessDenied
+    - RAGIndexStale
+
+done_criteria:
+  - id: spine_0
+    description: "Shared contract baseline is documented and validation passes."
+    verification:
+      - scripts/validate-harness.sh
+      - scripts/validate-harness.sh --strict
+  - id: spine_1
+    description: "Source can produce a dataset draft with trust gate reason."
+    verification:
+      - Target MVP Workstream / Integration 체크포인트 in docs/05
+  - id: spine_2
+    description: "Governed query can allow, deny, or mask using PolicyDecision."
+    verification:
+      - Query / Policy acceptance and regression guards
+  - id: spine_3
+    description: "Evidence and recovery share dataset, policy, and audit contracts."
+    verification:
+      - Ask / Evidence and Recovery manual verification candidates
+
+integration:
+  branch_prefix: feature/target-mvp-
+  integration_branch: docs/target-mvp-integration
+  first_parallel_wave:
+    status: proposed
+    approval_required: true
+    workstreams: [catalog_trust, source_connector, job_orchestrator, query_policy]
+    constraints:
+      - query_policy is mock/fake only until real policy and data access are approved.
+      - ask_evidence, recovery_operate, and packaging wait for explicit next-wave selection.
+  merge_order:
+    - catalog_trust
+    - source_connector
+    - job_orchestrator
+    - query_policy
+    - ask_evidence
+    - recovery_operate
+    - packaging
+  checkpoints:
+    - id: spine_1
+      workstreams: [catalog_trust, source_connector]
+    - id: spine_2
+      workstreams: [job_orchestrator, query_policy]
+    - id: spine_3
+      workstreams: [ask_evidence, recovery_operate]
+    - id: release
+      workstreams: [packaging]
+  conflict_policy: main_thread_resolves_manifest_or_contract_conflicts
+  final_verification:
+    - scripts/validate-harness.sh
+    - scripts/validate-harness.sh --strict

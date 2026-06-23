@@ -176,25 +176,53 @@ Product Rebaseline 이후 Target MVP는 아래 신뢰 루프를 증명한다.
 Trusted Dataset -> Query/Ask -> Evidence -> Recovery
 ```
 
-Target MVP Phase 후보:
+R0 이후 Target MVP 실행은 R0.5 `Modular Contract Baseline`을 먼저 둔 뒤, 병렬 workstream과 integration spine으로 운영한다.
+기존 R1~R7 이름은 historical planning alias로 보존하되, 실행 순서를 강제하는 선형 queue가 아니라 workstream mapping으로 해석한다.
 
-| 순서 | Phase 후보 | 목표 | 선행 조건 | 완료 기준 |
+Target MVP planning alias:
+
+| Alias | Workstream / Phase 후보 | 목표 | 선행 조건 | 완료 기준 |
 | --- | --- | --- | --- | --- |
 | R0 | `docs/product-rebaseline-trusted-platform` | Source of Truth를 새 제품 기준으로 정렬 | 사람의 rebaseline 결정 | `README`, `docs/01~03`, `docs/05~08` 정렬과 harness validation |
-| R1 | `feature/trust-state-model` | dataset trust status와 Publish Gate 최소 모델 구현 | R0 완료 | `Draft/Verifying/Trusted/Degraded/Blocked` 상태와 gate 이유 확인 |
-| R2 | `feature/control-plane-job-state` | job/task/event/audit 기초 상태를 구축 | R1 scope 확정 | run/task 상태와 audit/event evidence 기록 |
-| R3 | `feature/source-expansion` | PostgreSQL 또는 REST API 중 하나를 source로 확장 | source decision | 연결 성공/실패와 schema discovery 확인 |
-| R4 | `feature/query-policy-preflight` | Trusted dataset query와 권한 preflight 구현 | policy decision | 허용/마스킹/차단 query 검증 |
-| R5 | `feature/ask-evidence` | Ask route와 Evidence 연결 | R4 완료 또는 mock policy 확정 | 근거 있음/부족/권한 거부 Ask 검증 |
-| R6 | `feature/recovery-impact` | schema drift/quality failure 영향 분석과 backfill 복구 | job state와 trust status | 복구 후 중복/누락 없이 상태 정상화 |
-| R7 | `feature/packaging-dev-lite` | self-hosted packaging 안정화 | 배포 target decision | local/container 또는 dev-lite smoke와 secret/config 검증 |
+| R0.5 | `docs/modular-contract-baseline` | shared contract, module ownership, mock/fake boundary, integration spine 확정 | R0 완료 | `docs/03`, `docs/05~08`, `.milestones/target-mvp/manifest.yaml` 정렬과 harness validation |
+| R1 | Catalog / Trust, `feature/trust-state-model` | dataset trust status와 Publish Gate 최소 모델 구현 | R0.5 contract baseline | `Draft/Verifying/Trusted/Degraded/Blocked` 상태와 gate 이유 확인 |
+| R2 | Job / Orchestrator, `feature/control-plane-job-state` | job/task/event/audit 기초 상태 구축 | R0.5 contract baseline | run/task 상태와 audit/event evidence 기록 |
+| R3 | Source Connector, `feature/source-expansion` | baseline 외 source 하나를 선택해 연결 | R0.5 contract baseline, source decision | 연결 성공/실패와 schema discovery 확인 |
+| R4 | Query / Policy, `feature/query-policy-preflight` | Trusted dataset query와 권한 preflight 구현 | R0.5 contract baseline, policy decision | 허용/마스킹/차단 query 검증 |
+| R5 | Ask / Evidence, `feature/ask-evidence` | Ask route와 Evidence 연결 | R0.5 contract baseline, mock 또는 real policy 확정 | 근거 있음/부족/권한 거부 Ask 검증 |
+| R6 | Recovery / Operate, `feature/recovery-impact` | schema drift/quality failure 영향 분석과 backfill 복구 | R0.5 contract baseline | 복구 후 중복/누락 없이 상태 정상화 |
+| R7 | Packaging, `feature/packaging-dev-lite` | self-hosted 배포 프로파일 안정화 | 배포 target decision | local/container 또는 dev-lite smoke와 secret/config 검증 |
 
-다음 구현 Phase 추천:
+Target MVP Workstream Pool:
 
-- Recommended: `feature/trust-state-model`
-- 이유: Trust Gate 없이 Query/Ask를 구현하면 권한 우회, evidence 누락, 잘못된 trusted 상태가 발생할 수 있다.
-- 포함 후보: dataset status, gate result, current baseline catalog status migration path, minimal UI/API 표시
-- 제외 후보: 실제 고급 PII 탐지, Trino, 외부 LLM, production cloud resource
+| Workstream | 병렬 가능성 | Required contracts | Mock/Fake 허용 | Integration checkpoint |
+| --- | --- | --- | --- | --- |
+| Catalog / Trust | 높음 | `Dataset`, `DatasetStatus`, `TrustGateResult` | quality/PII/policy placeholder 허용 | Spine 1 |
+| Source Connector | 높음 | `SourceConnection`, `SchemaSnapshot` | local fixture connector 허용 | Spine 1 |
+| Job / Orchestrator | 높음 | `JobRun`, `TaskRun`, `AuditEvent` | synchronous in-memory runner 허용 | Spine 2 |
+| Query / Policy | 중간~높음 | `PolicyDecision`, `QueryExecution`, `DatasetStatus` | allow/deny/mask fixture 허용 | Spine 2 |
+| Ask / Evidence | 중간~높음 | `EvidenceItem`, `RetrievalTrace`, `PolicyDecision` | external LLM 없는 deterministic route 허용 | Spine 3 |
+| Recovery / Operate | 중간 | `AssetImpact`, `RecoveryAction`, `JobRun` | schema drift/quality failure fixture 허용 | Spine 3 |
+| Packaging | 높음 | `ModuleHealth`, config/secret contract | local/container profile 허용 | Release Checkpoint |
+
+Integration Spine:
+
+| Checkpoint | 목표 | 포함 workstream |
+| --- | --- | --- |
+| Spine 0. Contract Baseline | shared schema/state/event와 mock boundary 확정 | R0.5 |
+| Spine 1. Trusted Dataset Draft | source에서 dataset draft가 생성되고 trust gate reason을 가진다 | Catalog / Trust, Source Connector |
+| Spine 2. Governed Query | Trusted 또는 Blocked 상태와 policy decision으로 query 허용/차단을 검증한다 | Job / Orchestrator, Query / Policy |
+| Spine 3. Evidence & Recovery | Ask/Evidence와 Recovery가 같은 dataset/policy/audit contract를 공유한다 | Ask / Evidence, Recovery / Operate |
+| Release Checkpoint | local/container/dev-lite smoke와 secret/config 검증 | Packaging |
+
+다음 구현 전 추천:
+
+- Recommended: `docs/modular-contract-baseline` 완료 후 병렬 workstream을 연다.
+- 첫 병렬 wave 후보: Catalog / Trust, Source Connector, Job / Orchestrator, Query / Policy mock.
+- 이유: R0.5 없이 Query/Ask를 먼저 구현하면 권한 우회, evidence 누락, 잘못된 trusted 상태가 발생할 수 있다.
+- 실제 병렬 worktree/thread/branch 생성은 R0.5의 일부가 아니다. R0.5 PR 또는 local hold 방식을 먼저 정한 뒤, `docs/17-parallel-milestone-protocol.md`에 따라 별도 사람 승인으로 시작한다.
+- Query / Policy mock은 실제 권한 엔진, 실제 데이터 접근, Trino, 외부 LLM 호출을 포함하지 않는다. 이 경계를 넘으면 `docs/14-decision-option-brief.md`와 workstream `decisions.md`가 필요하다.
+- 제외 후보: 실제 고급 PII 탐지, Trino, 외부 LLM, production cloud resource.
 
 Workspace state 값:
 
