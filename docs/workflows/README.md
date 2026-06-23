@@ -154,6 +154,8 @@ When local validation has passed and PR/push/handoff is the next natural action,
 
 - present 2-4 choices such as `PR 진행`, `로컬 완료로 보류`, `추가 수정`, and `다음 Phase`
 - do not push, create PR, merge, finalize, or cleanup until the human explicitly chooses the remote action
+- record the checkpoint in `confirmations.md` under `## Pre-PR Human Checkpoint`
+- if the human approves PR/push, record the approved action in `sync.md`
 - if the human chooses hold or does not answer, record the deferral reason in `sync.md` and the resume condition in `next-actions.md`
 
 ## Quality Gates

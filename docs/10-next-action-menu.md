@@ -391,7 +391,7 @@ Waiting on you:
 - Current state: scope, verification, confirmations, and pre-merge sync are complete.
 - Recommended next action: run `Pre-PR Human Checkpoint` before PR-based integration.
 - Options:
-  1. `PR 진행`: run final validation, then push/create PR only after this explicit approval.
+  1. `PR 진행`: run final validation, then use `scripts/prepare-pr.sh --approved-pr <workspace>` only after this explicit approval.
   2. `로컬 완료로 보류`: do not push or create PR; record deferral reason and resume condition.
   3. `추가 수정`: strengthen docs/tests/evidence, then rerun validation.
   4. `다음 Phase`: first decide whether this branch is held or should be PR'd.
@@ -416,7 +416,7 @@ Waiting on you:
 - Recommended next action: ask the human to choose a `Pre-PR Human Checkpoint` option before any push, PR creation, merge, finalize, or cleanup.
 - Options:
   1. PR 진행
-     - Procedure: final validation -> branch push -> PR creation -> CI check -> merge -> linked issue close check -> `prepare-pr --finalize` -> automatic merged branch cleanup -> finalization record commit/push.
+     - Procedure: final validation -> `prepare-pr --approved-pr` -> CI check -> merge -> linked issue close check -> `prepare-pr --finalize` -> automatic merged branch cleanup -> finalization record commit/push.
      - Good fit: this branch should become the next main baseline.
      - Advantage: next Phase starts from main with this work included.
      - Caution: remote state changes and Git branch/ref cleanup happen automatically. If CI fails, conflicts appear, required review is missing, scope drift appears, or the human says "PR만", stop before merge and report back.

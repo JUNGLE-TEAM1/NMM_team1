@@ -172,6 +172,7 @@ AI does:
 - Runs `scripts/prepare-pr.sh <workspace>` first to update local PR closing keyword.
 - Runs `scripts/prepare-pr.sh --check-pr-sync <workspace>` before creating or handing off the PR.
 - Treats this user command as explicit approval to push/create PR within the stated scope after final local checks pass.
+- Uses `scripts/prepare-pr.sh --approved-pr <workspace>` for approved push/PR creation; `--auto-pr` is only a deprecated compatibility alias.
 - If the human says `PR만`, `PR 생성만`, or `초안 PR`, stops after PR creation and asks again before merge/finalize/cleanup.
 - Uses `Closes #123` style closing keyword so GitHub closes the linked issue when the PR is merged.
 - After merge, runs `scripts/prepare-pr.sh --check-issue <workspace>` and records `issue close status` in `sync.md`.

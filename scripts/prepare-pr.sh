@@ -4,13 +4,14 @@ set -euo pipefail
 usage() {
   cat <<'USAGE'
 Usage:
-  scripts/prepare-pr.sh [--dry-run] [--push] [--create-pr] [--auto-pr] [--check-issue] [--check-pr-sync] [--close-issue] [--finalize] docs/workflows/<type>/<short-kebab-name>
+  scripts/prepare-pr.sh [--dry-run] [--push] [--create-pr] [--approved-pr] [--auto-pr] [--check-issue] [--check-pr-sync] [--close-issue] [--finalize] docs/workflows/<type>/<short-kebab-name>
 
 Default behavior updates the workspace sync.md with the PR closing keyword and prints a PR body draft.
 Remote actions require explicit flags:
-  --push        push the current branch to origin
-  --create-pr   create a GitHub PR with gh
-  --auto-pr     run PR sync check, push the branch, and create a PR for complete PR-ready work
+  --push        push the current branch to origin after human approval
+  --create-pr   create a GitHub PR with gh after human approval
+  --approved-pr run PR sync check, push the branch, and create a PR after Pre-PR Human Checkpoint approval
+  --auto-pr     deprecated compatibility alias for --approved-pr; do not use without human approval
   --check-issue query linked GitHub issue state with gh
   --check-pr-sync check local sync.md PR handoff fields before creating or merging a PR
   --close-issue close linked issue after the recorded PR is merged
@@ -21,7 +22,7 @@ USAGE
 dry_run=0
 push_branch=0
 create_pr=0
-auto_pr=0
+approved_pr=0
 check_issue=0
 check_pr_sync=0
 close_issue=0
@@ -41,11 +42,19 @@ while [[ $# -gt 0 ]]; do
       create_pr=1
       shift
       ;;
-    --auto-pr)
-      auto_pr=1
+    --approved-pr)
+      approved_pr=1
       check_pr_sync=1
       push_branch=1
       create_pr=1
+      shift
+      ;;
+    --auto-pr)
+      approved_pr=1
+      check_pr_sync=1
+      push_branch=1
+      create_pr=1
+      echo "Warning: --auto-pr is deprecated; use --approved-pr after Pre-PR Human Checkpoint approval." >&2
       shift
       ;;
     --check-issue)
@@ -256,15 +265,15 @@ if [[ "$check_pr_sync" -eq 1 ]]; then
     exit 1
   fi
 
-  if [[ "$auto_pr" -eq 1 ]]; then
+  if [[ "$approved_pr" -eq 1 ]]; then
     workspace_state="$(first_value "$report_file" "- Workspace state:")"
     if [[ "$workspace_state" != "complete" && "$workspace_state" != "ready-for-review" && "$workspace_state" != "integration-ready" ]]; then
-      echo "Auto PR failed: workspace state is '${workspace_state:-missing}', expected complete, ready-for-review, or integration-ready." >&2
+      echo "Approved PR failed: workspace state is '${workspace_state:-missing}', expected complete, ready-for-review, or integration-ready." >&2
       rm -f "$pr_body_file"
       exit 1
     fi
     if [[ -z "$linked_issue" || -z "$closing_keyword" ]]; then
-      echo "Auto PR failed: linked issue and closing keyword are required." >&2
+      echo "Approved PR failed: linked issue and closing keyword are required." >&2
       rm -f "$pr_body_file"
       exit 1
     fi

@@ -559,6 +559,18 @@ case_prepare_pr_check_is_local() {
   )
 }
 
+case_prepare_pr_documents_approved_pr() {
+  local repo="${tmp_root}/prepare-pr-approved"
+  copy_repo "$repo"
+  (
+    cd "$repo"
+    scripts/prepare-pr.sh --help > /tmp/harness-prepare-pr-help.out
+    rg -q -- "--approved-pr" /tmp/harness-prepare-pr-help.out
+    rg -q "deprecated compatibility alias" /tmp/harness-prepare-pr-help.out
+    rg -q -- "--approved-pr" docs/11-git-sync-policy.md
+  )
+}
+
 case_docs_branch_remote_tracking_is_reported() {
   local repo="${tmp_root}/docs-branch"
   local remote="${tmp_root}/docs-branch-origin.git"
@@ -629,6 +641,7 @@ run_expect_success "status workflow reports Source of Truth proposal status" cas
 run_expect_success "existing PR status does not recommend auto PR" case_existing_pr_status_does_not_recommend_auto_pr
 run_expect_success "complete PR-ready status requires Pre-PR checkpoint" case_complete_pr_ready_status_requires_pre_pr_checkpoint
 run_expect_success "prepare-pr check stays local" case_prepare_pr_check_is_local
+run_expect_success "prepare-pr documents approved PR helper" case_prepare_pr_documents_approved_pr
 run_expect_success "docs branch remote and tracking status is reported" case_docs_branch_remote_tracking_is_reported
 run_expect_failure "missing harness regression script fails validation" case_missing_harness_test_script_fails
 run_expect_success "harness test skip record passes" case_harness_test_skip_record_passes
