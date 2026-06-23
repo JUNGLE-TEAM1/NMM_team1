@@ -76,15 +76,15 @@ export default function CatalogPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Data Catalog</h1>
-          <p className="text-gray-500 mt-1">Browse and discover target datasets</p>
+          <h1 className="text-2xl font-bold text-gray-900">데이터 카탈로그</h1>
+          <p className="text-gray-500 mt-1">타겟 데이터셋을 찾고 구조를 확인합니다</p>
         </div>
         <button
           onClick={fetchCatalog}
           className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
         >
           <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
-          Refresh
+          새로고침
         </button>
       </div>
 
@@ -94,7 +94,7 @@ export default function CatalogPage() {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input
             type="text"
-            placeholder="Search catalog by name, description, or tags..."
+            placeholder="이름, 설명, 태그로 카탈로그 검색..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -110,7 +110,7 @@ export default function CatalogPage() {
               : "bg-gray-100 text-gray-600 hover:bg-gray-200"
               }`}
           >
-            All
+            전체
           </button>
           {allTags.map((tag) => (
             <button
@@ -130,12 +130,12 @@ export default function CatalogPage() {
       {/* Catalog Grid */}
       {isLoading ? (
         <div className="bg-white rounded-lg shadow border border-gray-200 p-8 text-center text-gray-500">
-          Loading...
+          불러오는 중...
         </div>
       ) : filteredCatalog.length === 0 ? (
         <div className="bg-white rounded-lg shadow border border-gray-200 p-8 text-center text-gray-500">
           <BookOpen className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-          <p>No catalog items found</p>
+          <p>카탈로그 항목이 없습니다</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -170,12 +170,12 @@ export default function CatalogPage() {
                 <div className="flex items-start gap-2">
                   <Layers className="w-4 h-4 text-gray-400 mt-0.5" />
                   <div className="flex-1">
-                    <p className="text-xs text-gray-500 mb-1">Sources</p>
+                    <p className="text-xs text-gray-500 mb-1">원본 데이터</p>
                     <div className="flex flex-wrap gap-1">
                       {item.sources?.slice(0, 2).map((source, idx) => {
                         const sourceName = typeof source === "string"
                           ? source.split(".").pop()
-                          : source?.table || source?.name || "Source";
+                          : source?.table || source?.name || "원본";
                         return (
                           <span
                             key={idx}
@@ -187,7 +187,7 @@ export default function CatalogPage() {
                       })}
                       {item.sources?.length > 2 && (
                         <span className="text-xs text-gray-500">
-                          +{item.sources.length - 2} more
+                          외 {item.sources.length - 2}개
                         </span>
                       )}
                     </div>
@@ -198,7 +198,7 @@ export default function CatalogPage() {
                 <div className="flex items-start gap-2">
                   <GitBranch className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-gray-500 mb-1">Target</p>
+                    <p className="text-xs text-gray-500 mb-1">타겟 데이터</p>
                     <p className="text-xs text-gray-700 font-mono truncate">
                       {(() => {
                         let path = typeof item.target === "string"
@@ -221,11 +221,11 @@ export default function CatalogPage() {
                     <p className="text-sm font-semibold text-gray-900">
                       {formatFileSize(item.size_bytes)}
                     </p>
-                    <p className="text-xs text-gray-500">Size</p>
+                    <p className="text-xs text-gray-500">크기</p>
                   </div>
                   <div className="text-center">
                     <p className="text-sm font-semibold text-gray-900">{item.format}</p>
-                    <p className="text-xs text-gray-500">Format</p>
+                    <p className="text-xs text-gray-500">형식</p>
                   </div>
                 </div>
               </div>

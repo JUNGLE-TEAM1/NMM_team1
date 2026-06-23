@@ -10,7 +10,7 @@ export default function S3TargetPropertiesPanel({ node, selectedMetadataItem, on
             {/* Header */}
             <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-green-50 to-white">
                 <h2 className="text-lg font-semibold text-gray-900">
-                    Data target properties - S3
+                    데이터 타겟 속성 - S3
                 </h2>
                 <button
                     onClick={onClose}
@@ -32,11 +32,11 @@ export default function S3TargetPropertiesPanel({ node, selectedMetadataItem, on
                         </div>
                         <div className="ml-3">
                             <h3 className="text-sm font-medium text-blue-800">
-                                Auto-configured Target
+                                자동 설정 타겟
                             </h3>
                             <div className="mt-2 text-sm text-blue-700">
                                 <p>
-                                    Data will be saved to the Data Lake automatically based on the dataset name.
+                                    데이터셋 이름을 기준으로 데이터 레이크에 자동 저장됩니다.
                                 </p>
                             </div>
                         </div>
@@ -51,7 +51,7 @@ export default function S3TargetPropertiesPanel({ node, selectedMetadataItem, on
                     <div className="border-t border-gray-200 pt-4 mt-4">
                         <div className="mb-3">
                             <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                {selectedMetadataItem.type === 'table' ? `Table: ${selectedMetadataItem.name}` : `Column: ${selectedMetadataItem.name}`}
+                                {selectedMetadataItem.type === 'table' ? `테이블: ${selectedMetadataItem.name}` : `컬럼: ${selectedMetadataItem.name}`}
                                 {selectedMetadataItem.type === 'column' && selectedMetadataItem.dataType && (
                                     <span className="ml-2 text-xs font-mono text-gray-500 bg-gray-200 px-2 py-0.5 rounded">
                                         {selectedMetadataItem.dataType}
@@ -63,13 +63,13 @@ export default function S3TargetPropertiesPanel({ node, selectedMetadataItem, on
                         {/* Description */}
                         <div className="mb-3">
                             <label className="block text-xs font-medium text-gray-600 mb-1">
-                                Description
+                                설명
                             </label>
                             <input
                                 type="text"
                                 value={selectedMetadataItem.description || ''}
                                 onChange={(e) => onMetadataUpdate && onMetadataUpdate({ ...selectedMetadataItem, description: e.target.value })}
-                                placeholder={`Add description for this ${selectedMetadataItem.type}...`}
+                                placeholder="설명을 입력하세요..."
                                 className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
                             />
                         </div>
@@ -77,7 +77,7 @@ export default function S3TargetPropertiesPanel({ node, selectedMetadataItem, on
                         {/* Tags */}
                         <div>
                             <label className="block text-xs font-medium text-gray-600 mb-1">
-                                Tags
+                                태그
                             </label>
                             <input
                                 type="text"
@@ -98,7 +98,7 @@ export default function S3TargetPropertiesPanel({ node, selectedMetadataItem, on
                                         onMetadataUpdate({ ...selectedMetadataItem, tags });
                                     }
                                 }}
-                                placeholder="Add tags (comma separated)"
+                                placeholder="태그 추가 (쉼표로 구분)"
                                 className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
                             />
                         </div>

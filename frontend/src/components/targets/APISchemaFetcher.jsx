@@ -24,7 +24,7 @@ export default function APISchemaFetcher({
 
     try {
       if (!sourceDatasetId) {
-        throw new Error('Source dataset ID is missing');
+        throw new Error('소스 데이터셋 ID가 없습니다');
       }
 
       // Fetch preview from API
@@ -39,14 +39,14 @@ export default function APISchemaFetcher({
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to fetch schema');
+        throw new Error(errorData.detail || '스키마를 가져오지 못했습니다');
       }
 
       const result = await response.json();
 
       if (!result.data || !Array.isArray(result.data) || result.data.length === 0) {
         throw new Error(
-          'No data returned from API. Please check your endpoint configuration.'
+          'API에서 반환된 데이터가 없습니다. 엔드포인트 설정을 확인해주세요.'
         );
       }
 
@@ -63,7 +63,7 @@ export default function APISchemaFetcher({
         onSchemaFetched(inferredColumns);
       }
     } catch (err) {
-      console.error('Failed to fetch schema:', err);
+      console.error('스키마 가져오기 실패:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -81,13 +81,13 @@ export default function APISchemaFetcher({
 
           {/* Title */}
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            Schema Not Available
+            스키마 정보 없음
           </h3>
 
           {/* Description */}
           <p className="text-sm text-gray-600 mb-6">
-            This API source doesn't have a predefined schema. Click the button
-            below to fetch sample data and automatically infer the schema.
+            이 API 소스에는 미리 정의된 스키마가 없습니다. 샘플 데이터를 가져와
+            스키마를 자동으로 추론할 수 있습니다.
           </p>
 
           {/* Error Message */}
@@ -95,7 +95,7 @@ export default function APISchemaFetcher({
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2 text-left">
               <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
-                <p className="text-sm font-medium text-red-800">Failed to fetch schema</p>
+                <p className="text-sm font-medium text-red-800">스키마 가져오기 실패</p>
                 <p className="text-xs text-red-600 mt-1">{error}</p>
               </div>
             </div>
@@ -110,19 +110,19 @@ export default function APISchemaFetcher({
             {loading ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                Fetching Schema...
+                스키마 가져오는 중...
               </>
             ) : (
               <>
                 <Database className="w-5 h-5" />
-                Fetch Schema from API
+                API에서 스키마 가져오기
               </>
             )}
           </button>
 
           {/* Help Text */}
           <p className="text-xs text-gray-500 mt-4">
-            This will make a test request to your API endpoint to determine the data structure.
+            API 엔드포인트에 테스트 요청을 보내 데이터 구조를 확인합니다.
           </p>
         </div>
       </div>

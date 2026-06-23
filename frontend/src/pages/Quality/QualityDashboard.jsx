@@ -34,7 +34,7 @@ export default function QualityDashboard() {
             <div className="p-8 flex items-center justify-center h-full">
                 <div className="flex items-center gap-3 text-gray-500">
                     <RefreshCw className="w-5 h-5 animate-spin" />
-                    <span>Loading quality data...</span>
+                    <span>품질 데이터를 불러오는 중...</span>
                 </div>
             </div>
         );
@@ -45,12 +45,12 @@ export default function QualityDashboard() {
             <div className="p-8 flex items-center justify-center h-full">
                 <div className="text-center">
                     <XCircle className="w-12 h-12 text-red-400 mx-auto mb-3" />
-                    <p className="text-red-500 font-medium">Failed to load dashboard data</p>
+                    <p className="text-red-500 font-medium">대시보드 데이터를 불러오지 못했습니다</p>
                     <button
                         onClick={() => loadData()}
                         className="mt-4 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm"
                     >
-                        Retry
+                        다시 시도
                     </button>
                 </div>
             </div>
@@ -75,14 +75,14 @@ export default function QualityDashboard() {
             // If it's a node ID like "node-{jobId}-0-timestamp", show shortened version
             if (item.dataset_id.startsWith('node-')) {
                 const parts = item.dataset_id.split('-');
-                return `Dataset ${parts[1]?.slice(0, 8) || '...'}`;
+                return `데이터셋 ${parts[1]?.slice(0, 8) || '...'}`;
             }
             // If it's a MongoDB ObjectId, show first 8 chars
             if (item.dataset_id.length === 24) {
-                return `Dataset ${item.dataset_id.slice(0, 8)}`;
+                return `데이터셋 ${item.dataset_id.slice(0, 8)}`;
             }
         }
-        return item.dataset_id || 'Unknown';
+        return item.dataset_id || '알 수 없음';
     };
 
     // Calculate time ago
@@ -95,10 +95,10 @@ export default function QualityDashboard() {
         const diffHours = Math.floor(diffMs / 3600000);
         const diffDays = Math.floor(diffMs / 86400000);
 
-        if (diffMins < 1) return 'Just now';
-        if (diffMins < 60) return `${diffMins}m ago`;
-        if (diffHours < 24) return `${diffHours}h ago`;
-        return `${diffDays}d ago`;
+        if (diffMins < 1) return '방금 전';
+        if (diffMins < 60) return `${diffMins}분 전`;
+        if (diffHours < 24) return `${diffHours}시간 전`;
+        return `${diffDays}일 전`;
     };
 
     return (
@@ -106,8 +106,8 @@ export default function QualityDashboard() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Data Quality Dashboard</h1>
-                    <p className="text-gray-500 mt-1">System-wide data health overview</p>
+                    <h1 className="text-2xl font-bold text-gray-900">데이터 품질 대시보드</h1>
+                    <p className="text-gray-500 mt-1">전체 데이터 품질 상태를 확인합니다</p>
                 </div>
                 <button
                     onClick={() => loadData(true)}
@@ -115,32 +115,32 @@ export default function QualityDashboard() {
                     className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors shadow-sm disabled:opacity-50"
                 >
                     <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-                    <span className="text-sm font-medium text-gray-700">Refresh</span>
+                    <span className="text-sm font-medium text-gray-700">새로고침</span>
                 </button>
             </div>
 
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <SummaryCard
-                    title="Total Datasets"
+                    title="전체 데이터셋"
                     value={summary.total_count}
                     icon={Activity}
                     color="blue"
                 />
                 <SummaryCard
-                    title="Healthy (90+)"
+                    title="정상 (90+)"
                     value={summary.healthy_count}
                     icon={CheckCircle}
                     color="green"
                 />
                 <SummaryCard
-                    title="Warning (70-89)"
+                    title="주의 (70-89)"
                     value={summary.warning_count}
                     icon={AlertTriangle}
                     color="yellow"
                 />
                 <SummaryCard
-                    title="Critical (<70)"
+                    title="위험 (<70)"
                     value={summary.critical_count}
                     icon={XCircle}
                     color="red"
@@ -155,20 +155,20 @@ export default function QualityDashboard() {
                         <div className="flex items-center justify-between">
                             <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
                                 <Database className="w-5 h-5 text-gray-400" />
-                                Dataset Health Status
+                                데이터셋 품질 상태
                             </h2>
-                            <span className="text-sm text-gray-400">{results.length} results</span>
+                            <span className="text-sm text-gray-400">결과 {results.length}개</span>
                         </div>
                     </div>
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm">
                             <thead>
                                 <tr className="bg-gray-50/50 text-gray-500 text-xs uppercase tracking-wider">
-                                    <th className="px-6 py-4 font-medium">Dataset</th>
-                                    <th className="px-6 py-4 font-medium">Location</th>
-                                    <th className="px-6 py-4 font-medium text-center">Score</th>
-                                    <th className="px-6 py-4 font-medium">Status</th>
-                                    <th className="px-6 py-4 font-medium">Last Run</th>
+                                    <th className="px-6 py-4 font-medium">데이터셋</th>
+                                    <th className="px-6 py-4 font-medium">위치</th>
+                                    <th className="px-6 py-4 font-medium text-center">점수</th>
+                                    <th className="px-6 py-4 font-medium">상태</th>
+                                    <th className="px-6 py-4 font-medium">최근 실행</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
@@ -224,8 +224,8 @@ export default function QualityDashboard() {
                                     <tr>
                                         <td colSpan="5" className="py-12 text-center">
                                             <Database className="w-12 h-12 text-gray-200 mx-auto mb-3" />
-                                            <p className="text-gray-400">No quality checks run yet.</p>
-                                            <p className="text-gray-300 text-sm mt-1">Run a quality check on a dataset to see results here.</p>
+                                            <p className="text-gray-400">아직 실행된 품질 검사가 없습니다.</p>
+                                            <p className="text-gray-300 text-sm mt-1">데이터셋에서 품질 검사를 실행하면 결과가 표시됩니다.</p>
                                         </td>
                                     </tr>
                                 )}
@@ -239,34 +239,34 @@ export default function QualityDashboard() {
                     {/* Average Score */}
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                         <h3 className="text-gray-500 font-medium text-sm uppercase tracking-wide mb-6 text-center">
-                            Average Quality Score
+                            평균 품질 점수
                         </h3>
                         <div className="flex justify-center mb-4">
                             <CircularProgress value={summary.avg_score || 0} />
                         </div>
                         <p className="text-sm text-gray-400 text-center">
-                            Across {summary.total_count} datasets
+                            데이터셋 {summary.total_count}개 기준
                         </p>
                     </div>
 
                     {/* Score Distribution */}
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                        <h3 className="text-gray-800 font-semibold mb-4">Score Distribution</h3>
+                        <h3 className="text-gray-800 font-semibold mb-4">점수 분포</h3>
                         <div className="space-y-3">
                             <DistributionBar
-                                label="Healthy"
+                                label="정상"
                                 count={summary.healthy_count}
                                 total={summary.total_count}
                                 color="bg-green-500"
                             />
                             <DistributionBar
-                                label="Warning"
+                                label="주의"
                                 count={summary.warning_count}
                                 total={summary.total_count}
                                 color="bg-yellow-500"
                             />
                             <DistributionBar
-                                label="Critical"
+                                label="위험"
                                 count={summary.critical_count}
                                 total={summary.total_count}
                                 color="bg-red-500"
@@ -276,23 +276,23 @@ export default function QualityDashboard() {
 
                     {/* Quality Criteria */}
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                        <h3 className="text-gray-800 font-semibold mb-3">Quality Criteria</h3>
+                        <h3 className="text-gray-800 font-semibold mb-3">품질 기준</h3>
                         <ul className="space-y-2.5 text-sm text-gray-600">
                             <li className="flex items-center gap-2">
                                 <span className="w-2 h-2 rounded-full bg-red-500"></span>
-                                <span>Null Values ({'>'}5%)</span>
+                                <span>NULL 값 ({'>'}5%)</span>
                             </li>
                             <li className="flex items-center gap-2">
                                 <span className="w-2 h-2 rounded-full bg-red-500"></span>
-                                <span>Duplicates ({'>'}1%)</span>
+                                <span>중복 ({'>'}1%)</span>
                             </li>
                             <li className="flex items-center gap-2">
                                 <span className="w-2 h-2 rounded-full bg-red-500"></span>
-                                <span>Freshness ({'>'}24h)</span>
+                                <span>최신성 ({'>'}24시간)</span>
                             </li>
                             <li className="flex items-center gap-2">
                                 <span className="w-2 h-2 rounded-full bg-red-500"></span>
-                                <span>Validity (Negative values)</span>
+                                <span>유효성 (음수 값)</span>
                             </li>
                         </ul>
                     </div>
@@ -390,11 +390,17 @@ function StatusBadge({ status }) {
         failed: 'bg-red-50 text-red-600',
         pending: 'bg-gray-50 text-gray-600',
     };
+    const statusLabels = {
+        completed: '완료',
+        running: '실행 중',
+        failed: '실패',
+        pending: '대기 중',
+    };
     const style = statusStyles[status] || statusStyles.pending;
 
     return (
-        <span className={`px-2 py-0.5 rounded text-xs font-medium capitalize ${style}`}>
-            {status || 'Unknown'}
+        <span className={`px-2 py-0.5 rounded text-xs font-medium ${style}`}>
+            {statusLabels[status] || '알 수 없음'}
         </span>
     );
 }

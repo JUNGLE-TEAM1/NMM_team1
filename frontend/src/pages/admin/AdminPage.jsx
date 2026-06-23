@@ -7,8 +7,8 @@ import RoleCreateForm from "./components/RoleCreateForm";
 import clsx from "clsx";
 
 const tabs = [
-    { id: "users", label: "Users", icon: Users },
-    { id: "roles", label: "Roles", icon: Shield },
+    { id: "users", label: "사용자", icon: Users },
+    { id: "roles", label: "역할", icon: Shield },
 ];
 
 export default function AdminPage() {
@@ -59,10 +59,10 @@ export default function AdminPage() {
             <div className="bg-white border-b border-gray-200 px-6 py-4">
                 <div className="flex items-center gap-2 mb-1">
                     <Wrench className="w-5 h-5 text-gray-700" />
-                    <h1 className="text-lg font-semibold text-gray-900">Administration</h1>
+                    <h1 className="text-lg font-semibold text-gray-900">사용자/권한 관리</h1>
                 </div>
                 <p className="text-sm text-gray-500">
-                    Manage user accounts and permissions
+                    사용자 계정, 역할, 데이터 접근 권한을 관리합니다
                 </p>
             </div>
 

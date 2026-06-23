@@ -66,7 +66,7 @@ const DatasetNode = ({ data, selected }) => {
                         data.onDelete(data.nodeId);
                     }}
                     className="absolute -top-2 -right-2 z-50 flex items-center justify-center w-6 h-6 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-red-600 hover:scale-110"
-                    title="Delete Node"
+                    title="노드 삭제"
                 >
                     <X className="w-3 h-3" />
                 </button>
@@ -151,7 +151,7 @@ const DatasetNode = ({ data, selected }) => {
                         >
                             <span className="text-xs font-medium text-gray-700">
                                 {/* Auto-detect label based on schema */}
-                                {data.schema?.[0]?.occurrence !== undefined ? 'Collection' : 'Table'}: {data.collectionName || data.tableName}
+                                {data.schema?.[0]?.occurrence !== undefined ? '컬렉션' : '테이블'}: {data.collectionName || data.tableName}
                             </span>
                         </div>
                     )}
@@ -159,12 +159,12 @@ const DatasetNode = ({ data, selected }) => {
                     {/* 컬럼 헤더 */}
                     <div className="flex px-3 py-1.5 border-b border-gray-200 bg-gray-100 text-xs font-medium text-gray-500 uppercase tracking-wider">
                         <span className="flex-1">
-                            {data.schema?.[0]?.occurrence !== undefined ? 'Field' : 'Column'}
+                            {data.schema?.[0]?.occurrence !== undefined ? '필드' : '컬럼'}
                         </span>
-                        <span className="flex-1 text-right">Type</span>
+                        <span className="flex-1 text-right">타입</span>
                         {/* Check if schema has occurrence field (MongoDB) */}
                         {data.schema?.[0]?.occurrence !== undefined && (
-                            <span className="w-16 text-right">Occur.</span>
+                            <span className="w-16 text-right">출현율</span>
                         )}
                     </div>
 
@@ -218,7 +218,7 @@ const DatasetNode = ({ data, selected }) => {
                         </div>
                     ) : (
                         <div className="px-3 py-3 text-xs text-gray-400 italic text-center">
-                            No schema available
+                            사용 가능한 스키마가 없습니다
                         </div>
                     )}
                 </div>

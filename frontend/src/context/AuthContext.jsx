@@ -2,6 +2,21 @@ import { createContext, useContext, useState, useEffect } from "react";
 
 const AuthContext = createContext();
 
+const FRONTEND_ONLY_USER = {
+  user_id: "user-ui-admin",
+  id: "user-ui-admin",
+  email: "study@xflow.local",
+  name: "study",
+  is_admin: true,
+  role_id: null,
+  etl_access: true,
+  domain_edit_access: true,
+  dataset_access: [],
+  all_datasets: true,
+  role_dataset_etl_access: true,
+  role_query_ai_access: true,
+};
+
 export const AuthProvider = ({ children }) => {
   const [sessionId, setSessionId] = useState(null);
   const [user, setUser] = useState(null);
@@ -15,6 +30,12 @@ export const AuthProvider = ({ children }) => {
     if (storedSessionId && storedUser) {
       setSessionId(storedSessionId);
       setUser(JSON.parse(storedUser));
+    } else if (import.meta.env.VITE_FRONTEND_ONLY === "true") {
+      const mockSessionId = "mock-session-ui-review";
+      setSessionId(mockSessionId);
+      setUser(FRONTEND_ONLY_USER);
+      sessionStorage.setItem("sessionId", mockSessionId);
+      sessionStorage.setItem("user", JSON.stringify(FRONTEND_ONLY_USER));
     }
 
     // Mark auth as ready after restoration attempt
@@ -52,4 +73,3 @@ export const AuthProvider = ({ children }) => {
 }
 
 export const useAuth = () => useContext(AuthContext);
-

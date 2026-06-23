@@ -52,7 +52,7 @@ export default function ChatMessage({ message }) {
           {/* SQL Header */}
           <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-100">
             <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Generated SQL
+              생성된 SQL
             </span>
           </div>
 
@@ -68,7 +68,7 @@ export default function ChatMessage({ message }) {
                 onClick={() => setShowSchema(!showSchema)}
                 className="w-full px-4 py-2 flex items-center justify-between text-xs text-gray-500 hover:bg-gray-50 transition-colors"
               >
-                <span className="font-medium">Used Schema</span>
+                <span className="font-medium">사용한 스키마</span>
                 {showSchema ? (
                   <ChevronUp size={14} />
                 ) : (

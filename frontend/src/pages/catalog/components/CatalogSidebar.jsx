@@ -70,7 +70,7 @@ export const CatalogSidebar = ({
             catalogItem?.target;
 
         if (!s3Path) {
-            showToast("No S3 path configured for this dataset", "error");
+            showToast("이 데이터셋에 설정된 S3 경로가 없습니다", "error");
             return;
         }
 
@@ -82,12 +82,12 @@ export const CatalogSidebar = ({
             setQualityResult(result);
             setQualityHistory((prev) => [result, ...prev.slice(0, 4)]);
             showToast(
-                `Quality check completed! Score: ${result.overall_score}`,
+                `품질 검사가 완료되었습니다. 점수: ${result.overall_score}`,
                 "success"
             );
         } catch (error) {
             console.error("Failed to run quality check:", error);
-            showToast("Failed to run quality check", "error");
+            showToast("품질 검사를 실행하지 못했습니다", "error");
         } finally {
             setRunningCheck(false);
         }
@@ -99,21 +99,21 @@ export const CatalogSidebar = ({
             <div className="w-14 bg-gray-50 border-l border-gray-200 flex flex-col items-center py-6 gap-4 shrink-0 relative">
                 <button
                     onClick={() => setActiveTab("info")}
-                    title="Info"
+                    title="정보"
                     className={`group flex flex-col items-center justify-center w-10 py-4 rounded-lg transition-all gap-2 ${activeTab === "info"
                         ? "bg-white text-blue-600 font-semibold shadow-sm ring-1 ring-blue-100"
                         : "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
                         }`}
                 >
                     <Info className="w-5 h-5" />
-                    <span className="text-[10px] font-medium tracking-wide">INFO</span>
+                    <span className="text-[10px] font-medium tracking-wide">정보</span>
                 </button>
 
                 <div className="w-6 border-b border-gray-300" />
 
                 <button
                     onClick={() => setActiveTab("quality")}
-                    title="Quality"
+                    title="품질"
                     className={`group flex flex-col items-center justify-center w-10 py-4 rounded-lg transition-all gap-2 ${activeTab === "quality"
                         ? "bg-white text-blue-600 font-semibold shadow-sm ring-1 ring-blue-100"
                         : "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
@@ -121,7 +121,7 @@ export const CatalogSidebar = ({
                 >
                     <BarChart3 className="w-5 h-5" />
                     <span className="text-[10px] font-medium tracking-wide">
-                        QUALITY
+                        품질
                     </span>
                 </button>
 
@@ -129,7 +129,7 @@ export const CatalogSidebar = ({
 
                 <button
                     onClick={() => setActiveTab("stream")}
-                    title="Stream"
+                    title="흐름"
                     className={`group flex flex-col items-center justify-center w-10 py-4 rounded-lg transition-all gap-2 ${activeTab === "stream"
                         ? "bg-white text-blue-600 font-semibold shadow-sm ring-1 ring-blue-100"
                         : "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
@@ -137,7 +137,7 @@ export const CatalogSidebar = ({
                 >
                     <GitBranch className="w-5 h-5" />
                     <span className="text-[10px] font-medium tracking-wide">
-                        STREAM
+                        흐름
                     </span>
                 </button>
 
@@ -145,7 +145,7 @@ export const CatalogSidebar = ({
                 <button
                     onClick={() => setIsOpen(!isOpen)}
                     className="absolute -left-3 top-1/2 -translate-y-1/2 bg-white border border-gray-200 rounded-full p-1 shadow-md hover:shadow-lg hover:bg-gray-50 transition-all z-30"
-                    title={isOpen ? "Close Sidebar" : "Open Sidebar"}
+                    title={isOpen ? "사이드바 닫기" : "사이드바 열기"}
                 >
                     {isOpen ? (
                         <ChevronRight className="w-5 h-5 text-gray-600" />

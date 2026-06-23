@@ -113,7 +113,7 @@ export default function RoleCreateForm({ editingRole, onRoleCreated, onCancel })
 
     const validateForm = () => {
         const newErrors = {};
-        if (!formData.name.trim()) newErrors.name = "Role name is required";
+        if (!formData.name.trim()) newErrors.name = "역할 이름을 입력해주세요";
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -155,7 +155,7 @@ export default function RoleCreateForm({ editingRole, onRoleCreated, onCancel })
                     datasetAccess: [],
                     allDatasets: false,
                 });
-                setSuccessMessage("Role created successfully!");
+                setSuccessMessage("역할을 생성했습니다");
                 setTimeout(() => setSuccessMessage(""), 3000);
             }
         } catch (err) {
@@ -178,14 +178,14 @@ export default function RoleCreateForm({ editingRole, onRoleCreated, onCancel })
             {editingRole && (
                 <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
                     <p className="text-sm text-blue-800">
-                        Editing: <strong>{editingRole.name}</strong>
+                        수정 중: <strong>{editingRole.name}</strong>
                     </p>
                     {onCancel && (
                         <button
                             onClick={onCancel}
                             className="text-sm text-blue-600 hover:text-blue-800 font-medium"
                         >
-                            Cancel
+                            취소
                         </button>
                     )}
                 </div>
@@ -197,7 +197,7 @@ export default function RoleCreateForm({ editingRole, onRoleCreated, onCancel })
                     <div className="space-y-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Role Name <span className="text-red-500">*</span>
+                                역할 이름 <span className="text-red-500">*</span>
                             </label>
                             <input
                                 type="text"
@@ -209,7 +209,7 @@ export default function RoleCreateForm({ editingRole, onRoleCreated, onCancel })
                                     "w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
                                     errors.name ? "border-red-300 bg-red-50" : "border-gray-300"
                                 )}
-                                placeholder="e.g., Data Analyst"
+                                placeholder="예: 데이터 분석가"
                             />
                             {errors.name && (
                                 <p className="mt-1 text-xs text-red-500">{errors.name}</p>
@@ -217,7 +217,7 @@ export default function RoleCreateForm({ editingRole, onRoleCreated, onCancel })
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Description
+                                설명
                             </label>
                             <textarea
                                 value={formData.description}
@@ -225,7 +225,7 @@ export default function RoleCreateForm({ editingRole, onRoleCreated, onCancel })
                                     setFormData((prev) => ({ ...prev, description: e.target.value }))
                                 }
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="Describe this role's purpose..."
+                                placeholder="이 역할의 목적을 설명하세요..."
                                 rows={3}
                             />
                         </div>
@@ -239,11 +239,11 @@ export default function RoleCreateForm({ editingRole, onRoleCreated, onCancel })
                         <div className="flex items-center gap-2 mb-1">
                             <Shield className="w-5 h-5 text-gray-700" />
                             <h3 className="text-sm font-semibold text-gray-900">
-                                Permissions
+                                권한
                             </h3>
                         </div>
                         <p className="text-xs text-gray-500 mb-4">
-                            Configure what users with this role can access
+                            이 역할의 사용자가 접근할 수 있는 범위를 설정합니다
                         </p>
 
                         <div className="space-y-4">
@@ -253,8 +253,8 @@ export default function RoleCreateForm({ editingRole, onRoleCreated, onCancel })
                                 onChange={(value) =>
                                     setFormData((prev) => ({ ...prev, datasetEtlAccess: value }))
                                 }
-                                label="Dataset & ETL Jobs Access"
-                                description="Access to /dataset and /ETL Jobs pages"
+                                label="데이터셋 관리/실행 관리 접근"
+                                description="/dataset 및 실행 관리 화면에 접근할 수 있습니다"
                             />
 
                             {/* Query/AI Access Toggle */}
@@ -263,8 +263,8 @@ export default function RoleCreateForm({ editingRole, onRoleCreated, onCancel })
                                 onChange={(value) =>
                                     setFormData((prev) => ({ ...prev, queryAiAccess: value }))
                                 }
-                                label="Query & AI Access"
-                                description="Access to /query page and AI assistant button"
+                                label="SQL 분석/AI 접근"
+                                description="/query 화면과 AI 도우미 버튼에 접근할 수 있습니다"
                             />
 
                             {/* Dataset Access */}
@@ -272,10 +272,10 @@ export default function RoleCreateForm({ editingRole, onRoleCreated, onCancel })
                                 <div className="flex items-center justify-between mb-3">
                                     <div>
                                         <h4 className="text-sm font-medium text-gray-900">
-                                            Dataset Access
+                                            데이터셋 접근 권한
                                         </h4>
                                         <p className="text-xs text-gray-500">
-                                            Select which datasets users with this role can access
+                                            이 역할의 사용자가 접근할 수 있는 데이터셋을 선택합니다
                                         </p>
                                     </div>
                                     <label className="flex items-center gap-2 cursor-pointer">
@@ -291,7 +291,7 @@ export default function RoleCreateForm({ editingRole, onRoleCreated, onCancel })
                                             }
                                             className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                                         />
-                                        <span className="text-sm text-gray-700">All datasets</span>
+                                        <span className="text-sm text-gray-700">전체 데이터셋</span>
                                     </label>
                                 </div>
 
@@ -310,7 +310,7 @@ export default function RoleCreateForm({ editingRole, onRoleCreated, onCancel })
 
                                 {formData.allDatasets && (
                                     <div className="py-6 text-center text-sm text-blue-600 bg-blue-50 rounded-lg border border-blue-100">
-                                        ✓ Users with this role have access to all datasets
+                                        이 역할의 사용자는 모든 데이터셋에 접근할 수 있습니다
                                     </div>
                                 )}
                             </div>
@@ -332,7 +332,7 @@ export default function RoleCreateForm({ editingRole, onRoleCreated, onCancel })
                                 disabled={isSubmitting}
                                 className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
                             >
-                                Cancel
+                                취소
                             </button>
                         )}
                         <button
@@ -341,7 +341,7 @@ export default function RoleCreateForm({ editingRole, onRoleCreated, onCancel })
                             className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 flex items-center gap-2"
                         >
                             {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                            {editingRole ? "Save Changes" : "Create Role"}
+                            {editingRole ? "변경사항 저장" : "역할 생성"}
                         </button>
                     </div>
                 </div>

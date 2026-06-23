@@ -9,7 +9,7 @@ import { aiApi } from '../../services/aiApi';
 export default function InlineAIInput({
     promptType = 'general',
     metadata = {},
-    placeholder = 'Ask AI to help...',
+    placeholder = 'AI에게 도움을 요청하세요...',
     engine = 'trino',  // Default engine changed to trino
     onApply,
     onCancel
@@ -44,7 +44,7 @@ export default function InlineAIInput({
             setInput('');
         } catch (err) {
             console.error('AI request failed:', err);
-            setError(err.message || 'Failed to generate suggestion');
+            setError(err.message || '추천을 생성하지 못했습니다');
         } finally {
             setIsLoading(false);
         }
@@ -90,12 +90,12 @@ export default function InlineAIInput({
                         {isLoading ? (
                             <>
                                 <Loader2 size={14} className="animate-spin" />
-                                <span>Generating...</span>
+                                <span>생성 중...</span>
                             </>
                         ) : (
                             <>
                                 <Send size={14} />
-                                <span>Generate</span>
+                                <span>생성</span>
                             </>
                         )}
                     </button>

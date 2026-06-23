@@ -30,12 +30,12 @@ import { aiApi } from "../../services/aiApi";
 import { API_BASE_URL } from "../../config/api";
 
 const STEPS = [
-  { id: 1, name: "Overview", icon: LayoutDashboard },
-  { id: 2, name: "Source", icon: Database },
-  { id: 3, name: "Process", icon: Cog },
-  { id: 4, name: "Schedule", icon: Calendar },
-  { id: 5, name: "Permission", icon: Shield },
-  { id: 6, name: "Review", icon: Eye },
+  { id: 1, name: "기본 정보", icon: LayoutDashboard },
+  { id: 2, name: "소스 선택", icon: Database },
+  { id: 3, name: "가공 설정", icon: Cog },
+  { id: 4, name: "스케줄", icon: Calendar },
+  { id: 5, name: "권한", icon: Shield },
+  { id: 6, name: "검토", icon: Eye },
 ];
 
 export default function TargetWizard() {
@@ -134,7 +134,7 @@ export default function TargetWizard() {
           setRoles(filteredRoles);
         } catch (err) {
           console.error("Failed to fetch roles:", err);
-          showToast("Failed to load roles", "error");
+          showToast("역할 목록을 불러오지 못했습니다", "error");
         } finally {
           setRolesLoading(false);
         }
@@ -157,7 +157,7 @@ export default function TargetWizard() {
         const jobResponse = await fetch(
           `${API_BASE_URL}/api/datasets/${jobId}`
         );
-        if (!jobResponse.ok) throw new Error("Failed to fetch job");
+        if (!jobResponse.ok) throw new Error("작업 정보를 불러오지 못했습니다");
         const job = await jobResponse.json();
 
         // Set config
@@ -216,10 +216,10 @@ export default function TargetWizard() {
         // Skip to Transform step in edit mode
         setCurrentStep(3);
 
-        showToast("Job loaded successfully", "success");
+        showToast("작업 정보를 불러왔습니다", "success");
       } catch (err) {
         console.error("Failed to load job:", err);
-        showToast(`Failed to load job: ${err.message}`, "error");
+        showToast(`작업 정보를 불러오지 못했습니다: ${err.message}`, "error");
       } finally {
         setIsLoading(false);
       }
@@ -341,7 +341,7 @@ export default function TargetWizard() {
     if (sourceTab === "source") {
       // Source Datasets tab
       if (selectedJobIds.length === 0) {
-        showToast("Please select at least one source dataset", "error");
+        showToast("원본 데이터셋을 하나 이상 선택해주세요", "error");
         return;
       }
 
@@ -353,7 +353,7 @@ export default function TargetWizard() {
           .filter(Boolean);
 
         if (sources.length === 0) {
-          showToast("No source datasets found", "warning");
+          showToast("원본 데이터셋을 찾을 수 없습니다", "warning");
           setIsLoading(false);
           return;
         }
@@ -494,7 +494,7 @@ export default function TargetWizard() {
         });
 
         if (nodes.length === 0) {
-          showToast("No source data found", "warning");
+          showToast("가져올 원본 데이터가 없습니다", "warning");
           return;
         }
 
@@ -505,17 +505,17 @@ export default function TargetWizard() {
           setConfig((prev) => ({ ...prev, name: `${sources[0].name}_target` }));
         }
 
-        showToast(`Imported ${nodes.length} source dataset(s)`, "success");
+        showToast(`원본 데이터셋 ${nodes.length}개를 가져왔습니다`, "success");
       } catch (err) {
         console.error("Failed to import sources:", err);
-        showToast(`Failed to import sources: ${err.message}`, "error");
+        showToast(`원본 데이터를 가져오지 못했습니다: ${err.message}`, "error");
       } finally {
         setIsLoading(false);
       }
     } else {
       // Target Datasets (Catalog) tab
       if (selectedTargetIds.length === 0) {
-        showToast("Please select at least one target dataset", "error");
+        showToast("타겟 데이터셋을 하나 이상 선택해주세요", "error");
         return;
       }
 
@@ -670,7 +670,7 @@ export default function TargetWizard() {
         }
 
         if (nodes.length === 0) {
-          showToast("No catalog data found", "warning");
+          showToast("카탈로그 데이터를 찾을 수 없습니다", "warning");
           return;
         }
 
@@ -684,10 +684,13 @@ export default function TargetWizard() {
           }));
         }
 
-        showToast(`Imported ${nodes.length} catalog dataset(s)`, "success");
+        showToast(`카탈로그 데이터셋 ${nodes.length}개를 가져왔습니다`, "success");
       } catch (err) {
         console.error("Failed to import catalog datasets:", err);
-        showToast(`Failed to import catalog datasets: ${err.message}`, "error");
+        showToast(
+          `카탈로그 데이터셋을 가져오지 못했습니다: ${err.message}`,
+          "error"
+        );
       } finally {
         setIsLoading(false);
       }
@@ -740,7 +743,7 @@ export default function TargetWizard() {
 
   const handleCreate = async () => {
     if (sourceNodes.length === 0) {
-      showToast("Error: No source nodes available", "error");
+      showToast("오류: 사용할 수 있는 원본 노드가 없습니다", "error");
       return;
     }
 
@@ -763,8 +766,8 @@ export default function TargetWizard() {
           type: "custom",
           position: { x: 500, y: 200 },
           data: {
-            label: "Transform: Select Fields",
-            name: "Transform: Select Fields",
+            label: "가공: 필드 선택",
+            name: "가공: 필드 선택",
             platform: "S3 Log Transform",
             nodeCategory: "transform",
             transformType: "s3-select-fields",
@@ -781,8 +784,8 @@ export default function TargetWizard() {
           type: "custom",
           position: { x: 700, y: 200 },
           data: {
-            label: "Transform: Apply Filters",
-            name: "Transform: Apply Filters",
+            label: "가공: 필터 적용",
+            name: "가공: 필터 적용",
             platform: "S3 Log Transform",
             nodeCategory: "transform",
             transformType: "s3-filter",
@@ -820,8 +823,8 @@ export default function TargetWizard() {
           type: "custom",
           position: { x: 500, y: 200 },
           data: {
-            label: `Transform: Combined`,
-            name: `Transform: Combined`,
+            label: `가공: 통합`,
+            name: `가공: 통합`,
             platform: "SQL Transform",
             nodeCategory: "transform",
             transformType: "sql",
@@ -894,7 +897,7 @@ export default function TargetWizard() {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(
           errorData.detail ||
-            `Failed to save target dataset (${response.status})`
+            `타겟 데이터셋 저장에 실패했습니다 (${response.status})`
         );
       }
 
@@ -917,14 +920,14 @@ export default function TargetWizard() {
 
       showToast(
         isEditMode
-          ? "Target dataset updated successfully!"
-          : "Target dataset created successfully!",
+          ? "타겟 데이터셋을 수정했습니다"
+          : "타겟 데이터셋을 생성했습니다",
         "success"
       );
       navigate("/dataset");
     } catch (error) {
       console.error("Failed to save target dataset:", error);
-      showToast(`Failed to save: ${error.message}`, "error");
+      showToast(`저장에 실패했습니다: ${error.message}`, "error");
     }
   };
 
@@ -976,10 +979,10 @@ export default function TargetWizard() {
               </button>
               <div>
                 <h1 className="text-xl font-semibold text-gray-900">
-                  {isEditMode ? "Edit Target Dataset" : "Create Target Dataset"}
+                  {isEditMode ? "타겟 데이터셋 수정" : "타겟 데이터셋 생성"}
                 </h1>
                 <p className="text-sm text-gray-500">
-                  {isEditMode ? "Modify your target dataset configuration" : ""}
+                  {isEditMode ? "타겟 데이터셋 설정을 수정합니다" : ""}
                 </p>
               </div>
             </div>
@@ -996,7 +999,7 @@ export default function TargetWizard() {
                 }`}
               >
                 <ArrowLeft className="w-4 h-4" />
-                Back
+                이전
               </button>
 
               {currentStep < steps.length ? (
@@ -1012,11 +1015,11 @@ export default function TargetWizard() {
                   {isLoading ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Loading...
+                      불러오는 중...
                     </>
                   ) : (
                     <>
-                      Next
+                      다음
                       <ArrowRight className="w-4 h-4" />
                     </>
                   )}
@@ -1027,7 +1030,7 @@ export default function TargetWizard() {
                   className="flex items-center gap-2 px-5 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
                 >
                   <Check className="w-4 h-4" />
-                  {isEditMode ? "Save Changes" : "Create"}
+                  {isEditMode ? "변경사항 저장" : "생성"}
                 </button>
               )}
             </div>
@@ -1093,17 +1096,17 @@ export default function TargetWizard() {
           <div className="flex-1 overflow-y-auto">
             <div className="max-w-4xl mx-auto px-6 py-8">
               <h2 className="text-lg font-semibold text-gray-900 mb-2">
-                Overview
+                기본 정보
               </h2>
               <p className="text-gray-500 mb-6">
-                Set up the basic information for your target dataset
+                타겟 데이터셋의 기본 정보를 설정합니다
               </p>
 
               <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-6">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Dataset Name *
+                      데이터셋 이름 *
                     </label>
                     <div className="relative">
                       <input
@@ -1115,7 +1118,7 @@ export default function TargetWizard() {
                             name: toGlueTableName(e.target.value),
                           })
                         }
-                        placeholder="Enter dataset name"
+                        placeholder="데이터셋 이름 입력"
                         className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
                           isNameDuplicate
                             ? "border-red-500 focus:ring-red-500"
@@ -1125,21 +1128,21 @@ export default function TargetWizard() {
                     </div>
                     {config.name && (
                       <p className="mt-1 text-xs text-gray-500">
-                        Glue/S3 identifier:{" "}
+                        Glue/S3 식별자:{" "}
                         <span className="font-mono">{glueTableName}</span>
                       </p>
                     )}
                     {isNameDuplicate && (
                       <p className="mt-1 text-sm text-red-500">
-                        This dataset name already exists. Please choose a
-                        different name.
+                        이미 존재하는 데이터셋 이름입니다. 다른 이름을
+                        입력해주세요.
                       </p>
                     )}
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Tags
+                      태그
                     </label>
                     <input
                       type="text"
@@ -1157,7 +1160,7 @@ export default function TargetWizard() {
                           setTagInput("");
                         }
                       }}
-                      placeholder="Type and press Enter"
+                      placeholder="입력 후 Enter"
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                     />
                     {config.tags.length > 0 && (
@@ -1190,14 +1193,14 @@ export default function TargetWizard() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Description
+                    설명
                   </label>
                   <textarea
                     value={config.description}
                     onChange={(e) =>
                       setConfig({ ...config, description: e.target.value })
                     }
-                    placeholder="Enter description (optional)"
+                    placeholder="설명 입력 (선택)"
                     rows={3}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
                   />
@@ -1220,7 +1223,7 @@ export default function TargetWizard() {
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                       <input
                         type="text"
-                        placeholder="Search datasets..."
+                        placeholder="데이터셋 검색..."
                         className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
                         value={sourceSearchTerm}
                         onChange={(e) => setSourceSearchTerm(e.target.value)}
@@ -1235,7 +1238,7 @@ export default function TargetWizard() {
                             : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                         }`}
                       >
-                        Source
+                        원본 데이터
                       </button>
                       <button
                         onClick={() => setSourceTab("target")}
@@ -1245,7 +1248,7 @@ export default function TargetWizard() {
                             : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                         }`}
                       >
-                        Target
+                        타겟 데이터
                       </button>
                     </div>
                   </div>
@@ -1258,16 +1261,16 @@ export default function TargetWizard() {
                       <tr>
                         <th className="w-10 px-3 py-2"></th>
                         <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase">
-                          Name
+                          이름
                         </th>
                         <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase">
-                          Owner
+                          담당자
                         </th>
                         <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase">
-                          Source Type
+                          원본 유형
                         </th>
                         <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase">
-                          Pattern
+                          패턴
                         </th>
                       </tr>
                     </thead>
@@ -1385,7 +1388,7 @@ export default function TargetWizard() {
                   }).length === 0 && (
                     <div className="text-center py-12 text-gray-500">
                       <Database className="w-10 h-10 mx-auto mb-3 text-gray-300" />
-                      <p className="text-sm">No datasets found</p>
+                      <p className="text-sm">데이터셋이 없습니다</p>
                     </div>
                   )}
                 </div>
@@ -1393,7 +1396,7 @@ export default function TargetWizard() {
                 {/* Footer */}
                 <div className="px-4 py-2 bg-gray-50 border-t border-gray-200">
                   <span className="text-xs text-gray-600">
-                    {selectedJobIds.length + selectedTargetIds.length} selected
+                    {selectedJobIds.length + selectedTargetIds.length}개 선택됨
                   </span>
                 </div>
               </div>
@@ -1410,7 +1413,7 @@ export default function TargetWizard() {
                         : "text-gray-600 hover:bg-gray-50"
                     }`}
                   >
-                    Details
+                    상세 정보
                   </button>
                   <button
                     onClick={() => setDetailPanelTab("schema")}
@@ -1420,7 +1423,7 @@ export default function TargetWizard() {
                         : "text-gray-600 hover:bg-gray-50"
                     }`}
                   >
-                    Schema
+                    스키마
                   </button>
                 </div>
 
@@ -1428,7 +1431,7 @@ export default function TargetWizard() {
                   <div className="flex-1 flex flex-col items-center justify-center text-gray-400 p-6">
                     <Database className="w-12 h-12 mb-3 opacity-30" />
                     <p className="text-sm text-center">
-                      Select a dataset to view details
+                      상세 정보를 보려면 데이터셋을 선택하세요
                     </p>
                   </div>
                 ) : (
@@ -1448,7 +1451,7 @@ export default function TargetWizard() {
                         <div className="space-y-4">
                           <div>
                             <h4 className="text-xs font-semibold text-gray-500 uppercase mb-1">
-                              Description
+                              설명
                             </h4>
                             <p className="text-sm text-gray-700">
                               {focusedDataset.description || "-"}
@@ -1456,7 +1459,7 @@ export default function TargetWizard() {
                           </div>
                           <div>
                             <h4 className="text-xs font-semibold text-gray-500 uppercase mb-1">
-                              Type
+                              유형
                             </h4>
                             <p className="text-sm text-gray-700 capitalize">
                               {focusedDataset.datasetType || "-"}
@@ -1464,7 +1467,7 @@ export default function TargetWizard() {
                           </div>
                           <div>
                             <h4 className="text-xs font-semibold text-gray-500 uppercase mb-1">
-                              Source
+                              원본
                             </h4>
                             <p className="text-sm text-gray-700">
                               {focusedDataset.source_type ||
@@ -1474,17 +1477,17 @@ export default function TargetWizard() {
                           </div>
                           <div>
                             <h4 className="text-xs font-semibold text-gray-500 uppercase mb-1">
-                              Columns
+                              컬럼
                             </h4>
                             {focusedDataset.destination?.type === "s3" &&
                             !focusedDataset.columns ? (
                               <p className="text-sm text-gray-500 italic">
-                                Loading schema from S3...
+                                S3에서 스키마를 불러오는 중...
                               </p>
                             ) : focusedDataset.destination?.type === "s3" &&
                               focusedDataset.columns?.length === 0 ? (
                               <p className="text-sm text-red-600">
-                                Failed to load schema
+                                스키마를 불러오지 못했습니다
                               </p>
                             ) : (
                               <p className="text-sm text-gray-700">
@@ -1495,7 +1498,7 @@ export default function TargetWizard() {
                           {focusedDataset.updated_at && (
                             <div>
                               <h4 className="text-xs font-semibold text-gray-500 uppercase mb-1">
-                                Last Modified
+                                최근 수정일
                               </h4>
                               <p className="text-sm text-gray-700">
                                 {new Date(
@@ -1521,18 +1524,18 @@ export default function TargetWizard() {
                                 <p className="text-xs text-amber-800">
                                   <strong>S3 Logs 스키마가 없습니다.</strong>
                                   <br />
-                                  Source Dataset 생성/수정 시 "Test Log Parsing"
-                                  섹션에서 regex pattern을 테스트하여 스키마를
+                                  원본 데이터셋 생성/수정 시 "로그 파싱 테스트"
+                                  섹션에서 정규식 패턴을 테스트하여 스키마를
                                   먼저 가져와주세요.
                                 </p>
                               </div>
                             )}
                           <div className="flex items-center justify-between mb-3">
                             <h4 className="text-xs font-semibold text-gray-500 uppercase">
-                              Columns
+                              컬럼
                             </h4>
                             <span className="text-xs text-gray-400">
-                              {focusedDataset.columns?.length || 0} columns
+                              컬럼 {focusedDataset.columns?.length || 0}개
                             </span>
                           </div>
                           {focusedDataset.destination?.type === "s3" &&
@@ -1540,7 +1543,7 @@ export default function TargetWizard() {
                             <div className="text-center py-8 text-gray-500">
                               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto mb-3"></div>
                               <p className="text-sm">
-                                Loading schema from S3...
+                                S3에서 스키마를 불러오는 중...
                               </p>
                             </div>
                           ) : focusedDataset.destination?.type === "s3" &&
@@ -1548,10 +1551,10 @@ export default function TargetWizard() {
                             <div className="text-center py-8 text-red-600">
                               <X className="w-8 h-8 mx-auto mb-3" />
                               <p className="text-sm font-medium">
-                                Failed to load schema
+                                스키마를 불러오지 못했습니다
                               </p>
                               <p className="text-xs text-gray-500 mt-1">
-                                Check S3 path and credentials
+                                S3 경로와 인증 정보를 확인하세요
                               </p>
                             </div>
                           ) : focusedDataset.columns?.length > 0 ? (
@@ -1560,10 +1563,10 @@ export default function TargetWizard() {
                                 <thead className="bg-gray-50">
                                   <tr>
                                     <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">
-                                      Column
+                                      컬럼
                                     </th>
                                     <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">
-                                      Type
+                                      유형
                                     </th>
                                   </tr>
                                 </thead>
@@ -1585,7 +1588,7 @@ export default function TargetWizard() {
                             </div>
                           ) : (
                             <div className="text-center py-8 text-gray-400">
-                              <p className="text-sm">No schema available</p>
+                              <p className="text-sm">사용 가능한 스키마가 없습니다</p>
                             </div>
                           )}
                         </>
@@ -1682,7 +1685,7 @@ export default function TargetWizard() {
                                     ][idx % 4],
                                   }}
                                 />
-                                Source {idx + 1}: {source.data?.name}
+                                원본 {idx + 1}: {source.data?.name}
                               </button>
                             ))}
                           </div>
@@ -1693,8 +1696,8 @@ export default function TargetWizard() {
                     <div className="flex items-center justify-center h-full">
                       <div className="max-w-md text-center text-gray-500">
                         <p className="text-sm">
-                          API schema가 아직 없습니다. Step 2에서
-                          Preview/Schema를 먼저 가져와주세요.
+                          API 스키마가 아직 없습니다. 소스 선택 단계에서
+                          미리보기/스키마를 먼저 가져와주세요.
                         </p>
                       </div>
                     </div>
@@ -1708,7 +1711,7 @@ export default function TargetWizard() {
                       }
                       sourceName={
                         sourceNodes[activeSourceTab].data?.name ||
-                        `Source ${activeSourceTab + 1}`
+                        `원본 ${activeSourceTab + 1}`
                       }
                       sourceId={sourceNodes[activeSourceTab].id}
                       sourceDatasetId={
@@ -1753,7 +1756,7 @@ export default function TargetWizard() {
                                     ][idx % 4],
                                   }}
                                 />
-                                Source {idx + 1}: {source.data?.name}
+                                원본 {idx + 1}: {source.data?.name}
                               </button>
                             ))}
                           </div>
@@ -1772,7 +1775,7 @@ export default function TargetWizard() {
           <div className="flex-1 overflow-y-auto">
             <div className="max-w-4xl mx-auto px-6 py-8">
               <h2 className="text-lg font-semibold text-gray-900 mb-6">
-                Schedule Configuration
+                스케줄 설정
               </h2>
 
               <TimestampColumnWarning
@@ -1796,20 +1799,20 @@ export default function TargetWizard() {
           <div className="flex-1 overflow-y-auto">
             <div className="max-w-4xl mx-auto px-6 py-8">
               <h2 className="text-lg font-semibold text-gray-900 mb-2">
-                Permission
+                권한
               </h2>
               <p className="text-sm text-gray-500 mb-6">
-                Select which roles can access this dataset
+                이 데이터셋에 접근할 수 있는 역할을 선택합니다
               </p>
 
               <div className="bg-white rounded-lg border border-gray-200 p-6">
                 <div className="mb-4">
                   <h3 className="text-sm font-semibold text-gray-900 mb-1">
-                    Dataset Access
+                    데이터셋 접근 권한
                   </h3>
                   <p className="text-xs text-gray-500">
-                    Users with selected roles will be able to view and query
-                    this dataset
+                    선택한 역할의 사용자는 이 데이터셋을 조회하고 SQL 분석에
+                    사용할 수 있습니다
                   </p>
                 </div>
 
@@ -1817,7 +1820,7 @@ export default function TargetWizard() {
                   <div className="flex items-center justify-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                     <span className="ml-3 text-sm text-gray-500">
-                      Loading roles...
+                      역할을 불러오는 중...
                     </span>
                   </div>
                 ) : (
@@ -1826,7 +1829,7 @@ export default function TargetWizard() {
                     {user?.role_id && (
                       <div className="mb-4">
                         <p className="text-xs font-medium text-gray-500 mb-2">
-                          Your Role (Auto-granted)
+                          내 역할 (자동 부여)
                         </p>
                         <div className="flex items-center p-3 border-2 border-green-200 bg-green-50 rounded-lg">
                           <input
@@ -1838,15 +1841,15 @@ export default function TargetWizard() {
                           <div className="ml-3 flex-1">
                             <div className="flex items-center gap-2">
                               <span className="text-sm font-medium text-gray-900">
-                                {user.role_name || "Your Role"}
+                                {user.role_name || "내 역할"}
                               </span>
                               <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                                Auto-granted
+                                자동 부여
                               </span>
                             </div>
                             <p className="text-xs text-gray-500 mt-0.5">
-                              You automatically have access to datasets you
-                              create
+                              내가 만든 데이터셋에는 자동으로 접근 권한이
+                              부여됩니다
                             </p>
                           </div>
                         </div>
@@ -1858,13 +1861,13 @@ export default function TargetWizard() {
                       <div className="text-center py-8">
                         <Shield className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                         <p className="text-sm text-gray-500">
-                          No other roles available
+                          추가로 선택할 역할이 없습니다
                         </p>
                       </div>
                     ) : (
                       <>
                         <p className="text-xs font-medium text-gray-500 mb-2">
-                          Additional Roles
+                          추가 역할
                         </p>
                         <div className="space-y-2">
                           {roles.map((role) => (
@@ -1912,9 +1915,9 @@ export default function TargetWizard() {
                 {selectedRoleIds.length > 0 && (
                   <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
                     <p className="text-xs text-blue-700">
-                      <strong>{selectedRoleIds.length}</strong> additional
-                      role(s) selected - Users with these roles will have access
-                      to this dataset
+                      추가 역할 <strong>{selectedRoleIds.length}</strong>개가
+                      선택되었습니다. 해당 역할의 사용자는 이 데이터셋에
+                      접근할 수 있습니다.
                     </p>
                   </div>
                 )}
@@ -1928,7 +1931,7 @@ export default function TargetWizard() {
           <div className="flex-1 overflow-y-auto">
             <div className="max-w-4xl mx-auto px-6 py-8">
               <h2 className="text-lg font-semibold text-gray-900 mb-2">
-                Review
+                검토
               </h2>
 
               <div className="space-y-6">
@@ -1936,7 +1939,7 @@ export default function TargetWizard() {
                 <div className="bg-white rounded-lg border border-gray-200 p-6">
                   <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
                     <Database className="w-4 h-4 text-orange-500" />
-                    Basic Information
+                    기본 정보
                   </h3>
                   <dl className="space-y-3">
                     <div className="flex items-center gap-3">
@@ -1948,7 +1951,7 @@ export default function TargetWizard() {
                     {isEditMode && editingDatasetId && (
                       <div className="flex items-center gap-3">
                         <dt className="text-sm text-gray-500 w-24">
-                          Dataset ID
+                          데이터셋 ID
                         </dt>
                         <dd className="text-sm font-mono bg-gray-100 px-2 py-1 rounded text-gray-900">
                           {editingDatasetId}
@@ -1956,14 +1959,14 @@ export default function TargetWizard() {
                       </div>
                     )}
                     <div className="flex items-center gap-3">
-                      <dt className="text-sm text-gray-500 w-24">Name</dt>
+                      <dt className="text-sm text-gray-500 w-24">이름</dt>
                       <dd className="text-sm font-medium text-gray-900">
                         {config.name}
                       </dd>
                     </div>
                     <div className="flex items-center gap-3">
                       <dt className="text-sm text-gray-500 w-24">
-                        Description
+                        설명
                       </dt>
                       <dd className="text-sm font-medium text-gray-900">
                         {config.description || "-"}
@@ -1976,7 +1979,7 @@ export default function TargetWizard() {
                   <div className="p-6 border-b border-gray-100 bg-gray-50/30">
                     <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
                       <GitBranch className="w-4 h-4 text-blue-500" />
-                      Output Schema
+                      출력 스키마
                     </h3>
                   </div>
 
@@ -1984,10 +1987,10 @@ export default function TargetWizard() {
                   <div className="bg-white">
                     <div className="px-6 py-3 border-b border-gray-100 flex items-center justify-between">
                       <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                        Target Columns
+                        타겟 컬럼
                       </h4>
                       <span className="text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded-md font-medium border border-blue-100">
-                        {targetSchema.length} fields
+                        필드 {targetSchema.length}개
                       </span>
                     </div>
                     <div className="divide-y divide-gray-100 max-h-[500px] overflow-y-auto">
@@ -2005,7 +2008,7 @@ export default function TargetWizard() {
                                 {col.name}
                               </span>
                               <span className="text-[10px] font-mono text-gray-400 italic">
-                                {col.expression || "Direct Map"}
+                                {col.expression || "직접 매핑"}
                               </span>
                             </div>
                           </div>
@@ -2023,13 +2026,13 @@ export default function TargetWizard() {
                   <div className="p-6 border-b border-gray-100 bg-gray-50/30">
                     <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
                       <Database className="w-4 h-4 text-green-500" />
-                      Destination Settings
+                      저장 위치 설정
                     </h3>
                   </div>
                   <div className="p-6 space-y-4">
                     <div>
                       <label className="text-xs font-medium text-gray-700 block mb-2">
-                        Output Path (S3)
+                        출력 경로 (S3)
                       </label>
                       <div className="flex items-center">
                         <span className="px-3 py-2 bg-gray-100 border border-r-0 border-gray-300 rounded-l-lg text-sm font-mono text-gray-600">
@@ -2046,14 +2049,14 @@ export default function TargetWizard() {
                         />
                       </div>
                       <p className="text-xs text-gray-500 mt-1">
-                        Optional sub-path. Dataset name will be appended
-                        automatically.
+                        선택 입력입니다. 데이터셋 이름은 자동으로 뒤에
+                        붙습니다.
                       </p>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="text-xs font-medium text-gray-700 block mb-2">
-                          Format
+                          저장 형식
                         </label>
                         <div className="px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600">
                           Delta Lake
@@ -2061,7 +2064,7 @@ export default function TargetWizard() {
                       </div>
                       <div>
                         <label className="text-xs font-medium text-gray-700 block mb-2">
-                          Glue Table Name
+                          Glue 테이블 이름
                         </label>
                         <div className="px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm font-mono text-gray-600">
                           {glueTableName}
@@ -2077,19 +2080,18 @@ export default function TargetWizard() {
                     <div>
                       <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
                         <Cog className="w-4 h-4 text-purple-500" />
-                        Partition Settings
+                        파티션 설정
                       </h3>
                       <p className="text-xs text-gray-500 mt-1">
-                        Select columns to partition the output data.
-                        Partitioning improves query performance for large
-                        datasets.
+                        출력 데이터를 나눌 파티션 컬럼을 선택합니다. 큰
+                        데이터셋에서는 파티션이 SQL 조회 성능을 높여줍니다.
                       </p>
                     </div>
                     <button
                       onClick={async () => {
                         if (targetSchema.length === 0) {
                           showToast(
-                            "No columns available for partitioning",
+                            "파티션에 사용할 수 있는 컬럼이 없습니다",
                             "error"
                           );
                           return;
@@ -2098,7 +2100,7 @@ export default function TargetWizard() {
                         setIsLoadingPartitionAI(true);
                         try {
                           const response = await aiApi.generateSQL(
-                            "Recommend partition columns",
+                            "파티션 컬럼 추천",
                             {
                               columns: targetSchema.map((col) => ({
                                 name: col.name,
@@ -2133,12 +2135,12 @@ export default function TargetWizard() {
                           if (columnNames.length > 0) {
                             setPartitionColumns(columnNames);
                             showToast(
-                              `AI recommended: ${columnNames.join(", ")}`,
+                              `AI 추천 컬럼: ${columnNames.join(", ")}`,
                               "success"
                             );
                           } else {
                             showToast(
-                              "AI could not recommend partition columns",
+                              "AI가 파티션 컬럼을 추천하지 못했습니다",
                               "error"
                             );
                           }
@@ -2147,7 +2149,7 @@ export default function TargetWizard() {
                             "AI partition recommendation failed:",
                             error
                           );
-                          showToast("Failed to get AI recommendation", "error");
+                          showToast("AI 추천을 가져오지 못했습니다", "error");
                         } finally {
                           setIsLoadingPartitionAI(false);
                         }
@@ -2160,17 +2162,17 @@ export default function TargetWizard() {
                           hover:from-indigo-100 hover:to-purple-100 transition-all
                           border border-indigo-200/50
                           disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="AI Partition Recommendation"
+                      title="AI 파티션 추천"
                     >
                       {isLoadingPartitionAI ? (
                         <>
                           <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-indigo-600"></div>
-                          <span>Recommending...</span>
+                          <span>추천 중...</span>
                         </>
                       ) : (
                         <>
                           <Sparkles size={14} />
-                          <span>AI Recommend</span>
+                          <span>AI 추천</span>
                         </>
                       )}
                     </button>
@@ -2180,7 +2182,7 @@ export default function TargetWizard() {
                     {targetSchema.length > 0 ? (
                       <div className="space-y-2">
                         <label className="text-xs font-medium text-gray-700 block mb-3">
-                          Select partition columns (optional)
+                          파티션 컬럼 선택 (선택)
                         </label>
                         <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
                           {targetSchema.map((col) => (
@@ -2223,7 +2225,7 @@ export default function TargetWizard() {
                         {partitionColumns.length > 0 && (
                           <div className="mt-4 p-3 bg-purple-50 rounded-lg border border-purple-100">
                             <p className="text-xs text-purple-700 font-medium mb-1">
-                              Selected partition columns:
+                              선택한 파티션 컬럼:
                             </p>
                             <div className="flex flex-wrap gap-1">
                               {partitionColumns.map((col, idx) => (
@@ -2255,8 +2257,8 @@ export default function TargetWizard() {
                       </div>
                     ) : (
                       <p className="text-sm text-gray-500">
-                        No columns available. Please define the output schema in
-                        the Process step.
+                        사용할 수 있는 컬럼이 없습니다. 가공 설정 단계에서 출력
+                        스키마를 먼저 정의해주세요.
                       </p>
                     )}
                   </div>

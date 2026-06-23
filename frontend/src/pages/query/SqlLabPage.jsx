@@ -14,8 +14,8 @@ const RESULTS_STORAGE_KEY = 'sqllab_last_results';
 const ENGINE_STORAGE_KEY = 'sqllab_query_engine';
 
 const ENGINE_PLACEHOLDERS = {
-    duckdb: "Enter your SQL query here...\nExample: SELECT * FROM read_parquet('s3://bucket/path/*.parquet') LIMIT 10",
-    trino: "Enter your SQL query here...\nExample: SELECT * FROM lakehouse.default.my_table "
+    duckdb: "SQL 쿼리를 입력하세요...\n예: SELECT * FROM read_parquet('s3://bucket/path/*.parquet') LIMIT 10",
+    trino: "SQL 쿼리를 입력하세요...\n예: SELECT * FROM lakehouse.default.my_table "
 };
 
 export default function SqlLabPage() {
@@ -116,7 +116,7 @@ export default function SqlLabPage() {
 
     const executeQuery = async (page = 1) => {
         if (!query.trim()) {
-            setError("Please enter a query");
+            setError("쿼리를 입력해주세요");
             return;
         }
 
@@ -264,10 +264,10 @@ export default function SqlLabPage() {
             link.click();
             URL.revokeObjectURL(url);
 
-            showToast(`${results.row_count} rows downloaded`, 'success');
+            showToast(`${results.row_count}개 행을 다운로드했습니다`, 'success');
         } catch (err) {
             console.error('CSV download failed:', err);
-            showToast('CSV download failed', 'error');
+            showToast('CSV 다운로드에 실패했습니다', 'error');
         }
     };
 
@@ -313,7 +313,7 @@ export default function SqlLabPage() {
                 <div className="p-4 border-b border-gray-200 min-w-0">
                     <div className="flex items-center justify-between min-w-0">
                         <div>
-                            <h2 className="font-semibold text-gray-900">SQL Lab</h2>
+                            <h2 className="font-semibold text-gray-900">SQL 분석</h2>
                             {selectedTable && (
                                 <p className="text-xs text-gray-500 mt-1">
                                     xflow_db.{selectedTable.name}
@@ -327,7 +327,7 @@ export default function SqlLabPage() {
                                 bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-600
                                 hover:from-indigo-100 hover:to-purple-100 transition-all
                                 border border-indigo-200/50"
-                            title="AI SQL Assistant"
+                            title="AI SQL 도우미"
                         >
                             <Sparkles size={14} />
                             <span>AI</span>
@@ -342,7 +342,7 @@ export default function SqlLabPage() {
                         <InlineAIInput
                             promptType="query_page"
                             metadata={{}}
-                            placeholder="Ask AI to generate SQL query..."
+                            placeholder="AI에게 SQL 쿼리 생성을 요청하세요..."
                             engine={engine}  // Pass current engine (duckdb or trino)
                             onApply={(sql) => {
                                 setQuery(sql);
@@ -369,8 +369,8 @@ export default function SqlLabPage() {
                                     value={queryLimit}
                                     onChange={(option) => setQueryLimit(option === 'All' ? 'All' : option)}
                                     getKey={(item) => item}
-                                    getLabel={(item) => String(item)}
-                                    placeholder="Select limit"
+                                    placeholder="제한 선택"
+                                    getLabel={(item) => (item === 'All' ? '전체' : String(item))}
                                     classNames={{
                                         container: 'w-20',
                                         button: 'px-2 py-1 text-xs min-h-0 h-auto',
@@ -388,7 +388,7 @@ export default function SqlLabPage() {
                                 {executing && (
                                     <div className="flex items-center gap-2 text-sm text-gray-600 bg-white/80 px-2 py-1 rounded">
                                         <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
-                                        <span>Executing...</span>
+                                        <span>실행 중...</span>
                                     </div>
                                 )}
 
@@ -405,7 +405,7 @@ export default function SqlLabPage() {
                                     ) : (
                                         <Play className="w-3.5 h-3.5" />
                                     )}
-                                    Run
+                                    실행
                                 </button>
                             </div>
                         </div>
@@ -418,7 +418,7 @@ export default function SqlLabPage() {
                         <div className="flex items-start gap-2">
                             <XCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
                             <div>
-                                <p className="font-medium text-red-900">Error</p>
+                                <p className="font-medium text-red-900">오류</p>
                                 <p className="text-sm text-red-700 mt-1">{error}</p>
                             </div>
                         </div>
@@ -460,16 +460,16 @@ export default function SqlLabPage() {
                                 {/* Results Header */}
                                 <div className="mb-4 flex items-center justify-between shrink-0">
                                     <span className="text-sm font-medium text-gray-900">
-                                        Results: {results.row_count} rows total
-                                        {engine === 'trino' && queryLimit === 'All' && ` · Showing page ${viewPage} (${getPageData().length} rows)`}
-                                        {results.was_limited && queryLimit !== 'All' && ` · limited to ${results.applied_limit}`}
+                                        결과: 총 {results.row_count}개 행
+                                        {engine === 'trino' && queryLimit === 'All' && ` · ${viewPage}페이지 표시 (${getPageData().length}개 행)`}
+                                        {results.was_limited && queryLimit !== 'All' && ` · ${results.applied_limit}개로 제한됨`}
                                     </span>
                                     <button
                                         onClick={downloadCSV}
                                         className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                                     >
                                         <Download className="w-4 h-4" />
-                                        Download CSV
+                                        CSV 다운로드
                                     </button>
                                 </div>
 
@@ -548,11 +548,11 @@ export default function SqlLabPage() {
                                                 {loadingMore ? (
                                                     <>
                                                         <Loader2 className="w-4 h-4 animate-spin" />
-                                                        Loading...
+                                                        불러오는 중...
                                                     </>
                                                 ) : (
                                                     <>
-                                                        Load More (1000 rows)
+                                                        더 불러오기 (1,000행)
                                                     </>
                                                 )}
                                             </button>
@@ -564,8 +564,8 @@ export default function SqlLabPage() {
                     ) : (
                         <div className="flex items-center justify-center h-full text-gray-400">
                             <div className="text-center">
-                                <p className="text-sm">No query results yet</p>
-                                <p className="text-xs mt-1">Execute a query to see results</p>
+                                <p className="text-sm">아직 조회 결과가 없습니다</p>
+                                <p className="text-xs mt-1">쿼리를 실행하면 결과가 표시됩니다</p>
                             </div>
                         </div>
                     )}

@@ -108,11 +108,11 @@ export default function S3LogProcessEditor({
     if (onTestStatusChange) onTestStatusChange(false);
 
     if (selectedFields.size === 0) {
-      setTestError("Please select at least one field to preview.");
+      setTestError("미리볼 필드를 최소 1개 선택해주세요.");
       return;
     }
     if (!sourceDatasetId) {
-      setTestError("Source dataset ID is required for testing.");
+      setTestError("테스트하려면 소스 데이터셋 ID가 필요합니다.");
       return;
     }
 
@@ -139,10 +139,10 @@ export default function S3LogProcessEditor({
         setIsTestSuccessful(true);
         if (onTestStatusChange) onTestStatusChange(true);
       } else {
-        setTestError(result.error || "Invalid configuration");
+        setTestError(result.error || "설정이 올바르지 않습니다");
       }
     } catch (err) {
-      console.error("Preview test failed:", err);
+      console.error("미리보기 테스트 실패:", err);
       setTestError(err.message);
     } finally {
       setIsTestLoading(false);
@@ -157,7 +157,7 @@ export default function S3LogProcessEditor({
           <div className="px-4 py-3 border-b border-slate-200 bg-emerald-50 flex items-center justify-between">
             <h3 className="text-xs font-bold text-emerald-900 uppercase tracking-wider flex items-center gap-2">
               <CheckSquare className="w-4 h-4" />
-              Field Selection
+              필드 선택
             </h3>
             <span className="text-xs text-emerald-600 font-semibold">
               {selectedFields.size}/{sourceSchema.length}
@@ -170,13 +170,13 @@ export default function S3LogProcessEditor({
               onClick={selectAllFields}
               className="text-xs px-2 py-1 bg-emerald-100 text-emerald-700 rounded hover:bg-emerald-200 font-medium"
             >
-              Select All
+              전체 선택
             </button>
             <button
               onClick={deselectAllFields}
               className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 font-medium"
             >
-              Deselect All
+              전체 해제
             </button>
           </div>
 
@@ -233,7 +233,7 @@ export default function S3LogProcessEditor({
           <div className="px-4 py-3 border-b border-slate-200 bg-blue-50 flex items-center gap-2">
             <Filter className="w-4 h-4 text-blue-700" />
             <h3 className="text-xs font-bold text-blue-900 uppercase tracking-wider">
-              Filter Configuration
+              필터 설정
             </h3>
           </div>
 
@@ -241,12 +241,12 @@ export default function S3LogProcessEditor({
             {/* Status Code Filter */}
             <div className="border border-gray-200 rounded-lg p-3 space-y-3">
               <h4 className="text-xs font-semibold text-gray-700 uppercase">
-                Status Code Range
+                상태 코드 범위
               </h4>
 
               <div>
                 <label className="block text-xs text-gray-600 mb-1">
-                  Field Name
+                  필드명
                 </label>
                 <select
                   value={filters.statusCodeField}
@@ -255,7 +255,7 @@ export default function S3LogProcessEditor({
                   }
                   className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">Select field...</option>
+                  <option value="">필드 선택...</option>
                   {sourceSchema.map((field, idx) => (
                     <option key={idx} value={field.name}>
                       {field.name}
@@ -267,7 +267,7 @@ export default function S3LogProcessEditor({
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="block text-xs text-gray-600 mb-1">
-                    Min
+                    최소
                   </label>
                   <input
                     type="number"
@@ -275,13 +275,13 @@ export default function S3LogProcessEditor({
                     onChange={(e) =>
                       handleFilterChange("statusCodeMin", e.target.value)
                     }
-                    placeholder="e.g., 400"
+                    placeholder="예: 400"
                     className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
                   <label className="block text-xs text-gray-600 mb-1">
-                    Max
+                    최대
                   </label>
                   <input
                     type="number"
@@ -289,7 +289,7 @@ export default function S3LogProcessEditor({
                     onChange={(e) =>
                       handleFilterChange("statusCodeMax", e.target.value)
                     }
-                    placeholder="e.g., 599"
+                    placeholder="예: 599"
                     className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -300,12 +300,12 @@ export default function S3LogProcessEditor({
             <div className="border border-gray-200 rounded-lg p-3 space-y-3">
               <h4 className="text-xs font-semibold text-gray-700 uppercase flex items-center gap-1">
                 <Calendar className="w-3 h-3" />
-                Timestamp Range
+                타임스탬프 범위
               </h4>
 
               <div>
                 <label className="block text-xs text-gray-600 mb-1">
-                  Field Name
+                  필드명
                 </label>
                 <select
                   value={filters.timestampField}
@@ -314,7 +314,7 @@ export default function S3LogProcessEditor({
                   }
                   className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">Select field...</option>
+                  <option value="">필드 선택...</option>
                   {sourceSchema.map((field, idx) => (
                     <option key={idx} value={field.name}>
                       {field.name}
@@ -326,7 +326,7 @@ export default function S3LogProcessEditor({
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="block text-xs text-gray-600 mb-1">
-                    From
+                    시작
                   </label>
                   <input
                     type="datetime-local"
@@ -338,7 +338,7 @@ export default function S3LogProcessEditor({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-600 mb-1">To</label>
+                  <label className="block text-xs text-gray-600 mb-1">종료</label>
                   <input
                     type="datetime-local"
                     value={filters.timestampTo}
@@ -357,14 +357,14 @@ export default function S3LogProcessEditor({
       {/* Preview Test Button */}
       <div className="px-4 py-3 bg-white border-t border-slate-200 flex items-center justify-between">
         <div className="text-xs text-gray-500">
-          Configure field selection and filters, then run preview test
+          필드와 필터를 설정한 뒤 미리보기 테스트를 실행하세요
         </div>
         <div className="flex items-center gap-3">
           {isTestSuccessful && (
             <div className="flex items-center gap-1 text-green-600 bg-green-50 px-3 py-1 rounded-lg border border-green-200">
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
               <span className="text-xs font-bold uppercase tracking-tight">
-                Test Passed
+                테스트 통과
               </span>
             </div>
           )}
@@ -382,13 +382,13 @@ export default function S3LogProcessEditor({
             ) : (
               <Play className="w-3.5 h-3.5" />
             )}
-            Run Preview Test
+            미리보기 테스트 실행
           </button>
           {isTestOpen && (
             <button
               onClick={() => setIsTestOpen(false)}
               className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all"
-              title="Close Preview"
+              title="미리보기 닫기"
             >
               <ChevronUp className="w-5 h-5" />
             </button>
@@ -414,12 +414,12 @@ export default function S3LogProcessEditor({
           <div className="flex items-center justify-between mb-3 pb-1 border-b border-slate-200">
             <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
               <span className="w-1 h-3 bg-indigo-500 rounded-full"></span>
-              Preview Result
+              미리보기 결과
             </h4>
             {isTestSuccessful && testResult && (
               <span className="text-xs font-bold text-green-600 flex items-center gap-1">
                 ✅ {testResult.filteredRecords} / {testResult.totalRecords}{" "}
-                records
+                건
               </span>
             )}
           </div>
@@ -430,7 +430,7 @@ export default function S3LogProcessEditor({
               {/* Before */}
               <div className="flex-1 flex flex-col min-w-0 w-0">
                 <h5 className="text-[9px] font-bold text-slate-400 uppercase mb-1.5 tracking-tight">
-                  Before (Parsed from Log)
+                  전: 로그에서 파싱한 데이터
                 </h5>
                 <div className="flex-1 overflow-auto border border-slate-200 rounded-xl bg-slate-50/50 max-w-full">
                   {testResult.beforeRows.length > 0 ? (
@@ -477,7 +477,7 @@ export default function S3LogProcessEditor({
                     </table>
                   ) : (
                     <div className="flex items-center justify-center h-full text-slate-400 text-xs italic">
-                      No data
+                      데이터 없음
                     </div>
                   )}
                 </div>
@@ -486,7 +486,7 @@ export default function S3LogProcessEditor({
               {/* After */}
               <div className="flex-1 flex flex-col min-w-0 w-0">
                 <h5 className="text-[9px] font-bold text-indigo-400 uppercase mb-1.5 tracking-tight">
-                  After (Selected Fields + Filters)
+                  후: 선택 필드 및 필터 적용
                 </h5>
                 <div className="flex-1 overflow-auto border border-indigo-200 rounded-xl bg-gradient-to-br from-indigo-50/50 to-purple-50/30 max-w-full">
                   {testResult.afterRows.length > 0 ? (
@@ -531,7 +531,7 @@ export default function S3LogProcessEditor({
                     </table>
                   ) : (
                     <div className="flex items-center justify-center h-full text-indigo-400 text-xs italic">
-                      No data after filtering
+                      필터 적용 후 데이터 없음
                     </div>
                   )}
                 </div>

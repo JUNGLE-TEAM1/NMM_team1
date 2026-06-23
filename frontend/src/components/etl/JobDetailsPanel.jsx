@@ -63,7 +63,7 @@ export default function JobDetailsPanel({
                 <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
                     <div className="px-6 py-4 border-b border-gray-200 flex items-center gap-3">
                         <Settings className="w-5 h-5 text-gray-500" />
-                        <h3 className="text-lg font-semibold text-gray-900">Basic Information</h3>
+                        <h3 className="text-lg font-semibold text-gray-900">기본 정보</h3>
                     </div>
                     <div className="p-6 space-y-5">
                         {jobType === "streaming" && (
@@ -78,7 +78,7 @@ export default function JobDetailsPanel({
                         )}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Description
+                                설명
                             </label>
                             <textarea
                                 value={description}
@@ -88,7 +88,7 @@ export default function JobDetailsPanel({
                                 }}
                                 rows={3}
                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                                placeholder="Describe what this ETL job does..."
+                                placeholder="이 ETL 작업이 하는 일을 설명하세요..."
                             />
                         </div>
                     </div>
@@ -98,7 +98,7 @@ export default function JobDetailsPanel({
                 <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
                     <div className="px-6 py-4 border-b border-gray-200 flex items-center gap-3">
                         <Database className="w-5 h-5 text-gray-500" />
-                        <h3 className="text-lg font-semibold text-gray-900">Job Type</h3>
+                        <h3 className="text-lg font-semibold text-gray-900">작업 유형</h3>
                     </div>
                     <div className="p-6">
                         <div className="grid grid-cols-2 gap-4">
@@ -113,7 +113,7 @@ export default function JobDetailsPanel({
                                 <div className="flex-1">
                                     <span className={`block font-medium ${jobType === 'batch' ? 'text-blue-700' : 'text-gray-700'
                                         }`}>
-                                        Batch ETL
+                                        배치 ETL
                                     </span>
                                     <span className="block text-sm text-gray-500 mt-1">
                                         스케줄 또는 수동으로 전체 데이터 처리
@@ -140,7 +140,7 @@ export default function JobDetailsPanel({
                                     <div className="flex items-center gap-2">
                                         <span className={`font-medium ${jobType === 'cdc' ? 'text-green-700' : 'text-gray-700'
                                             }`}>
-                                            CDC (Streaming)
+                                            CDC (스트리밍)
                                         </span>
                                         <Zap className={`w-4 h-4 ${jobType === 'cdc' ? 'text-green-500' : 'text-yellow-500'
                                             }`} />
@@ -160,7 +160,7 @@ export default function JobDetailsPanel({
                         </div>
 
                         <p className="mt-4 text-xs text-gray-500 bg-gray-50 px-3 py-2 rounded">
-                            💡 타입을 선택한 후 <strong>Save</strong> 버튼을 눌러야 적용됩니다.
+                            타입을 선택한 후 <strong>저장</strong> 버튼을 눌러야 적용됩니다.
                             {jobType === 'cdc' && ' CDC 선택 시 저장과 함께 실시간 동기화가 시작됩니다.'}
                         </p>
                     </div>
@@ -170,7 +170,7 @@ export default function JobDetailsPanel({
                 <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
                     <div className="px-6 py-4 border-b border-gray-200 flex items-center gap-3">
                         <Clock className="w-5 h-5 text-gray-500" />
-                        <h3 className="text-lg font-semibold text-gray-900">Incremental Load Strategy</h3>
+                        <h3 className="text-lg font-semibold text-gray-900">증분 적재 전략</h3>
                     </div>
                     <div className="p-6 space-y-5">
                         <div className="flex items-start gap-4">
@@ -194,10 +194,10 @@ export default function JobDetailsPanel({
                             </div>
                             <div className="flex-1">
                                 <label htmlFor="incremental-mode" className="font-medium text-gray-700">
-                                    Enable Incremental Load
+                                    증분 적재 사용
                                 </label>
                                 <p className="text-sm text-gray-500">
-                                    Only process new data based on a timestamp column (Watermark strategy).
+                                    타임스탬프 컬럼을 기준으로 신규 데이터만 처리합니다. (워터마크 전략)
                                 </p>
                             </div>
                         </div>
@@ -205,7 +205,7 @@ export default function JobDetailsPanel({
                         {incrementalEnabled && (
                             <div className="pl-8">
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Timestamp Column Name
+                                    타임스탬프 컬럼명
                                 </label>
                                 <input
                                     type="text"
@@ -220,10 +220,10 @@ export default function JobDetailsPanel({
                                         });
                                     }}
                                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    placeholder="e.g., updated_at, created_at"
+                                    placeholder="예: updated_at, created_at"
                                 />
                                 <p className="mt-2 text-xs text-gray-400">
-                                    Ensure this column exists in your source table/collection and contains comparable timestamps.
+                                    이 컬럼이 소스 테이블/컬렉션에 존재하고 비교 가능한 타임스탬프 값을 담고 있어야 합니다.
                                 </p>
                             </div>
                         )}
@@ -234,12 +234,12 @@ export default function JobDetailsPanel({
                 <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
                     <div className="px-6 py-4 border-b border-gray-200 flex items-center gap-3">
                         <RefreshCw className="w-5 h-5 text-gray-500" />
-                        <h3 className="text-lg font-semibold text-gray-900">Execution Settings</h3>
+                        <h3 className="text-lg font-semibold text-gray-900">실행 설정</h3>
                     </div>
                     <div className="p-6">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Max Retries
+                                최대 재시도 횟수
                             </label>
                             <div className="flex items-center gap-3">
                                 <input
@@ -254,10 +254,10 @@ export default function JobDetailsPanel({
                                     }}
                                     className="w-32 px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 />
-                                <span className="text-sm text-gray-500">attempts</span>
+                                <span className="text-sm text-gray-500">회</span>
                             </div>
                             <p className="mt-2 text-xs text-gray-400">
-                                Number of retry attempts if job fails (0-10)
+                                작업 실패 시 다시 시도할 횟수입니다. (0-10)
                             </p>
                         </div>
                     </div>

@@ -37,44 +37,44 @@ import S3JSONPreviewConfig from "../../components/sources/S3JSONPreviewConfig";
 import S3ParquetPreviewConfig from "../../components/sources/S3ParquetPreviewConfig";
 
 const STEPS = [
-  { id: 1, name: "Select Source", icon: Database },
-  { id: 2, name: "Configure", icon: Settings },
-  { id: 3, name: "Review", icon: Check },
+  { id: 1, name: "원본 선택", icon: Database },
+  { id: 2, name: "설정", icon: Settings },
+  { id: 3, name: "검토", icon: Check },
 ];
 
 const SOURCE_OPTIONS = [
   {
     id: "postgres",
     name: "PostgreSQL",
-    description: "Connect to PostgreSQL database",
+    description: "PostgreSQL 데이터베이스에 연결",
     icon: SiPostgresql,
     color: "#4169E1",
   },
   {
     id: "mongodb",
     name: "MongoDB",
-    description: "Connect to MongoDB database",
+    description: "MongoDB 데이터베이스에 연결",
     icon: SiMongodb,
     color: "#47A248",
   },
   {
     id: "s3",
     name: "Amazon S3",
-    description: "Connect to S3 bucket",
+    description: "S3 버킷에 연결",
     icon: Archive,
     color: "#FF9900",
   },
   {
     id: "api",
     name: "REST API",
-    description: "Connect to any RESTful API",
+    description: "REST API에 연결",
     icon: Globe,
     color: "#10B981",
   },
   {
     id: "kafka",
     name: "Kafka",
-    description: "Stream data from Apache Kafka",
+    description: "Kafka 스트림 데이터에 연결",
     icon: SiApachekafka,
     color: "#231F20",
   },
@@ -739,12 +739,12 @@ export default function SourceWizard() {
               </button>
               <div>
                 <h1 className="text-xl font-semibold text-gray-900">
-                  {isEditMode ? "Edit Source Dataset" : "Create Source Dataset"}
+                  {isEditMode ? "원본 데이터셋 수정" : "원본 데이터셋 생성"}
                 </h1>
                 <p className="text-sm text-gray-500">
                   {isEditMode
-                    ? "Modify your source dataset configuration"
-                    : "Import data from external sources"}
+                    ? "원본 데이터셋 설정을 수정합니다"
+                    : "외부 원본 데이터를 등록합니다"}
                 </p>
               </div>
             </div>
@@ -760,7 +760,7 @@ export default function SourceWizard() {
                   }`}
               >
                 <ArrowLeft className="w-4 h-4" />
-                Back
+                이전
               </button>
 
               {currentStep < STEPS.length ? (
@@ -775,11 +775,11 @@ export default function SourceWizard() {
                   {isLoading ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Loading...
+                      불러오는 중...
                     </>
                   ) : (
                     <>
-                      Next
+                      다음
                       <ArrowRight className="w-4 h-4" />
                     </>
                   )}
@@ -797,8 +797,8 @@ export default function SourceWizard() {
                   {isLoading
                     ? "Saving..."
                     : isEditMode
-                      ? "Save Changes"
-                      : "Create"}
+                      ? "변경사항 저장"
+                      : "생성"}
                 </button>
               )}
             </div>
@@ -854,10 +854,10 @@ export default function SourceWizard() {
           {currentStep === 1 && (
             <div>
               <h2 className="text-lg font-semibold text-gray-900 mb-2">
-                Select a data source
+                원본 데이터 선택
               </h2>
               <p className="text-gray-500 mb-6">
-                Choose the type of data source you want to connect
+                연결할 원본 데이터 유형을 선택하세요
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -877,7 +877,7 @@ export default function SourceWizard() {
                   >
                     {source.comingSoon && (
                       <span className="absolute top-4 right-4 text-sm font-medium text-gray-500 bg-gray-200 px-3 py-1 rounded-full">
-                        Coming Soon
+                    준비 중
                       </span>
                     )}
                     <source.icon
@@ -913,16 +913,16 @@ export default function SourceWizard() {
           {currentStep === 2 && (
             <div>
               <h2 className="text-lg font-semibold text-gray-900 mb-2">
-                Configure your source
+                원본 데이터 설정
               </h2>
               <p className="text-gray-500 mb-6">
-                Set up the connection details for {selectedSource?.name}
+                {selectedSource?.name} 연결 정보를 설정하세요
               </p>
 
               <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Dataset Name *
+                    데이터셋 이름 *
                   </label>
                   <input
                     type="text"
@@ -930,21 +930,21 @@ export default function SourceWizard() {
                     onChange={(e) =>
                       setConfig({ ...config, name: e.target.value })
                     }
-                    placeholder="Enter dataset name"
+                    placeholder="데이터셋 이름 입력"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Description
+                    설명
                   </label>
                   <textarea
                     value={config.description}
                     onChange={(e) =>
                       setConfig({ ...config, description: e.target.value })
                     }
-                    placeholder="Enter description (optional)"
+                    placeholder="설명 입력(선택)"
                     rows={3}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
                   />
@@ -958,7 +958,7 @@ export default function SourceWizard() {
                     connections={connections}
                     selectedId={config.connectionId}
                     isLoading={loadingConnections}
-                    placeholder="Select a connection..."
+                    placeholder="연결 선택..."
                     onSelect={(conn) => {
                       if (!conn) {
                         return;
@@ -1010,17 +1010,17 @@ export default function SourceWizard() {
                       disabled={!config.connectionId}
                       placeholder={
                         loadingTables
-                          ? "Loading tables..."
+                          ? "테이블 불러오는 중..."
                           : !config.connectionId
-                            ? "Select a connection first"
+                            ? "먼저 연결을 선택하세요"
                             : tables.length === 0
-                              ? "No tables available"
-                              : "Select a table..."
+                              ? "사용 가능한 테이블이 없습니다"
+                              : "테이블 선택..."
                       }
                       emptyMessage={
                         !config.connectionId
-                          ? "Select a connection first"
-                          : "No tables available"
+                          ? "먼저 연결을 선택하세요"
+                          : "사용 가능한 테이블이 없습니다"
                       }
                       classNames={{
                         button:
@@ -1068,7 +1068,7 @@ export default function SourceWizard() {
                       }}
                       getKey={(option) => option.id}
                       getLabel={(option) => option.label}
-                      placeholder="Select a format..."
+                      placeholder="포맷 선택..."
                       classNames={{
                         button:
                           "px-4 py-2.5 rounded-xl border-emerald-200/70 bg-gradient-to-r from-white via-emerald-50/50 to-emerald-100/40 shadow-sm shadow-emerald-100/70 hover:shadow-md hover:shadow-emerald-200/70 focus:ring-2 focus:ring-emerald-400/60 focus:border-emerald-300 transition-all",
@@ -1214,17 +1214,17 @@ export default function SourceWizard() {
                       disabled={!config.connectionId || kafkaTopicsLoading}
                       placeholder={
                         kafkaTopicsLoading
-                          ? "Loading topics..."
+                          ? "토픽 불러오는 중..."
                           : !config.connectionId
-                            ? "Select a connection first"
+                            ? "먼저 연결을 선택하세요"
                             : kafkaTopics.length === 0
-                              ? "No topics available"
-                              : "Select a topic..."
+                              ? "사용 가능한 토픽이 없습니다"
+                              : "토픽 선택..."
                       }
                       emptyMessage={
                         !config.connectionId
-                          ? "Select a connection first"
-                          : "No topics available"
+                          ? "먼저 연결을 선택하세요"
+                          : "사용 가능한 토픽이 없습니다"
                       }
                       classNames={{
                         button:
@@ -1259,7 +1259,7 @@ export default function SourceWizard() {
                       }}
                       getKey={(option) => option.id}
                       getLabel={(option) => option.label}
-                      placeholder="Select a format..."
+                      placeholder="포맷 선택..."
                       classNames={{
                         button:
                           "px-4 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500",
@@ -1271,8 +1271,7 @@ export default function SourceWizard() {
                       }}
                     />
                     <p className="mt-1 text-xs text-gray-500">
-                      JSON supports schema inference and columns, Raw stores as
-                      string.
+                      JSON은 스키마 추론과 컬럼 분리를 지원하고, Raw는 문자열로 저장합니다.
                     </p>
 
                     {config.format === "raw" && (
@@ -1280,13 +1279,13 @@ export default function SourceWizard() {
                         {/* Raw Samples Preview */}
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Recent Raw Messages (5 samples)
+                            최근 Raw 메시지 (샘플 5개)
                           </label>
                           <div className="bg-gray-900 text-gray-100 rounded-lg p-3 text-xs font-mono overflow-auto max-h-40">
                             {rawSamplesLoading ? (
                               <div className="flex items-center gap-2 text-gray-400">
                                 <div className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
-                                Loading samples...
+                                샘플 불러오는 중...
                               </div>
                             ) : rawSamples.length > 0 ? (
                               <div className="space-y-1">
@@ -1297,14 +1296,14 @@ export default function SourceWizard() {
                                 ))}
                               </div>
                             ) : (
-                              <span className="text-gray-500 italic">No samples available or topic is empty.</span>
+                              <span className="text-gray-500 italic">사용 가능한 샘플이 없거나 토픽이 비어 있습니다.</span>
                             )}
                           </div>
                         </div>
 
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Regex Pattern
+                            Regex 패턴
                           </label>
                           <textarea
                             value={config.customRegex}
@@ -1319,8 +1318,7 @@ export default function SourceWizard() {
                             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono text-sm resize-y"
                           />
                           <p className="mt-1 text-xs text-gray-500">
-                            Use Python-style named groups (?P&lt;name&gt;pattern)
-                            to extract fields.
+                            Python 스타일 named group (?P&lt;name&gt;pattern)을 사용해 필드를 추출합니다.
                           </p>
                         </div>
                       </div>
@@ -1338,7 +1336,7 @@ export default function SourceWizard() {
                           }
                           className="px-3 py-1.5 text-sm rounded-md border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50"
                         >
-                          {kafkaSchemaLoading ? "Loading..." : "Fetch Schema"}
+                          {kafkaSchemaLoading ? "불러오는 중..." : "스키마 가져오기"}
                         </button>
                       </div>
                     )}
@@ -1355,7 +1353,7 @@ export default function SourceWizard() {
                           }
                           className="px-3 py-1.5 text-sm rounded-md border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50"
                         >
-                          {kafkaSchemaLoading ? "Loading..." : "Test Regex"}
+                          {kafkaSchemaLoading ? "불러오는 중..." : "정규식 테스트"}
                         </button>
                       </div>
                     )}
@@ -1375,7 +1373,7 @@ export default function SourceWizard() {
                       config.connectionId &&
                       kafkaTopics.length === 0 && (
                         <p className="mt-2 text-xs text-gray-500 text-right">
-                          No topics found for this connection.
+                          이 연결에서 토픽을 찾을 수 없습니다.
                         </p>
                       )}
                     {config.topic &&
@@ -1524,7 +1522,7 @@ export default function SourceWizard() {
                               <div className="px-4 pb-4 pt-0">
                                 <div>
                                   <label className="block text-xs font-medium text-gray-600 mb-1">
-                                    Description
+                                    설명
                                   </label>
                                   <input
                                     type="text"
@@ -1536,7 +1534,7 @@ export default function SourceWizard() {
                                         e.target.value
                                       )
                                     }
-                                    placeholder="Enter column description"
+                                    placeholder="컬럼 설명 입력"
                                     className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
                                   />
                                 </div>
@@ -1555,10 +1553,10 @@ export default function SourceWizard() {
           {currentStep === 3 && (
             <div>
               <h2 className="text-lg font-semibold text-gray-900 mb-2">
-                Review Configuration
+                설정 검토
               </h2>
               <p className="text-gray-500 mb-6">
-                Review your source configuration before saving
+                저장하기 전에 원본 데이터 설정을 확인하세요
               </p>
 
               <div className="space-y-6">
@@ -1573,7 +1571,7 @@ export default function SourceWizard() {
                     <div className="grid grid-cols-2 gap-6">
                       <div>
                         <label className="text-xs font-medium text-gray-500">
-                          Source Type
+                          원본 유형
                         </label>
                         <div className="mt-1 flex items-center gap-2">
                           {selectedSource && (
@@ -1591,7 +1589,7 @@ export default function SourceWizard() {
                       </div>
                       <div>
                         <label className="text-xs font-medium text-gray-500">
-                          Dataset Name
+                          데이터셋 이름
                         </label>
                         <p className="mt-1 text-gray-900 font-medium">
                           {config.name}
@@ -1689,7 +1687,7 @@ export default function SourceWizard() {
                             </label>
                             <p className="mt-1 text-gray-900">
                               {config.pagination?.type === "none"
-                                ? "No Pagination"
+                                ? "페이지네이션 없음"
                                 : config.pagination?.type === "offset_limit"
                                   ? "Offset/Limit"
                                   : config.pagination?.type === "page"
@@ -1713,7 +1711,7 @@ export default function SourceWizard() {
                     {config.description && (
                       <div>
                         <label className="text-xs font-medium text-gray-500">
-                          Description
+                          설명
                         </label>
                         <p className="mt-1 text-gray-600">
                           {config.description}
@@ -1776,7 +1774,7 @@ export default function SourceWizard() {
           >
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-xl">
               <h2 className="text-lg font-semibold text-gray-900">
-                Create New Connection
+                새 연결 생성
               </h2>
               <button
                 onClick={() => setShowCreateConnectionModal(false)}

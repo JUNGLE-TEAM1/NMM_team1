@@ -12,7 +12,7 @@ export default function ConnectionCombobox({
     connections = [],
     selectedId,
     isLoading = false,
-    placeholder = 'Choose a connection',
+    placeholder = '연결 선택',
     onSelect,
     onCreate,
     onDelete,
@@ -46,7 +46,7 @@ export default function ConnectionCombobox({
                 getLabel={(conn) => `${conn.name} (${conn.type})`}
                 placeholder={placeholder}
                 isLoading={isLoading}
-                emptyMessage="No connections available"
+                emptyMessage="사용 가능한 연결이 없습니다"
                 renderItem={(conn) => (
                     <>
                         <span className="text-sm text-gray-900 truncate">
@@ -63,7 +63,7 @@ export default function ConnectionCombobox({
                         <button
                             onClick={(e) => handleDeleteClick(e, conn.id)}
                             className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                            title="Delete connection"
+                            title="연결 삭제"
                         >
                             <Trash2 className="w-4 h-4" />
                         </button>
@@ -76,7 +76,7 @@ export default function ConnectionCombobox({
                             className="w-full px-3 py-2 flex items-center gap-2 text-blue-600 hover:bg-blue-50 transition-colors"
                         >
                             <Plus className="w-4 h-4" />
-                            <span className="text-sm font-medium">Create new connection</span>
+                            <span className="text-sm font-medium">새 연결 생성</span>
                         </button>
                     )
                 }
@@ -90,10 +90,10 @@ export default function ConnectionCombobox({
                     setPendingDeleteId(null);
                 }}
                 onConfirm={handleDeleteConfirm}
-                title="Delete Connection"
-                message={`Are you sure you want to delete "${pendingConnection?.name}"? This action cannot be undone.`}
-                confirmText="Delete"
-                cancelText="Cancel"
+                title="연결 삭제"
+                message={`"${pendingConnection?.name}" 연결을 삭제할까요? 이 작업은 되돌릴 수 없습니다.`}
+                confirmText="삭제"
+                cancelText="취소"
                 variant="danger"
             />
         </>

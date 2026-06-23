@@ -71,9 +71,9 @@ export default function AICopilotPanel() {
             </div>
             <div>
               <h2 className="font-semibold text-gray-900 text-sm">
-                AI Assistant
+                AI 도우미
               </h2>
-              <p className="text-xs text-gray-500">Text-to-SQL</p>
+              <p className="text-xs text-gray-500">자연어 SQL 변환</p>
             </div>
           </div>
           <div className="flex items-center gap-1">
@@ -81,7 +81,7 @@ export default function AICopilotPanel() {
               <button
                 onClick={clearChat}
                 className="p-2 hover:bg-white/60 rounded-lg text-gray-400 hover:text-red-500 transition-colors"
-                title="Clear chat"
+                title="대화 지우기"
               >
                 <Trash2 size={16} />
               </button>
@@ -122,7 +122,7 @@ export default function AICopilotPanel() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask a question about your data..."
+              placeholder="데이터에 대해 질문하세요..."
               disabled={isLoading}
               className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm
                 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent
@@ -156,15 +156,15 @@ function EmptyState() {
         <Sparkles size={28} className="text-indigo-500" />
       </div>
       <h3 className="font-semibold text-gray-900 mb-2">
-        AI SQL Assistant
+        AI SQL 도우미
       </h3>
       <p className="text-sm text-gray-500 mb-6 max-w-[240px]">
-        Ask questions about your data in natural language and get SQL queries.
+        자연어로 데이터에 대해 질문하면 SQL 쿼리를 생성합니다.
       </p>
       <div className="space-y-2 w-full max-w-[280px]">
-        <ExamplePrompt text="Show me top 10 customers by revenue" />
-        <ExamplePrompt text="How many orders were placed last month?" />
-        <ExamplePrompt text="List all users with email domain gmail.com" />
+        <ExamplePrompt text="매출 기준 상위 고객 10명을 보여줘" />
+        <ExamplePrompt text="지난달 주문 수는 몇 건이야?" />
+        <ExamplePrompt text="gmail.com 이메일 도메인을 가진 사용자를 보여줘" />
       </div>
     </div>
   );
@@ -191,7 +191,7 @@ function LoadingIndicator() {
       </div>
       <div className="bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
         <div className="flex items-center gap-2 text-sm text-gray-500">
-          <span>Generating SQL</span>
+          <span>SQL 생성 중</span>
           <span className="flex gap-1">
             <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
             <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />

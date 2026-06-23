@@ -31,7 +31,7 @@ export const CatalogHeader = ({ catalogItem, onBack }) => {
                         <h1 className="text-lg font-semibold text-gray-900">
                             {catalogItem.name}
                         </h1>
-                        <p className="text-sm text-gray-500">Data Lineage</p>
+                        <p className="text-sm text-gray-500">데이터 흐름</p>
                     </div>
                 </div>
             </div>
@@ -42,7 +42,7 @@ export const CatalogHeader = ({ catalogItem, onBack }) => {
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-500 bg-gray-100 px-3 py-1.5 rounded-lg">
                     <Clock className="w-4 h-4" />
-                    <span>{catalogItem.schedule || "Manual"}</span>
+                    <span>{catalogItem.schedule || "수동 실행"}</span>
                 </div>
                 <div className="flex gap-2">
                     {catalogItem.tags?.slice(0, 3).map((tag) => (

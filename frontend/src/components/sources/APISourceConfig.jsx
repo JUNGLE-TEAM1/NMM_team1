@@ -44,18 +44,18 @@ export default function APISourceConfig({
   const paginationTypes = [
     {
       value: "none",
-      label: "No Pagination",
-      description: "Single request, no pagination",
+      label: "페이지네이션 없음",
+      description: "단일 요청으로 가져오기",
     },
     {
       value: "offset_limit",
-      label: "Offset/Limit",
+      label: "오프셋/제한",
       description: "offset=0&limit=100",
     },
-    { value: "page", label: "Page Number", description: "page=1&per_page=100" },
+    { value: "page", label: "페이지 번호", description: "page=1&per_page=100" },
     {
       value: "cursor",
-      label: "Cursor-based",
+      label: "커서 기반",
       description: "cursor=next_token",
     },
   ];
@@ -112,12 +112,12 @@ export default function APISourceConfig({
 
   const handleFetchPreview = async () => {
     if (!connectionId) {
-      setPreviewError("Please select a connection first");
+      setPreviewError("먼저 연결을 선택해주세요");
       return;
     }
 
     if (!endpoint) {
-      setPreviewError("Please enter an API endpoint");
+      setPreviewError("API 엔드포인트를 입력해주세요");
       return;
     }
 
@@ -147,7 +147,7 @@ export default function APISourceConfig({
         onColumnsChange(result.schema);
       }
     } catch (err) {
-      console.error("Failed to fetch preview:", err);
+      console.error("미리보기 가져오기 실패:", err);
       setPreviewError(err.message);
     } finally {
       setPreviewLoading(false);
@@ -159,7 +159,7 @@ export default function APISourceConfig({
       <div className="flex items-center gap-3 p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
         <Globe className="w-5 h-5 text-yellow-600" />
         <p className="text-sm text-yellow-700">
-          Please select a connection first to configure API source
+          API 소스를 설정하려면 먼저 연결을 선택해주세요
         </p>
       </div>
     );
@@ -170,7 +170,7 @@ export default function APISourceConfig({
       {/* Endpoint */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Endpoint Path *
+          엔드포인트 경로 *
         </label>
         <input
           type="text"
@@ -180,14 +180,14 @@ export default function APISourceConfig({
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
         />
         <p className="mt-1 text-xs text-gray-500">
-          The API endpoint path (base URL is configured in the connection)
+          API 엔드포인트 경로입니다. 기본 URL은 연결 설정에서 관리됩니다.
         </p>
       </div>
 
       {/* HTTP Method */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          HTTP Method
+          HTTP 메서드
         </label>
         <div className="relative">
           <button
@@ -237,7 +237,7 @@ export default function APISourceConfig({
       {/* Response Data Path (JSONPath) */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Response Data Path (JSONPath)
+          응답 데이터 경로 (JSONPath)
         </label>
         <input
           type="text"
@@ -247,15 +247,14 @@ export default function APISourceConfig({
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
         />
         <p className="mt-1 text-xs text-gray-500">
-          JSONPath to extract data from response (leave empty if response is
-          already an array)
+          응답에서 데이터를 추출할 JSONPath입니다. 응답 자체가 배열이면 비워두세요.
         </p>
       </div>
 
       {/* Pagination Settings */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Pagination Type
+          페이지네이션 방식
         </label>
         <div className="relative">
           <button
@@ -307,13 +306,13 @@ export default function APISourceConfig({
       {paginationType === "offset_limit" && (
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-4">
           <h4 className="text-sm font-medium text-gray-700">
-            Offset/Limit Configuration
+            오프셋/제한 설정
           </h4>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">
-                Offset Parameter Name
+                오프셋 파라미터명
               </label>
               <input
                 type="text"
@@ -327,7 +326,7 @@ export default function APISourceConfig({
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">
-                Limit Parameter Name
+                제한 파라미터명
               </label>
               <input
                 type="text"
@@ -341,7 +340,7 @@ export default function APISourceConfig({
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">
-                Page Size
+                페이지 크기
               </label>
               <input
                 type="number"
@@ -359,7 +358,7 @@ export default function APISourceConfig({
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">
-                Start Offset
+                시작 오프셋
               </label>
               <input
                 type="number"
@@ -381,13 +380,13 @@ export default function APISourceConfig({
       {paginationType === "page" && (
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-4">
           <h4 className="text-sm font-medium text-gray-700">
-            Page Number Configuration
+            페이지 번호 설정
           </h4>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">
-                Page Parameter Name
+                페이지 파라미터명
               </label>
               <input
                 type="text"
@@ -401,7 +400,7 @@ export default function APISourceConfig({
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">
-                Per Page Parameter Name
+                페이지당 개수 파라미터명
               </label>
               <input
                 type="text"
@@ -415,7 +414,7 @@ export default function APISourceConfig({
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">
-                Page Size
+                페이지 크기
               </label>
               <input
                 type="number"
@@ -433,7 +432,7 @@ export default function APISourceConfig({
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">
-                Start Page
+                시작 페이지
               </label>
               <input
                 type="number"
@@ -455,13 +454,13 @@ export default function APISourceConfig({
       {paginationType === "cursor" && (
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-4">
           <h4 className="text-sm font-medium text-gray-700">
-            Cursor-based Configuration
+            커서 기반 설정
           </h4>
 
           <div className="space-y-4">
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">
-                Cursor Parameter Name
+                커서 파라미터명
               </label>
               <input
                 type="text"
@@ -475,7 +474,7 @@ export default function APISourceConfig({
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">
-                Next Cursor JSONPath
+                다음 커서 JSONPath
               </label>
               <input
                 type="text"
@@ -487,12 +486,12 @@ export default function APISourceConfig({
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
               <p className="mt-1 text-xs text-gray-500">
-                Path to extract next cursor from response
+                응답에서 다음 커서를 추출할 경로입니다.
               </p>
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">
-                Start Cursor (optional)
+                시작 커서 (선택)
               </label>
               <input
                 type="text"
@@ -500,7 +499,7 @@ export default function APISourceConfig({
                 onChange={(e) =>
                   updatePaginationConfig("start_cursor", e.target.value)
                 }
-                placeholder="Leave empty to start from beginning"
+                placeholder="처음부터 시작하려면 비워두세요"
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
             </div>
@@ -514,7 +513,7 @@ export default function APISourceConfig({
           <div className="flex items-center gap-2">
             <Clock className="w-5 h-5 text-gray-600" />
             <h3 className="text-sm font-semibold text-gray-900">
-              Incremental Load
+              증분 적재
             </h3>
           </div>
           <label className="relative inline-flex items-center cursor-pointer">
@@ -534,15 +533,15 @@ export default function APISourceConfig({
         </div>
 
         <p className="text-sm text-gray-600 mb-4">
-          Fetch only new or updated records by using a timestamp query
-          parameter. This reduces API calls and improves performance.
+          타임스탬프 쿼리 파라미터를 사용해 신규 또는 수정 레코드만 가져옵니다.
+          API 호출 수를 줄이고 성능을 개선할 수 있습니다.
         </p>
 
         {incrementalEnabled && (
           <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 space-y-3">
             <div>
               <label className="block text-xs font-medium text-emerald-900 mb-2">
-                Timestamp Query Parameter *
+                타임스탬프 쿼리 파라미터 *
               </label>
               <input
                 type="text"
@@ -558,21 +557,21 @@ export default function APISourceConfig({
                 className="w-full px-3 py-2 text-sm border border-emerald-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
               />
               <p className="mt-2 text-xs text-emerald-700">
-                The parameter name used by the API to filter by timestamp (e.g.,{" "}
+                API에서 타임스탬프 기준 필터링에 사용하는 파라미터명입니다. 예:{" "}
                 <code className="px-1 py-0.5 bg-emerald-100 rounded">
                   since
                 </code>{" "}
-                for GitHub,{" "}
+                (GitHub),{" "}
                 <code className="px-1 py-0.5 bg-emerald-100 rounded">
                   updated_after
                 </code>{" "}
-                for other APIs)
+                (기타 API)
               </p>
             </div>
 
             <div>
               <label className="block text-xs font-medium text-emerald-900 mb-2">
-                Start From Date (Optional)
+                시작 기준일 (선택)
               </label>
               <input
                 type="datetime-local"
@@ -587,30 +586,29 @@ export default function APISourceConfig({
                 className="w-full px-3 py-2 text-sm border border-emerald-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
               />
               <p className="mt-2 text-xs text-emerald-700">
-                First run will start from this date instead of fetching all
-                historical data. Leave empty to fetch everything.
+                첫 실행 시 전체 과거 데이터 대신 이 날짜 이후 데이터부터 가져옵니다.
+                전체를 가져오려면 비워두세요.
               </p>
             </div>
 
             <div className="bg-white border border-emerald-200 rounded-lg p-3">
               <p className="text-xs font-medium text-emerald-900 mb-1">
-                How it works:
+                동작 방식:
               </p>
               <ul className="text-xs text-emerald-700 space-y-1 list-disc list-inside">
                 <li>
-                  First run:{" "}
+                  첫 실행:{" "}
                   {startFromDate
-                    ? `Fetches data from ${new Date(
+                    ? `${new Date(
                         startFromDate
-                      ).toLocaleDateString()}`
-                    : "Fetches all historical data"}
+                      ).toLocaleDateString()} 이후 데이터 가져오기`
+                    : "전체 과거 데이터 가져오기"}
                 </li>
                 <li>
-                  Subsequent runs: Only fetches data after the last sync
-                  timestamp
+                  이후 실행: 마지막 동기화 시각 이후 데이터만 가져오기
                 </li>
                 <li>
-                  Example:{" "}
+                  예시:{" "}
                   <code className="px-1 py-0.5 bg-emerald-100 rounded">
                     ?{timestampParam || "since"}=
                     {startFromDate
@@ -626,9 +624,8 @@ export default function APISourceConfig({
         {!incrementalEnabled && (
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
             <p className="text-xs text-gray-600">
-              <strong>Full load mode:</strong> Every run will fetch all data
-              from the API. Enable incremental load to fetch only new/updated
-              records.
+              <strong>전체 적재 방식:</strong> 실행할 때마다 API에서 전체 데이터를 가져옵니다.
+              신규/수정 레코드만 가져오려면 증분 적재를 켜세요.
             </p>
           </div>
         )}
@@ -639,11 +636,10 @@ export default function APISourceConfig({
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-sm font-semibold text-gray-900">
-              Test API Connection
+              API 연결 테스트
             </h3>
             <p className="text-xs text-gray-500 mt-1">
-              Test your API configuration immediately and automatically infer
-              the schema
+              API 설정을 바로 테스트하고 스키마를 자동으로 추론합니다
             </p>
           </div>
           {!previewData && (
@@ -653,21 +649,21 @@ export default function APISourceConfig({
               className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
               title={
                 !connectionId
-                  ? "Select a connection first"
+                  ? "먼저 연결을 선택하세요"
                   : !endpoint
-                  ? "Enter an endpoint"
-                  : "Test API connection"
+                  ? "엔드포인트를 입력하세요"
+                  : "API 연결 테스트"
               }
             >
               {previewLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Fetching...
+                  불러오는 중...
                 </>
               ) : (
                 <>
                   <Eye className="w-4 h-4" />
-                  Fetch Preview
+                  미리보기 가져오기
                 </>
               )}
             </button>
@@ -681,7 +677,7 @@ export default function APISourceConfig({
               <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
                 <h4 className="text-sm font-semibold text-red-800">
-                  Failed to Fetch Preview
+                  미리보기 가져오기 실패
                 </h4>
                 <p className="text-sm text-red-600 mt-1">{previewError}</p>
                 <button
@@ -689,7 +685,7 @@ export default function APISourceConfig({
                   disabled={previewLoading}
                   className="mt-3 text-sm font-medium text-red-700 hover:text-red-800 underline"
                 >
-                  Try Again
+                  다시 시도
                 </button>
               </div>
             </div>
@@ -704,11 +700,11 @@ export default function APISourceConfig({
               <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
                 <h4 className="text-sm font-medium text-green-800">
-                  Preview Loaded Successfully!
+                  미리보기를 불러왔습니다
                 </h4>
                 <p className="text-sm text-green-600 mt-1">
-                  Showing {previewData.length} sample records from your API.
-                  Schema has been inferred and saved.
+                  API에서 가져온 샘플 {previewData.length}건을 표시합니다.
+                  스키마가 추론되어 저장되었습니다.
                 </p>
               </div>
               <button
@@ -716,7 +712,7 @@ export default function APISourceConfig({
                 disabled={previewLoading}
                 className="text-sm font-medium text-green-700 hover:text-green-800 underline"
               >
-                Refresh
+                새로고침
               </button>
             </div>
 
@@ -732,7 +728,7 @@ export default function APISourceConfig({
             {/* Schema Info */}
             <div className="text-sm text-gray-500">
               <strong>{Object.keys(previewData[0] || {}).length}</strong>{" "}
-              columns detected and saved
+              개 컬럼 감지 및 저장
             </div>
           </div>
         )}
@@ -746,8 +742,8 @@ export default function APISourceConfig({
               </div>
               <p className="text-sm text-gray-600">
                 {!connectionId || !endpoint
-                  ? 'Configure your API connection and endpoint above, then click "Fetch Preview" to test'
-                  : 'Click "Fetch Preview" to test your API configuration and infer schema'}
+                  ? '위에서 API 연결과 엔드포인트를 설정한 뒤 "미리보기 가져오기"로 테스트하세요'
+                  : '"미리보기 가져오기"를 눌러 API 설정을 테스트하고 스키마를 추론하세요'}
               </p>
             </div>
           </div>

@@ -119,7 +119,7 @@ export default function ConnectionForm({ onSuccess, onCancel, initialType }) {
 
     try {
       const payload = {
-        name: name || "Test Connection",
+        name: name || "테스트 연결",
         description,
         type,
         config:
@@ -171,7 +171,7 @@ export default function ConnectionForm({ onSuccess, onCancel, initialType }) {
           <div className="grid grid-cols-3 gap-4">
             <div className="col-span-2">
               <label className="block text-sm font-medium text-gray-700">
-                Host
+                호스트
               </label>
               <input
                 type="text"
@@ -183,7 +183,7 @@ export default function ConnectionForm({ onSuccess, onCancel, initialType }) {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Port
+                포트
               </label>
               <input
                 type="number"
@@ -196,7 +196,7 @@ export default function ConnectionForm({ onSuccess, onCancel, initialType }) {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Database Name
+              데이터베이스 이름
             </label>
             <input
               type="text"
@@ -210,7 +210,7 @@ export default function ConnectionForm({ onSuccess, onCancel, initialType }) {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Username
+              사용자 이름
             </label>
             <input
               type="text"
@@ -222,7 +222,7 @@ export default function ConnectionForm({ onSuccess, onCancel, initialType }) {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Password
+              비밀번호
             </label>
             <input
               type="password"
@@ -239,7 +239,7 @@ export default function ConnectionForm({ onSuccess, onCancel, initialType }) {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Bucket Name
+              버킷 이름
             </label>
             <input
               type="text"
@@ -250,12 +250,12 @@ export default function ConnectionForm({ onSuccess, onCancel, initialType }) {
               onChange={(e) => handleConfigChange("bucket", e.target.value)}
             />
             <p className="mt-1 text-xs text-gray-500">
-              The S3 bucket name (path will be specified in the dataset)
+              S3 버킷 이름입니다. 경로는 데이터셋에서 지정합니다.
             </p>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Region
+              리전
             </label>
             <div className="mt-1">
               <Combobox
@@ -269,7 +269,7 @@ export default function ConnectionForm({ onSuccess, onCancel, initialType }) {
                 }}
                 getKey={(region) => region}
                 getLabel={(region) => region}
-                placeholder="Select a region..."
+                placeholder="리전 선택..."
                 classNames={{
                   button:
                     "px-4 py-2.5 rounded-xl border-emerald-200/70 bg-gradient-to-r from-white via-emerald-50/50 to-emerald-100/40 shadow-sm shadow-emerald-100/70 hover:shadow-md hover:shadow-emerald-200/70 focus:ring-2 focus:ring-emerald-400/60 focus:border-emerald-300 transition-all",
@@ -282,7 +282,7 @@ export default function ConnectionForm({ onSuccess, onCancel, initialType }) {
               />
             </div>
             <p className="mt-1 text-xs text-gray-500">
-              AWS region where the bucket is located
+              버킷이 위치한 AWS 리전입니다.
             </p>
           </div>
         </div>
@@ -292,7 +292,7 @@ export default function ConnectionForm({ onSuccess, onCancel, initialType }) {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Bootstrap Servers
+              Bootstrap 서버
             </label>
             <input
               type="text"
@@ -305,7 +305,7 @@ export default function ConnectionForm({ onSuccess, onCancel, initialType }) {
               }
             />
             <p className="mt-1 text-xs text-gray-500">
-              Comma-separated list is supported (e.g., host1:9092,host2:9092)
+              쉼표로 여러 서버를 입력할 수 있습니다 (예: host1:9092,host2:9092)
             </p>
           </div>
         </div>
@@ -315,7 +315,7 @@ export default function ConnectionForm({ onSuccess, onCancel, initialType }) {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Connection URI
+              연결 URI
             </label>
             <input
               type="text"
@@ -326,12 +326,12 @@ export default function ConnectionForm({ onSuccess, onCancel, initialType }) {
               onChange={(e) => handleConfigChange("uri", e.target.value)}
             />
             <p className="mt-1 text-xs text-gray-500">
-              Example: mongodb://user:pass@host:port
+              예: mongodb://user:pass@host:port
             </p>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Database Name
+              데이터베이스 이름
             </label>
             <input
               type="text"
@@ -360,13 +360,13 @@ export default function ConnectionForm({ onSuccess, onCancel, initialType }) {
               onChange={(e) => handleConfigChange("base_url", e.target.value)}
             />
             <p className="mt-1 text-xs text-gray-500">
-              The base URL of the API (endpoint paths will be specified in the dataset)
+              API의 기본 URL입니다. 엔드포인트 경로는 데이터셋에서 지정합니다.
             </p>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Authentication Type
+              인증 방식
             </label>
             <select
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
@@ -378,10 +378,10 @@ export default function ConnectionForm({ onSuccess, onCancel, initialType }) {
                 handleConfigChange("auth_config", {});
               }}
             >
-              <option value="none">No Authentication</option>
+              <option value="none">인증 없음</option>
               <option value="api_key">API Key</option>
               <option value="bearer">Bearer Token</option>
-              <option value="basic">Basic Auth</option>
+              <option value="basic">기본 인증</option>
             </select>
           </div>
 
@@ -390,7 +390,7 @@ export default function ConnectionForm({ onSuccess, onCancel, initialType }) {
             <>
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Header Name *
+                  헤더 이름 *
                 </label>
                 <input
                   type="text"
@@ -413,7 +413,7 @@ export default function ConnectionForm({ onSuccess, onCancel, initialType }) {
                 <input
                   type="password"
                   required
-                  placeholder="Your API key"
+                  placeholder="API 키 입력"
                   className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   value={config.auth_config?.api_key || ""}
                   onChange={(e) =>
@@ -436,7 +436,7 @@ export default function ConnectionForm({ onSuccess, onCancel, initialType }) {
               <input
                 type="password"
                 required
-                placeholder="Your bearer token"
+                placeholder="Bearer 토큰 입력"
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 value={config.auth_config?.token || ""}
                 onChange={(e) =>
@@ -454,12 +454,12 @@ export default function ConnectionForm({ onSuccess, onCancel, initialType }) {
             <>
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Username *
+                  사용자 이름 *
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="Username"
+                  placeholder="사용자 이름"
                   className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   value={config.auth_config?.username || ""}
                   onChange={(e) =>
@@ -472,12 +472,12 @@ export default function ConnectionForm({ onSuccess, onCancel, initialType }) {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Password *
+                  비밀번호 *
                 </label>
                 <input
                   type="password"
                   required
-                  placeholder="Password"
+                  placeholder="비밀번호"
                   className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   value={config.auth_config?.password || ""}
                   onChange={(e) =>
@@ -495,7 +495,7 @@ export default function ConnectionForm({ onSuccess, onCancel, initialType }) {
     } else {
       return (
         <div className="text-gray-500 text-sm">
-          Configuration for this type is not yet implemented.
+          이 연결 유형의 설정 화면은 아직 구현되지 않았습니다.
         </div>
       );
     }
@@ -515,7 +515,7 @@ export default function ConnectionForm({ onSuccess, onCancel, initialType }) {
         <>
           <div>
             <label className="block text-sm font-bold text-gray-900 mb-2">
-              Connection Type
+              연결 유형
             </label>
             <div className="grid grid-cols-3 gap-3">
               {CONNECTION_TYPES.map((t) => (
@@ -544,11 +544,11 @@ export default function ConnectionForm({ onSuccess, onCancel, initialType }) {
 
       {/* Basic Information */}
       <div>
-        <label className="block text-sm font-medium text-gray-700">Name</label>
+        <label className="block text-sm font-medium text-gray-700">이름</label>
         <input
           type="text"
           required
-          placeholder="e.g., Production DB"
+          placeholder="예: 운영 DB"
           className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -557,7 +557,7 @@ export default function ConnectionForm({ onSuccess, onCancel, initialType }) {
 
       <div>
         <label className="block text-sm font-medium text-gray-700">
-          Description (Optional)
+          설명 (선택)
         </label>
         <textarea
           rows={2}
@@ -570,7 +570,7 @@ export default function ConnectionForm({ onSuccess, onCancel, initialType }) {
       {/* Dynamic Configuration Fields */}
       <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
         <h4 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wider">
-          {CONNECTION_TYPES.find((t) => t.id === type)?.label} Configurations
+          {CONNECTION_TYPES.find((t) => t.id === type)?.label} 설정
         </h4>
         {renderConfigFields()}
 
@@ -596,7 +596,7 @@ export default function ConnectionForm({ onSuccess, onCancel, initialType }) {
             disabled={testLoading}
             className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
           >
-            {testLoading ? "Testing..." : "Test Connection"}
+            {testLoading ? "테스트 중..." : "연결 테스트"}
           </button>
         </div>
       </div>
@@ -608,7 +608,7 @@ export default function ConnectionForm({ onSuccess, onCancel, initialType }) {
           disabled={loading || !tested}
           className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading ? "Creating..." : "Create Connection"}
+          {loading ? "생성 중..." : "연결 생성"}
         </button>
       </div>
     </form>

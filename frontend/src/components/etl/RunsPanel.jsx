@@ -11,6 +11,13 @@ export default function RunsPanel({ runs = [], onRefresh }) {
         return matchesSearch && matchesStatus;
     });
 
+    const statusLabels = {
+        succeeded: '성공',
+        failed: '실패',
+        running: '실행 중',
+        pending: '대기 중',
+    };
+
     const getStatusIcon = (status) => {
         switch (status) {
             case 'succeeded':
@@ -37,10 +44,10 @@ export default function RunsPanel({ runs = [], onRefresh }) {
     };
 
     const formatDate = (dateString) => {
-        return new Date(dateString).toLocaleString('en-US', {
-            month: 'short',
-            day: 'numeric',
+        return new Date(dateString).toLocaleString('ko-KR', {
             year: 'numeric',
+            month: '2-digit',
+            day: 'numeric',
             hour: '2-digit',
             minute: '2-digit',
         });
@@ -61,15 +68,15 @@ export default function RunsPanel({ runs = [], onRefresh }) {
                     <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <Play className="w-5 h-5 text-gray-500" />
-                            <h3 className="text-lg font-semibold text-gray-900">Runs</h3>
-                            <span className="text-sm text-gray-500">({runs.length} total)</span>
+                            <h3 className="text-lg font-semibold text-gray-900">실행 이력</h3>
+                            <span className="text-sm text-gray-500">(총 {runs.length}개)</span>
                         </div>
                         <button
                             onClick={onRefresh}
                             className="px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2 text-sm"
                         >
                             <RefreshCw className="w-4 h-4" />
-                            Refresh
+                            새로고침
                         </button>
                     </div>
 
@@ -79,7 +86,7 @@ export default function RunsPanel({ runs = [], onRefresh }) {
                             <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                             <input
                                 type="text"
-                                placeholder="Filter by run ID"
+                                placeholder="실행 ID로 필터"
                                 value={searchFilter}
                                 onChange={(e) => setSearchFilter(e.target.value)}
                                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -90,11 +97,11 @@ export default function RunsPanel({ runs = [], onRefresh }) {
                             onChange={(e) => setStatusFilter(e.target.value)}
                             className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                         >
-                            <option value="all">All statuses</option>
-                            <option value="succeeded">Succeeded</option>
-                            <option value="failed">Failed</option>
-                            <option value="running">Running</option>
-                            <option value="pending">Pending</option>
+                            <option value="all">전체 상태</option>
+                            <option value="succeeded">성공</option>
+                            <option value="failed">실패</option>
+                            <option value="running">실행 중</option>
+                            <option value="pending">대기 중</option>
                         </select>
                     </div>
 
@@ -103,9 +110,9 @@ export default function RunsPanel({ runs = [], onRefresh }) {
                         {filteredRuns.length === 0 ? (
                             <div className="text-center py-16">
                                 <Play className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                                <h4 className="text-lg font-medium text-gray-900 mb-2">No runs yet</h4>
+                                <h4 className="text-lg font-medium text-gray-900 mb-2">아직 실행 이력이 없습니다</h4>
                                 <p className="text-sm text-gray-500">
-                                    Click the "Run" button to execute this job
+                                    실행 버튼을 누르면 이 작업이 실행됩니다
                                 </p>
                             </div>
                         ) : (
@@ -113,22 +120,22 @@ export default function RunsPanel({ runs = [], onRefresh }) {
                                 <thead className="bg-gray-50 border-b border-gray-200">
                                     <tr>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Run ID
+                                            실행 ID
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Status
+                                            상태
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Start time
+                                            시작 시간
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            End time
+                                            종료 시간
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Duration
+                                            소요 시간
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Trigger
+                                            실행 방식
                                         </th>
                                     </tr>
                                 </thead>
@@ -143,7 +150,7 @@ export default function RunsPanel({ runs = [], onRefresh }) {
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${getStatusBadge(run.status)}`}>
                                                     {getStatusIcon(run.status)}
-                                                    {run.status.charAt(0).toUpperCase() + run.status.slice(1)}
+                                                    {statusLabels[run.status] || run.status}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
@@ -156,7 +163,7 @@ export default function RunsPanel({ runs = [], onRefresh }) {
                                                 {formatDuration(run.duration)}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                                {run.trigger || 'Manual'}
+                                                {run.trigger || '수동 실행'}
                                             </td>
                                         </tr>
                                     ))}
@@ -168,14 +175,14 @@ export default function RunsPanel({ runs = [], onRefresh }) {
                     {/* Pagination placeholder */}
                     {filteredRuns.length > 0 && (
                         <div className="px-6 py-3 border-t border-gray-200 flex items-center justify-between text-sm text-gray-500">
-                            <span>Showing {filteredRuns.length} of {runs.length} runs</span>
+                            <span>총 {runs.length}개 중 {filteredRuns.length}개 표시</span>
                             <div className="flex items-center gap-2">
                                 <button className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50" disabled>
-                                    Previous
+                                    이전
                                 </button>
                                 <span className="px-3 py-1">1</span>
                                 <button className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50" disabled>
-                                    Next
+                                    다음
                                 </button>
                             </div>
                         </div>

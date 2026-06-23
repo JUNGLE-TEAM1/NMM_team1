@@ -33,7 +33,7 @@ function Login() {
       const data = await response.json();
 
       if (!response.ok) {
-        alert(data.detail || "Login failed");
+        alert(data.detail || "로그인에 실패했습니다");
         return;
       }
 
@@ -47,7 +47,7 @@ function Login() {
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("Login failed. Please try again.");
+      alert("로그인에 실패했습니다. 다시 시도해주세요.");
     } finally {
       setIsSubmitting(false);
     }
@@ -62,13 +62,13 @@ function Login() {
             XFlow
           </h1>
           {/* Description */}
-          <p className="text-gray-600">The Complete Data Pipeline Platform</p>
+          <p className="text-gray-600">데이터 파이프라인 통합 플랫폼</p>
         </div>
 
         {/* Login Card */}
         <div className="bg-white rounded-lg shadow-xl p-8 border border-gray-100">
           <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
-            Sign In
+            로그인
           </h2>
 
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -77,7 +77,7 @@ function Login() {
                 htmlFor="email"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                Email
+                이메일
               </label>
               <input
                 id="email"
@@ -97,7 +97,7 @@ function Login() {
                 htmlFor="password"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                Password
+                비밀번호
               </label>
               <input
                 id="password"
@@ -121,7 +121,7 @@ function Login() {
                   : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
                 } text-white`}
             >
-              {isSubmitting ? "Signing in..." : "Sign In"}
+              {isSubmitting ? "로그인 중..." : "로그인"}
             </button>
           </form>
         </div>

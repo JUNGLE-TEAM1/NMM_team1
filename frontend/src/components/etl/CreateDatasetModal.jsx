@@ -32,7 +32,7 @@ export default function CreateDatasetModal({ isOpen, onClose, onSelect }) {
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <div className="flex items-center gap-3">
             <Database className="w-5 h-5 text-gray-500" />
-            <h3 className="text-lg font-semibold text-gray-900">Select Type</h3>
+            <h3 className="text-lg font-semibold text-gray-900">데이터셋 유형 선택</h3>
           </div>
           <button
             onClick={onClose}
@@ -63,7 +63,7 @@ export default function CreateDatasetModal({ isOpen, onClose, onSelect }) {
                         : "text-gray-700"
                     }`}
                   >
-                    Source
+                    원본 데이터
                   </span>
                   <Upload
                     className={`w-4 h-4 ${
@@ -74,7 +74,7 @@ export default function CreateDatasetModal({ isOpen, onClose, onSelect }) {
                   />
                 </div>
                 <span className="block text-sm text-gray-500 mt-1">
-                  Import data from external sources
+                  외부 원본 데이터를 등록합니다
                 </span>
               </div>
               {selectedType === "source" && (
@@ -112,7 +112,7 @@ export default function CreateDatasetModal({ isOpen, onClose, onSelect }) {
                         : "text-gray-700"
                     }`}
                   >
-                    Target
+                    타겟 데이터
                   </span>
                   <Download
                     className={`w-4 h-4 ${
@@ -123,7 +123,7 @@ export default function CreateDatasetModal({ isOpen, onClose, onSelect }) {
                   />
                 </div>
                 <span className="block text-sm text-gray-500 mt-1">
-                  Export data to destination
+                  가공 결과의 저장 위치를 설정합니다
                 </span>
               </div>
               {selectedType === "target" && (
@@ -151,13 +151,13 @@ export default function CreateDatasetModal({ isOpen, onClose, onSelect }) {
             onClick={onClose}
             className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            Cancel
+            취소
           </button>
           <button
             onClick={handleCreate}
             className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
           >
-            Create
+            생성
           </button>
         </div>
       </div>

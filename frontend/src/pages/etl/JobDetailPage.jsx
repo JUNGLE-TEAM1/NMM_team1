@@ -89,7 +89,7 @@ export default function JobDetailPage() {
 
   const handleRunQualityCheck = async () => {
     if (!job?.destination?.path && !job?.destination?.s3_path) {
-      showToast("No S3 path configured for this job", "error");
+      showToast("이 작업에 설정된 S3 경로가 없습니다", "error");
       return;
     }
 
@@ -100,12 +100,12 @@ export default function JobDetailPage() {
       setQualityResult(result);
       setQualityHistory((prev) => [result, ...prev.slice(0, 4)]);
       showToast(
-        `Quality check completed! Score: ${result.overall_score}`,
+        `품질 검사가 완료되었습니다. 점수: ${result.overall_score}`,
         "success"
       );
     } catch (error) {
       console.error("Failed to run quality check:", error);
-      showToast("Failed to run quality check", "error");
+      showToast("품질 검사를 실행하지 못했습니다", "error");
     } finally {
       setRunningCheck(false);
     }
@@ -182,12 +182,12 @@ export default function JobDetailPage() {
         if (response.ok) {
           setJob((prev) => ({ ...prev, is_active: newActiveState }));
           showToast(
-            `Job ${newActiveState ? "activated" : "deactivated"} successfully!`,
+            newActiveState ? "작업을 활성화했습니다" : "작업을 비활성화했습니다",
             "success"
           );
         } else {
           showToast(
-            `Failed to ${newActiveState ? "activate" : "deactivate"} job`,
+            newActiveState ? "작업을 활성화하지 못했습니다" : "작업을 비활성화하지 못했습니다",
             "error"
           );
         }
@@ -213,14 +213,12 @@ export default function JobDetailPage() {
             if (updateResponse.ok) {
               setJob((prev) => ({ ...prev, is_active: newActiveState }));
               showToast(
-                `Job ${
-                  newActiveState ? "activated" : "deactivated"
-                } successfully!`,
+                newActiveState ? "작업을 활성화했습니다" : "작업을 비활성화했습니다",
                 "success"
               );
             } else {
               showToast(
-                `Failed to ${newActiveState ? "activate" : "deactivate"} job`,
+                newActiveState ? "작업을 활성화하지 못했습니다" : "작업을 비활성화하지 못했습니다",
                 "error"
               );
             }
@@ -228,9 +226,7 @@ export default function JobDetailPage() {
             // Should ideally not happen if job exists
             setJob((prev) => ({ ...prev, is_active: newActiveState }));
             showToast(
-              `Job ${
-                newActiveState ? "activated" : "deactivated"
-              } (Local state only)`,
+              `작업을 ${newActiveState ? "활성화" : "비활성화"}했습니다 (화면 상태만 변경)`,
               "warning"
             );
           }
@@ -238,7 +234,7 @@ export default function JobDetailPage() {
       }
     } catch (error) {
       console.error("Failed to toggle job:", error);
-      showToast("Network error: Failed to toggle job", "error");
+      showToast("네트워크 오류: 작업 상태를 변경하지 못했습니다", "error");
     }
   };
 
@@ -251,10 +247,10 @@ export default function JobDetailPage() {
         );
 
         if (response.ok) {
-          showToast("Streaming job started!", "success");
+          showToast("실시간 스트리밍 작업을 시작했습니다", "success");
           setIsStreamingActive(true);
         } else {
-          showToast("Failed to start streaming job", "error");
+          showToast("실시간 스트리밍 작업을 시작하지 못했습니다", "error");
         }
         return;
       }
@@ -268,15 +264,15 @@ export default function JobDetailPage() {
 
       if (response.ok) {
         console.log("Job triggered");
-        showToast("Job started successfully!", "success");
+        showToast("작업을 시작했습니다", "success");
         fetchRuns();
         fetchJobDetails();
       } else {
-        showToast("Failed to start job", "error");
+        showToast("작업을 시작하지 못했습니다", "error");
       }
     } catch (error) {
       console.error("Failed to run job:", error);
-      showToast("Network error: Failed to start job", "error");
+      showToast("네트워크 오류: 작업을 시작하지 못했습니다", "error");
     }
   };
 
@@ -288,14 +284,14 @@ export default function JobDetailPage() {
         { method: "POST" }
       );
       if (response.ok) {
-        showToast("Streaming job stopped!", "success");
+        showToast("실시간 스트리밍 작업을 중지했습니다", "success");
         setIsStreamingActive(false);
       } else {
-        showToast("Failed to stop streaming job", "error");
+        showToast("실시간 스트리밍 작업을 중지하지 못했습니다", "error");
       }
     } catch (error) {
       console.error("Failed to stop streaming job:", error);
-      showToast("Network error: Failed to stop streaming job", "error");
+      showToast("네트워크 오류: 실시간 스트리밍 작업을 중지하지 못했습니다", "error");
     }
   };
 
@@ -329,15 +325,15 @@ export default function JobDetailPage() {
       });
 
       if (response.ok) {
-        showToast("Schedule updated successfully", "success");
+        showToast("스케줄을 업데이트했습니다", "success");
         fetchJobDetails(); // Refresh details to show new schedule/cron
       } else {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || "Failed to update schedule");
+        throw new Error(errorData.detail || "스케줄 업데이트에 실패했습니다");
       }
     } catch (error) {
       console.error("Failed to update schedule:", error);
-      showToast(`Error: ${error.message}`, "error");
+      showToast(`오류: ${error.message}`, "error");
     }
   };
 
@@ -398,16 +394,16 @@ export default function JobDetailPage() {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     if (mins > 0) {
-      return `${mins}m ${secs}s`;
+      return `${mins}분 ${secs}초`;
     }
-    return `${secs}s`;
+    return `${secs}초`;
   };
 
   const tabs = [
-    { id: "info", label: "Info", icon: Info },
-    { id: "runs", label: "Logs", icon: Play },
-    { id: "schedule", label: "Schedule", icon: Calendar },
-    { id: "quality", label: "Quality", icon: BarChart3 },
+    { id: "info", label: "정보", icon: Info },
+    { id: "runs", label: "실행 이력", icon: Play },
+    { id: "schedule", label: "스케줄", icon: Calendar },
+    { id: "quality", label: "품질", icon: BarChart3 },
   ];
   const visibleTabs =
     job?.job_type === "streaming"
@@ -428,7 +424,7 @@ export default function JobDetailPage() {
             </button>
             <div>
               <h1 className="text-xl font-semibold text-gray-900">
-                {job?.name || "Job Details"}
+                {job?.name || "작업 상세"}
               </h1>
               <p className="text-sm text-gray-500">{job?.description || "-"}</p>
             </div>
@@ -453,9 +449,9 @@ export default function JobDetailPage() {
                 title={
                   job?.job_type === "streaming"
                     ? isStreamingActive
-                      ? "Pause"
-                      : "Start"
-                    : "Instant Run"
+                      ? "일시 중지"
+                      : "시작"
+                    : "즉시 실행"
                 }
               >
                 {job?.job_type === "streaming" && isStreamingActive ? (
@@ -476,7 +472,7 @@ export default function JobDetailPage() {
                     ? "text-orange-600 bg-orange-50 hover:bg-orange-100"
                     : "text-green-600 bg-green-50 hover:bg-green-100"
                 }`}
-                title={job?.is_active ? "Pause Schedule" : "Run Schedule"}
+                title={job?.is_active ? "스케줄 일시 중지" : "스케줄 실행"}
               >
                 {job?.is_active ? (
                   <Pause className="w-4 h-4" />
@@ -522,14 +518,14 @@ export default function JobDetailPage() {
             <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
               <div className="px-6 py-4 border-b border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-900">
-                  Job Information
+                  작업 정보
                 </h3>
               </div>
               <div className="p-6">
                 <dl className="grid grid-cols-2 gap-6">
                   <div>
                     <dt className="text-sm font-medium text-gray-500">
-                      Job ID
+                      작업 ID
                     </dt>
                     <dd className="mt-1 text-sm text-gray-900">
                       <div className="flex items-center gap-2">
@@ -538,7 +534,7 @@ export default function JobDetailPage() {
                           <button
                             onClick={() => handleCopyText(job.name)}
                             className="p-1 hover:bg-gray-200 rounded transition-colors"
-                            title="Copy Job ID"
+                            title="작업 ID 복사"
                           >
                             {copiedText === job.name ? (
                               <Check className="w-3.5 h-3.5 text-green-600" />
@@ -553,7 +549,7 @@ export default function JobDetailPage() {
                   {job?.job_type === "streaming" && (
                     <div>
                       <dt className="text-sm font-medium text-gray-500">
-                        Kafka Group ID
+                        Kafka 그룹 ID
                       </dt>
                       <dd className="mt-1 text-sm text-gray-900 break-all">
                         {streamingGroupId ||
@@ -562,14 +558,14 @@ export default function JobDetailPage() {
                     </div>
                   )}
                   <div>
-                    <dt className="text-sm font-medium text-gray-500">Owner</dt>
+                    <dt className="text-sm font-medium text-gray-500">담당자</dt>
                     <dd className="mt-1 text-sm text-gray-900">
                       {job?.owner || "-"}
                     </dd>
                   </div>
                   <div>
                     <dt className="text-sm font-medium text-gray-500">
-                      Job Type
+                      작업 유형
                     </dt>
                     <dd className="mt-1">
                       {job?.job_type === "cdc" ? (
@@ -580,19 +576,19 @@ export default function JobDetailPage() {
                       ) : job?.job_type === "streaming" ? (
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-indigo-100 text-indigo-700">
                           <Activity className="w-3 h-3" />
-                          Streaming
+                          실시간 스트리밍
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-blue-100 text-blue-700">
                           <Clock className="w-3 h-3" />
-                          Batch
+                          정기 처리
                         </span>
                       )}
                     </dd>
                   </div>
                   <div>
                     <dt className="text-sm font-medium text-gray-500">
-                      Description
+                      설명
                     </dt>
                     <dd className="mt-1 text-sm text-gray-900">
                       {job?.description || "-"}
@@ -600,7 +596,7 @@ export default function JobDetailPage() {
                   </div>
                   <div>
                     <dt className="text-sm font-medium text-gray-500">
-                      Dataset Type
+                      데이터셋 유형
                     </dt>
                     <dd className="mt-1 text-sm text-gray-900">
                       {job?.dataset_type || "-"}
@@ -608,7 +604,7 @@ export default function JobDetailPage() {
                   </div>
                   <div>
                     <dt className="text-sm font-medium text-gray-500">
-                      Status
+                      상태
                     </dt>
                     <dd className="mt-1">
                       <span
@@ -618,13 +614,13 @@ export default function JobDetailPage() {
                             : "bg-gray-100 text-gray-500"
                         }`}
                       >
-                        {job?.is_active ? "Active" : "Inactive"}
+                        {job?.is_active ? "활성" : "비활성"}
                       </span>
                     </dd>
                   </div>
                   <div>
                     <dt className="text-sm font-medium text-gray-500">
-                      Created At
+                      생성일
                     </dt>
                     <dd className="mt-1 text-sm text-gray-900">
                       {formatDate(job?.created_at)}
@@ -637,7 +633,7 @@ export default function JobDetailPage() {
                   {/* Source Information Section */}
                   <div>
                     <h4 className="text-sm font-medium text-gray-700 mb-3">
-                      Source Information
+                      원본 정보
                     </h4>
                     <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
                       {job?.sources && job.sources.length > 0 ? (
@@ -649,14 +645,14 @@ export default function JobDetailPage() {
                             >
                               <div className="grid grid-cols-2 gap-3 text-sm">
                                 <div>
-                                  <span className="text-gray-500">Type:</span>
+                                  <span className="text-gray-500">유형:</span>
                                   <span className="ml-2 font-medium text-gray-900">
                                     {source.type || source.dataType || "-"}
                                   </span>
                                 </div>
                                 <div>
                                   <span className="text-gray-500">
-                                    {source.path ? "Path" : "Table"}:
+                                    {source.path ? "경로" : "테이블"}:
                                   </span>
                                   <span className="ml-2 font-medium text-gray-900">
                                     {source.table_name ||
@@ -671,7 +667,7 @@ export default function JobDetailPage() {
                                   source.connectionId) && (
                                   <div className="col-span-2">
                                     <span className="text-gray-500">
-                                      Connection ID:
+                                      연결 ID:
                                     </span>
                                     <span className="ml-2 font-mono text-xs text-gray-900">
                                       {source.connection_id ||
@@ -687,13 +683,13 @@ export default function JobDetailPage() {
                         <div className="bg-white border border-gray-200 rounded-lg p-3">
                           <div className="grid grid-cols-2 gap-3 text-sm">
                             <div>
-                              <span className="text-gray-500">Type:</span>
+                              <span className="text-gray-500">유형:</span>
                               <span className="ml-2 font-medium text-gray-900">
                                 {job.source.type || "-"}
                               </span>
                             </div>
                             <div>
-                              <span className="text-gray-500">Table:</span>
+                              <span className="text-gray-500">테이블:</span>
                               <span className="ml-2 font-medium text-gray-900">
                                 {job.source.table_name ||
                                   job.source.table ||
@@ -702,7 +698,7 @@ export default function JobDetailPage() {
                             </div>
                             <div className="col-span-2">
                               <span className="text-gray-500">
-                                Connection ID:
+                                연결 ID:
                               </span>
                               <span className="ml-2 font-mono text-xs text-gray-900">
                                 {job.source.connection_id}
@@ -712,7 +708,7 @@ export default function JobDetailPage() {
                         </div>
                       ) : (
                         <p className="text-sm text-gray-500">
-                          No source information available
+                          원본 정보가 없습니다
                         </p>
                       )}
                     </div>
@@ -721,27 +717,27 @@ export default function JobDetailPage() {
                   {/* Destination Information Section */}
                   <div>
                     <h4 className="text-sm font-medium text-gray-700 mb-3">
-                      Destination Information
+                      저장 위치 정보
                     </h4>
                     <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
                       {job?.destination ? (
                         <div className="bg-white border border-gray-200 rounded-lg p-3">
                           <div className="grid grid-cols-2 gap-3 text-sm">
                             <div>
-                              <span className="text-gray-500">Type:</span>
+                              <span className="text-gray-500">유형:</span>
                               <span className="ml-2 font-medium text-gray-900">
                                 {job.destination.type || "-"}
                               </span>
                             </div>
                             <div>
-                              <span className="text-gray-500">Format:</span>
+                              <span className="text-gray-500">형식:</span>
                               <span className="ml-2 font-medium text-gray-900">
                                 {job.destination.format || "-"}
                               </span>
                             </div>
                             {job.destination.path && (
                               <div className="col-span-2">
-                                <span className="text-gray-500">Path:</span>
+                                <span className="text-gray-500">경로:</span>
                                 <span className="ml-2 font-mono text-xs text-gray-900">
                                   {job.destination.path}
                                 </span>
@@ -751,7 +747,7 @@ export default function JobDetailPage() {
                         </div>
                       ) : (
                         <p className="text-sm text-gray-500">
-                          No destination information available
+                          저장 위치 정보가 없습니다
                         </p>
                       )}
                     </div>
@@ -785,23 +781,23 @@ export default function JobDetailPage() {
                   return (
                     <div className="mt-8">
                       <h4 className="text-sm font-medium text-gray-700 mb-3">
-                        Table Schema
+                        테이블 스키마
                       </h4>
                       <div className="border border-gray-200 rounded-lg overflow-hidden">
                         <table className="w-full">
                           <thead className="bg-gray-50">
                             <tr>
                               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Column Name
+                                컬럼 이름
                               </th>
                               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Type
+                                유형
                               </th>
                               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Nullable
+                                NULL 허용
                               </th>
                               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Description
+                                설명
                               </th>
                             </tr>
                           </thead>
@@ -820,11 +816,11 @@ export default function JobDetailPage() {
                                   {column.nullable !== undefined ? (
                                     column.nullable ? (
                                       <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
-                                        Yes
+                                        예
                                       </span>
                                     ) : (
                                       <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">
-                                        No
+                                        아니오
                                       </span>
                                     )
                                   ) : (
@@ -853,9 +849,9 @@ export default function JobDetailPage() {
               <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <Play className="w-5 h-5 text-gray-500" />
-                  <h3 className="text-lg font-semibold text-gray-900">Runs</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">실행 이력</h3>
                   <span className="text-sm text-gray-500">
-                    ({runs.length} total)
+                    (총 {runs.length}개)
                   </span>
                 </div>
                 <button
@@ -865,7 +861,7 @@ export default function JobDetailPage() {
                   <RefreshCw
                     className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`}
                   />
-                  Refresh
+                  새로고침
                 </button>
               </div>
 
@@ -875,7 +871,7 @@ export default function JobDetailPage() {
                   <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
-                    placeholder="Filter runs"
+                    placeholder="실행 이력 필터"
                     value={searchFilter}
                     onChange={(e) => setSearchFilter(e.target.value)}
                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -886,11 +882,11 @@ export default function JobDetailPage() {
                   onChange={(e) => setStatusFilter(e.target.value)}
                   className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                 >
-                  <option value="all">All statuses</option>
-                  <option value="succeeded">Succeeded</option>
-                  <option value="failed">Failed</option>
-                  <option value="running">Running</option>
-                  <option value="pending">Pending</option>
+                  <option value="all">전체 상태</option>
+                  <option value="succeeded">성공</option>
+                  <option value="failed">실패</option>
+                  <option value="running">실행 중</option>
+                  <option value="pending">대기 중</option>
                 </select>
               </div>
 
@@ -899,16 +895,16 @@ export default function JobDetailPage() {
                 {isLoading ? (
                   <div className="text-center py-16">
                     <RefreshCw className="w-8 h-8 text-gray-400 mx-auto mb-4 animate-spin" />
-                    <p className="text-gray-500">Loading runs...</p>
+                    <p className="text-gray-500">실행 이력을 불러오는 중...</p>
                   </div>
                 ) : filteredRuns.length === 0 ? (
                   <div className="text-center py-16">
                     <AlertCircle className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                     <h4 className="text-lg font-medium text-gray-900 mb-2">
-                      No runs yet
+                      아직 실행 이력이 없습니다
                     </h4>
                     <p className="text-sm text-gray-500">
-                      This job has not been run yet.
+                      이 작업은 아직 실행된 적이 없습니다.
                     </p>
                   </div>
                 ) : (
@@ -916,19 +912,19 @@ export default function JobDetailPage() {
                     <thead className="bg-gray-50 border-b border-gray-200">
                       <tr>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Run ID
+                          실행 ID
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Status
+                          상태
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Started At
+                          시작 시간
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Finished At
+                          종료 시간
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Duration
+                          소요 시간
                         </th>
                       </tr>
                     </thead>
@@ -948,9 +944,13 @@ export default function JobDetailPage() {
                             >
                               {getStatusIcon(run.status)}
                               {run.status === "success"
-                                ? "Succeeded"
-                                : run.status.charAt(0).toUpperCase() +
-                                  run.status.slice(1)}
+                                ? "성공"
+                                : {
+                                    succeeded: "성공",
+                                    failed: "실패",
+                                    running: "실행 중",
+                                    pending: "대기 중",
+                                  }[run.status] || run.status}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
@@ -972,7 +972,7 @@ export default function JobDetailPage() {
               {/* Pagination info */}
               {filteredRuns.length > 0 && (
                 <div className="px-6 py-3 border-t border-gray-200 text-sm text-gray-500">
-                  Showing {filteredRuns.length} of {runs.length} runs
+                  총 {runs.length}개 중 {filteredRuns.length}개 표시
                 </div>
               )}
             </div>
@@ -983,7 +983,7 @@ export default function JobDetailPage() {
             <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
               <div className="px-6 py-4 border-b border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-900">
-                  Schedule Management
+                  스케줄 관리
                 </h3>
               </div>
               <div className="p-6">
@@ -993,11 +993,11 @@ export default function JobDetailPage() {
                       <Zap className="w-5 h-5 text-purple-600 mt-0.5" />
                       <div>
                         <h4 className="font-medium text-purple-900">
-                          CDC Streaming Mode
+                          CDC 실시간 모드
                         </h4>
                         <p className="text-sm text-purple-700 mt-1">
-                          CDC mode continuously syncs changes in real-time. No
-                          schedule configuration needed.
+                          CDC 모드는 변경 데이터를 실시간으로 계속 동기화합니다.
+                          별도의 스케줄 설정은 필요하지 않습니다.
                         </p>
                       </div>
                     </div>
@@ -1005,7 +1005,7 @@ export default function JobDetailPage() {
                 ) : (
                   <div>
                     <p className="text-sm text-gray-600 mb-4">
-                      Batch ETL Set and manage schedules for your work.
+                      정기 처리 작업의 스케줄을 설정하고 관리합니다.
                     </p>
                     <div>
                       <SchedulesPanel
@@ -1014,7 +1014,7 @@ export default function JobDetailPage() {
                             ? [
                                 {
                                   id: "schedule-1",
-                                  name: `${job.schedule_frequency}-schedule`,
+                                  name: `${job.schedule_frequency} 스케줄`,
                                   cron: job.schedule,
                                   frequency: job.schedule_frequency,
                                   uiParams: job.ui_params,
@@ -1040,7 +1040,7 @@ export default function JobDetailPage() {
                   <div className="flex items-center gap-3">
                     <BarChart3 className="w-5 h-5 text-gray-500" />
                     <h3 className="text-lg font-semibold text-gray-900">
-                      Data Quality
+                      데이터 품질
                     </h3>
                   </div>
                   <button
@@ -1053,7 +1053,7 @@ export default function JobDetailPage() {
                     ) : (
                       <Play className="w-4 h-4" />
                     )}
-                    {runningCheck ? "Running..." : "Run Quality Check"}
+                    {runningCheck ? "실행 중..." : "품질 검사 실행"}
                   </button>
                 </div>
               </div>
@@ -1061,17 +1061,17 @@ export default function JobDetailPage() {
               {qualityLoading ? (
                 <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-12 text-center">
                   <RefreshCw className="w-8 h-8 text-gray-400 mx-auto mb-4 animate-spin" />
-                  <p className="text-gray-500">Loading quality data...</p>
+                  <p className="text-gray-500">품질 데이터를 불러오는 중...</p>
                 </div>
               ) : !qualityResult ? (
                 <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-12 text-center">
                   <BarChart3 className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                   <h4 className="text-lg font-medium text-gray-900 mb-2">
-                    No Quality Data Yet
+                    아직 품질 데이터가 없습니다
                   </h4>
                   <p className="text-sm text-gray-500 mb-4">
-                    Run a quality check to see data quality metrics for this
-                    dataset.
+                    품질 검사를 실행하면 이 데이터셋의 품질 지표를 볼 수
+                    있습니다.
                   </p>
                 </div>
               ) : (
@@ -1081,7 +1081,7 @@ export default function JobDetailPage() {
                     <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-gray-500">Overall Score</p>
+                          <p className="text-sm text-gray-500">종합 점수</p>
                           <p
                             className={`text-3xl font-bold ${
                               qualityResult.overall_score >= 90
@@ -1114,19 +1114,19 @@ export default function JobDetailPage() {
                       </div>
                     </div>
                     <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-                      <p className="text-sm text-gray-500">Total Rows</p>
+                      <p className="text-sm text-gray-500">전체 행</p>
                       <p className="text-2xl font-bold text-gray-900">
                         {qualityResult.row_count?.toLocaleString() || 0}
                       </p>
                     </div>
                     <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-                      <p className="text-sm text-gray-500">Columns</p>
+                      <p className="text-sm text-gray-500">컬럼</p>
                       <p className="text-2xl font-bold text-gray-900">
                         {qualityResult.column_count || 0}
                       </p>
                     </div>
                     <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-                      <p className="text-sm text-gray-500">Duplicates</p>
+                      <p className="text-sm text-gray-500">중복</p>
                       <p className="text-2xl font-bold text-gray-900">
                         {qualityResult.duplicate_count?.toLocaleString() || 0}
                       </p>
@@ -1137,7 +1137,7 @@ export default function JobDetailPage() {
                   <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
                     <div className="px-6 py-4 border-b border-gray-200">
                       <h4 className="font-semibold text-gray-900">
-                        Quality Checks
+                        품질 검사
                       </h4>
                     </div>
                     <div className="overflow-x-auto">
@@ -1145,22 +1145,22 @@ export default function JobDetailPage() {
                         <thead className="bg-gray-50">
                           <tr>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                              Check
+                              검사
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                              Column
+                              컬럼
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                              Status
+                              상태
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                              Value
+                              값
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                              Threshold
+                              기준값
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                              Message
+                              메시지
                             </th>
                           </tr>
                         </thead>
@@ -1187,7 +1187,7 @@ export default function JobDetailPage() {
                                     ) : (
                                       <XCircle className="w-3 h-3" />
                                     )}
-                                    {check.passed ? "Passed" : "Failed"}
+                                    {check.passed ? "통과" : "실패"}
                                   </span>
                                 </td>
                                 <td className="px-6 py-4 text-sm text-gray-600">
@@ -1211,7 +1211,7 @@ export default function JobDetailPage() {
                                 colSpan="6"
                                 className="px-6 py-8 text-center text-gray-500"
                               >
-                                No checks performed
+                                실행된 검사가 없습니다
                               </td>
                             </tr>
                           )}
@@ -1226,7 +1226,7 @@ export default function JobDetailPage() {
                       <div className="flex items-center gap-2 text-gray-500">
                         <Clock className="w-4 h-4" />
                         <span>
-                          Last checked:{" "}
+                          최근 검사:{" "}
                           {qualityResult.run_at
                             ? new Date(qualityResult.run_at).toLocaleString(
                                 "ko-KR"
@@ -1237,7 +1237,7 @@ export default function JobDetailPage() {
                       <div className="flex items-center gap-2 text-gray-500">
                         <Activity className="w-4 h-4" />
                         <span>
-                          Duration:{" "}
+                          소요 시간:{" "}
                           {qualityResult.duration_ms
                             ? `${qualityResult.duration_ms}ms`
                             : "-"}

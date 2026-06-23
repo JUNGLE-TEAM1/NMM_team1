@@ -114,12 +114,12 @@ export const CatalogStreamTab = ({ lineageData, selectedNode, onNavigateToNode }
             <div className="px-5 py-4 border-b border-gray-200 sticky top-0 bg-white z-10">
                 <div className="flex items-center gap-2">
                     <GitBranch className="w-4 h-4 text-purple-600" />
-                    <h3 className="font-semibold text-gray-900">Data Lineage</h3>
+                    <h3 className="font-semibold text-gray-900">데이터 흐름</h3>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
                     {selectedNode
-                        ? `Showing lineage for: ${selectedNode.data?.label || selectedNode.data?.name || selectedNode.id}`
-                        : "Click a node to view its lineage"}
+                        ? `선택한 노드의 흐름: ${selectedNode.data?.label || selectedNode.data?.name || selectedNode.id}`
+                        : "노드를 클릭하면 데이터 흐름을 볼 수 있습니다"}
                 </p>
             </div>
 
@@ -128,7 +128,7 @@ export const CatalogStreamTab = ({ lineageData, selectedNode, onNavigateToNode }
                 <div>
                     <h4 className="text-xs font-medium text-gray-500 uppercase mb-3 flex items-center gap-1.5">
                         <ArrowUpCircle className="w-3.5 h-3.5 text-blue-500" />
-                        Upstream Sources ({upstream.length})
+                        상위 원본 데이터 ({upstream.length})
                     </h4>
 
                     {upstream.length > 0 ? (
@@ -159,7 +159,7 @@ export const CatalogStreamTab = ({ lineageData, selectedNode, onNavigateToNode }
                     ) : (
                         <div className="text-center py-6 bg-gray-50 rounded-lg border border-gray-100">
                             <ArrowUpCircle className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                            <p className="text-sm text-gray-500">No upstream sources</p>
+                            <p className="text-sm text-gray-500">상위 원본 데이터가 없습니다</p>
                         </div>
                     )}
                 </div>
@@ -168,7 +168,7 @@ export const CatalogStreamTab = ({ lineageData, selectedNode, onNavigateToNode }
                 <div>
                     <h4 className="text-xs font-medium text-gray-500 uppercase mb-3 flex items-center gap-1.5">
                         <ArrowDownCircle className="w-3.5 h-3.5 text-orange-500" />
-                        Downstream Targets ({downstream.length})
+                        하위 타겟 데이터 ({downstream.length})
                     </h4>
 
                     {downstream.length > 0 ? (
@@ -199,7 +199,7 @@ export const CatalogStreamTab = ({ lineageData, selectedNode, onNavigateToNode }
                     ) : (
                         <div className="text-center py-6 bg-gray-50 rounded-lg border border-gray-100">
                             <ArrowDownCircle className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                            <p className="text-sm text-gray-500">No downstream targets</p>
+                            <p className="text-sm text-gray-500">하위 타겟 데이터가 없습니다</p>
                         </div>
                     )}
                 </div>
@@ -209,7 +209,7 @@ export const CatalogStreamTab = ({ lineageData, selectedNode, onNavigateToNode }
                     <div>
                         <h4 className="text-xs font-medium text-gray-500 uppercase mb-3 flex items-center gap-1.5">
                             <GitBranch className="w-3.5 h-3.5 text-purple-500" />
-                            Transform Nodes
+                            가공 노드
                         </h4>
                         <div className="space-y-2">
                             {lineageData.nodes

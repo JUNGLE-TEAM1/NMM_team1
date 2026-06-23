@@ -51,17 +51,17 @@ export default function TimestampColumnWarning({ sourceDatasets, schedules, s3Pr
           </div>
           <div className="flex-1">
             <h3 className="text-sm font-medium text-blue-800 mb-1">
-              ℹ️ Full Load Mode - No Timestamp Column
+              전체 적재 방식 - 타임스탬프 컬럼 없음
             </h3>
             <p className="text-sm text-blue-700">
-              This source has no timestamp columns (updated_at, created_at, etc.).
+              이 소스에는 타임스탬프 컬럼(updated_at, created_at 등)이 없습니다.
             </p>
             <p className="text-sm text-blue-700 mt-2">
-              <strong>Impact:</strong> Every scheduled run will load <strong>ALL data</strong> from scratch,
-              which is inefficient and costly for large datasets.
+              <strong>영향:</strong> 스케줄 실행마다 <strong>전체 데이터</strong>를 처음부터 다시 적재합니다.
+              대용량 데이터에서는 비효율적이고 비용이 커질 수 있습니다.
             </p>
             <p className="text-sm text-blue-700 mt-2">
-              <strong>Recommendation:</strong> Add timestamp columns to your source table or remove the schedule.
+              <strong>개선방안:</strong> 소스 테이블에 타임스탬프 컬럼을 추가하거나 스케줄을 제거하세요.
             </p>
           </div>
         </div>
@@ -91,18 +91,18 @@ export default function TimestampColumnWarning({ sourceDatasets, schedules, s3Pr
           </div>
           <div className="flex-1">
             <h3 className="text-sm font-medium text-yellow-800 mb-1">
-              ⚠️ Partial Incremental - Only New Records Detected
+              부분 증분 적재 - 신규 레코드만 감지
             </h3>
             <p className="text-sm text-yellow-700">
-              This RDB source only has <code className="bg-yellow-100 px-1 rounded">created_at</code> column.
+              이 RDB 소스에는 <code className="bg-yellow-100 px-1 rounded">created_at</code> 컬럼만 있습니다.
             </p>
             <p className="text-sm text-yellow-700 mt-2">
-              <strong>Impact:</strong> Scheduled runs will only fetch <strong>new records</strong>.
-              Any <strong>updated/modified records will NOT be detected</strong>.
+              <strong>영향:</strong> 스케줄 실행 시 <strong>새로 생성된 레코드</strong>만 가져옵니다.
+              <strong>수정된 레코드는 감지되지 않습니다</strong>.
             </p>
             <p className="text-sm text-yellow-700 mt-2">
-              <strong>Recommendation:</strong> Add an <code className="bg-yellow-100 px-1 rounded">updated_at</code> column
-              to track modifications, or accept that updates won't be synced.
+              <strong>개선방안:</strong> 변경 이력을 추적할 수 있도록 <code className="bg-yellow-100 px-1 rounded">updated_at</code> 컬럼을 추가하거나,
+              수정 데이터는 동기화하지 않는 조건으로 사용하세요.
             </p>
           </div>
         </div>

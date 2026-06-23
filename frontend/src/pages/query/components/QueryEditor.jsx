@@ -8,14 +8,22 @@ import QueryChart from "./QueryChart";
 const QUERY_ENGINES = {
     duckdb: {
         name: "DuckDB",
-        placeholder: "Enter your SQL query here...\nExample: SELECT * FROM read_parquet('s3://bucket/path/*.parquet') LIMIT 10",
+        placeholder: "SQL 쿼리를 입력하세요...\n예: SELECT * FROM read_parquet('s3://bucket/path/*.parquet') LIMIT 10",
         icon: "🦆"
     },
     trino: {
         name: "Trino",
-        placeholder: "Enter your SQL query here...\nExample: SELECT * FROM lakehouse.default.my_table LIMIT 10",
+        placeholder: "SQL 쿼리를 입력하세요...\n예: SELECT * FROM lakehouse.default.my_table LIMIT 10",
         icon: "⚡"
     }
+};
+
+const QUERY_STATUS_LABELS = {
+    QUEUED: "대기 중",
+    RUNNING: "실행 중",
+    SUCCEEDED: "성공",
+    FAILED: "실패",
+    CANCELLED: "취소됨",
 };
 
 export default function QueryEditor({ selectedTable, viewMode }) {
@@ -29,7 +37,7 @@ export default function QueryEditor({ selectedTable, viewMode }) {
 
     const executeQuery = async () => {
         if (!query.trim()) {
-            setError("Please enter a query");
+            setError("쿼리를 입력해주세요");
             return;
         }
 
@@ -126,7 +134,7 @@ export default function QueryEditor({ selectedTable, viewMode }) {
         <div className="flex-1 flex flex-col bg-white">
             {/* Header */}
             <div className="p-4 border-b border-gray-200">
-                <h2 className="font-semibold text-gray-900">Query Editor</h2>
+                <h2 className="font-semibold text-gray-900">쿼리 편집기</h2>
                 {selectedTable && (
                     <p className="text-xs text-gray-500 mt-1">
                         xflow_db.{selectedTable.name}
@@ -140,7 +148,7 @@ export default function QueryEditor({ selectedTable, viewMode }) {
                 <div className="flex items-center gap-3 mb-3">
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                         <Database className="w-4 h-4" />
-                        <span>Query Engine:</span>
+                        <span>쿼리 엔진:</span>
                     </div>
                     <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
                         {Object.entries(QUERY_ENGINES).map(([key, engine]) => (
@@ -172,7 +180,7 @@ export default function QueryEditor({ selectedTable, viewMode }) {
                             <div className="flex items-center gap-2 text-sm">
                                 {getStatusIcon()}
                                 <span className="text-gray-600">
-                                    Status: <span className="font-medium">{queryStatus}</span>
+                                    상태: <span className="font-medium">{QUERY_STATUS_LABELS[queryStatus] || queryStatus}</span>
                                 </span>
                             </div>
                         )}
@@ -188,12 +196,12 @@ export default function QueryEditor({ selectedTable, viewMode }) {
                         {executing ? (
                             <>
                                 <Loader2 className="w-4 h-4 animate-spin" />
-                                Executing...
+                                실행 중...
                             </>
                         ) : (
                             <>
                                 <Play className="w-4 h-4" />
-                                Execute Query
+                                쿼리 실행
                             </>
                         )}
                     </button>
@@ -206,7 +214,7 @@ export default function QueryEditor({ selectedTable, viewMode }) {
                     <div className="flex items-start gap-2">
                         <XCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
                         <div>
-                            <p className="font-medium text-red-900">Error</p>
+                            <p className="font-medium text-red-900">오류</p>
                             <p className="text-sm text-red-700 mt-1">{error}</p>
                         </div>
                     </div>
@@ -222,10 +230,10 @@ export default function QueryEditor({ selectedTable, viewMode }) {
                             <div className="flex items-center gap-2">
                                 <CheckCircle className="w-5 h-5 text-green-600" />
                                 <span className="text-sm font-medium text-gray-900">
-                                    Query completed successfully
+                                    쿼리가 성공적으로 완료되었습니다
                                 </span>
                                 <span className="text-sm text-gray-500">
-                                    ({results.row_count} rows)
+                                    ({results.row_count}개 행)
                                 </span>
                             </div>
 
@@ -236,7 +244,7 @@ export default function QueryEditor({ selectedTable, viewMode }) {
                                     className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                                 >
                                     <Download className="w-4 h-4" />
-                                    Download CSV
+                                    CSV 다운로드
                                 </button>
                             )}
                         </div>
@@ -292,8 +300,8 @@ export default function QueryEditor({ selectedTable, viewMode }) {
                     <div className="flex items-center justify-center h-full text-gray-400">
                         <div className="text-center">
                             <Clock className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                            <p className="text-sm">No query results yet</p>
-                            <p className="text-xs mt-1">Execute a query to see results</p>
+                            <p className="text-sm">아직 조회 결과가 없습니다</p>
+                            <p className="text-xs mt-1">쿼리를 실행하면 결과가 표시됩니다</p>
                         </div>
                     </div>
                 )}

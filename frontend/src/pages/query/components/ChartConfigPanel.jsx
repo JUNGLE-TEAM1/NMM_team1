@@ -50,7 +50,7 @@ export default function ChartConfigPanel({
         <div className="p-4 space-y-6">
             {/* Chart Type */}
             <div>
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">Chart Type</h3>
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">차트 유형</h3>
                 <div className="grid grid-cols-2 gap-2">
                     <button
                         onClick={() => setChartType('bar')}
@@ -60,7 +60,7 @@ export default function ChartConfigPanel({
                             }`}
                     >
                         <BarChart3 className="w-5 h-5" />
-                        <span className="text-xs font-medium">Bar</span>
+                        <span className="text-xs font-medium">막대</span>
                     </button>
                     <button
                         onClick={() => setChartType('line')}
@@ -70,7 +70,7 @@ export default function ChartConfigPanel({
                             }`}
                     >
                         <TrendingUp className="w-5 h-5" />
-                        <span className="text-xs font-medium">Line</span>
+                        <span className="text-xs font-medium">선</span>
                     </button>
                     <button
                         onClick={() => setChartType('area')}
@@ -80,7 +80,7 @@ export default function ChartConfigPanel({
                             }`}
                     >
                         <Activity className="w-5 h-5" />
-                        <span className="text-xs font-medium">Area</span>
+                        <span className="text-xs font-medium">영역</span>
                     </button>
                     <button
                         onClick={() => setChartType('pie')}
@@ -90,27 +90,27 @@ export default function ChartConfigPanel({
                             }`}
                     >
                         <PieChartIcon className="w-5 h-5" />
-                        <span className="text-xs font-medium">Pie</span>
+                        <span className="text-xs font-medium">파이</span>
                     </button>
                 </div>
             </div>
 
             {/* Dimensions */}
             <div>
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">Dimensions</h3>
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">차원</h3>
 
                 <div className="space-y-3">
                     <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                            X-Axis (Category)
+                            X축 (범주)
                         </label>
                         <Combobox
                             options={['', ...columns]}
                             value={xAxis}
                             onChange={setXAxis}
                             getKey={(col) => col}
-                            getLabel={(col) => col || 'None'}
-                            placeholder="Select column"
+                            getLabel={(col) => col || '없음'}
+                            placeholder="컬럼 선택"
                         />
                     </div>
 
@@ -118,19 +118,19 @@ export default function ChartConfigPanel({
                     {xAxis && (xAxis.toLowerCase().includes('date') || xAxis.toLowerCase().includes('time')) && (
                         <div>
                             <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                Time Grain
+                                시간 단위
                             </label>
                             <select
                                 value={timeGrain}
                                 onChange={(e) => setTimeGrain(e.target.value)}
                                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             >
-                                <option value="">Original</option>
-                                <option value="day">Day</option>
-                                <option value="week">Week</option>
-                                <option value="month">Month</option>
-                                <option value="quarter">Quarter</option>
-                                <option value="year">Year</option>
+                                <option value="">원본</option>
+                                <option value="day">일</option>
+                                <option value="week">주</option>
+                                <option value="month">월</option>
+                                <option value="quarter">분기</option>
+                                <option value="year">연</option>
                             </select>
                         </div>
                     )}
@@ -139,15 +139,15 @@ export default function ChartConfigPanel({
                         <>
                             <div>
                                 <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                    Breakdown By (Color) - For Stacked Bar
+                                    색상 기준 분리 (누적 막대용)
                                 </label>
                                 <Combobox
                                     options={['', ...columns]}
                                     value={breakdownBy}
                                     onChange={setBreakdownBy}
                                     getKey={(col) => col}
-                                    getLabel={(col) => col || 'None'}
-                                    placeholder="None"
+                                    getLabel={(col) => col || '없음'}
+                                    placeholder="없음"
                                 />
                             </div>
                             {!breakdownBy && yAxes.length > 1 && (
@@ -160,7 +160,7 @@ export default function ChartConfigPanel({
                                         className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                                     />
                                     <label htmlFor="stack-bars" className="text-xs font-medium text-gray-700 cursor-pointer">
-                                        Stack Bars (쌓기)
+                                        막대 누적
                                     </label>
                                 </div>
                             )}
@@ -172,35 +172,35 @@ export default function ChartConfigPanel({
             {/* Metrics (Multiple Y-Axes) */}
             <div>
                 <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-semibold text-gray-900">Metrics (Y-Axis)</h3>
+                    <h3 className="text-sm font-semibold text-gray-900">지표 (Y축)</h3>
                     <button
                         onClick={addMetric}
                         disabled={yAxes.length >= 5}
                         className="text-xs font-medium text-blue-600 hover:text-blue-700 disabled:text-gray-400"
                     >
-                        + Add Metric
+                        + 지표 추가
                     </button>
                 </div>
 
                 <div className="space-y-3">
                     {yAxes.length === 0 ? (
-                        <p className="text-xs text-gray-500">No metrics added yet</p>
+                        <p className="text-xs text-gray-500">아직 추가한 지표가 없습니다</p>
                     ) : (
                         yAxes.map((metric, index) => (
                             <div key={index} className="p-3 bg-gray-50 rounded-lg space-y-2">
                                 <div className="flex items-center justify-between">
                                     <span className="text-xs font-medium text-gray-700">
-                                        Metric {index + 1}
+                                        지표 {index + 1}
                                     </span>
                                     <button
                                         onClick={() => removeMetric(index)}
                                         className="text-xs text-red-600 hover:text-red-700"
                                     >
-                                        Remove
+                                        제거
                                     </button>
                                 </div>
                                 <div>
-                                    <label className="block text-xs text-gray-600 mb-1">Aggregation</label>
+                                    <label className="block text-xs text-gray-600 mb-1">집계 방식</label>
                                     <select
                                         value={metric.aggregation}
                                         onChange={(e) => updateMetric(index, 'aggregation', e.target.value)}
@@ -212,14 +212,14 @@ export default function ChartConfigPanel({
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-xs text-gray-600 mb-1">Column</label>
+                                    <label className="block text-xs text-gray-600 mb-1">컬럼</label>
                                     <Combobox
                                         options={columns}
                                         value={metric.column}
                                         onChange={(val) => updateMetric(index, 'column', val)}
                                         getKey={(col) => col}
                                         getLabel={(col) => col}
-                                        placeholder="Select column"
+                                        placeholder="컬럼 선택"
                                     />
                                 </div>
                             </div>
@@ -231,44 +231,44 @@ export default function ChartConfigPanel({
             {/* Calculated Metrics */}
             <div>
                 <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-semibold text-gray-900">Calculated Metrics</h3>
+                    <h3 className="text-sm font-semibold text-gray-900">계산 지표</h3>
                     <button
                         onClick={() => {
                             setCalculatedMetrics([...calculatedMetrics, {
                                 metricA: yAxes[0]?.column || '',
                                 operation: 'subtract',
                                 metricB: yAxes[1]?.column || '',
-                                label: 'Calculated'
+                                label: '계산값'
                             }]);
                         }}
                         disabled={yAxes.length < 2}
                         className="text-xs font-medium text-blue-600 hover:text-blue-700 disabled:text-gray-400"
                     >
-                        + Add Calculation
+                        + 계산식 추가
                     </button>
                 </div>
 
                 {calculatedMetrics.length === 0 ? (
-                    <p className="text-xs text-gray-500">Add at least 2 metrics to create calculations</p>
+                    <p className="text-xs text-gray-500">계산 지표를 만들려면 지표를 2개 이상 추가하세요</p>
                 ) : (
                     <div className="space-y-3">
                         {calculatedMetrics.map((calc, index) => (
                             <div key={index} className="p-3 bg-gray-50 rounded-lg space-y-2">
                                 <div className="flex items-center justify-between">
-                                    <span className="text-xs font-medium text-gray-700">Calculation {index + 1}</span>
+                                    <span className="text-xs font-medium text-gray-700">계산식 {index + 1}</span>
                                     <button
                                         onClick={() => {
                                             setCalculatedMetrics(calculatedMetrics.filter((_, i) => i !== index));
                                         }}
                                         className="text-xs text-red-600 hover:text-red-700"
                                     >
-                                        Remove
+                                        제거
                                     </button>
                                 </div>
 
                                 {/* Metric A */}
                                 <div>
-                                    <label className="block text-xs text-gray-600 mb-1">Metric A</label>
+                                    <label className="block text-xs text-gray-600 mb-1">지표 A</label>
                                     <select
                                         value={calc.metricA}
                                         onChange={(e) => {
@@ -288,7 +288,7 @@ export default function ChartConfigPanel({
 
                                 {/* Operation */}
                                 <div>
-                                    <label className="block text-xs text-gray-600 mb-1">Operation</label>
+                                    <label className="block text-xs text-gray-600 mb-1">연산</label>
                                     <select
                                         value={calc.operation}
                                         onChange={(e) => {
@@ -298,17 +298,17 @@ export default function ChartConfigPanel({
                                         }}
                                         className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded"
                                     >
-                                        <option value="add">➕ Add (A + B)</option>
-                                        <option value="subtract">➖ Subtract (A - B)</option>
-                                        <option value="multiply">✖️ Multiply (A × B)</option>
-                                        <option value="divide">➗ Divide (A ÷ B)</option>
-                                        <option value="percentage">📊 Percentage (A/B × 100)</option>
+                                        <option value="add">더하기 (A + B)</option>
+                                        <option value="subtract">빼기 (A - B)</option>
+                                        <option value="multiply">곱하기 (A x B)</option>
+                                        <option value="divide">나누기 (A / B)</option>
+                                        <option value="percentage">비율 (A/B x 100)</option>
                                     </select>
                                 </div>
 
                                 {/* Metric B */}
                                 <div>
-                                    <label className="block text-xs text-gray-600 mb-1">Metric B</label>
+                                    <label className="block text-xs text-gray-600 mb-1">지표 B</label>
                                     <select
                                         value={calc.metricB}
                                         onChange={(e) => {
@@ -328,7 +328,7 @@ export default function ChartConfigPanel({
 
                                 {/* Label */}
                                 <div>
-                                    <label className="block text-xs text-gray-600 mb-1">Label</label>
+                                    <label className="block text-xs text-gray-600 mb-1">라벨</label>
                                     <input
                                         type="text"
                                         value={calc.label}
@@ -337,7 +337,7 @@ export default function ChartConfigPanel({
                                             newCalcs[index].label = e.target.value;
                                             setCalculatedMetrics(newCalcs);
                                         }}
-                                        placeholder="e.g. Profit"
+                                        placeholder="예: 이익"
                                         className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded"
                                     />
                                 </div>
@@ -349,25 +349,25 @@ export default function ChartConfigPanel({
 
             {/* Chart Options */}
             <div>
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">Chart Options</h3>
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">차트 옵션</h3>
                 <div className="space-y-3">
                     <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                            Sort By
+                            정렬 기준
                         </label>
                         <Combobox
                             options={['', xAxis, ...yAxes.map(m => `${m.aggregation}(${m.column})`)]}
                             value={sortBy}
                             onChange={setSortBy}
                             getKey={(opt) => opt}
-                            getLabel={(opt) => opt || 'Default (First Metric)'}
-                            placeholder="Select sort field"
+                            getLabel={(opt) => opt || '기본값 (첫 번째 지표)'}
+                            placeholder="정렬 기준 선택"
                         />
                     </div>
 
                     <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                            Sort Order
+                            정렬 순서
                         </label>
                         <div className="flex gap-2">
                             <button
@@ -377,7 +377,7 @@ export default function ChartConfigPanel({
                                     : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                                     }`}
                             >
-                                Ascending
+                                오름차순
                             </button>
                             <button
                                 onClick={() => setSortOrder('desc')}
@@ -386,22 +386,22 @@ export default function ChartConfigPanel({
                                     : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                                     }`}
                             >
-                                Descending
+                                내림차순
                             </button>
                         </div>
                     </div>
 
                     <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                            Show Top N
+                            상위 N개 표시
                         </label>
                         <Combobox
                             options={limitOptions}
                             value={limit}
                             onChange={setLimit}
                             getKey={(n) => n}
-                            getLabel={(n) => n === 'All' ? 'Show All' : `Top ${n}`}
-                            placeholder="Select limit"
+                            getLabel={(n) => n === 'All' ? '전체 표시' : `상위 ${n}개`}
+                            placeholder="표시 개수 선택"
                         />
                     </div>
                 </div>

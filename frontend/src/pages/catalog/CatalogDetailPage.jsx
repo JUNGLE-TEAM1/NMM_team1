@@ -621,12 +621,12 @@ function CatalogDetailContent() {
       <div className="h-full flex items-center justify-center">
         <div className="text-center">
           <Database className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-500 mb-4">Catalog item not found</p>
+          <p className="text-gray-500 mb-4">카탈로그 항목을 찾을 수 없습니다</p>
           <button
             onClick={() => navigate("/catalog")}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
-            Back to Catalog
+            카탈로그로 돌아가기
           </button>
         </div>
       </div>
@@ -636,7 +636,7 @@ function CatalogDetailContent() {
   if (!catalogItem) {
     return (
       <div className="h-full flex items-center justify-center text-gray-500">
-        Loading...
+        불러오는 중...
       </div>
     );
   }
@@ -688,21 +688,21 @@ function CatalogDetailContent() {
               <button
                 onClick={handleZoomIn}
                 className="w-8 h-8 flex items-center justify-center bg-white border border-gray-300 rounded shadow-sm hover:bg-gray-50 transition-colors"
-                title="Zoom In"
+                title="확대"
               >
                 <Plus className="w-4 h-4 text-gray-700" />
               </button>
               <button
                 onClick={handleZoomOut}
                 className="w-8 h-8 flex items-center justify-center bg-white border border-gray-300 rounded shadow-sm hover:bg-gray-50 transition-colors"
-                title="Zoom Out"
+                title="축소"
               >
                 <Minus className="w-4 h-4 text-gray-700" />
               </button>
               <button
                 onClick={handleFitView}
                 className="w-8 h-8 flex items-center justify-center bg-white border border-gray-300 rounded shadow-sm hover:bg-gray-50 transition-colors"
-                title="Fit View"
+                title="화면에 맞추기"
               >
                 <Maximize2 className="w-4 h-4 text-gray-700" />
               </button>
@@ -729,19 +729,19 @@ function CatalogDetailContent() {
               {saveStatus === "saving" && (
                 <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg shadow-sm">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                  <span className="text-sm text-blue-700 font-medium">Saving layout...</span>
+                  <span className="text-sm text-blue-700 font-medium">레이아웃 저장 중...</span>
                 </div>
               )}
               {saveStatus === "saved" && (
                 <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg shadow-sm animate-fade-in">
                   <Check className="w-4 h-4 text-green-600" />
-                  <span className="text-sm text-green-700 font-medium">Layout saved</span>
+                  <span className="text-sm text-green-700 font-medium">레이아웃 저장됨</span>
                 </div>
               )}
               {saveStatus === "error" && (
                 <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg shadow-sm">
                   <AlertCircle className="w-4 h-4 text-red-600" />
-                  <span className="text-sm text-red-700 font-medium">Failed to save</span>
+                  <span className="text-sm text-red-700 font-medium">저장 실패</span>
                 </div>
               )}
             </div>

@@ -20,12 +20,12 @@ export default function SchedulesPanel({ schedules = [], onUpdate }) {
     const [intervalMinutes, setIntervalMinutes] = useState(0);
 
     const frequencyOptions = [
-        { value: '', label: 'Select frequency' },
-        { value: 'hourly', label: 'Hourly' },
-        { value: 'daily', label: 'Daily' },
-        { value: 'weekly', label: 'Weekly' },
-        { value: 'monthly', label: 'Monthly' },
-        { value: 'interval', label: 'Custom Time (Interval)' },
+        { value: '', label: '주기 선택' },
+        { value: 'hourly', label: '시간별' },
+        { value: 'daily', label: '매일' },
+        { value: 'weekly', label: '매주' },
+        { value: 'monthly', label: '매월' },
+        { value: 'interval', label: '사용자 지정 반복' },
     ];
 
     // Close dropdown when clicking outside
@@ -49,24 +49,24 @@ export default function SchedulesPanel({ schedules = [], onUpdate }) {
         // If backend hasn't generated cron yet, we can still show summary based on params
 
         if (frequency === 'hourly') {
-            return `Runs every ${uiParams.hourInterval} hour${uiParams.hourInterval > 1 ? 's' : ''}`;
+            return `${uiParams.hourInterval}시간마다 실행`;
         }
 
         if (frequency === 'interval') {
             const parts = [];
-            if (uiParams.intervalDays > 0) parts.push(`${uiParams.intervalDays} day${uiParams.intervalDays > 1 ? 's' : ''}`);
-            if (uiParams.intervalHours > 0) parts.push(`${uiParams.intervalHours} hour${uiParams.intervalHours > 1 ? 's' : ''}`);
-            if (uiParams.intervalMinutes > 0) parts.push(`${uiParams.intervalMinutes} min${uiParams.intervalMinutes > 1 ? 's' : ''}`);
-            return `Runs every ${parts.join(', ') || '0 mins'} starting ${new Date(uiParams.startDate).toLocaleString()}`;
+            if (uiParams.intervalDays > 0) parts.push(`${uiParams.intervalDays}일`);
+            if (uiParams.intervalHours > 0) parts.push(`${uiParams.intervalHours}시간`);
+            if (uiParams.intervalMinutes > 0) parts.push(`${uiParams.intervalMinutes}분`);
+            return `${parts.join(', ') || '0분'}마다 실행, 시작: ${new Date(uiParams.startDate).toLocaleString()}`;
         }
 
         if (['daily', 'weekly', 'monthly'].includes(frequency) && uiParams.startDate) {
             const date = new Date(uiParams.startDate);
             const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-            if (frequency === 'daily') return `Runs daily at ${timeStr}`;
-            if (frequency === 'weekly') return `Runs every ${date.toLocaleDateString([], { weekday: 'long' })} at ${timeStr}`;
-            if (frequency === 'monthly') return `Runs on day ${date.getDate()} of every month at ${timeStr}`;
+            if (frequency === 'daily') return `매일 ${timeStr} 실행`;
+            if (frequency === 'weekly') return `매주 ${date.toLocaleDateString('ko-KR', { weekday: 'long' })} ${timeStr} 실행`;
+            if (frequency === 'monthly') return `매월 ${date.getDate()}일 ${timeStr} 실행`;
         }
 
         return s.cron;
@@ -91,7 +91,7 @@ export default function SchedulesPanel({ schedules = [], onUpdate }) {
 
         const scheduleData = {
             id: editingId || Date.now().toString(),
-            name: `${frequency}-schedule`,
+            name: `${frequencyOptions.find((opt) => opt.value === frequency)?.label || frequency} 스케줄`,
             frequency: frequency,
             cron: null, // Backend will generate this
             description: description,
@@ -174,9 +174,9 @@ export default function SchedulesPanel({ schedules = [], onUpdate }) {
     };
 
     const formatDate = (dateString) => {
-        return new Date(dateString).toLocaleString('en-US', {
+        return new Date(dateString).toLocaleString('ko-KR', {
             year: 'numeric',
-            month: 'short',
+            month: '2-digit',
             day: 'numeric',
             hour: '2-digit',
             minute: '2-digit',
@@ -190,7 +190,7 @@ export default function SchedulesPanel({ schedules = [], onUpdate }) {
                 {/* Frequency */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Frequency
+                        실행 주기
                     </label>
                     <div className="relative" ref={dropdownRef}>
                         <button
@@ -198,7 +198,7 @@ export default function SchedulesPanel({ schedules = [], onUpdate }) {
                             className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg flex items-center justify-between hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all text-left"
                         >
                             <span className={`block truncate ${!frequency ? 'text-gray-400' : 'text-gray-900'}`}>
-                                {frequencyOptions.find(opt => opt.value === frequency)?.label || 'Select frequency'}
+                                {frequencyOptions.find(opt => opt.value === frequency)?.label || '주기 선택'}
                             </span>
                             <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${isDropdownOpen ? 'transform rotate-180' : ''}`} />
                         </button>
@@ -227,7 +227,7 @@ export default function SchedulesPanel({ schedules = [], onUpdate }) {
                 {frequency === 'hourly' && (
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Run Every (Hours)
+                            반복 간격 (시간)
                         </label>
                         <div className="flex items-center gap-3">
                             <input
@@ -238,10 +238,10 @@ export default function SchedulesPanel({ schedules = [], onUpdate }) {
                                 onChange={(e) => setHourInterval(parseInt(e.target.value) || 1)}
                                 className="w-32 px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
-                            <span className="text-gray-600">Hours</span>
+                            <span className="text-gray-600">시간</span>
                         </div>
                         <p className="mt-1 text-xs text-gray-500">
-                            Job will run every {hourInterval} hour(s) at minute 0.
+                            작업은 {hourInterval}시간마다 정각에 실행됩니다.
                         </p>
                     </div>
                 )}
@@ -249,7 +249,7 @@ export default function SchedulesPanel({ schedules = [], onUpdate }) {
                 {['hourly', 'daily', 'weekly', 'monthly', 'interval'].includes(frequency) && (
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Start Date & Time
+                            시작 날짜 및 시간
                         </label>
                         <input
                             type="datetime-local"
@@ -259,8 +259,8 @@ export default function SchedulesPanel({ schedules = [], onUpdate }) {
                             className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                         <p className="mt-1 text-xs text-gray-500">
-                            The job will start execution from this date/time.
-                            {startDate && startDate < minDateTime && <span className="text-red-500 ml-1">Cannot select past date!</span>}
+                            작업은 이 날짜와 시간부터 실행됩니다.
+                            {startDate && startDate < minDateTime && <span className="text-red-500 ml-1">과거 날짜는 선택할 수 없습니다.</span>}
                         </p>
                     </div>
                 )}
@@ -268,7 +268,7 @@ export default function SchedulesPanel({ schedules = [], onUpdate }) {
                 {frequency === 'interval' && (
                     <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                         <label className="block text-sm font-medium text-gray-700 mb-3">
-                            Repeat Every
+                            반복 간격
                         </label>
                         <div className="flex items-center gap-4">
                             <div className="flex-1">
@@ -280,7 +280,7 @@ export default function SchedulesPanel({ schedules = [], onUpdate }) {
                                         onChange={(e) => setIntervalDays(Math.max(0, parseInt(e.target.value) || 0))}
                                         className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     />
-                                    <span className="text-sm font-medium text-gray-600">Days</span>
+                                    <span className="text-sm font-medium text-gray-600">일</span>
                                 </div>
                             </div>
                             <div className="flex-1">
@@ -293,7 +293,7 @@ export default function SchedulesPanel({ schedules = [], onUpdate }) {
                                         onChange={(e) => setIntervalHours(Math.max(0, parseInt(e.target.value) || 0))}
                                         className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     />
-                                    <span className="text-sm font-medium text-gray-600">Hours</span>
+                                    <span className="text-sm font-medium text-gray-600">시간</span>
                                 </div>
                             </div>
                             <div className="flex-1">
@@ -306,12 +306,12 @@ export default function SchedulesPanel({ schedules = [], onUpdate }) {
                                         onChange={(e) => setIntervalMinutes(Math.max(0, parseInt(e.target.value) || 0))}
                                         className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     />
-                                    <span className="text-sm font-medium text-gray-600">Minutes</span>
+                                    <span className="text-sm font-medium text-gray-600">분</span>
                                 </div>
                             </div>
                         </div>
                         <p className="mt-2 text-xs text-gray-500">
-                            Example: 1 Day and 12 Hours means the job runs every 36 hours.
+                            예: 1일 12시간은 작업이 36시간마다 실행된다는 의미입니다.
                         </p>
                     </div>
                 )}
@@ -322,14 +322,14 @@ export default function SchedulesPanel({ schedules = [], onUpdate }) {
                         onClick={resetForm}
                         className="px-4 py-2 text-blue-600 hover:text-blue-700 font-medium"
                     >
-                        Cancel
+                        취소
                     </button>
                     <button
                         onClick={handleCreateSchedule}
                         disabled={!frequency}
                         className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                     >
-                        {editingId ? 'Update schedule' : 'Create schedule'}
+                        {editingId ? '스케줄 수정' : '스케줄 생성'}
                     </button>
                 </div>
             </div>
@@ -343,7 +343,7 @@ export default function SchedulesPanel({ schedules = [], onUpdate }) {
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <Calendar className="w-5 h-5 text-gray-500" />
-                    <h3 className="text-lg font-semibold text-gray-900">Schedules</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">스케줄</h3>
                 </div>
             </div>
 
@@ -351,7 +351,7 @@ export default function SchedulesPanel({ schedules = [], onUpdate }) {
             {schedules.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                     <Calendar className="w-10 h-10 mx-auto mb-3 text-gray-300" />
-                    <p className="text-sm">No schedules configured</p>
+                    <p className="text-sm">설정된 스케줄이 없습니다</p>
                 </div>
             ) : (
                 <div className="space-y-3">
@@ -373,12 +373,12 @@ export default function SchedulesPanel({ schedules = [], onUpdate }) {
                             </div>
                             <div className="flex items-center gap-4">
                                 <span className="text-xs text-gray-400">
-                                    Created: {formatDate(schedule.createdAt)}
+                                    생성일: {formatDate(schedule.createdAt)}
                                 </span>
                                 <button
                                     onClick={(e) => handleDeleteSchedule(schedule.id, e)}
                                     className="p-2 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors text-gray-400"
-                                    title="Delete schedule"
+                                    title="스케줄 삭제"
                                 >
                                     <X className="w-4 h-4" />
                                 </button>

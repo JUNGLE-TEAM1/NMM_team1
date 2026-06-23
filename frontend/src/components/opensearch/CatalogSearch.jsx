@@ -107,14 +107,14 @@ export default function CatalogSearch() {
 
   // 타입별 라벨
   const typeLabels = {
-    domain: { label: 'Domains', icon: Database },
-    etl_job: { label: 'Dataset', icon: Workflow }
+    domain: { label: '도메인', icon: Database },
+    etl_job: { label: '데이터셋', icon: Workflow }
   };
 
   return (
-    <div className="flex items-center gap-2 flex-1 max-w-xl" ref={searchRef}>
+    <div className="flex min-w-0 flex-1 items-center gap-2 max-w-xl" ref={searchRef}>
       {/* 검색 Input */}
-      <div className="relative flex-1">
+      <div className="relative min-w-0 flex-1">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
           {loading ? (
             <Loader2 className="h-4 w-4 text-gray-400 animate-spin" />
@@ -124,7 +124,7 @@ export default function CatalogSearch() {
         </div>
         <input
           type="text"
-          placeholder="Search datasets..."
+          placeholder="데이터셋 검색..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => {
@@ -135,16 +135,16 @@ export default function CatalogSearch() {
 
         {/* 검색 결과 드롭다운 */}
         {isOpen && (
-          <div className="absolute z-50 mt-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 max-h-96 overflow-y-auto">
+          <div className="absolute z-50 mt-2 w-full min-w-72 max-w-[calc(100vw-6rem)] bg-white rounded-lg shadow-lg border border-gray-200 max-h-96 overflow-y-auto">
             {error && (
               <div className="p-4 text-sm text-red-600">
-                Error: {error}
+                오류: {error}
               </div>
             )}
 
             {!error && results.length === 0 && query.trim().length > 0 && !loading && (
               <div className="p-4 text-sm text-gray-500 text-center">
-                No results found for "{query}"
+                "{query}"에 대한 검색 결과가 없습니다
               </div>
             )}
 
@@ -178,12 +178,12 @@ export default function CatalogSearch() {
                               </div>
                               <div className="flex-1 min-w-0">
                                 {/* Dataset Info */}
-                                <div className="flex items-center gap-2 mb-1">
+                                <div className="flex min-w-0 items-center gap-2 mb-1">
                                   <span className="font-medium text-sm text-gray-900 truncate">
                                     {highlightText(result.name, query)}
                                   </span>
                                   {result.status && (
-                                    <span className={`text-xs px-1.5 py-0.5 rounded ${result.status === 'active'
+                                    <span className={`shrink-0 text-xs px-1.5 py-0.5 rounded ${result.status === 'active'
                                       ? 'bg-green-100 text-green-700'
                                       : 'bg-gray-100 text-gray-600'
                                       }`}>
@@ -215,36 +215,36 @@ export default function CatalogSearch() {
                                 )}
 
                                 {/* Action Buttons */}
-                                <div className="flex items-center gap-2 mt-2">
+                                <div className="flex flex-wrap items-center gap-2 mt-2">
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       handleEdit(result);
                                     }}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:border-gray-400 transition-colors"
+                                    className="flex shrink-0 items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:border-gray-400 transition-colors"
                                   >
                                     <Edit className="w-3.5 h-3.5" />
-                                    Edit
+                                    수정
                                   </button>
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       handleCatalog(result);
                                     }}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:border-gray-400 transition-colors"
+                                    className="flex shrink-0 items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:border-gray-400 transition-colors"
                                   >
                                     <GitBranch className="w-3.5 h-3.5" />
-                                    Catalog
+                                    카탈로그
                                   </button>
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       handleInfo(result);
                                     }}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:border-gray-400 transition-colors"
+                                    className="flex shrink-0 items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:border-gray-400 transition-colors"
                                   >
                                     <Info className="w-3.5 h-3.5" />
-                                    Info
+                                    정보
                                   </button>
                                 </div>
                               </div>
@@ -265,8 +265,8 @@ export default function CatalogSearch() {
       <button
         onClick={handleRefresh}
         disabled={indexing}
-        title="Refresh search index"
-        className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        title="검색 인덱스 새로고침"
+        className="shrink-0 p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <RefreshCw
           className={`w-5 h-5 ${indexing ? 'animate-spin' : ''}`}

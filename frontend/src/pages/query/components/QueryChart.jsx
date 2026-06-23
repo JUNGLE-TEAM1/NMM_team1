@@ -37,7 +37,7 @@ export default function QueryChart({
         // If no x-axis, aggregate everything into one group
         if (!xAxis) {
             const totalGroup = {
-                '_category': 'Total',
+                '_category': '전체',
                 count: data.length,
                 sums: {},
                 maxes: {},
@@ -62,7 +62,7 @@ export default function QueryChart({
             });
 
             // Create single result
-            const result = { '_category': 'Total' };
+            const result = { '_category': '전체' };
             yAxes.forEach(metric => {
                 const col = metric.column;
                 const agg = metric.aggregation;
@@ -300,7 +300,7 @@ export default function QueryChart({
         if (!displayData || displayData.length === 0) {
             return (
                 <div className="flex items-center justify-center h-64 text-gray-400">
-                    <p className="text-sm">No data to visualize. Please configure dimensions and metrics.</p>
+                    <p className="text-sm">시각화할 데이터가 없습니다. 차원과 지표를 설정해주세요.</p>
                 </div>
             );
         }

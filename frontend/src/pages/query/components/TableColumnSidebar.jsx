@@ -178,7 +178,7 @@ export default function TableColumnSidebar({
 
   const handleViewModeChange = (mode) => {
     if (mode === 'chart' && !results) {
-      showToast('Please run a query first to view charts', 'warning');
+      showToast('차트를 보려면 먼저 쿼리를 실행해주세요', 'warning');
       return;
     }
     setViewMode(mode);
@@ -196,7 +196,7 @@ export default function TableColumnSidebar({
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Database className="w-5 h-5 text-blue-600" />
-            <h2 className="font-semibold text-gray-900">S3 Browser</h2>
+            <h2 className="font-semibold text-gray-900">S3 탐색기</h2>
           </div>
           <button
             onClick={fetchBuckets}
@@ -221,7 +221,7 @@ export default function TableColumnSidebar({
                 }`}
             >
               <Table2 className="w-3.5 h-3.5" />
-              Table
+              표
             </button>
             <button
               onClick={() => handleViewModeChange("chart")}
@@ -231,7 +231,7 @@ export default function TableColumnSidebar({
                 }`}
             >
               <BarChart3 className="w-3.5 h-3.5" />
-              Chart
+              차트
             </button>
           </div>
         )}
@@ -243,9 +243,9 @@ export default function TableColumnSidebar({
           onChange={(bucket) => setSelectedBucket(bucket)}
           getKey={(bucket) => bucket}
           getLabel={(bucket) => bucket}
-          placeholder="Select a bucket"
+          placeholder="버킷 선택"
           isLoading={loading}
-          emptyMessage="No buckets found"
+          emptyMessage="버킷이 없습니다"
         />
       </div>
 
@@ -256,13 +256,13 @@ export default function TableColumnSidebar({
           <>
             {(loading || loadingFolders) && (
               <div className="p-4 text-sm text-gray-500 text-center">
-                Loading...
+                불러오는 중...
               </div>
             )}
 
             {error && (
               <div className="p-4 text-sm text-red-500 text-center">
-                Error: {error}
+                오류: {error}
               </div>
             )}
 
@@ -272,7 +272,7 @@ export default function TableColumnSidebar({
               folders.length === 0 &&
               selectedBucket && (
                 <div className="p-4 text-sm text-gray-500 text-center">
-                  No parquet files found
+                  Parquet 파일이 없습니다
                 </div>
               )}
 
@@ -304,7 +304,7 @@ export default function TableColumnSidebar({
                             {folder.name}
                           </p>
                           <p className="text-xs text-gray-500">
-                            {folder.isFile ? "File" : "Folder"}
+                            {folder.isFile ? "파일" : "폴더"}
                           </p>
                         </div>
                       </div>
@@ -316,7 +316,7 @@ export default function TableColumnSidebar({
                     <div className="bg-white px-4 py-2 border-t border-gray-100">
                       {loadingColumns ? (
                         <p className="text-xs text-gray-500 py-2">
-                          Loading columns...
+                          컬럼을 불러오는 중...
                         </p>
                       ) : columns.length > 0 ? (
                         <div className="space-y-1">
@@ -339,7 +339,7 @@ export default function TableColumnSidebar({
                         </div>
                       ) : (
                         <p className="text-xs text-gray-500 py-2">
-                          No columns found
+                          컬럼이 없습니다
                         </p>
                       )}
                     </div>
@@ -378,7 +378,7 @@ export default function TableColumnSidebar({
               />
             ) : (
               <div className="p-4 text-sm text-gray-500 text-center">
-                Run a query to configure charts
+                차트를 설정하려면 먼저 쿼리를 실행하세요
               </div>
             )}
           </div>
@@ -391,7 +391,7 @@ export default function TableColumnSidebar({
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1">
               <p className="text-xs text-blue-700 mb-1">
-                <span className="font-medium">Query:</span>
+                <span className="font-medium">쿼리:</span>
               </p>
               <code className="text-xs text-blue-800 break-all">
                 {engine === 'trino'
@@ -410,7 +410,7 @@ export default function TableColumnSidebar({
                 setTimeout(() => setCopied(false), 2000);
               }}
               className="flex-shrink-0 p-1.5 rounded hover:bg-blue-100 transition-colors"
-              title="Copy to clipboard"
+              title="클립보드에 복사"
             >
               {copied ? (
                 <Check className="w-4 h-4 text-green-600" />

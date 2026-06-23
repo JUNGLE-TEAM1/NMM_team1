@@ -10,7 +10,7 @@ export default function MainLayout({ children, fullWidth = false }) {
 
     return (
         <AICopilotProvider>
-            <div className={clsx("bg-gray-50 flex relative", fullWidth ? "h-screen overflow-hidden" : "min-h-screen")}>
+            <div className={clsx("bg-gray-50 flex relative min-w-0", fullWidth ? "h-screen overflow-hidden" : "min-h-screen")}>
                 {/* Fixed Sidebar */}
                 <Sidebar
                     isCollapsed={isCollapsed}
@@ -37,7 +37,7 @@ export default function MainLayout({ children, fullWidth = false }) {
 
                 {/* Main Content Wrapper */}
                 <div className={clsx(
-                    "flex-1 transition-all duration-300 ease-in-out flex flex-col",
+                    "flex-1 min-w-0 transition-all duration-300 ease-in-out flex flex-col",
                     isCollapsed ? "ml-20" : "ml-64"
                 )}>
                     {/* Fixed Topbar */}
@@ -45,8 +45,8 @@ export default function MainLayout({ children, fullWidth = false }) {
 
                     {/* Scrollable Content Area */}
                     <main className={clsx(
-                        "mt-16 flex-1",
-                        fullWidth ? "h-[calc(100vh-4rem)] overflow-hidden" : "p-8 min-h-[calc(100vh-4rem)]"
+                        "mt-16 flex-1 min-w-0",
+                        fullWidth ? "h-[calc(100vh-4rem)] overflow-hidden" : "p-4 sm:p-6 lg:p-8 min-h-[calc(100vh-4rem)]"
                     )}>
                         {children}
                     </main>

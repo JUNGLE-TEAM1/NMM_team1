@@ -14,7 +14,7 @@ export default function S3CSVPreviewConfig({
 
   const handleFetchPreview = async () => {
     if (!connectionId || !bucket || !path) {
-      setError("Connection, bucket, and path are required");
+      setError("연결, 버킷, 경로가 필요합니다");
       return;
     }
 
@@ -37,10 +37,10 @@ export default function S3CSVPreviewConfig({
           onColumnsChange(data.columns);
         }
       } else {
-        setError(data.error || "Failed to preview CSV");
+        setError(data.error || "CSV 미리보기에 실패했습니다");
       }
     } catch (err) {
-      setError(err.message || "Failed to preview CSV");
+      setError(err.message || "CSV 미리보기에 실패했습니다");
     } finally {
       setIsLoading(false);
     }
@@ -52,10 +52,9 @@ export default function S3CSVPreviewConfig({
       <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
         <FileText className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
         <div className="text-xs text-blue-800">
-          <p className="font-medium mb-1">CSV Preview</p>
+          <p className="font-medium mb-1">CSV 미리보기</p>
           <p className="text-blue-700">
-            Preview the CSV file and automatically extract the schema from the
-            CSV headers.
+            CSV 파일을 미리보고 헤더에서 스키마를 자동으로 추출합니다.
           </p>
         </div>
       </div>
@@ -70,12 +69,12 @@ export default function S3CSVPreviewConfig({
         {isLoading ? (
           <>
             <Loader2 className="w-4 h-4 animate-spin" />
-            Loading CSV...
+            CSV 불러오는 중...
           </>
         ) : (
           <>
             <Eye className="w-4 h-4" />
-            Fetch CSV Preview
+            CSV 미리보기 가져오기
           </>
         )}
       </button>
@@ -86,7 +85,7 @@ export default function S3CSVPreviewConfig({
           <div className="flex items-start gap-2">
             <X className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
             <div className="text-xs text-red-800">
-              <p className="font-medium">Preview Failed</p>
+              <p className="font-medium">미리보기 실패</p>
               <p className="mt-1">{error}</p>
             </div>
           </div>
@@ -101,10 +100,10 @@ export default function S3CSVPreviewConfig({
             <Check className="w-5 h-5 text-green-600 flex-shrink-0" />
             <div>
               <p className="text-sm font-semibold text-green-900">
-                ✅ CSV Schema Extracted!
+                CSV 스키마를 추출했습니다
               </p>
               <p className="text-xs text-green-700 mt-1">
-                Found {previewData.columns?.length} columns
+                {previewData.columns?.length}개 컬럼 발견
               </p>
             </div>
           </div>
@@ -113,7 +112,7 @@ export default function S3CSVPreviewConfig({
           <div className="bg-white border border-green-200 rounded-lg overflow-hidden">
             <div className="px-3 py-2 bg-green-100 border-b border-green-200">
               <h5 className="text-xs font-semibold text-green-900">
-                Preview Data ({previewData.preview_data?.length || 0} rows)
+                미리보기 데이터 ({previewData.preview_data?.length || 0}행)
               </h5>
             </div>
             <div className="max-h-60 overflow-auto">
@@ -158,7 +157,7 @@ export default function S3CSVPreviewConfig({
             <div className="px-3 py-2 bg-gray-50 border-b border-gray-200">
               <h4 className="text-xs font-semibold text-gray-700 flex items-center gap-2">
                 <FileText className="w-4 h-4" />
-                Extracted Schema ({previewData.columns?.length} columns)
+                추출된 스키마 ({previewData.columns?.length}개 컬럼)
               </h4>
             </div>
             <div className="divide-y divide-gray-100 max-h-40 overflow-y-auto">

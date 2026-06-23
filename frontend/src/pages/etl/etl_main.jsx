@@ -114,16 +114,16 @@ export default function ETLMain() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.detail || "Failed to delete Dataset");
+        throw new Error(error.detail || "데이터셋 삭제에 실패했습니다");
       }
 
       // Refresh the list after deletion
       fetchJobs();
       setCurrentPage(1);
-      showToast("Dataset deleted successfully", "success");
+      showToast("데이터셋을 삭제했습니다", "success");
     } catch (error) {
       console.error("Delete failed:", error);
-      showToast(`Delete failed: ${error.message}`, "error");
+      showToast(`삭제 실패: ${error.message}`, "error");
     }
   };
 
@@ -140,28 +140,30 @@ export default function ETLMain() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 px-6 pt-2 pb-6">
+    <div className="min-h-screen max-w-full overflow-hidden bg-gray-50 px-4 pt-2 pb-6 sm:px-6">
       {/* Header with Create Button */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Dataset</h1>
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="min-w-0 text-xl font-bold text-gray-900 sm:text-2xl">
+          데이터셋 관리
+        </h1>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          className="inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
         >
           <Plus className="w-4 h-4" />
-          Create Dataset
+          데이터셋 생성
         </button>
       </div>
 
       {/* Datasets Table */}
-      <div className="bg-white rounded-lg shadow">
+      <div className="max-w-full overflow-hidden rounded-lg bg-white shadow">
         {/* Header with Actions */}
-        <div className="border-b border-gray-200 px-6 py-4 flex items-center">
-          <div className="relative w-1/3">
+        <div className="flex flex-col gap-3 border-b border-gray-200 px-4 py-4 sm:px-6 md:flex-row md:items-center">
+          <div className="relative w-full md:max-w-sm">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search datasets..."
+              placeholder="데이터셋 검색..."
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
@@ -179,42 +181,42 @@ export default function ETLMain() {
             <div className="max-w-md mx-auto">
               <Database className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">
-                No datasets
+                데이터셋이 없습니다
               </h3>
               <p className="text-gray-600">
-                Create a dataset using the button above.
+                위 버튼을 눌러 데이터셋을 생성하세요.
               </p>
             </div>
           </div>
         ) : (
           /* Jobs Table */
-          <div className="overflow-hidden">
-            <table className="w-full divide-y divide-gray-200 table-fixed">
+          <div className="max-w-full overflow-x-auto">
+            <table className="min-w-[1040px] w-full divide-y divide-gray-200 table-fixed">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="w-[16%] px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Dataset name
+                  <th className="w-[17%] px-3 py-3 text-left text-xs font-medium text-gray-500 tracking-wider whitespace-nowrap">
+                    데이터셋 이름
                   </th>
-                  <th className="w-[10%] px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Owner
+                  <th className="w-[10%] px-3 py-3 text-left text-xs font-medium text-gray-500 tracking-wider whitespace-nowrap">
+                    담당자
                   </th>
-                  <th className="w-[8%] px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Type
+                  <th className="w-[11%] px-3 py-3 text-left text-xs font-medium text-gray-500 tracking-wider whitespace-nowrap">
+                    유형
                   </th>
-                  <th className="w-[8%] px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
+                  <th className="w-[8%] px-3 py-3 text-left text-xs font-medium text-gray-500 tracking-wider whitespace-nowrap">
+                    상태
                   </th>
-                  <th className="w-[8%] px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Pattern
+                  <th className="w-[12%] px-3 py-3 text-left text-xs font-medium text-gray-500 tracking-wider whitespace-nowrap">
+                    처리 방식
                   </th>
-                  <th className="w-[18%] px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Description
+                  <th className="w-[18%] px-3 py-3 text-left text-xs font-medium text-gray-500 tracking-wider whitespace-nowrap">
+                    설명
                   </th>
-                  <th className="w-[16%] px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Last modified
+                  <th className="w-[17%] px-3 py-3 text-left text-xs font-medium text-gray-500 tracking-wider whitespace-nowrap">
+                    최근 수정일
                   </th>
-                  <th className="w-[6%] px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Action
+                  <th className="w-[7%] px-3 py-3 text-left text-xs font-medium text-gray-500 tracking-wider whitespace-nowrap">
+                    작업
                   </th>
                 </tr>
               </thead>
@@ -222,7 +224,7 @@ export default function ETLMain() {
                 {currentJobs.map((job) => (
                   <tr key={job.id} className="hover:bg-gray-50">
                     <td
-                      className="px-3 py-3 text-sm font-medium text-blue-600 hover:underline cursor-pointer truncate"
+                      className="px-3 py-3 text-sm font-medium text-blue-600 hover:underline cursor-pointer"
                       onClick={() => {
                         const datasetType = job.dataset_type || "source";
                         if (datasetType === "target") {
@@ -236,75 +238,86 @@ export default function ETLMain() {
                         }
                       }}
                     >
-                      {job.name}
+                      <span className="block truncate" title={job.name}>
+                        {job.name}
+                      </span>
                     </td>
-                    <td className="px-3 py-3 text-sm text-gray-600 truncate">
-                      {job.owner || "-"}
+                    <td className="px-3 py-3 text-sm text-gray-600">
+                      <span className="block truncate" title={job.owner || "-"}>
+                        {job.owner || "-"}
+                      </span>
                     </td>
                     <td className="px-3 py-3 text-sm">
                       <span
-                        className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                        className={`inline-flex max-w-full items-center rounded-full px-2 py-1 text-xs font-semibold whitespace-nowrap ${
                           (job.dataset_type || "source") === "source"
                             ? "bg-emerald-100 text-emerald-800"
                             : "bg-orange-100 text-orange-800"
                         }`}
                       >
                         {(job.dataset_type || "source") === "source"
-                          ? "Source"
-                          : "Target"}
+                          ? "원본 데이터"
+                          : "타겟 데이터"}
                       </span>
                     </td>
                     <td className="px-3 py-3 text-sm">
                       <span
-                        className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                        className={`inline-flex max-w-full items-center rounded-full px-2 py-1 text-xs font-semibold whitespace-nowrap ${
                           job.is_active
                             ? "bg-green-100 text-green-800"
                             : "bg-gray-100 text-gray-600"
                         }`}
                       >
-                        {job.is_active ? "Active" : "Inactive"}
+                        {job.is_active ? "활성" : "비활성"}
                       </span>
                     </td>
                     <td className="px-3 py-3 text-sm">
                       {job.job_type === "cdc" ? (
                         <span
-                          className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                          className={`inline-flex max-w-full items-center rounded-full px-2 py-1 text-xs font-semibold whitespace-nowrap ${
                             job.is_active
                               ? "bg-green-100 text-green-800"
                               : "bg-red-100 text-red-800"
                           }`}
                         >
-                          {job.is_active ? "CDC Active" : "CDC Stopped"}
+                          {job.is_active ? "CDC 활성" : "CDC 중지"}
                         </span>
                       ) : job.job_type === "streaming" ? (
-                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-indigo-100 text-indigo-800">
-                          Streaming
+                        <span className="inline-flex max-w-full items-center rounded-full bg-indigo-100 px-2 py-1 text-xs font-semibold text-indigo-800 whitespace-nowrap">
+                          실시간 스트리밍
                         </span>
                       ) : (
-                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                          Batch
+                        <span className="inline-flex max-w-full items-center rounded-full bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-800 whitespace-nowrap">
+                          정기 처리
                         </span>
                       )}
                     </td>
-                    <td className="px-3 py-3 text-sm text-gray-500 truncate">
-                      {job.description || "-"}
+                    <td className="px-3 py-3 text-sm text-gray-500">
+                      <span className="block truncate" title={job.description || "-"}>
+                        {job.description || "-"}
+                      </span>
                     </td>
-                    <td className="px-3 py-3 text-sm text-gray-500 truncate">
-                      {(() => {
+                    <td className="px-3 py-3 text-sm text-gray-500">
+                      <span className="block truncate" title={(() => {
                         // Backend sends UTC time, ensure it's parsed correctly
                         const utcDate = new Date(job.updated_at + (job.updated_at.endsWith('Z') ? '' : 'Z'));
                         // Convert to KST (UTC+9)
                         return utcDate.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
-                      })()}
+                      })()}>
+                        {(() => {
+                          const utcDate = new Date(job.updated_at + (job.updated_at.endsWith('Z') ? '' : 'Z'));
+                          return utcDate.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
+                        })()}
+                      </span>
                     </td>
-                    <td className="px-3 py-3 text-sm text-gray-900">
+                    <td className="px-3 py-3 text-sm text-gray-900 whitespace-nowrap">
                       <button
                         className="text-red-600 hover:text-red-800 transition-colors"
                         onClick={(e) => {
                           e.stopPropagation();
                           openDeleteModal(job.id, job.name, job.dataset_type);
                         }}
-                        title="Delete"
+                        title="삭제"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -318,19 +331,18 @@ export default function ETLMain() {
 
         {/* Pagination (if jobs exist) */}
         {jobs.length > 0 && (
-          <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-            <div className="text-sm text-gray-700">
-              Showing {startIndex + 1} to{" "}
-              {Math.min(endIndex, filteredJobs.length)} of {filteredJobs.length}{" "}
-              results
+          <div className="flex flex-col gap-3 border-t border-gray-200 px-4 py-4 sm:px-6 md:flex-row md:items-center md:justify-between">
+            <div className="min-w-0 text-sm text-gray-700">
+              전체 {filteredJobs.length}개 중 {startIndex + 1}-
+              {Math.min(endIndex, filteredJobs.length)} 표시
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-2">
               <button
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
                 className="px-3 py-1 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Previous
+                이전
               </button>
               <span className="px-3 py-1 bg-blue-600 text-white rounded-md text-sm">
                 {currentPage}
@@ -342,7 +354,7 @@ export default function ETLMain() {
                 disabled={currentPage === totalPages}
                 className="px-3 py-1 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Next
+                다음
               </button>
             </div>
           </div>
@@ -354,10 +366,10 @@ export default function ETLMain() {
         isOpen={deleteModal.isOpen}
         onClose={closeDeleteModal}
         onConfirm={handleDelete}
-        title="Delete Dataset"
-        message={`Are you sure you want to delete "${deleteModal.jobName}"? This action cannot be undone.`}
-        confirmText="Delete"
-        cancelText="Cancel"
+        title="데이터셋 삭제"
+        message={`"${deleteModal.jobName}" 데이터셋을 삭제할까요? 이 작업은 되돌릴 수 없습니다.`}
+        confirmText="삭제"
+        cancelText="취소"
         variant="danger"
       />
 

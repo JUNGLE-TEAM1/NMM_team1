@@ -18,7 +18,7 @@ export const CatalogQualityTab = ({
     return (
         <>
             <div className="px-5 py-4 border-b border-gray-200 sticky top-0 bg-white z-10">
-                <h3 className="font-semibold text-gray-900">Data Quality</h3>
+                <h3 className="font-semibold text-gray-900">데이터 품질</h3>
             </div>
             <div className="p-5 space-y-4">
                 {/* Run Check Button */}
@@ -32,13 +32,13 @@ export const CatalogQualityTab = ({
                     ) : (
                         <Play className="w-4 h-4" />
                     )}
-                    {runningCheck ? "Checking..." : "Run Quality Check"}
+                    {runningCheck ? "검사 중..." : "품질 검사 실행"}
                 </button>
 
                 <div className="text-xs text-gray-400 flex items-center gap-1 justify-end pt-2">
                     <Clock className="w-3 h-3" />
                     <span>
-                        Checked:{" "}
+                        검사일:{" "}
                         {qualityResult?.run_at
                             ? new Date(qualityResult.run_at).toLocaleDateString()
                             : "-"}
@@ -48,14 +48,14 @@ export const CatalogQualityTab = ({
                 {qualityLoading ? (
                     <div className="py-12 text-center">
                         <RefreshCw className="w-6 h-6 text-gray-400 mx-auto animate-spin mb-2" />
-                        <p className="text-xs text-gray-500">Loading metrics...</p>
+                        <p className="text-xs text-gray-500">품질 지표를 불러오는 중...</p>
                     </div>
                 ) : !qualityResult ? (
                     <div className="py-8 text-center bg-gray-50 rounded-lg border border-gray-100">
                         <BarChart3 className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                        <p className="text-sm text-gray-500">No quality data available</p>
+                        <p className="text-sm text-gray-500">사용 가능한 품질 데이터가 없습니다</p>
                         <p className="text-xs text-gray-400 mt-1">
-                            Run a check to see metrics
+                            품질 검사를 실행하면 지표가 표시됩니다
                         </p>
                     </div>
                 ) : (
@@ -64,7 +64,7 @@ export const CatalogQualityTab = ({
                         <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm flex items-center justify-between">
                             <div>
                                 <p className="text-xs text-gray-500 font-medium">
-                                    Quality Score
+                                    품질 점수
                                 </p>
                                 <p
                                     className={`text-2xl font-bold ${qualityResult.overall_score >= 90
@@ -98,19 +98,19 @@ export const CatalogQualityTab = ({
                         {/* Key Metrics Grid */}
                         <div className="grid grid-cols-2 gap-2">
                             <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
-                                <p className="text-xs text-gray-500">Rows</p>
+                                <p className="text-xs text-gray-500">행</p>
                                 <p className="text-lg font-semibold text-gray-900">
                                     {qualityResult.row_count?.toLocaleString() || 0}
                                 </p>
                             </div>
                             <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
-                                <p className="text-xs text-gray-500">Columns</p>
+                                <p className="text-xs text-gray-500">컬럼</p>
                                 <p className="text-lg font-semibold text-gray-900">
                                     {qualityResult.column_count || 0}
                                 </p>
                             </div>
                             <div className="bg-gray-50 p-3 rounded-lg border border-gray-100 col-span-2">
-                                <p className="text-xs text-gray-500">Duplicates</p>
+                                <p className="text-xs text-gray-500">중복</p>
                                 <p className="text-lg font-semibold text-gray-900">
                                     {qualityResult.duplicate_count?.toLocaleString() || 0}
                                 </p>
@@ -120,7 +120,7 @@ export const CatalogQualityTab = ({
                         {/* Checks List */}
                         <div>
                             <h4 className="text-xs font-semibold text-gray-900 mb-2 mt-2">
-                                Check Results
+                                검사 결과
                             </h4>
                             <div className="space-y-2">
                                 {qualityResult.checks?.map((check, idx) => (
@@ -146,7 +146,7 @@ export const CatalogQualityTab = ({
                                                 ) : (
                                                     <XCircle className="w-3 h-3" />
                                                 )}
-                                                {check.passed ? "Pass" : "Fail"}
+                                                {check.passed ? "통과" : "실패"}
                                             </span>
                                         </div>
                                         {check.message && (
@@ -162,7 +162,7 @@ export const CatalogQualityTab = ({
                                 {(!qualityResult.checks ||
                                     qualityResult.checks.length === 0) && (
                                         <p className="text-xs text-gray-400 italic text-center py-2">
-                                            No individual checks found
+                                            개별 검사 결과가 없습니다
                                         </p>
                                     )}
                             </div>

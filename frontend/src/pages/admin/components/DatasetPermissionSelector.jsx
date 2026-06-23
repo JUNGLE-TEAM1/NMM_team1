@@ -186,7 +186,7 @@ export default function DatasetPermissionSelector({ datasets, selectedDatasets, 
                                         : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                                 )}
                             >
-                                <span>All Datasets</span>
+                                <span>전체 데이터셋</span>
                                 <span className={clsx(
                                     "text-xs px-1.5 py-0.5 rounded-full",
                                     datasetTypeFilter === "all"
@@ -206,7 +206,7 @@ export default function DatasetPermissionSelector({ datasets, selectedDatasets, 
                                         : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                                 )}
                             >
-                                <span>Target</span>
+                                <span>타겟 데이터</span>
                                 <span className={clsx(
                                     "text-xs px-1.5 py-0.5 rounded-full",
                                     datasetTypeFilter === "target"
@@ -226,7 +226,7 @@ export default function DatasetPermissionSelector({ datasets, selectedDatasets, 
                                         : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                                 )}
                             >
-                                <span>Source</span>
+                                <span>원본 데이터</span>
                                 <span className={clsx(
                                     "text-xs px-1.5 py-0.5 rounded-full",
                                     datasetTypeFilter === "source"
@@ -244,7 +244,7 @@ export default function DatasetPermissionSelector({ datasets, selectedDatasets, 
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                 <input
                                     type="text"
-                                    placeholder="Search datasets..."
+                                    placeholder="데이터셋 검색..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -256,7 +256,7 @@ export default function DatasetPermissionSelector({ datasets, selectedDatasets, 
                         <div className="divide-y divide-gray-100 overflow-y-auto flex-1">
                             {paginatedDatasets.length === 0 ? (
                                 <p className="text-sm text-gray-500 text-center py-8">
-                                    No datasets found
+                                    데이터셋이 없습니다
                                 </p>
                             ) : (
                                 paginatedDatasets.map((dataset) => {
@@ -302,7 +302,7 @@ export default function DatasetPermissionSelector({ datasets, selectedDatasets, 
                                                             ? "bg-purple-100 text-purple-700"
                                                             : "bg-green-100 text-green-700"
                                                     )}>
-                                                        {dataset.dataset_type === "target" ? "T" : "S"}
+                                                        {dataset.dataset_type === "target" ? "타겟" : "원본"}
                                                     </span>
                                                 )}
                                             </div>
@@ -365,7 +365,7 @@ export default function DatasetPermissionSelector({ datasets, selectedDatasets, 
                                             <h4 className="text-sm font-semibold text-gray-900 truncate">
                                                 {detailDataset.name}
                                             </h4>
-                                            <p className="text-xs text-gray-400">Dataset</p>
+                                            <p className="text-xs text-gray-400">데이터셋</p>
                                         </div>
                                     </div>
 
@@ -374,19 +374,19 @@ export default function DatasetPermissionSelector({ datasets, selectedDatasets, 
                                         <div className="mt-2 px-2 py-1.5 bg-gray-50 rounded-md border border-gray-100">
                                             {detailDataset.targetInfo.tableName && (
                                                 <p className="text-xs text-gray-600">
-                                                    <span className="text-gray-400">Table: </span>
+                                                    <span className="text-gray-400">테이블: </span>
                                                     <span className="font-mono font-medium">{detailDataset.targetInfo.tableName}</span>
                                                 </p>
                                             )}
                                             {detailDataset.targetInfo.collectionName && (
                                                 <p className="text-xs text-gray-600">
-                                                    <span className="text-gray-400">Collection: </span>
+                                                    <span className="text-gray-400">컬렉션: </span>
                                                     <span className="font-mono font-medium">{detailDataset.targetInfo.collectionName}</span>
                                                 </p>
                                             )}
                                             {detailDataset.targetInfo.path && !detailDataset.targetInfo.tableName && !detailDataset.targetInfo.collectionName && (
                                                 <p className="text-xs text-gray-600 truncate">
-                                                    <span className="text-gray-400">Path: </span>
+                                                    <span className="text-gray-400">경로: </span>
                                                     <span className="font-mono font-medium">{detailDataset.targetInfo.path}</span>
                                                 </p>
                                             )}
@@ -404,7 +404,7 @@ export default function DatasetPermissionSelector({ datasets, selectedDatasets, 
                                 <div className="flex-1 overflow-hidden flex flex-col min-h-0">
                                     <div className="px-4 py-2 bg-gray-100 border-b border-gray-200 flex-shrink-0">
                                         <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                            Target Schema
+                                            타겟 스키마
                                         </span>
                                         <span className="ml-2 text-xs text-gray-400">
                                             ({detailDataset.schema.length})
@@ -439,15 +439,15 @@ export default function DatasetPermissionSelector({ datasets, selectedDatasets, 
                                     <Database className="w-6 h-6 text-gray-300" />
                                 </div>
                                 <p className="text-sm text-gray-400 mb-1">
-                                    Click on a dataset
+                                    데이터셋을 클릭하세요
                                 </p>
                                 <p className="text-xs text-gray-300">
-                                    to preview its schema
+                                    스키마 미리보기가 표시됩니다
                                 </p>
                                 {selectedDatasetObjs.length > 0 && (
                                     <div className="mt-4 px-3 py-1.5 bg-blue-50 rounded-full">
                                         <p className="text-xs text-blue-600 font-medium">
-                                            {selectedDatasetObjs.length} selected
+                                            {selectedDatasetObjs.length}개 선택됨
                                         </p>
                                     </div>
                                 )}

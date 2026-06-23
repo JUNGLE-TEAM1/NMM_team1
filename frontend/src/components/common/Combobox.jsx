@@ -23,13 +23,13 @@ export default function Combobox({
     onChange,
     getKey = (item) => item?.id ?? item,
     getLabel = (item) => item?.name ?? item,
-    placeholder = 'Select an option',
+    placeholder = '옵션 선택',
     isLoading = false,
     disabled = false,
     renderItem,
     renderItemActions,
     footerContent,
-    emptyMessage = 'No options available',
+    emptyMessage = '사용 가능한 옵션이 없습니다',
     classNames = {},
 }) {
     const [isOpen, setIsOpen] = useState(false);
@@ -65,7 +65,7 @@ export default function Combobox({
             >
                 <span className={`${selectedOption ? 'text-gray-900' : 'text-gray-500'} ${classNames.label ?? ''}`.trim()}>
                     {isLoading
-                        ? 'Loading...'
+                        ? '불러오는 중...'
                         : selectedOption
                             ? getLabel(selectedOption)
                             : placeholder

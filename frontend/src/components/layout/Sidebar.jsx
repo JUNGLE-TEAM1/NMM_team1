@@ -21,11 +21,11 @@ export function Sidebar({ isCollapsed, onToggle }) {
   const { logout, user } = useAuth();
 
   const allNavItems = [
-    { name: "Dataset", path: "/dataset", icon: Database, requiresDatasetEtlAccess: true },
-    { name: "ETL Jobs", path: "/etl", icon: List, requiresDatasetEtlAccess: true },
-    { name: "Catalog", path: "/catalog", icon: Activity },
-    { name: "Query", path: "/query", icon: Search, requiresQueryAiAccess: true },
-    { name: "Admin", path: "/admin", icon: Wrench, adminOnly: true },
+    { name: "데이터셋 관리", path: "/dataset", icon: Database, requiresDatasetEtlAccess: true },
+    { name: "실행 관리", path: "/etl", icon: List, requiresDatasetEtlAccess: true },
+    { name: "데이터 카탈로그", path: "/catalog", icon: Activity },
+    { name: "SQL 분석", path: "/query", icon: Search, requiresQueryAiAccess: true },
+    { name: "사용자/권한 관리", path: "/admin", icon: Wrench, adminOnly: true },
   ];
 
   // Filter items based on user permissions
@@ -100,7 +100,7 @@ export function Sidebar({ isCollapsed, onToggle }) {
                 onClick={() => navigate(item.path)}
                 title={isCollapsed ? item.name : ""}
                 className={clsx(
-                  "w-full flex items-center p-2 text-sm font-medium rounded-md transition-all duration-200 group relative overflow-hidden",
+                    "w-full min-w-0 flex items-center p-2 text-sm font-medium rounded-md transition-all duration-200 group relative overflow-hidden",
                   isActive
                     ? "bg-blue-50 text-blue-600"
                     : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
@@ -121,7 +121,7 @@ export function Sidebar({ isCollapsed, onToggle }) {
                 {/* Text label - fades out when collapsed */}
                 <span
                   className={clsx(
-                    "ml-3 truncate transition-all duration-300",
+                    "ml-3 min-w-0 truncate transition-all duration-300",
                     isCollapsed ? "opacity-0 w-0" : "opacity-100"
                   )}
                 >
@@ -138,8 +138,8 @@ export function Sidebar({ isCollapsed, onToggle }) {
 
         <button
           onClick={handleLogout}
-          title={isCollapsed ? "Sign out" : ""}
-          className="flex items-center text-sm font-medium text-gray-500 hover:text-red-600 transition-colors w-full p-2 rounded-md hover:bg-red-50 relative overflow-hidden"
+          title={isCollapsed ? "로그아웃" : ""}
+          className="flex items-center text-sm font-medium text-gray-500 hover:text-red-600 transition-colors w-full min-w-0 p-2 rounded-md hover:bg-red-50 relative overflow-hidden"
         >
           {/* Icon container - fixed width */}
           <div className="w-4 h-4 flex items-center justify-center shrink-0">
@@ -149,11 +149,11 @@ export function Sidebar({ isCollapsed, onToggle }) {
           {/* Text label - fades out when collapsed */}
           <span
             className={clsx(
-              "ml-2 transition-all duration-300",
+              "ml-2 min-w-0 truncate transition-all duration-300",
               isCollapsed ? "opacity-0 w-0" : "opacity-100"
             )}
           >
-            Sign out
+            로그아웃
           </span>
         </button>
       </div>
@@ -174,7 +174,7 @@ export function Topbar({ isCollapsed }) {
   return (
     <div
       className={clsx(
-        "h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 fixed top-0 right-0 z-[1000] transition-all duration-300 ease-in-out",
+        "h-16 bg-white border-b border-gray-200 flex items-center justify-between gap-3 px-3 sm:px-6 fixed top-0 right-0 z-[1000] transition-all duration-300 ease-in-out min-w-0",
         isCollapsed ? "left-20" : "left-64",
       )}
     >
@@ -183,13 +183,13 @@ export function Topbar({ isCollapsed }) {
 
       {/* Right Actions */}
 
-      <div className="flex items-center space-x-3">
+      <div className="flex shrink-0 items-center space-x-3">
         <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center text-white font-medium text-xs">
           {initials}
         </div>
         <div className="hidden md:block">
-          <p className="text-sm font-medium text-gray-700">{user?.name || "User"}</p>
-          <p className="text-xs text-gray-500">{user?.is_admin ? "Admin" : "User"}</p>
+          <p className="text-sm font-medium text-gray-700">{user?.name || "사용자"}</p>
+          <p className="text-xs text-gray-500">{user?.is_admin ? "관리자" : "사용자"}</p>
         </div>
       </div>
     </div>

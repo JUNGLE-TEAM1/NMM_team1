@@ -20,6 +20,35 @@ import SchedulesPanel from "../../components/etl/SchedulesPanel";
 import { useToast } from "../../components/common/Toast/ToastContext";
 import Combobox from "../../components/common/Combobox";
 
+const JOB_TYPE_LABELS = {
+  all: "전체 유형",
+  batch: "정기 처리",
+  cdc: "CDC",
+  streaming: "실시간 스트리밍",
+};
+
+const STATUS_LABELS = {
+  Running: "실행 중",
+  Scheduled: "예약됨",
+  Unscheduled: "예약 없음",
+  Paused: "일시 중지",
+};
+
+const ACTIVE_STATE_LABELS = {
+  all: "전체 상태",
+  active: "활성",
+  inactive: "비활성",
+};
+
+const RUN_STATUS_LABELS = {
+  success: "성공",
+  succeeded: "성공",
+  failed: "실패",
+  failure: "실패",
+  running: "실행 중",
+  pending: "대기 중",
+};
+
 // Schedule Edit Modal Component
 function ScheduleModal({ isOpen, onClose, job, onSave }) {
   const [jobType, setJobType] = useState(job?.job_type || "batch");
@@ -33,7 +62,7 @@ function ScheduleModal({ isOpen, onClose, job, onSave }) {
         setSchedules([
           {
             id: Date.now(),
-            name: "Schedule 1",
+            name: "스케줄 1",
             cron: job.schedule,
             frequency: job.schedule_frequency,
           },
@@ -64,7 +93,7 @@ function ScheduleModal({ isOpen, onClose, job, onSave }) {
             <Calendar className="w-5 h-5 text-blue-500" />
             <div>
               <h3 className="text-lg font-semibold text-gray-900">
-                Edit Schedule
+                스케줄 수정
               </h3>
               <p className="text-sm text-gray-500">{job.name}</p>
             </div>
@@ -81,7 +110,7 @@ function ScheduleModal({ isOpen, onClose, job, onSave }) {
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* Job Type Selection */}
           <div>
-            <h4 className="text-sm font-medium text-gray-700 mb-3">Job Type</h4>
+            <h4 className="text-sm font-medium text-gray-700 mb-3">작업 유형</h4>
             <div className="grid grid-cols-2 gap-4">
               <button
                 onClick={() => setJobType("batch")}
@@ -99,11 +128,11 @@ function ScheduleModal({ isOpen, onClose, job, onSave }) {
                     className={`font-medium ${jobType === "batch" ? "text-blue-700" : "text-gray-700"
                       }`}
                   >
-                    Batch ETL
+                    정기 처리
                   </span>
                 </div>
                 <p className="text-xs text-gray-500">
-                  Run on schedule or manual trigger
+                  스케줄 또는 수동 실행으로 처리합니다
                 </p>
               </button>
 
@@ -123,11 +152,11 @@ function ScheduleModal({ isOpen, onClose, job, onSave }) {
                     className={`font-medium ${jobType === "cdc" ? "text-purple-700" : "text-gray-700"
                       }`}
                   >
-                    CDC Streaming
+                    변경 데이터 캡처 (CDC)
                   </span>
                 </div>
                 <p className="text-xs text-gray-500">
-                  Real-time change data capture
+                  변경 데이터를 실시간으로 동기화합니다
                 </p>
               </button>
             </div>
@@ -147,11 +176,11 @@ function ScheduleModal({ isOpen, onClose, job, onSave }) {
                 <Zap className="w-5 h-5 text-purple-600 mt-0.5" />
                 <div>
                   <h4 className="font-medium text-purple-900">
-                    CDC Streaming Mode
+                    CDC 실시간 모드
                   </h4>
                   <p className="text-sm text-purple-700 mt-1">
-                    CDC mode continuously syncs changes in real-time. No
-                    schedule configuration needed.
+                    CDC 모드는 변경 데이터를 실시간으로 계속 동기화합니다.
+                    별도의 스케줄 설정은 필요하지 않습니다.
                   </p>
                 </div>
               </div>
@@ -165,13 +194,13 @@ function ScheduleModal({ isOpen, onClose, job, onSave }) {
             onClick={onClose}
             className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            Cancel
+            취소
           </button>
           <button
             onClick={handleSave}
             className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
           >
-            Save Changes
+            변경사항 저장
           </button>
         </div>
       </div>
@@ -194,7 +223,7 @@ function ScheduleBadge({ job }) {
     return (
       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-600">
         <Calendar className="w-3 h-3" />
-        Batch
+        정기 처리
       </span>
     );
   }
@@ -202,15 +231,15 @@ function ScheduleBadge({ job }) {
   const getScheduleLabel = () => {
     switch (job.schedule_frequency) {
       case "daily":
-        return "Daily";
+        return "매일";
       case "hourly":
-        return "Hourly";
+        return "매시간";
       case "weekly":
-        return "Weekly";
+        return "매주";
       case "monthly":
-        return "Monthly";
+        return "매월";
       case "interval":
-        return "Interval";
+        return "반복";
       default:
         return job.schedule;
     }
@@ -384,12 +413,12 @@ export default function JobsPage() {
 
           // Show toast
           showToast(
-            newActiveState ? "Job activated successfully!" : "Job deactivated successfully!",
+            newActiveState ? "작업을 활성화했습니다" : "작업을 비활성화했습니다",
             "success"
           );
         } else {
           console.error("Failed to toggle job status");
-          showToast("Failed to toggle schedule", "error");
+          showToast("스케줄 상태를 변경하지 못했습니다", "error");
         }
       } else {
         // Manual job: update Dataset's is_active field
@@ -420,12 +449,12 @@ export default function JobsPage() {
                 })
               );
               showToast(
-                newActiveState ? "Job activated successfully!" : "Job deactivated successfully!",
+                newActiveState ? "작업을 활성화했습니다" : "작업을 비활성화했습니다",
                 "success"
               );
             } else {
               console.error("Failed to update dataset status");
-              showToast("Failed to update job status", "error");
+              showToast("작업 상태를 업데이트하지 못했습니다", "error");
             }
           } else {
             // No dataset found, just update local state
@@ -438,7 +467,7 @@ export default function JobsPage() {
               })
             );
             showToast(
-              newActiveState ? "Job activated successfully!" : "Job deactivated successfully!",
+              newActiveState ? "작업을 활성화했습니다" : "작업을 비활성화했습니다",
               "success"
             );
           }
@@ -446,7 +475,7 @@ export default function JobsPage() {
       }
     } catch (error) {
       console.error("Failed to toggle job:", error);
-      showToast("Network error: Failed to toggle schedule", "error");
+      showToast("네트워크 오류: 스케줄 상태를 변경하지 못했습니다", "error");
     }
   };
 
@@ -464,11 +493,13 @@ export default function JobsPage() {
         if (response.ok) {
           setStreamingStates((prev) => ({ ...prev, [jobId]: !isActive }));
           showToast(
-            isActive ? "Streaming job paused." : "Streaming job started.",
+            isActive
+              ? "실시간 스트리밍 작업을 일시 중지했습니다"
+              : "실시간 스트리밍 작업을 시작했습니다",
             "success"
           );
         } else {
-          showToast("Failed to update streaming job", "error");
+          showToast("실시간 스트리밍 작업을 업데이트하지 못했습니다", "error");
         }
         return;
       }
@@ -483,16 +514,16 @@ export default function JobsPage() {
       if (response.ok) {
         const result = await response.json();
         console.log("Job triggered:", result);
-        showToast("Job started successfully!", "success");
+        showToast("작업을 시작했습니다", "success");
         // Refresh jobs to update status
         fetchJobs();
       } else {
         console.error("Failed to run job");
-        showToast("Failed to start job", "error");
+        showToast("작업을 시작하지 못했습니다", "error");
       }
     } catch (error) {
       console.error("Failed to run job:", error);
-      showToast("Network error: Failed to start job", "error");
+      showToast("네트워크 오류: 작업을 시작하지 못했습니다", "error");
     }
   };
 
@@ -514,11 +545,11 @@ export default function JobsPage() {
     const secs = Math.floor(seconds % 60);
 
     if (hrs > 0) {
-      return `${hrs}h ${mins}m`;
+      return `${hrs}시간 ${mins}분`;
     } else if (mins > 0) {
-      return `${mins}m ${secs}s`;
+      return `${mins}분 ${secs}초`;
     }
-    return `${secs}s`;
+    return `${secs}초`;
   };
 
   const getJobStatus = (job, runs) => {
@@ -599,8 +630,8 @@ export default function JobsPage() {
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">ETL Jobs</h1>
-        <p className="text-gray-500 mt-1">Manage your data pipelines</p>
+        <h1 className="text-2xl font-bold text-gray-900">실행 관리</h1>
+        <p className="text-gray-500 mt-1">데이터 처리 작업과 실행 상태를 관리합니다</p>
       </div>
 
       <div className="mb-6 flex gap-4">
@@ -608,7 +639,7 @@ export default function JobsPage() {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input
             type="text"
-            placeholder="Search datasets..."
+            placeholder="데이터셋 검색..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -619,7 +650,7 @@ export default function JobsPage() {
           className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
         >
           <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
-          Refresh
+          새로고침
         </button>
       </div>
 
@@ -629,7 +660,7 @@ export default function JobsPage() {
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
               <Filter className="w-4 h-4 text-gray-400" />
-              <span className="text-sm font-medium text-gray-700">Filters</span>
+              <span className="text-sm font-medium text-gray-700">필터</span>
             </div>
 
             <div className="h-5 w-px bg-gray-300" />
@@ -639,14 +670,14 @@ export default function JobsPage() {
               <div className="w-40">
                 <Combobox
                   options={[
-                    { id: "all", name: "All Types" },
-                    { id: "batch", name: "Batch" },
+                    { id: "all", name: "전체 유형" },
+                    { id: "batch", name: "정기 처리" },
                     { id: "cdc", name: "CDC" },
-                    { id: "streaming", name: "Streaming" },
+                    { id: "streaming", name: "실시간 스트리밍" },
                   ]}
                   value={jobTypeFilter}
                   onChange={(option) => setJobTypeFilter(option.id)}
-                  placeholder="Select type"
+                  placeholder="유형 선택"
                   classNames={{
                     button: "text-sm py-1.5",
                     label: "text-sm",
@@ -658,15 +689,15 @@ export default function JobsPage() {
               <div className="w-44">
                 <Combobox
                   options={[
-                    { id: "all", name: "All Status" },
-                    { id: "running", name: "Running" },
-                    { id: "scheduled", name: "Scheduled" },
-                    { id: "unscheduled", name: "Unscheduled" },
-                    { id: "paused", name: "Paused" },
+                    { id: "all", name: "전체 상태" },
+                    { id: "running", name: "실행 중" },
+                    { id: "scheduled", name: "예약됨" },
+                    { id: "unscheduled", name: "예약 없음" },
+                    { id: "paused", name: "일시 중지" },
                   ]}
                   value={statusFilter}
                   onChange={(option) => setStatusFilter(option.id)}
-                  placeholder="Select status"
+                  placeholder="상태 선택"
                   classNames={{
                     button: "text-sm py-1.5",
                     label: "text-sm",
@@ -678,13 +709,13 @@ export default function JobsPage() {
               <div className="w-40">
                 <Combobox
                   options={[
-                    { id: "all", name: "All States" },
-                    { id: "active", name: "Active" },
-                    { id: "inactive", name: "Inactive" },
+                    { id: "all", name: "전체 상태" },
+                    { id: "active", name: "활성" },
+                    { id: "inactive", name: "비활성" },
                   ]}
                   value={activeFilter}
                   onChange={(option) => setActiveFilter(option.id)}
-                  placeholder="Select state"
+                  placeholder="활성 상태 선택"
                   classNames={{
                     button: "text-sm py-1.5",
                     label: "text-sm",
@@ -698,7 +729,7 @@ export default function JobsPage() {
           <div className="flex items-center gap-2">
             {jobTypeFilter !== "all" && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
-                Type: {jobTypeFilter.charAt(0).toUpperCase() + jobTypeFilter.slice(1)}
+                유형: {JOB_TYPE_LABELS[jobTypeFilter]}
                 <button
                   onClick={() => setJobTypeFilter("all")}
                   className="hover:bg-blue-100 rounded-full p-0.5"
@@ -709,7 +740,7 @@ export default function JobsPage() {
             )}
             {statusFilter !== "all" && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-green-50 text-green-700 border border-green-200">
-                Status: {statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}
+                상태: {STATUS_LABELS[statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)] || statusFilter}
                 <button
                   onClick={() => setStatusFilter("all")}
                   className="hover:bg-green-100 rounded-full p-0.5"
@@ -720,7 +751,7 @@ export default function JobsPage() {
             )}
             {activeFilter !== "all" && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200">
-                State: {activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1)}
+                활성 상태: {ACTIVE_STATE_LABELS[activeFilter]}
                 <button
                   onClick={() => setActiveFilter("all")}
                   className="hover:bg-purple-100 rounded-full p-0.5"
@@ -742,7 +773,7 @@ export default function JobsPage() {
                   className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                   <XCircle className="w-3.5 h-3.5" />
-                  Clear All
+                  전체 해제
                 </button>
               )}
           </div>
@@ -751,33 +782,33 @@ export default function JobsPage() {
 
       <div className="bg-white rounded-lg shadow border border-gray-200">
         {isLoading ? (
-          <div className="p-8 text-center text-gray-500">Loading...</div>
+          <div className="p-8 text-center text-gray-500">불러오는 중...</div>
         ) : filteredJobs.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
             <GitBranch className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-            <p>No datasets found</p>
+            <p>데이터셋이 없습니다</p>
           </div>
         ) : (
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Job ID
+                  작업 ID
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Owner
+                  담당자
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Status
+                  상태
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Type
+                  유형
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Last Run
+                  최근 실행
                 </th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase w-px whitespace-nowrap">
-                  Actions
+                  작업
                 </th>
               </tr>
             </thead>
@@ -796,7 +827,7 @@ export default function JobsPage() {
                       <button
                         onClick={(e) => handleCopyId(job.name, e)}
                         className="p-1 hover:bg-gray-200 rounded transition-colors"
-                        title="Copy Job ID"
+                        title="작업 ID 복사"
                       >
                         {copiedId === job.name ? (
                           <Check className="w-3.5 h-3.5 text-green-600" />
@@ -825,7 +856,7 @@ export default function JobsPage() {
                         <span
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colorClass}`}
                         >
-                          {status.label}
+                          {STATUS_LABELS[status.label] || status.label}
                         </span>
                       );
                     })()}
@@ -833,7 +864,7 @@ export default function JobsPage() {
                   <td className="px-6 py-4">
                     {job.job_type === "streaming" ? (
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-600">
-                        Streaming
+                        실시간 스트리밍
                       </span>
                     ) : (
                       <ScheduleBadge job={job} />
@@ -870,12 +901,8 @@ export default function JobsPage() {
                                     ? "text-yellow-600"
                                     : "text-gray-500"
                           }`}>
-                            {jobRuns[job.id][0].status === "success"
-                              ? "Succeeded"
-                              : jobRuns[job.id][0].status
-                                .charAt(0)
-                                .toUpperCase() +
-                              jobRuns[job.id][0].status.slice(1)}
+                            {RUN_STATUS_LABELS[jobRuns[job.id][0].status] ||
+                              jobRuns[job.id][0].status}
                           </span>
                           <span className="text-xs text-gray-400">·</span>
                           <span className="text-xs text-gray-500">
@@ -933,8 +960,8 @@ export default function JobsPage() {
                             }`}
                           title={
                             job.job_type === "streaming"
-                              ? (streamingStates[job.id] ? "Pause" : "Start")
-                              : "Instant Run"
+                              ? (streamingStates[job.id] ? "일시 중지" : "시작")
+                              : "즉시 실행"
                           }
                         >
                           {job.job_type === "streaming" ? (
@@ -959,7 +986,7 @@ export default function JobsPage() {
                             ? "text-orange-600 bg-orange-50 hover:bg-orange-100"
                             : "text-green-600 bg-green-50 hover:bg-green-100"
                             }`}
-                          title={job.is_active ? "Pause Schedule" : "Run Schedule"}
+                          title={job.is_active ? "스케줄 일시 중지" : "스케줄 실행"}
                         >
                           {job.is_active ? (
                             <Pause className="w-4 h-4" />

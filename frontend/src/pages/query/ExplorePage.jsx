@@ -33,7 +33,7 @@ export default function ExplorePage() {
                         <ArrowLeft className="w-5 h-5 text-gray-600" />
                     </button>
                     <div>
-                        <h2 className="font-semibold text-gray-900">Explore</h2>
+                        <h2 className="font-semibold text-gray-900">탐색/시각화</h2>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -41,7 +41,7 @@ export default function ExplorePage() {
                         onClick={() => navigate('/query', { state: { query: sourceQuery } })}
                         className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                     >
-                        Edit Query
+                        쿼리 수정
                     </button>
                 </div>
             </div>

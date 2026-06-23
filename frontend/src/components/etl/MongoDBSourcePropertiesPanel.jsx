@@ -66,8 +66,8 @@ export default function MongoDBSourcePropertiesPanel({ node, selectedMetadataIte
             const mongoConnections = data.filter(c => c.type === 'mongodb');
             setConnections(mongoConnections);
         } catch (err) {
-            console.error('Failed to load connections:', err);
-            showToast('Failed to load connections', 'error');
+            console.error('연결 목록 불러오기 실패:', err);
+            showToast('연결 목록을 불러오지 못했습니다', 'error');
         } finally {
             setIsConnectionsLoading(false);
         }
@@ -79,8 +79,8 @@ export default function MongoDBSourcePropertiesPanel({ node, selectedMetadataIte
             const data = await connectionApi.fetchMongoDBCollections(connectionId);
             setCollections(data.collections || []);
         } catch (err) {
-            console.error('Failed to load collections:', err);
-            showToast('Failed to load collections', 'error');
+            console.error('컬렉션 목록 불러오기 실패:', err);
+            showToast('컬렉션 목록을 불러오지 못했습니다', 'error');
             setCollections([]);
         } finally {
             setLoading(false);
@@ -89,7 +89,7 @@ export default function MongoDBSourcePropertiesPanel({ node, selectedMetadataIte
 
     const handleInferSchema = async () => {
         if (!selectedConnection || !selectedCollection) {
-            showToast('Please select a connection and collection first', 'warning');
+            showToast('먼저 연결과 컬렉션을 선택해주세요', 'warning');
             return;
         }
 
@@ -111,10 +111,10 @@ export default function MongoDBSourcePropertiesPanel({ node, selectedMetadataIte
                 schema: schema
             });
 
-            showToast(`Schema inferred and saved (${schema.length} fields)`, 'success');
+            showToast(`스키마를 추론해 저장했습니다 (${schema.length}개 필드)`, 'success');
         } catch (err) {
-            console.error('Failed to infer schema:', err);
-            showToast('Failed to infer schema', 'error');
+            console.error('스키마 추론 실패:', err);
+            showToast('스키마 추론에 실패했습니다', 'error');
         } finally {
             setIsInferring(false);
         }
@@ -132,9 +132,9 @@ export default function MongoDBSourcePropertiesPanel({ node, selectedMetadataIte
                 collectionName: selectedCollection,
                 schema: selectedSchema
             });
-            showToast('MongoDB source saved successfully', 'success');
+            showToast('MongoDB 소스를 저장했습니다', 'success');
         } else {
-            showToast('Please complete all steps: select connection, collection, and infer schema', 'warning');
+            showToast('연결 선택, 컬렉션 선택, 스키마 추론을 모두 완료해주세요', 'warning');
         }
     };
 
@@ -178,7 +178,7 @@ export default function MongoDBSourcePropertiesPanel({ node, selectedMetadataIte
             {/* Header */}
             <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-gray-900">
-                    MongoDB Source Properties
+                    MongoDB 소스 속성
                 </h2>
                 <button
                     onClick={onClose}
@@ -193,12 +193,12 @@ export default function MongoDBSourcePropertiesPanel({ node, selectedMetadataIte
                 {/* Name */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Node Label
+                        노드 라벨
                     </label>
                     <input
                         type="text"
                         className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
-                        value={node?.data?.label || 'MongoDB Source'}
+                        value={node?.data?.label || 'MongoDB 소스'}
                         disabled
                     />
                 </div>
@@ -206,16 +206,16 @@ export default function MongoDBSourcePropertiesPanel({ node, selectedMetadataIte
                 {/* Connection */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                        MongoDB Connection
+                        MongoDB 연결
                     </label>
                     <p className="text-xs text-gray-500 mb-2">
-                        Select a MongoDB connection.
+                        MongoDB 연결을 선택하세요.
                     </p>
                     <ConnectionCombobox
                         connections={connections}
                         selectedId={selectedConnection?.id}
                         isLoading={isConnectionsLoading}
-                        placeholder="Choose a MongoDB connection"
+                        placeholder="MongoDB 연결 선택"
                         onSelect={(conn) => {
                             setSelectedConnection(conn);
                             setSelectedCollection('');
@@ -231,10 +231,10 @@ export default function MongoDBSourcePropertiesPanel({ node, selectedMetadataIte
                                 if (selectedConnection?.id === connectionId) {
                                     resetState();
                                 }
-                                showToast('Connection deleted', 'success');
+                                showToast('연결을 삭제했습니다', 'success');
                             } catch (err) {
-                                console.error('Failed to delete connection:', err);
-                                showToast('Failed to delete connection', 'error');
+                                console.error('연결 삭제 실패:', err);
+                                showToast('연결 삭제에 실패했습니다', 'error');
                             }
                         }}
                     />
@@ -243,10 +243,10 @@ export default function MongoDBSourcePropertiesPanel({ node, selectedMetadataIte
                 {/* Collection */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Collection <span className="text-red-500">*</span>
+                        컬렉션 <span className="text-red-500">*</span>
                     </label>
                     <p className="text-xs text-gray-500 mb-2">
-                        Select the MongoDB collection to process.
+                        처리할 MongoDB 컬렉션을 선택하세요.
                     </p>
                     <Combobox
                         options={collections}
@@ -258,10 +258,10 @@ export default function MongoDBSourcePropertiesPanel({ node, selectedMetadataIte
                         }}
                         getKey={(collection) => collection}
                         getLabel={(collection) => collection}
-                        placeholder="Select a collection"
+                        placeholder="컬렉션 선택"
                         isLoading={loading}
                         disabled={!selectedConnection}
-                        emptyMessage="No collections available"
+                        emptyMessage="사용 가능한 컬렉션이 없습니다"
                     />
                 </div>
 
@@ -276,10 +276,10 @@ export default function MongoDBSourcePropertiesPanel({ node, selectedMetadataIte
                             {isInferring ? (
                                 <>
                                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                    Inferring Schema...
+                                    스키마 추론 중...
                                 </>
                             ) : (
-                                'Infer Schema (Sample 1000 docs)'
+                                '스키마 추론 (샘플 문서 1000개)'
                             )}
                         </button>
                     </div>
@@ -290,7 +290,7 @@ export default function MongoDBSourcePropertiesPanel({ node, selectedMetadataIte
                     <div className="border-t border-gray-200 pt-4 mt-4">
                         <div className="mb-3">
                             <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                {selectedMetadataItem.type === 'collection' ? `Collection: ${selectedMetadataItem.name}` : `Field: ${selectedMetadataItem.name}`}
+                                {selectedMetadataItem.type === 'collection' ? `컬렉션: ${selectedMetadataItem.name}` : `필드: ${selectedMetadataItem.name}`}
                                 {selectedMetadataItem.type === 'field' && selectedMetadataItem.dataType && (
                                     <span className="ml-2 text-xs font-mono text-gray-500 bg-gray-200 px-2 py-0.5 rounded">
                                         {selectedMetadataItem.dataType}
@@ -302,13 +302,13 @@ export default function MongoDBSourcePropertiesPanel({ node, selectedMetadataIte
                         {/* Description */}
                         <div className="mb-3">
                             <label className="block text-xs font-medium text-gray-600 mb-1">
-                                Description
+                                설명
                             </label>
                             <input
                                 type="text"
                                 value={selectedMetadataItem.description || ''}
                                 onChange={(e) => handleMetadataChange('description', e.target.value)}
-                                placeholder={`Add description for this ${selectedMetadataItem.type}...`}
+                                placeholder="설명을 입력하세요..."
                                 className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
                             />
                         </div>
@@ -316,7 +316,7 @@ export default function MongoDBSourcePropertiesPanel({ node, selectedMetadataIte
                         {/* Tags */}
                         <div>
                             <label className="block text-xs font-medium text-gray-600 mb-1">
-                                Tags
+                                태그
                             </label>
                             <input
                                 type="text"
@@ -333,7 +333,7 @@ export default function MongoDBSourcePropertiesPanel({ node, selectedMetadataIte
                                     const tags = tagsString.split(',').map(t => t.trim()).filter(t => t);
                                     handleMetadataChange('tags', tags);
                                 }}
-                                placeholder="Add tags (comma separated)"
+                                placeholder="태그 추가 (쉼표로 구분)"
                                 className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
                             />
                         </div>
@@ -347,7 +347,7 @@ export default function MongoDBSourcePropertiesPanel({ node, selectedMetadataIte
                     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1100] p-6">
                         <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
                             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white z-10">
-                                <h3 className="text-lg font-bold text-gray-900">Create MongoDB Connection</h3>
+                                <h3 className="text-lg font-bold text-gray-900">MongoDB 연결 만들기</h3>
                                 <button
                                     onClick={() => setShowCreateModal(false)}
                                     className="p-1 hover:bg-gray-100 rounded transition-colors"

@@ -466,14 +466,14 @@ export default function SchemaTransformEditor({
       // Visual Transform: check if columns are selected
       if (targetSchema.length === 0) {
         setTestError(
-          'Please move at least one column to the "After (Target)" list to test.',
+          '테스트하려면 컬럼을 하나 이상 "가공 후 (타겟)" 목록으로 이동해주세요.',
         );
         return;
       }
     } else if (activeTab === "sql") {
       // SQL Transform: check if SQL query is provided
       if (!customSql.trim()) {
-        setTestError("Please enter a SQL query to test.");
+        setTestError("테스트할 SQL 쿼리를 입력해주세요.");
         return;
       }
     }
@@ -631,7 +631,7 @@ export default function SchemaTransformEditor({
               : "text-slate-600 border-transparent hover:text-slate-900 hover:bg-slate-50"
           }`}
         >
-          Visual Transform
+          시각적 가공
         </button>
         <button
           onClick={() => setActiveTab("sql")}
@@ -641,7 +641,7 @@ export default function SchemaTransformEditor({
               : "text-slate-600 border-transparent hover:text-slate-900 hover:bg-slate-50"
           }`}
         >
-          SQL Transform
+          SQL 가공
         </button>
       </div>
 
@@ -653,7 +653,7 @@ export default function SchemaTransformEditor({
             <div className="px-4 py-3 border-b border-slate-200 bg-slate-50/50 flex items-center justify-between">
               <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
                 <span className="w-1 h-3 bg-indigo-600 rounded-full"></span>
-                Before (Source)
+                가공 전 (원본)
               </h3>
             </div>
 
@@ -666,7 +666,7 @@ export default function SchemaTransformEditor({
             <div className="flex-1 overflow-y-auto p-2">
               {beforeColumns.length === 0 ? (
                 <div className="flex items-center justify-center h-full text-gray-400 text-sm">
-                  All columns moved to target
+                  모든 컬럼이 타겟으로 이동되었습니다
                 </div>
               ) : (
                 <div className="space-y-1">
@@ -704,7 +704,7 @@ export default function SchemaTransformEditor({
                             {isInTarget && (
                               <span
                                 className="w-1.5 h-1.5 rounded-full bg-slate-300 shrink-0"
-                                title="Already in target"
+                                title="이미 타겟에 있음"
                               ></span>
                             )}
                           </div>
@@ -728,7 +728,7 @@ export default function SchemaTransformEditor({
               onClick={moveSelectedToRight}
               disabled={selectedBefore.size === 0}
               className="p-2 rounded-md bg-white border border-gray-300 hover:bg-blue-50 hover:border-blue-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              title="Move selected"
+              title="선택 항목 이동"
             >
               <ChevronRight className="w-5 h-5 text-gray-600" />
             </button>
@@ -736,7 +736,7 @@ export default function SchemaTransformEditor({
               onClick={moveAllToRight}
               disabled={beforeColumns.length === 0}
               className="p-2 rounded-md bg-white border border-gray-300 hover:bg-blue-50 hover:border-blue-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              title="Move all"
+              title="전체 이동"
             >
               <ChevronsRight className="w-5 h-5 text-gray-600" />
             </button>
@@ -745,7 +745,7 @@ export default function SchemaTransformEditor({
               onClick={moveSelectedToLeft}
               disabled={selectedAfter.size === 0}
               className="p-2 rounded-md bg-white border border-gray-300 hover:bg-red-50 hover:border-red-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              title="Remove selected"
+              title="선택 항목 제거"
             >
               <ChevronLeft className="w-5 h-5 text-gray-600" />
             </button>
@@ -753,7 +753,7 @@ export default function SchemaTransformEditor({
               onClick={moveAllToLeft}
               disabled={targetSchema.length === 0}
               className="p-2 rounded-md bg-white border border-gray-300 hover:bg-red-50 hover:border-red-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              title="Remove all"
+              title="전체 제거"
             >
               <ChevronsLeft className="w-6 h-6 text-gray-600" />
             </button>
@@ -764,13 +764,13 @@ export default function SchemaTransformEditor({
             <div className="px-4 py-3 border-b border-slate-200 bg-slate-50/50">
               <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
                 <span className="w-1 h-3 bg-indigo-600 rounded-full"></span>
-                After (Target)
+                가공 후 (타겟)
               </h3>
             </div>
             <div className="flex-1 overflow-y-auto p-2">
               {targetSchema.length === 0 ? (
                 <div className="flex items-center justify-center h-full text-gray-400 text-sm">
-                  Select columns from the left
+                  왼쪽에서 컬럼을 선택하세요
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -828,7 +828,7 @@ export default function SchemaTransformEditor({
                               ? "bg-purple-100 text-purple-600 hover:bg-purple-200"
                               : "bg-gray-100 text-gray-500 hover:bg-gray-200"
                           }`}
-                          title="Add transform function"
+                          title="가공 함수 추가"
                         >
                           <Braces className="w-4 h-4" />
                         </button>
@@ -870,7 +870,7 @@ export default function SchemaTransformEditor({
 
                         {/* Default Value */}
                         <label className="flex items-center gap-1.5">
-                          <span className="text-gray-500">Default:</span>
+                          <span className="text-gray-500">기본값:</span>
                           <input
                             type="text"
                             value={col.defaultValue || ""}
@@ -910,7 +910,7 @@ export default function SchemaTransformEditor({
             <div className="px-4 py-3 border-b border-slate-200 bg-slate-50/50">
               <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
                 <span className="w-1 h-3 bg-indigo-600 rounded-full"></span>
-                Available Sources
+                사용 가능한 원본
               </h3>
             </div>
             <div className="flex-1 overflow-y-auto p-4">
@@ -942,7 +942,7 @@ export default function SchemaTransformEditor({
                         </ul>
                       ) : (
                         <p className="text-xs text-slate-400 italic">
-                          No schema available
+                          사용 가능한 스키마가 없습니다
                         </p>
                       )}
                     </div>
@@ -950,7 +950,7 @@ export default function SchemaTransformEditor({
                 </div>
               ) : (
                 <div className="flex items-center justify-center h-full text-slate-400 text-sm">
-                  No sources available
+                  사용 가능한 원본이 없습니다
                 </div>
               )}
             </div>
@@ -961,7 +961,7 @@ export default function SchemaTransformEditor({
             <div className="px-4 py-3 border-b border-slate-200 bg-slate-50/50 flex items-center justify-between">
               <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
                 <span className="w-1 h-3 bg-purple-600 rounded-full"></span>
-                SQL Query Editor
+                SQL 쿼리 편집기
               </h3>
               <button
                 onClick={() => setShowAI(!showAI)}
@@ -969,7 +969,7 @@ export default function SchemaTransformEditor({
                                     bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-600
                                     hover:from-indigo-100 hover:to-purple-100 transition-all
                                     border border-indigo-200/50"
-                title="AI Assistant"
+                title="AI 도우미"
               >
                 <Sparkles size={14} />
                 <span>AI</span>
@@ -986,7 +986,7 @@ export default function SchemaTransformEditor({
                       schema: s.schema || [],
                     })),
                   }}
-                  placeholder="e.g., join tables, aggregate data, filter rows..."
+                  placeholder="예: 테이블 조인, 데이터 집계, 행 필터링..."
                   onApply={(suggestion) => {
                     setCustomSql(suggestion);
                     setShowAI(false);
@@ -1007,11 +1007,11 @@ export default function SchemaTransformEditor({
               />
               <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="text-xs text-blue-800">
-                  <strong>Advanced SQL Transform:</strong> Write complex queries
-                  with JOIN, GROUP BY, and aggregations. Note that previews run
-                  on <strong>DuckDB</strong> for fast feedback, while the actual
-                  ETL executes on <strong>Spark SQL</strong> for scale.
-                  Reference sources by their dataset names.
+                  <strong>고급 SQL 가공:</strong> JOIN, GROUP BY, 집계가 포함된
+                  복잡한 쿼리를 작성할 수 있습니다. 미리보기는 빠른 확인을
+                  위해 <strong>DuckDB</strong>에서 실행되고, 실제 ETL은 대용량
+                  처리를 위해 <strong>Spark SQL</strong>에서 실행됩니다. 원본은
+                  데이터셋 이름으로 참조하세요.
                 </p>
               </div>
             </div>
@@ -1022,14 +1022,14 @@ export default function SchemaTransformEditor({
       {/* Run Preview Test Button - Works for both tabs */}
       <div className="flex items-center justify-between p-4 border-t border-slate-100 bg-white">
         <div>
-          <h4 className="text-sm font-bold text-slate-900">Preview Changes</h4>
+          <h4 className="text-sm font-bold text-slate-900">변경사항 미리보기</h4>
         </div>
         <div className="flex items-center gap-3">
           {isTestSuccessful && (
             <div className="flex items-center gap-1 text-green-600 bg-green-50 px-3 py-1 rounded-lg border border-green-200 animate-in fade-in slide-in-from-right-4 duration-300">
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
               <span className="text-xs font-bold uppercase tracking-tight">
-                Test Passed
+                테스트 통과
               </span>
             </div>
           )}
@@ -1047,13 +1047,13 @@ export default function SchemaTransformEditor({
             ) : (
               <Play className="w-3.5 h-3.5" />
             )}
-            Run Preview Test
+            미리보기 테스트 실행
           </button>
           {isTestOpen && (
             <button
               onClick={() => setIsTestOpen(false)}
               className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all"
-              title="Close Preview"
+              title="미리보기 닫기"
             >
               <ChevronUp className="w-5 h-5" />
             </button>
@@ -1103,7 +1103,7 @@ export default function SchemaTransformEditor({
               <div className="flex items-center gap-2 mb-2">
                 <AlertTriangle className="w-4 h-4 text-amber-600" />
                 <span className="text-sm font-semibold text-amber-800">
-                  Spark SQL Compatibility Warning
+                  Spark SQL 호환성 경고
                 </span>
               </div>
               <ul className="space-y-1">
@@ -1117,7 +1117,7 @@ export default function SchemaTransformEditor({
                       {warning.spark_equivalent}()
                     </span>
                     <span className="text-amber-600 ml-2">
-                      will be auto-converted during ETL execution
+                      ETL 실행 중 자동 변환됩니다
                     </span>
                   </li>
                 ))}
@@ -1129,11 +1129,11 @@ export default function SchemaTransformEditor({
           <div className="flex items-center justify-between mb-3 pb-1 border-b border-slate-200">
             <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
               <span className="w-1 h-3 bg-indigo-500 rounded-full"></span>
-              Result Preview
+              결과 미리보기
             </h4>
             {isTestSuccessful && (
               <span className="text-xs font-bold text-green-600 flex items-center gap-1">
-                Ready to proceed
+                진행 가능
               </span>
             )}
           </div>
@@ -1146,7 +1146,7 @@ export default function SchemaTransformEditor({
                 {/* Header with inline tabs */}
                 <div className="flex items-center gap-3 mb-1.5 min-h-[28px]">
                   <h5 className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">
-                    Source Sample
+                    원본 샘플
                   </h5>
                   {/* Source sample tabs - inline with header */}
                   {testResult.source_samples &&
@@ -1224,7 +1224,7 @@ export default function SchemaTransformEditor({
                         </table>
                       ) : (
                         <div className="flex items-center justify-center h-full text-slate-400 text-xs italic">
-                          No data
+                          데이터 없음
                         </div>
                       );
                     })()
@@ -1273,7 +1273,7 @@ export default function SchemaTransformEditor({
                     </table>
                   ) : (
                     <div className="flex items-center justify-center h-full text-slate-400 text-xs italic">
-                      Source preview not available
+                      원본 미리보기를 사용할 수 없습니다
                     </div>
                   )}
                 </div>
@@ -1284,7 +1284,7 @@ export default function SchemaTransformEditor({
                 {/* Header with fixed height to match Source Sample */}
                 <div className="flex items-center gap-3 mb-1.5 min-h-[28px]">
                   <h5 className="text-[9px] font-bold text-indigo-500 uppercase tracking-tight">
-                    Transformed Sample
+                    가공 결과 샘플
                   </h5>
                 </div>
                 <div className="overflow-x-auto border border-indigo-100 rounded-xl bg-white shadow-sm ring-1 ring-slate-200">

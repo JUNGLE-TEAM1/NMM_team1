@@ -116,7 +116,7 @@ export default function RDBSourcePropertiesPanel({ node, selectedMetadataItem, o
         if (selectedConnection?.type === 's3') {
             // Validate custom regex
             if (!customRegex.trim()) {
-                showToast('Please provide a regex pattern for parsing logs', 'error');
+                showToast('로그 파싱에 사용할 Regex 패턴을 입력해주세요', 'error');
                 return;
             }
 
@@ -134,7 +134,7 @@ export default function RDBSourcePropertiesPanel({ node, selectedMetadataItem, o
             const fieldNames = extractFieldNamesFromRegex(customRegex.trim());
 
             if (fieldNames.length === 0) {
-                showToast('Regex pattern must contain at least one named group (?P<field_name>pattern)', 'error');
+                showToast('Regex 패턴에는 named group이 최소 1개 필요합니다. 예: (?P<field_name>pattern)', 'error');
                 return;
             }
 
@@ -153,7 +153,7 @@ export default function RDBSourcePropertiesPanel({ node, selectedMetadataItem, o
                 config: selectedConnection.config,  // bucket, path, credentials
                 customRegex: customRegex.trim()
             });
-            showToast(`S3 source saved successfully. Extracted ${fieldNames.length} fields: ${fieldNames.join(', ')}`, 'success');
+            showToast(`S3 소스를 저장했습니다. ${fieldNames.length}개 필드 추출: ${fieldNames.join(', ')}`, 'success');
             return;
         }
 
@@ -168,10 +168,10 @@ export default function RDBSourcePropertiesPanel({ node, selectedMetadataItem, o
                     schema: columns.map(col => ({ key: col.name, type: col.type })),
                     sourceType: mapToSparkSourceType(selectedConnection.type)
                 });
-                showToast('Dataset info saved successfully', 'success');
+                showToast('데이터셋 정보를 저장했습니다', 'success');
             } catch (err) {
-                console.error('Failed to fetch schema:', err);
-                showToast('Failed to fetch schema, but saved basic info', 'warning');
+                console.error('스키마 가져오기 실패:', err);
+                showToast('스키마를 가져오지 못했지만 기본 정보는 저장했습니다', 'warning');
                 // Still update even if schema fetch fails
                 onUpdate({
                     sourceId: selectedConnection.id,
@@ -208,7 +208,7 @@ export default function RDBSourcePropertiesPanel({ node, selectedMetadataItem, o
             {/* Header */}
             <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-gray-900">
-                    Source Properties
+                    소스 속성
                 </h2>
                 <button
                     onClick={onClose}
@@ -223,12 +223,12 @@ export default function RDBSourcePropertiesPanel({ node, selectedMetadataItem, o
                 {/* Name */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Node Label
+                        노드 라벨
                     </label>
                     <input
                         type="text"
                         className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
-                        value={node?.data?.label || 'Source'}
+                        value={node?.data?.label || '소스'}
                         disabled
                     />
                 </div>
@@ -236,16 +236,16 @@ export default function RDBSourcePropertiesPanel({ node, selectedMetadataItem, o
                 {/* Connection */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Connection
+                        연결
                     </label>
                     <p className="text-xs text-gray-500 mb-2">
-                        Select a data connection.
+                        데이터 연결을 선택하세요.
                     </p>
                     <ConnectionCombobox
                         connections={connections}
                         selectedId={selectedConnection?.id}
                         isLoading={isConnectionsLoading}
-                        placeholder="Choose a connection"
+                        placeholder="연결 선택"
                         onSelect={(conn) => {
                             setSelectedConnection(conn);
                             setSelectedTable('');
@@ -271,7 +271,7 @@ export default function RDBSourcePropertiesPanel({ node, selectedMetadataItem, o
                                 }
                             } catch (err) {
                                 console.error('Failed to delete connection:', err);
-                                showToast('Failed to delete connection', 'error');
+                                showToast('연결 삭제에 실패했습니다', 'error');
                             }
                         }}
                     />
@@ -281,10 +281,10 @@ export default function RDBSourcePropertiesPanel({ node, selectedMetadataItem, o
                 {selectedConnection?.type === 's3' && (
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Log Parsing Pattern <span className="text-red-500">*</span>
+                            로그 파싱 패턴 <span className="text-red-500">*</span>
                         </label>
                         <p className="text-xs text-gray-500 mb-2">
-                            Define a regex pattern with named groups to extract fields from your logs
+                            로그에서 필드를 추출할 named group 기반 Regex 패턴을 정의하세요.
                         </p>
                         <textarea
                             value={customRegex}
@@ -294,13 +294,13 @@ export default function RDBSourcePropertiesPanel({ node, selectedMetadataItem, o
                             rows={5}
                         />
                         <p className="text-xs text-gray-500 mt-1">
-                            Example log: <code className="bg-gray-100 px-1 rounded">127.0.0.1 - - [10/Oct/2000:13:55:36 -0700] "GET /index.html HTTP/1.0" 200 2326</code>
+                            예시 로그: <code className="bg-gray-100 px-1 rounded">127.0.0.1 - - [10/Oct/2000:13:55:36 -0700] "GET /index.html HTTP/1.0" 200 2326</code>
                         </p>
                         <p className="text-xs text-gray-500 mt-1">
-                            Pattern guide: <code className="bg-gray-100 px-1 rounded">^</code> = line start, <code className="bg-gray-100 px-1 rounded">(?P&lt;name&gt;...)</code> = named field, <code className="bg-gray-100 px-1 rounded">\S+</code> = non-space, <code className="bg-gray-100 px-1 rounded">[^\]]+</code> = anything until <code className="bg-gray-100 px-1 rounded">]</code>.
+                            패턴 가이드: <code className="bg-gray-100 px-1 rounded">^</code> = 라인 시작, <code className="bg-gray-100 px-1 rounded">(?P&lt;name&gt;...)</code> = named field, <code className="bg-gray-100 px-1 rounded">\S+</code> = 공백이 아닌 문자, <code className="bg-gray-100 px-1 rounded">[^\]]+</code> = <code className="bg-gray-100 px-1 rounded">]</code> 전까지의 문자.
                         </p>
                         <p className="text-xs text-gray-500 mt-1">
-                            Example pattern: <code className="bg-gray-100 px-1 rounded">^(?P&lt;client_ip&gt;\S+) .* \[(?P&lt;timestamp&gt;[^\]]+)\] "(?P&lt;http_method&gt;\S+) (?P&lt;path&gt;\S+) (?P&lt;http_version&gt;[^"]+)" (?P&lt;status_code&gt;\d+) (?P&lt;bytes_sent&gt;\S+)</code>
+                            예시 패턴: <code className="bg-gray-100 px-1 rounded">^(?P&lt;client_ip&gt;\S+) .* \[(?P&lt;timestamp&gt;[^\]]+)\] "(?P&lt;http_method&gt;\S+) (?P&lt;path&gt;\S+) (?P&lt;http_version&gt;[^"]+)" (?P&lt;status_code&gt;\d+) (?P&lt;bytes_sent&gt;\S+)</code>
                         </p>
                     </div>
                 )}
@@ -309,10 +309,10 @@ export default function RDBSourcePropertiesPanel({ node, selectedMetadataItem, o
                 {selectedConnection?.type !== 's3' && (
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Dataset / Table <span className="text-red-500">*</span>
+                            데이터셋 / 테이블 <span className="text-red-500">*</span>
                         </label>
                         <p className="text-xs text-gray-500 mb-2">
-                            Select the table or dataset to process.
+                            처리할 테이블 또는 데이터셋을 선택하세요.
                         </p>
                         <Combobox
                             options={tables}
@@ -331,10 +331,10 @@ export default function RDBSourcePropertiesPanel({ node, selectedMetadataItem, o
                             }}
                             getKey={(table) => table}
                             getLabel={(table) => table}
-                            placeholder="Select a table"
+                            placeholder="테이블 선택"
                             isLoading={loading}
                             disabled={!selectedConnection}
-                            emptyMessage="No tables available"
+                            emptyMessage="사용 가능한 테이블이 없습니다"
                         />
                     </div>
                 )}
@@ -346,7 +346,7 @@ export default function RDBSourcePropertiesPanel({ node, selectedMetadataItem, o
                         disabled={!selectedConnection || (selectedConnection?.type !== 's3' && !selectedTable)}
                         className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {selectedConnection?.type === 's3' ? 'Save Source' : 'Save & Preview'}
+                        {selectedConnection?.type === 's3' ? '소스 저장' : '저장 및 미리보기'}
                     </button>
                 </div>
 
@@ -355,7 +355,7 @@ export default function RDBSourcePropertiesPanel({ node, selectedMetadataItem, o
                     <div className="border-t border-gray-200 pt-4 mt-4">
                         <div className="mb-3">
                             <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                {selectedMetadataItem.type === 'table' ? `Table: ${selectedMetadataItem.name}` : `Column: ${selectedMetadataItem.name}`}
+                                {selectedMetadataItem.type === 'table' ? `테이블: ${selectedMetadataItem.name}` : `컬럼: ${selectedMetadataItem.name}`}
                                 {selectedMetadataItem.type === 'column' && selectedMetadataItem.dataType && (
                                     <span className="ml-2 text-xs font-mono text-gray-500 bg-gray-200 px-2 py-0.5 rounded">
                                         {selectedMetadataItem.dataType}
@@ -367,13 +367,13 @@ export default function RDBSourcePropertiesPanel({ node, selectedMetadataItem, o
                         {/* Description */}
                         <div className="mb-3">
                             <label className="block text-xs font-medium text-gray-600 mb-1">
-                                Description
+                                설명
                             </label>
                             <input
                                 type="text"
                                 value={selectedMetadataItem.description || ''}
                                 onChange={(e) => handleMetadataChange('description', e.target.value)}
-                                placeholder={`Add description for this ${selectedMetadataItem.type}...`}
+                                placeholder="설명을 입력하세요..."
                                 className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
                             />
                         </div>
@@ -381,7 +381,7 @@ export default function RDBSourcePropertiesPanel({ node, selectedMetadataItem, o
                         {/* Tags */}
                         <div>
                             <label className="block text-xs font-medium text-gray-600 mb-1">
-                                Tags
+                                태그
                             </label>
                             <input
                                 type="text"
@@ -398,7 +398,7 @@ export default function RDBSourcePropertiesPanel({ node, selectedMetadataItem, o
                                     const tags = tagsString.split(',').map(t => t.trim()).filter(t => t);
                                     handleMetadataChange('tags', tags);
                                 }}
-                                placeholder="Add tags (comma separated)"
+                                placeholder="태그 추가 (쉼표로 구분)"
                                 className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
                             />
                         </div>
@@ -412,7 +412,7 @@ export default function RDBSourcePropertiesPanel({ node, selectedMetadataItem, o
                     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1100] p-6">
                         <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
                             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white z-10">
-                                <h3 className="text-lg font-bold text-gray-900">Create New Connection</h3>
+                                <h3 className="text-lg font-bold text-gray-900">새 연결 만들기</h3>
                                 <button
                                     onClick={() => setShowCreateModal(false)}
                                     className="p-1 hover:bg-gray-100 rounded transition-colors"

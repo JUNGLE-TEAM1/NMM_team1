@@ -55,7 +55,7 @@ function RoleSelector({ roles, selectedRole, onChange }) {
             onChange={(e) => onChange(e.target.value || null)}
             className="w-1/3 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         >
-            <option value="">No Role</option>
+            <option value="">역할 없음</option>
             {roles.map((role) => (
                 <option key={role.id} value={role.id}>
                     {role.name}
@@ -125,24 +125,24 @@ export default function UserCreateForm({ editingUser, onUserCreated, onCancel })
 
     const validateForm = () => {
         const newErrors = {};
-        if (!formData.name.trim()) newErrors.name = "Name is required";
-        if (!formData.email.trim()) newErrors.email = "Email is required";
+        if (!formData.name.trim()) newErrors.name = "이름을 입력해주세요";
+        if (!formData.email.trim()) newErrors.email = "이메일을 입력해주세요";
         else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
-            newErrors.email = "Invalid email format";
+            newErrors.email = "이메일 형식이 올바르지 않습니다";
 
         if (!editingUser) {
-            if (!formData.password) newErrors.password = "Password is required";
+            if (!formData.password) newErrors.password = "비밀번호를 입력해주세요";
             else if (formData.password.length < 6)
-                newErrors.password = "Password must be at least 6 characters";
+                newErrors.password = "비밀번호는 6자 이상이어야 합니다";
 
             if (formData.password !== formData.confirmPassword) {
-                newErrors.confirmPassword = "Passwords do not match";
+                newErrors.confirmPassword = "비밀번호가 일치하지 않습니다";
             }
         } else if (formData.password) {
             if (formData.password.length < 6)
-                newErrors.password = "Password must be at least 6 characters";
+                newErrors.password = "비밀번호는 6자 이상이어야 합니다";
             if (formData.password !== formData.confirmPassword) {
-                newErrors.confirmPassword = "Passwords do not match";
+                newErrors.confirmPassword = "비밀번호가 일치하지 않습니다";
             }
         }
 
@@ -190,7 +190,7 @@ export default function UserCreateForm({ editingUser, onUserCreated, onCancel })
                     roleId: null,
                     isAdmin: false,
                 });
-                setSuccessMessage("User created successfully!");
+                setSuccessMessage("사용자를 생성했습니다");
                 setTimeout(() => setSuccessMessage(""), 3000);
             }
         } catch (err) {
@@ -213,14 +213,14 @@ export default function UserCreateForm({ editingUser, onUserCreated, onCancel })
             {editingUser && (
                 <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
                     <p className="text-sm text-blue-800">
-                        Editing: <strong>{editingUser.name}</strong> ({editingUser.email})
+                        수정 중: <strong>{editingUser.name}</strong> ({editingUser.email})
                     </p>
                     {onCancel && (
                         <button
                             onClick={onCancel}
                             className="text-sm text-blue-600 hover:text-blue-800 font-medium"
                         >
-                            Cancel
+                            취소
                         </button>
                     )}
                 </div>
@@ -232,7 +232,7 @@ export default function UserCreateForm({ editingUser, onUserCreated, onCancel })
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Name <span className="text-red-500">*</span>
+                                이름 <span className="text-red-500">*</span>
                             </label>
                             <input
                                 type="text"
@@ -244,7 +244,7 @@ export default function UserCreateForm({ editingUser, onUserCreated, onCancel })
                                     "w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
                                     errors.name ? "border-red-300 bg-red-50" : "border-gray-300"
                                 )}
-                                placeholder="John Doe"
+                                placeholder="홍길동"
                             />
                             {errors.name && (
                                 <p className="mt-1 text-xs text-red-500">{errors.name}</p>
@@ -252,7 +252,7 @@ export default function UserCreateForm({ editingUser, onUserCreated, onCancel })
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Email <span className="text-red-500">*</span>
+                                이메일 <span className="text-red-500">*</span>
                             </label>
                             <input
                                 type="email"
@@ -272,10 +272,10 @@ export default function UserCreateForm({ editingUser, onUserCreated, onCancel })
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Password {!editingUser && <span className="text-red-500">*</span>}
+                                비밀번호 {!editingUser && <span className="text-red-500">*</span>}
                                 {editingUser && (
                                     <span className="text-gray-400 text-xs font-normal ml-1">
-                                        (leave blank to keep)
+                                        (유지하려면 비워두세요)
                                     </span>
                                 )}
                             </label>
@@ -297,7 +297,7 @@ export default function UserCreateForm({ editingUser, onUserCreated, onCancel })
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Confirm Password{" "}
+                                비밀번호 확인{" "}
                                 {!editingUser && <span className="text-red-500">*</span>}
                             </label>
                             <input
@@ -325,7 +325,7 @@ export default function UserCreateForm({ editingUser, onUserCreated, onCancel })
                         </div>
                         <div className="col-span-2">
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Role
+                                역할
                             </label>
                             <RoleSelector
                                 roles={roles}
@@ -335,20 +335,20 @@ export default function UserCreateForm({ editingUser, onUserCreated, onCancel })
                                 }
                             />
                             <p className="mt-1 text-xs text-gray-500">
-                                Assign a role to control user permissions
+                                사용자 권한을 제어할 역할을 지정합니다
                             </p>
                         </div>
                         <div className="col-span-2">
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Admin Permissions
+                                관리자 권한
                             </label>
                             <Toggle
                                 checked={formData.isAdmin}
                                 onChange={(checked) =>
                                     setFormData((prev) => ({ ...prev, isAdmin: checked }))
                                 }
-                                label="Grant Admin Access"
-                                description="Admin users have full access to all features and can manage other users"
+                                label="관리자 접근 권한 부여"
+                                description="관리자는 모든 기능에 접근하고 다른 사용자를 관리할 수 있습니다"
                             />
                         </div>
                     </div>
@@ -368,7 +368,7 @@ export default function UserCreateForm({ editingUser, onUserCreated, onCancel })
                                 disabled={isSubmitting}
                                 className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
                             >
-                                Cancel
+                                취소
                             </button>
                         )}
                         <button
@@ -377,7 +377,7 @@ export default function UserCreateForm({ editingUser, onUserCreated, onCancel })
                             className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 flex items-center gap-2"
                         >
                             {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                            {editingUser ? "Save Changes" : "Create User"}
+                            {editingUser ? "변경사항 저장" : "사용자 생성"}
                         </button>
                     </div>
                 </div>

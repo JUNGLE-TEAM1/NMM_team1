@@ -32,7 +32,7 @@ export default function MongoDBSourceConfig({
                 );
                 setCollections(response.collections || []);
             } catch (err) {
-                console.error("Failed to load MongoDB collections:", err);
+                console.error("MongoDB 컬렉션 불러오기 실패:", err);
                 setCollections([]);
             } finally {
                 setLoadingCollections(false);
@@ -70,7 +70,7 @@ export default function MongoDBSourceConfig({
             // Reset expanded state
             setExpandedColumns({});
         } catch (err) {
-            console.error("Failed to fetch collection schema:", err);
+            console.error("컬렉션 스키마 가져오기 실패:", err);
             onChange({ collection: collectionName, columns: [] });
         }
     };
@@ -210,8 +210,8 @@ export default function MongoDBSourceConfig({
                                 className="ml-auto opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 rounded transition-all"
                                 title={
                                     expandedColumns[colIndex]
-                                        ? "Hide description"
-                                        : "Add description"
+                                        ? "설명 숨기기"
+                                        : "설명 추가"
                                 }
                             >
                                 {expandedColumns[colIndex] ? (
@@ -232,7 +232,7 @@ export default function MongoDBSourceConfig({
                                 onChange={(e) => {
                                     updateColumnMetadata(colIndex, "description", e.target.value);
                                 }}
-                                placeholder="Enter field description"
+                                placeholder="필드 설명 입력"
                                 className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
                             />
                         </div>
@@ -252,7 +252,7 @@ export default function MongoDBSourceConfig({
             {/* Collection Selection */}
             <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Collection
+                    컬렉션
                 </label>
                 <Combobox
                     options={collections}
@@ -267,17 +267,17 @@ export default function MongoDBSourceConfig({
                     disabled={!connectionId}
                     placeholder={
                         loadingCollections
-                            ? "Loading collections..."
+                            ? "컬렉션 불러오는 중..."
                             : !connectionId
-                                ? "Select a connection first"
+                                ? "먼저 연결을 선택하세요"
                                 : collections.length === 0
-                                    ? "No collections available"
-                                    : "Select a collection..."
+                                    ? "사용 가능한 컬렉션이 없습니다"
+                                    : "컬렉션 선택..."
                     }
                     emptyMessage={
                         !connectionId
-                            ? "Select a connection first"
-                            : "No collections available"
+                            ? "먼저 연결을 선택하세요"
+                            : "사용 가능한 컬렉션이 없습니다"
                     }
                     classNames={{
                         button:
@@ -296,7 +296,7 @@ export default function MongoDBSourceConfig({
             {columns.length > 0 && (
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-3">
-                        Fields ({columns.length})
+                        필드 ({columns.length})
                     </label>
                     <div className="space-y-0.5 bg-gray-50 rounded-lg p-4 border border-gray-200">
                         {renderTree(buildTree(columns))}

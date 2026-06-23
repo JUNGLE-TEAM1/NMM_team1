@@ -4,10 +4,10 @@ export default function ConfirmationModal({
     isOpen,
     onClose,
     onConfirm,
-    title = 'Confirm Delete',
-    message = 'Are you sure you want to delete this item?',
-    confirmText = 'Delete',
-    cancelText = 'Cancel',
+    title = '삭제 확인',
+    message = '이 항목을 삭제할까요?',
+    confirmText = '삭제',
+    cancelText = '취소',
     variant = 'danger', // 'danger' | 'warning' | 'info'
 }) {
     if (!isOpen) return null;

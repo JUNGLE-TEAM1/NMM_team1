@@ -12,7 +12,7 @@ export default function QueryPage() {
         <div className="flex flex-col h-[calc(100vh-80px)] overflow-hidden bg-gray-50">
             {/* Top Header with View Mode Toggle */}
             <div className="flex items-center justify-between px-6 py-3 bg-white border-b border-gray-200">
-                <h1 className="text-lg font-semibold text-gray-900">SQL Lab</h1>
+                <h1 className="text-lg font-semibold text-gray-900">SQL 분석</h1>
 
                 {/* View Mode Toggle */}
                 <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
@@ -24,7 +24,7 @@ export default function QueryPage() {
                             }`}
                     >
                         <Table className="w-4 h-4" />
-                        Table
+                        표
                     </button>
                     <button
                         onClick={() => setViewMode('chart')}
@@ -34,7 +34,7 @@ export default function QueryPage() {
                             }`}
                     >
                         <BarChart3 className="w-4 h-4" />
-                        Chart
+                        차트
                     </button>
                 </div>
 
@@ -46,12 +46,12 @@ export default function QueryPage() {
                     {sidebarCollapsed ? (
                         <>
                             <ChevronRight className="w-4 h-4" />
-                            Show Schema
+                            스키마 보이기
                         </>
                     ) : (
                         <>
                             <ChevronLeft className="w-4 h-4" />
-                            Hide Schema
+                            스키마 숨기기
                         </>
                     )}
                 </button>

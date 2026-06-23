@@ -46,7 +46,7 @@ export default function APIPreview({
 
     try {
       if (!sourceDatasetId) {
-        throw new Error('Source dataset ID is missing');
+        throw new Error('소스 데이터셋 ID가 없습니다');
       }
 
       const response = await fetch(
@@ -60,13 +60,13 @@ export default function APIPreview({
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to fetch preview');
+        throw new Error(errorData.detail || '미리보기 데이터를 가져오지 못했습니다');
       }
 
       const result = await response.json();
 
       if (!result.data || !Array.isArray(result.data) || result.data.length === 0) {
-        throw new Error('No data returned from API');
+        throw new Error('API에서 반환된 데이터가 없습니다');
       }
 
       setPreviewData(result.data);
@@ -81,7 +81,7 @@ export default function APIPreview({
         onPreviewSuccess();
       }
     } catch (err) {
-      console.error('Failed to fetch preview:', err);
+      console.error('미리보기 가져오기 실패:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -94,9 +94,9 @@ export default function APIPreview({
       <div className="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4 min-w-0">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">API Preview</h3>
+            <h3 className="text-lg font-semibold text-gray-900">API 미리보기</h3>
             <p className="text-sm text-gray-500 mt-1">
-              Preview sample data from your API endpoint
+              API 엔드포인트의 샘플 데이터를 확인합니다
             </p>
           </div>
           {!previewData && (
@@ -108,12 +108,12 @@ export default function APIPreview({
               {loading ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  Fetching...
+                  불러오는 중...
                 </>
               ) : (
                 <>
                   <Eye className="w-5 h-5" />
-                  Fetch Preview
+                  미리보기 가져오기
                 </>
               )}
             </button>
@@ -131,11 +131,11 @@ export default function APIPreview({
                 <Eye className="w-8 h-8 text-gray-400" />
               </div>
               <h4 className="text-lg font-medium text-gray-900 mb-2">
-                Ready to Preview
+                미리보기 준비 완료
               </h4>
               <p className="text-sm text-gray-500">
-                Click "Fetch Preview" to see sample data from your API endpoint.
-                This will fetch up to 10 records.
+                "미리보기 가져오기"를 눌러 API 엔드포인트의 샘플 데이터를 확인하세요.
+                최대 10건을 가져옵니다.
               </p>
             </div>
           </div>
@@ -149,14 +149,14 @@ export default function APIPreview({
                 <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
                 <div>
                   <h4 className="text-sm font-semibold text-red-800 mb-1">
-                    Failed to Fetch Preview
+                    미리보기 가져오기 실패
                   </h4>
                   <p className="text-sm text-red-600">{error}</p>
                   <button
                     onClick={handleFetchPreview}
                     className="mt-3 text-sm font-medium text-red-700 hover:text-red-800 underline"
                   >
-                    Try Again
+                    다시 시도
                   </button>
                 </div>
               </div>
@@ -172,18 +172,18 @@ export default function APIPreview({
               <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
                 <h4 className="text-sm font-medium text-green-800">
-                  Preview Loaded Successfully!
+                  미리보기를 불러왔습니다
                 </h4>
                 <p className="text-sm text-green-600 mt-1">
-                  Showing {previewData.length} sample records from your API.
-                  You can proceed to the next step.
+                  API에서 가져온 샘플 {previewData.length}건을 표시합니다.
+                  다음 단계로 진행할 수 있습니다.
                 </p>
               </div>
               <button
                 onClick={handleFetchPreview}
                 className="text-sm font-medium text-green-700 hover:text-green-800 underline"
               >
-                Refresh
+                새로고침
               </button>
             </div>
 
@@ -198,7 +198,7 @@ export default function APIPreview({
 
             {/* Summary */}
             <div className="text-sm text-gray-500">
-              <strong>{Object.keys(previewData[0] || {}).length}</strong> columns detected
+              <strong>{Object.keys(previewData[0] || {}).length}</strong>개 컬럼 감지
             </div>
           </div>
         )}

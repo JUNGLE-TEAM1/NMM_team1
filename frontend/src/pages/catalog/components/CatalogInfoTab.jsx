@@ -14,16 +14,16 @@ export const CatalogInfoTab = ({ catalogItem, targetPath, selectedNode }) => {
                 <div className="px-5 py-4 border-b border-gray-200 sticky top-0 bg-white z-10">
                     <div className="flex items-center gap-2">
                         <Table className="w-4 h-4 text-blue-600" />
-                        <h3 className="font-semibold text-gray-900">Node Details</h3>
+                        <h3 className="font-semibold text-gray-900">노드 상세 정보</h3>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">Click canvas to view dataset info</p>
+                    <p className="text-xs text-gray-500 mt-1">데이터셋 정보를 보려면 캔버스를 클릭하세요</p>
                 </div>
 
                 <div className="p-5 space-y-6">
                     {/* Node Name */}
                     <div>
                         <h4 className="text-xs font-medium text-gray-500 uppercase mb-2">
-                            Table Name
+                            테이블 이름
                         </h4>
                         <p className="text-sm font-semibold text-gray-900">
                             {nodeData.label || nodeData.name || selectedNode.id}
@@ -34,7 +34,7 @@ export const CatalogInfoTab = ({ catalogItem, targetPath, selectedNode }) => {
                     {(nodeData.platform || nodeData.nodeCategory) && (
                         <div>
                             <h4 className="text-xs font-medium text-gray-500 uppercase mb-2">
-                                Type
+                                유형
                             </h4>
                             <span className="inline-flex items-center px-3 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded-lg">
                                 {nodeData.platform || nodeData.nodeCategory}
@@ -46,7 +46,7 @@ export const CatalogInfoTab = ({ catalogItem, targetPath, selectedNode }) => {
                     <div>
                         <h4 className="text-xs font-medium text-gray-500 uppercase mb-2 flex items-center gap-1">
                             <Layers className="w-3 h-3" />
-                            Columns ({columns.length})
+                            컬럼 ({columns.length})
                         </h4>
                         <div className="space-y-1.5 max-h-96 overflow-y-auto">
                             {columns.length > 0 ? (
@@ -54,7 +54,7 @@ export const CatalogInfoTab = ({ catalogItem, targetPath, selectedNode }) => {
                                     const columnName =
                                         typeof col === "string"
                                             ? col
-                                            : col?.name || col?.key || col?.field || `Column ${idx + 1}`;
+                                            : col?.name || col?.key || col?.field || `컬럼 ${idx + 1}`;
                                     const columnType =
                                         typeof col === "object" ? col?.type || col?.dataType : null;
 
@@ -73,7 +73,7 @@ export const CatalogInfoTab = ({ catalogItem, targetPath, selectedNode }) => {
                                     );
                                 })
                             ) : (
-                                <p className="text-sm text-gray-400 italic">No columns available</p>
+                                <p className="text-sm text-gray-400 italic">사용 가능한 컬럼이 없습니다</p>
                             )}
                         </div>
                     </div>
@@ -97,15 +97,15 @@ export const CatalogInfoTab = ({ catalogItem, targetPath, selectedNode }) => {
         <>
             {/* Info Header */}
             <div className="px-5 py-4 border-b border-gray-200 sticky top-0 bg-white z-10">
-                <h3 className="font-semibold text-gray-900">Dataset Info</h3>
-                <p className="text-xs text-gray-500 mt-1">Click a node to view table details</p>
+                <h3 className="font-semibold text-gray-900">데이터셋 정보</h3>
+                <p className="text-xs text-gray-500 mt-1">테이블 상세 정보를 보려면 노드를 클릭하세요</p>
             </div>
 
             <div className="p-5 space-y-6">
                 {/* Description */}
                 <div>
                     <h4 className="text-xs font-medium text-gray-500 uppercase mb-2">
-                        Description
+                        설명
                     </h4>
                     <p className="text-sm text-gray-700">
                         {catalogItem.description || "-"}
@@ -115,7 +115,7 @@ export const CatalogInfoTab = ({ catalogItem, targetPath, selectedNode }) => {
                 {/* Owner */}
                 <div>
                     <h4 className="text-xs font-medium text-gray-500 uppercase mb-2">
-                        Owner
+                        담당자
                     </h4>
                     <p className="text-sm text-gray-900">{catalogItem.owner || "-"}</p>
                 </div>
@@ -124,14 +124,14 @@ export const CatalogInfoTab = ({ catalogItem, targetPath, selectedNode }) => {
                 <div>
                     <h4 className="text-xs font-medium text-gray-500 uppercase mb-2 flex items-center gap-1">
                         <Layers className="w-3 h-3" />
-                        Sources ({catalogItem.sources?.length || 0})
+                        원본 데이터 ({catalogItem.sources?.length || 0})
                     </h4>
                     <div className="space-y-2">
                         {catalogItem.sources?.map((source, idx) => {
                             const sourceName =
                                 typeof source === "string"
                                     ? source
-                                    : source?.table || source?.name || `Source ${idx + 1}`;
+                                    : source?.table || source?.name || `원본 ${idx + 1}`;
                             return (
                                 <div
                                     key={idx}
@@ -149,7 +149,7 @@ export const CatalogInfoTab = ({ catalogItem, targetPath, selectedNode }) => {
                 <div>
                     <h4 className="text-xs font-medium text-gray-500 uppercase mb-2 flex items-center gap-1">
                         <FileText className="w-3 h-3" />
-                        Target
+                        타겟 데이터
                     </h4>
                     <div className="bg-orange-50 text-orange-700 px-3 py-2 rounded-lg">
                         <p className="text-sm font-mono break-all">{targetPath}</p>
@@ -159,14 +159,14 @@ export const CatalogInfoTab = ({ catalogItem, targetPath, selectedNode }) => {
                 {/* Stats */}
                 <div>
                     <h4 className="text-xs font-medium text-gray-500 uppercase mb-2">
-                        Statistics
+                        통계
                     </h4>
                     <div className="grid grid-cols-1 gap-3">
                         <div className="bg-gray-50 rounded-lg p-3 text-center">
                             <p className="text-lg font-bold text-gray-900">
                                 {formatFileSize(catalogItem.size_bytes)}
                             </p>
-                            <p className="text-xs text-gray-500">Size</p>
+                            <p className="text-xs text-gray-500">크기</p>
                         </div>
                     </div>
                 </div>
@@ -174,7 +174,7 @@ export const CatalogInfoTab = ({ catalogItem, targetPath, selectedNode }) => {
                 {/* Format */}
                 <div>
                     <h4 className="text-xs font-medium text-gray-500 uppercase mb-2">
-                        Format
+                        형식
                     </h4>
                     <span className="inline-flex items-center px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-lg">
                         {catalogItem.format || "Parquet"}
@@ -184,7 +184,7 @@ export const CatalogInfoTab = ({ catalogItem, targetPath, selectedNode }) => {
                 {/* Last Updated */}
                 <div>
                     <h4 className="text-xs font-medium text-gray-500 uppercase mb-2">
-                        Last Updated
+                        최근 수정일
                     </h4>
                     <p className="text-sm text-gray-700">
                         {catalogItem.updated_at

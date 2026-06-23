@@ -29,7 +29,7 @@ export default function QueryExplorer({
     if (!results) {
         return (
             <div className="flex items-center justify-center h-full text-gray-400">
-                <p>No data available for visualization.</p>
+                <p>시각화할 데이터가 없습니다.</p>
             </div>
         );
     }
@@ -41,7 +41,7 @@ export default function QueryExplorer({
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-gray-50">
                     <div className="text-xs text-gray-500">
-                        {results.row_count} rows source data
+                        원본 데이터 {results.row_count}개 행
                     </div>
                 </div>
 
