@@ -20,9 +20,9 @@ export default function ConnectionCreatePage() {
             <div className="max-w-4xl mx-auto">
                 {/* Header */}
                 <div className="mb-6">
-                    <h1 className="text-2xl font-bold text-gray-900">새 연결 생성</h1>
+                    <h1 className="text-2xl font-bold text-gray-900">새 데이터 소스 연결</h1>
                     <p className="text-sm text-gray-600 mt-1">
-                        원본 데이터 연결 정보를 설정합니다 (RDB, S3, NoSQL 등)
+                        DB, S3, API, Kafka 같은 원본 데이터 연결 정보를 설정합니다.
                     </p>
                 </div>
 

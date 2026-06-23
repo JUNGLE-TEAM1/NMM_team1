@@ -1,5 +1,7 @@
 const FRONTEND_ONLY_FLAG = "VITE_FRONTEND_ONLY";
-const STORAGE_KEY = "xflow.frontendOnly.mockState.v1";
+const STORAGE_KEY = "xflow.frontendOnly.mockState.commerceRevenueDemo.v2";
+const CLEANUP_MARKER_KEY = "xflow.frontendOnly.cleanupVersion";
+const CLEANUP_VERSION = "commerce-revenue-demo-v2";
 
 const now = () => new Date().toISOString();
 
@@ -11,6 +13,76 @@ const makeColumns = () => [
   { name: "status", type: "VARCHAR", nullable: true, description: "Fulfillment status" },
 ];
 
+const commerceOrderColumns = [
+  { name: "order_id", type: "VARCHAR", nullable: false, description: "주문 식별자" },
+  { name: "user_id", type: "VARCHAR", nullable: false, description: "고객 식별자" },
+  { name: "product_id", type: "VARCHAR", nullable: false, description: "상품 식별자" },
+  { name: "order_amount", type: "NUMERIC", nullable: false, description: "주문 금액" },
+  { name: "order_status", type: "VARCHAR", nullable: true, description: "주문 상태" },
+  { name: "ordered_at", type: "TIMESTAMP", nullable: false, description: "주문 시각" },
+];
+
+const orderEventColumns = [
+  { name: "event_id", type: "VARCHAR", nullable: false, description: "주문 이벤트 ID" },
+  { name: "order_id", type: "VARCHAR", nullable: false, description: "주문 식별자" },
+  { name: "product_id", type: "VARCHAR", nullable: false, description: "상품 식별자" },
+  { name: "event_name", type: "VARCHAR", nullable: false, description: "주문 이벤트명" },
+  { name: "amount", type: "NUMERIC", nullable: true, description: "이벤트 기준 금액" },
+  { name: "event_time", type: "TIMESTAMP", nullable: false, description: "수집 시각" },
+];
+
+const commerceGoldColumns = [
+  { name: "month", type: "VARCHAR", nullable: false, description: "매출 기준 월" },
+  { name: "product_id", type: "VARCHAR", nullable: false, description: "상품 식별자" },
+  { name: "product_name", type: "VARCHAR", nullable: false, description: "상품명" },
+  { name: "category", type: "VARCHAR", nullable: true, description: "상품 카테고리" },
+  { name: "revenue", type: "NUMERIC", nullable: false, description: "월별 매출" },
+  { name: "order_count", type: "INTEGER", nullable: false, description: "월별 주문 수" },
+  { name: "avg_order_amount", type: "NUMERIC", nullable: false, description: "평균 주문 금액" },
+];
+
+const mongoCustomerColumns = [
+  { name: "_id", type: "OBJECT_ID", nullable: false, description: "MongoDB 고객 문서 ID" },
+  { name: "user_id", type: "STRING", nullable: false, description: "주문 데이터와 조인할 고객 ID" },
+  { name: "customer_grade", type: "STRING", nullable: true, description: "고객 등급" },
+  { name: "preferred_region", type: "STRING", nullable: true, description: "주요 이용 지역" },
+  { name: "marketing_opt_in", type: "BOOLEAN", nullable: true, description: "마케팅 수신 동의 여부" },
+  { name: "updated_at", type: "TIMESTAMP", nullable: true, description: "프로필 수정 시각" },
+];
+
+const productCatalogColumns = [
+  { name: "_id", type: "OBJECT_ID", nullable: false, description: "MongoDB 상품 문서 ID" },
+  { name: "product_id", type: "STRING", nullable: false, description: "주문 데이터와 조인할 상품 ID" },
+  { name: "product_name", type: "STRING", nullable: false, description: "상품명" },
+  { name: "category", type: "STRING", nullable: true, description: "상품 카테고리" },
+  { name: "brand", type: "STRING", nullable: true, description: "브랜드" },
+  { name: "updated_at", type: "TIMESTAMP", nullable: true, description: "상품 정보 수정 시각" },
+];
+
+const postgresOrderColumns = [
+  { name: "order_id", type: "VARCHAR", nullable: false, description: "주문 식별자" },
+  { name: "user_id", type: "VARCHAR", nullable: false, description: "고객 프로필 조인 키" },
+  { name: "order_amount", type: "NUMERIC", nullable: false, description: "주문 금액" },
+  { name: "order_status", type: "VARCHAR", nullable: true, description: "주문 상태" },
+  { name: "ordered_at", type: "TIMESTAMP", nullable: false, description: "주문 생성 시각" },
+];
+
+const customerOrderBronzeColumns = [
+  { name: "raw_source", type: "STRING", nullable: false, description: "원본 시스템 이름" },
+  { name: "raw_payload", type: "JSON", nullable: false, description: "원본 레코드 페이로드" },
+  { name: "ingested_at", type: "TIMESTAMP", nullable: false, description: "S3 적재 시각" },
+  { name: "partition_date", type: "DATE", nullable: false, description: "적재 파티션 날짜" },
+];
+
+const customerOrderSilverColumns = [
+  { name: "user_id", type: "VARCHAR", nullable: false, description: "고객/주문 통합 키" },
+  { name: "order_id", type: "VARCHAR", nullable: false, description: "주문 식별자" },
+  { name: "customer_grade", type: "VARCHAR", nullable: true, description: "고객 등급" },
+  { name: "preferred_region", type: "VARCHAR", nullable: true, description: "주요 이용 지역" },
+  { name: "order_amount", type: "NUMERIC", nullable: false, description: "주문 금액" },
+  { name: "ordered_at", type: "TIMESTAMP", nullable: false, description: "주문 생성 시각" },
+];
+
 const sourceColumns = [
   { name: "event_id", type: "VARCHAR" },
   { name: "event_time", type: "TIMESTAMP" },
@@ -19,8 +91,546 @@ const sourceColumns = [
   { name: "properties", type: "JSON" },
 ];
 
+const createAskLakeDemoItems = (createdAt = now()) => {
+  const postgresSource = {
+    id: "src-commerce-orders-postgres",
+    name: "postgres_commerce_orders",
+    description: "후즈러닝 커머스 주문 거래 원본 테이블입니다.",
+    owner: "데이터 엔지니어링 팀",
+    dataset_type: "source",
+    source_type: "postgres",
+    connection_id: "conn-postgres",
+    table: "orders",
+    columns: commerceOrderColumns,
+    status: "active",
+    job_type: "batch",
+    import_ready: true,
+    created_at: createdAt,
+    updated_at: createdAt,
+  };
+
+  const kafkaSource = {
+    id: "src-order-events-kafka",
+    name: "kafka_order_events",
+    description: "실시간 주문 이벤트를 담은 Kafka 스트림입니다.",
+    owner: "커머스 플랫폼 팀",
+    dataset_type: "source",
+    source_type: "kafka",
+    connection_id: "conn-kafka",
+    topic: "commerce.order.events",
+    columns: orderEventColumns,
+    status: "active",
+    job_type: "streaming",
+    import_ready: true,
+    created_at: createdAt,
+    updated_at: createdAt,
+  };
+
+  const mongoCustomerSource = {
+    id: "src-customer-profile-mongo",
+    name: "mongo_customer_profiles",
+    description: "MongoDB 고객 프로필 컬렉션에서 고객 등급과 지역 정보를 가져옵니다.",
+    owner: "고객 플랫폼 팀",
+    dataset_type: "source",
+    source_type: "mongodb",
+    connection_id: "conn-mongodb",
+    collection: "customer_profiles",
+    columns: mongoCustomerColumns,
+    status: "active",
+    job_type: "batch",
+    import_ready: true,
+    created_at: createdAt,
+    updated_at: createdAt,
+  };
+
+  const postgresOrderSource = {
+    id: "src-order-transactions-postgres",
+    name: "postgres_order_transactions",
+    description: "PostgreSQL 주문 테이블에서 주문 금액과 상태 컬럼을 가져옵니다.",
+    owner: "주문 플랫폼 팀",
+    dataset_type: "source",
+    source_type: "postgres",
+    connection_id: "conn-postgres",
+    table: "order_transactions",
+    columns: postgresOrderColumns,
+    status: "active",
+    job_type: "batch",
+    import_ready: true,
+    created_at: createdAt,
+    updated_at: createdAt,
+  };
+
+  const customerOrderBronzeDataset = {
+    id: "ds-customer-order-bronze",
+    job_id: "ds-customer-order-bronze",
+    name: "고객 주문 원본 Bronze Dataset",
+    description: "MongoDB 고객 프로필과 PostgreSQL 주문 거래 데이터를 원본 형태로 S3 Bronze 영역에 적재한 목업 데이터셋입니다.",
+    owner: "데이터 엔지니어링 팀",
+    dataset_type: "target",
+    layer: "bronze",
+    quality_score: 88,
+    sources: [
+      { nodeId: "bronze-source-mongo", type: "mongodb", table: "customer_profiles", name: "MongoDB 고객 프로필" },
+      { nodeId: "bronze-source-postgres", type: "postgres", table: "order_transactions", name: "PostgreSQL 주문 거래" },
+    ],
+    transforms: [
+      { nodeId: "bronze-ingest", type: "raw-ingest", config: { mode: "append", keep_raw_payload: true } },
+    ],
+    destination: { type: "s3", path: "s3://asklake/bronze/customer_order_raw", format: "json" },
+    target: { type: "s3", path: "s3://asklake/bronze/customer_order_raw" },
+    schema: customerOrderBronzeColumns,
+    columns: customerOrderBronzeColumns,
+    nodes: [
+      {
+        id: "bronze-source-mongo",
+        type: "custom",
+        data: {
+          label: "MongoDB 고객 프로필",
+          name: "customer_profiles",
+          platform: "MongoDB",
+          nodeCategory: "source",
+          columns: productCatalogColumns,
+          schema: productCatalogColumns,
+          description: "고객 등급, 주요 지역, 마케팅 동의 컬럼을 가져옵니다.",
+        },
+        position: { x: 80, y: 80 },
+      },
+      {
+        id: "bronze-source-postgres",
+        type: "custom",
+        data: {
+          label: "PostgreSQL 주문 거래",
+          name: "order_transactions",
+          platform: "PostgreSQL",
+          nodeCategory: "source",
+          columns: postgresOrderColumns,
+          schema: postgresOrderColumns,
+          description: "주문 ID, 고객 ID, 주문 금액, 주문 상태 컬럼을 가져옵니다.",
+        },
+        position: { x: 80, y: 280 },
+      },
+      {
+        id: "bronze-ingest",
+        type: "custom",
+        data: {
+          label: "원본 적재",
+          name: "Raw Payload Append",
+          platform: "Ingestion",
+          nodeCategory: "transform",
+          columns: customerOrderBronzeColumns,
+          schema: customerOrderBronzeColumns,
+          description: "두 원본 시스템의 레코드를 raw_payload 형태로 S3 Bronze 영역에 적재합니다.",
+        },
+        position: { x: 430, y: 180 },
+      },
+      {
+        id: "bronze-target",
+        type: "custom",
+        data: {
+          label: "Bronze Dataset",
+          name: "customer_order_raw",
+          platform: "S3 Bronze",
+          nodeCategory: "target",
+          columns: customerOrderBronzeColumns,
+          schema: customerOrderBronzeColumns,
+          description: "원본 페이로드를 보존한 재처리용 데이터셋입니다.",
+        },
+        position: { x: 780, y: 180 },
+      },
+    ],
+    edges: [
+      { id: "bronze-edge-1", source: "bronze-source-mongo", target: "bronze-ingest", animated: true },
+      { id: "bronze-edge-2", source: "bronze-source-postgres", target: "bronze-ingest", animated: true },
+      { id: "bronze-edge-3", source: "bronze-ingest", target: "bronze-target", animated: true },
+    ],
+    schedule: "매시간",
+    schedule_frequency: "hourly",
+    job_type: "batch",
+    status: "active",
+    is_active: true,
+    import_ready: true,
+    size_bytes: 157286400,
+    actual_size_bytes: 157286400,
+    row_count: 1830000,
+    format: "JSON",
+    tags: ["bronze", "mongodb", "postgres"],
+    created_at: createdAt,
+    updated_at: createdAt,
+  };
+
+  const customerOrderSilverDataset = {
+    id: "ds-customer-order-silver",
+    job_id: "ds-customer-order-silver",
+    name: "고객 주문 통합 Silver Dataset",
+    description: "MongoDB 고객 프로필 컬럼과 PostgreSQL 주문 컬럼을 user_id 기준으로 조인해 분석 가능한 형태로 정제한 Silver Dataset입니다.",
+    owner: "데이터 엔지니어링 팀",
+    dataset_type: "target",
+    layer: "silver",
+    quality_score: 97,
+    sources: [
+      { nodeId: "silver-source-mongo", type: "mongodb", table: "customer_profiles", name: "MongoDB 고객 프로필" },
+      { nodeId: "silver-source-postgres", type: "postgres", table: "order_transactions", name: "PostgreSQL 주문 거래" },
+      { nodeId: "silver-source-bronze", type: "s3", table: "customer_order_raw", name: "고객 주문 원본 Bronze Dataset" },
+    ],
+    transforms: [
+      {
+        nodeId: "silver-transform-select-join",
+        type: "select-join-clean",
+        config: {
+          join_key: "user_id",
+          selected_fields: ["user_id", "order_id", "customer_grade", "preferred_region", "order_amount", "ordered_at"],
+          removed_fields: ["raw_payload", "_id"],
+        },
+      },
+    ],
+    destination: { type: "s3", path: "s3://asklake/silver/customer_order_360", format: "parquet" },
+    target: { type: "s3", path: "s3://asklake/silver/customer_order_360" },
+    schema: customerOrderSilverColumns,
+    columns: customerOrderSilverColumns,
+    nodes: [
+      {
+        id: "silver-source-mongo",
+        type: "custom",
+        data: {
+          label: "MongoDB 고객 프로필",
+          name: "customer_profiles",
+          platform: "MongoDB",
+          nodeCategory: "source",
+          columns: mongoCustomerColumns,
+          schema: mongoCustomerColumns,
+          description: "고객 등급과 지역 관련 컬럼을 선택합니다.",
+        },
+        position: { x: 60, y: 70 },
+      },
+      {
+        id: "silver-source-postgres",
+        type: "custom",
+        data: {
+          label: "PostgreSQL 주문 거래",
+          name: "order_transactions",
+          platform: "PostgreSQL",
+          nodeCategory: "source",
+          columns: postgresOrderColumns,
+          schema: postgresOrderColumns,
+          description: "주문 금액과 주문 시각 컬럼을 선택합니다.",
+        },
+        position: { x: 60, y: 260 },
+      },
+      {
+        id: "silver-source-bronze",
+        type: "custom",
+        data: {
+          label: "Bronze 원본 적재",
+          name: "customer_order_raw",
+          platform: "S3 Bronze",
+          nodeCategory: "source",
+          columns: customerOrderBronzeColumns,
+          schema: customerOrderBronzeColumns,
+          description: "재처리 가능한 원본 적재 데이터입니다.",
+        },
+        position: { x: 60, y: 450 },
+      },
+      {
+        id: "silver-transform-select-join",
+        type: "custom",
+        data: {
+          label: "컬럼 선택 및 조인",
+          name: "user_id 기준 조인",
+          platform: "Transform",
+          nodeCategory: "transform",
+          columns: customerOrderSilverColumns,
+          schema: customerOrderSilverColumns,
+          description: "MongoDB와 PostgreSQL 컬럼을 user_id로 조인하고 분석 컬럼만 남깁니다.",
+        },
+        position: { x: 450, y: 260 },
+      },
+      {
+        id: "silver-target",
+        type: "custom",
+        data: {
+          label: "Silver Dataset",
+          name: "customer_order_360",
+          platform: "S3 Silver",
+          nodeCategory: "target",
+          columns: customerOrderSilverColumns,
+          schema: customerOrderSilverColumns,
+          description: "AI Query와 Dashboard에서 사용할 수 있는 정제 데이터셋입니다.",
+        },
+        position: { x: 820, y: 260 },
+      },
+    ],
+    edges: [
+      { id: "silver-edge-1", source: "silver-source-mongo", target: "silver-transform-select-join", animated: true },
+      { id: "silver-edge-2", source: "silver-source-postgres", target: "silver-transform-select-join", animated: true },
+      { id: "silver-edge-3", source: "silver-source-bronze", target: "silver-transform-select-join", animated: true },
+      { id: "silver-edge-4", source: "silver-transform-select-join", target: "silver-target", animated: true },
+    ],
+    schedule: "매일 09:00",
+    schedule_frequency: "daily",
+    job_type: "batch",
+    status: "active",
+    is_active: true,
+    import_ready: true,
+    size_bytes: 94371840,
+    actual_size_bytes: 94371840,
+    row_count: 620000,
+    format: "PARQUET",
+    tags: ["silver", "mongodb", "postgres", "customer-360"],
+    created_at: createdAt,
+    updated_at: createdAt,
+  };
+
+  const goldDataset = {
+    id: "ds-commerce-revenue-gold",
+    job_id: "ds-commerce-revenue-gold",
+    name: "월별 상품 매출 Gold Dataset",
+    description: "PostgreSQL 주문 거래와 MongoDB 상품 카탈로그를 조인해 월별 상품 매출과 주문 수를 집계한 Gold Dataset입니다.",
+    owner: "데이터 엔지니어링 팀",
+    dataset_type: "target",
+    layer: "gold",
+    catalog_status: "new",
+    quality_score: 100,
+    permission_label: "마케터 권한 적용",
+    sources: [
+      { nodeId: "asklake-source-postgres", type: "postgres", table: "orders", name: "PostgreSQL 주문 거래" },
+      { nodeId: "asklake-source-mongodb", type: "mongodb", table: "product_catalog", name: "MongoDB 상품 카탈로그" },
+    ],
+    transforms: [
+      {
+        nodeId: "asklake-transform-clean-join",
+        type: "join-aggregate",
+        config: {
+          join_key: "product_id",
+          filters: ["order_status = 'paid'"],
+          metrics: ["revenue", "order_count", "avg_order_amount"],
+        },
+      },
+    ],
+    targets: [{ nodeId: "asklake-target-gold", type: "s3", config: { format: "parquet" } }],
+    destination: { type: "s3", path: "s3://asklake/gold/monthly_product_sales", format: "parquet" },
+    target: { type: "s3", path: "s3://asklake/gold/monthly_product_sales" },
+    schema: commerceGoldColumns,
+    columns: commerceGoldColumns,
+    nodes: [
+      {
+        id: "asklake-source-postgres",
+        type: "custom",
+        data: {
+          label: "PostgreSQL 주문 거래",
+          name: "orders",
+          platform: "PostgreSQL",
+          nodeCategory: "source",
+          columns: commerceOrderColumns,
+          schema: commerceOrderColumns,
+          description: "커머스 주문 거래에서 주문 금액, 상태, 상품 ID를 가져옵니다.",
+        },
+        position: { x: 80, y: 80 },
+      },
+      {
+        id: "asklake-source-mongodb",
+        type: "custom",
+        data: {
+          label: "MongoDB 상품 카탈로그",
+          name: "product_catalog",
+          platform: "MongoDB",
+          nodeCategory: "source",
+          columns: mongoCustomerColumns,
+          schema: mongoCustomerColumns,
+          description: "상품명, 카테고리, 브랜드 등 상품 메타데이터를 가져옵니다.",
+        },
+        position: { x: 80, y: 280 },
+      },
+      {
+        id: "asklake-transform-clean-join",
+        type: "custom",
+        data: {
+          label: "조인 및 비식별 처리",
+          name: "product_id 기준 조인",
+          platform: "Transform",
+          nodeCategory: "transform",
+          columns: commerceGoldColumns,
+          schema: commerceGoldColumns,
+          description: "product_id로 주문과 상품을 조인하고 결제 완료 주문만 월별로 집계합니다.",
+        },
+        position: { x: 420, y: 180 },
+      },
+      {
+        id: "asklake-target-gold",
+        type: "custom",
+        data: {
+          label: "월별 상품 매출 데이터",
+          name: "Gold Dataset",
+          platform: "Gold Dataset",
+          nodeCategory: "target",
+          columns: commerceGoldColumns,
+          schema: commerceGoldColumns,
+          description: "마케터와 기획자가 바로 분석에 사용할 수 있는 정제 데이터셋입니다.",
+        },
+        position: { x: 760, y: 180 },
+      },
+    ],
+    edges: [
+      { id: "asklake-edge-1", source: "asklake-source-postgres", target: "asklake-transform-clean-join", animated: true },
+      { id: "asklake-edge-2", source: "asklake-source-mongodb", target: "asklake-transform-clean-join", animated: true },
+      { id: "asklake-edge-3", source: "asklake-transform-clean-join", target: "asklake-target-gold", animated: true },
+    ],
+    schedule: "Batch 실행",
+    schedule_frequency: "manual",
+    job_type: "batch",
+    status: "active",
+    is_active: true,
+    import_ready: true,
+    size_bytes: 824633720,
+    actual_size_bytes: 824633720,
+    row_count: 2480000,
+    format: "PARQUET",
+    tags: ["gold", "commerce", "revenue", "orders", "quality-100"],
+    preview_rows: [
+      { month: "2026-04", product_name: "러닝화 Pro", category: "Shoes", revenue: "49,000,000", order_count: 910, avg_order_amount: "53,846" },
+      { month: "2026-05", product_name: "트레이닝 셋업", category: "Apparel", revenue: "58,000,000", order_count: 1040, avg_order_amount: "55,769" },
+      { month: "2026-06", product_name: "러닝화 Pro", category: "Shoes", revenue: "64,000,000", order_count: 1120, avg_order_amount: "57,143" },
+    ],
+    quality: {
+      missing_rate: "0.00%",
+      duplicate_count: 0,
+      schema_status: "안정적",
+    },
+    created_at: createdAt,
+    updated_at: createdAt,
+  };
+
+  const silverDataset = {
+    id: "ds-commerce-orders-silver",
+    job_id: "ds-commerce-orders-silver",
+    name: "주문 거래 정제 데이터",
+    description: "PostgreSQL 주문 원본에서 분석에 필요한 주문/고객/상태 컬럼만 정리한 Silver Dataset입니다.",
+    owner: "데이터 엔지니어링 팀",
+    dataset_type: "target",
+    layer: "silver",
+    quality_score: 96,
+    sources: [
+      { nodeId: "silver-source-postgres", type: "postgres", table: "orders", name: "PostgreSQL 주문 거래" },
+    ],
+    transforms: [
+      { nodeId: "silver-transform-clean", type: "clean", config: { selected_fields: ["order_id", "user_id", "product_id", "order_amount", "order_status"] } },
+    ],
+    destination: { type: "s3", path: "s3://asklake/silver/orders_clean", format: "parquet" },
+    target: { type: "s3", path: "s3://asklake/silver/orders_clean" },
+    schema: commerceOrderColumns,
+    columns: commerceOrderColumns,
+    nodes: [
+      { id: "silver-source-postgres", type: "source", data: { label: "orders", schema: commerceOrderColumns }, position: { x: 0, y: 100 } },
+      { id: "silver-transform-clean", type: "transform", data: { label: "컬럼 정리", schema: commerceOrderColumns }, position: { x: 300, y: 100 } },
+      { id: "silver-target", type: "target", data: { label: "Silver Dataset", schema: commerceOrderColumns }, position: { x: 620, y: 100 } },
+    ],
+    edges: [
+      { id: "silver-edge-1", source: "silver-source-postgres", target: "silver-transform-clean" },
+      { id: "silver-edge-2", source: "silver-transform-clean", target: "silver-target" },
+    ],
+    schedule: "매일 08:00",
+    schedule_frequency: "daily",
+    job_type: "batch",
+    status: "active",
+    is_active: true,
+    import_ready: true,
+    size_bytes: 248302796,
+    actual_size_bytes: 248302796,
+    row_count: 2480000,
+    format: "PARQUET",
+    tags: ["silver", "commerce-orders"],
+    created_at: createdAt,
+    updated_at: createdAt,
+  };
+
+  const bronzeDataset = {
+    id: "ds-order-events-bronze",
+    job_id: "ds-order-events-bronze",
+    name: "주문 이벤트 원본 로그",
+    description: "Kafka 주문 이벤트를 데이터 레이크에 원본 형태로 적재한 Bronze Dataset입니다.",
+    owner: "커머스 플랫폼 팀",
+    dataset_type: "target",
+    layer: "bronze",
+    quality_score: 91,
+    sources: [
+      { nodeId: "bronze-source-kafka", type: "kafka", table: "commerce.order.events", name: "Kafka 주문 이벤트" },
+    ],
+    transforms: [],
+    destination: { type: "s3", path: "s3://asklake/bronze/order_events", format: "json" },
+    target: { type: "s3", path: "s3://asklake/bronze/order_events" },
+    schema: orderEventColumns,
+    columns: orderEventColumns,
+    nodes: [
+      { id: "bronze-source-kafka", type: "source", data: { label: "commerce.order.events", schema: orderEventColumns }, position: { x: 0, y: 100 } },
+      { id: "bronze-target", type: "target", data: { label: "Bronze Dataset", schema: orderEventColumns }, position: { x: 360, y: 100 } },
+    ],
+    edges: [{ id: "bronze-edge-1", source: "bronze-source-kafka", target: "bronze-target" }],
+    schedule: "실시간",
+    schedule_frequency: "streaming",
+    job_type: "streaming",
+    status: "active",
+    is_active: true,
+    import_ready: true,
+    size_bytes: 192937984,
+    actual_size_bytes: 192937984,
+    row_count: 9800000,
+    format: "JSON",
+    tags: ["bronze", "order-events"],
+    created_at: createdAt,
+    updated_at: createdAt,
+  };
+
+  const kafkaConnection = {
+    id: "conn-kafka",
+    name: "주문 이벤트 Kafka",
+    description: "커머스 주문 이벤트를 수집하는 Kafka 스트림 연결입니다.",
+    type: "kafka",
+    config: { bootstrap_servers: "kafka.local:9092", topic: "commerce.order.events" },
+    status: "connected",
+    created_at: createdAt,
+    updated_at: createdAt,
+  };
+
+  const s3Connection = {
+    id: "conn-s3",
+    name: "AskLake S3 Lake",
+    description: "Bronze, Silver, Gold 데이터셋이 저장되는 데이터 레이크입니다.",
+    type: "s3",
+    config: { bucket: "asklake-demo", region: "ap-northeast-2" },
+    status: "connected",
+    created_at: createdAt,
+    updated_at: createdAt,
+  };
+
+  const mongoConnection = {
+    id: "conn-mongodb",
+    name: "커머스 MongoDB",
+    description: "고객 프로필과 상품 카탈로그 문서를 담은 MongoDB 연결입니다.",
+    type: "mongodb",
+    config: { host: "mongodb.local", port: 27017, database: "commerce", collection: "product_catalog" },
+    status: "connected",
+    created_at: createdAt,
+    updated_at: createdAt,
+  };
+
+  return {
+    postgresSource,
+    kafkaSource,
+    mongoCustomerSource,
+    postgresOrderSource,
+    customerOrderBronzeDataset,
+    customerOrderSilverDataset,
+    goldDataset,
+    silverDataset,
+    bronzeDataset,
+    kafkaConnection,
+    s3Connection,
+    mongoConnection,
+  };
+};
+
 const seedState = () => {
   const createdAt = now();
+  const askLakeDemo = createAskLakeDemoItems(createdAt);
   const sourceA = {
     id: "src-orders-postgres",
     name: "orders_postgres",
@@ -169,81 +779,81 @@ const seedState = () => {
     connections: [
       {
         id: "conn-postgres",
-        name: "Demo PostgreSQL",
-        description: "Mock transactional PostgreSQL connection.",
+        name: "주문 거래 PostgreSQL",
+        description: "주문 거래 테이블을 담은 PostgreSQL 연결입니다.",
         type: "postgres",
         config: { host: "postgres.local", port: 5432, database: "commerce", user: "demo" },
         status: "connected",
         created_at: createdAt,
         updated_at: createdAt,
       },
-      {
-        id: "conn-events-api",
-        name: "Demo Events API",
-        description: "Mock REST API connection.",
-        type: "api",
-        config: { base_url: "https://api.example.test" },
-        status: "connected",
-        created_at: createdAt,
-        updated_at: createdAt,
-      },
-      {
-        id: "conn-s3",
-        name: "Demo S3 Lake",
-        description: "Mock object storage connection.",
-        type: "s3",
-        config: { bucket: "xflow-demo", region: "ap-northeast-2" },
-        status: "connected",
-        created_at: createdAt,
-        updated_at: createdAt,
-      },
+      askLakeDemo.mongoConnection,
+      askLakeDemo.s3Connection,
     ],
-    sourceDatasets: [sourceA, sourceB],
-    datasets: [targetA, targetB],
-    domains: [
-      {
-        id: "domain-revenue",
-        name: "Revenue Intelligence",
-        type: "business",
-        owner: "Analytics",
-        tags: ["revenue", "catalog", "quality"],
-        description: "A demo domain that groups revenue datasets and lineage for UI review.",
-        docs: "This mock domain is generated in frontend-only mode.",
-        nodes: targetA.nodes,
-        edges: targetA.edges,
-        created_at: createdAt,
-        updated_at: createdAt,
-      },
-    ],
+    sourceDatasets: [askLakeDemo.mongoCustomerSource, askLakeDemo.postgresOrderSource],
+    datasets: [askLakeDemo.customerOrderSilverDataset, askLakeDemo.customerOrderBronzeDataset],
+    domains: [],
     jobRuns: {
-      "ds-revenue-mart": [
+      "ds-customer-order-silver": [
         {
-          id: "run-1001",
-          dataset_id: "ds-revenue-mart",
+          id: "run-customer-order-silver",
+          dataset_id: "ds-customer-order-silver",
           status: "success",
           started_at: createdAt,
           finished_at: createdAt,
-          airflow_run_id: "mock_manual__1001",
+          airflow_run_id: "mock_customer_order_silver",
         },
       ],
-      "ds-events-stream": [
+      "ds-customer-order-bronze": [
         {
-          id: "run-1002",
-          dataset_id: "ds-events-stream",
-          status: "running",
+          id: "run-customer-order-bronze",
+          dataset_id: "ds-customer-order-bronze",
+          status: "success",
           started_at: createdAt,
-          finished_at: null,
-          airflow_run_id: "mock_stream__1002",
+          finished_at: createdAt,
+          airflow_run_id: "mock_customer_order_bronze",
         },
       ],
     },
   };
 };
 
+const ensureAskLakeDemoState = (state) => {
+  const demo = createAskLakeDemoItems(now());
+  let changed = false;
+
+  if (!state.sourceDatasets?.some((item) => item.id === demo.mongoCustomerSource.id)) {
+    state.sourceDatasets = [demo.mongoCustomerSource, ...(state.sourceDatasets || [])];
+    changed = true;
+  }
+  if (!state.sourceDatasets?.some((item) => item.id === demo.postgresOrderSource.id)) {
+    state.sourceDatasets = [...(state.sourceDatasets || []), demo.postgresOrderSource];
+    changed = true;
+  }
+  if (!state.datasets?.some((item) => item.id === demo.customerOrderSilverDataset.id)) {
+    state.datasets = [demo.customerOrderSilverDataset, ...(state.datasets || [])];
+    changed = true;
+  }
+  if (!state.datasets?.some((item) => item.id === demo.customerOrderBronzeDataset.id)) {
+    state.datasets = [...(state.datasets || []), demo.customerOrderBronzeDataset];
+    changed = true;
+  }
+  if (!state.connections?.some((item) => item.id === demo.mongoConnection.id)) {
+    state.connections = [demo.mongoConnection, ...(state.connections || [])];
+    changed = true;
+  }
+  if (!state.connections?.some((item) => item.id === demo.s3Connection.id)) {
+    state.connections = [...(state.connections || []), demo.s3Connection];
+    changed = true;
+  }
+  if (changed) saveState(state);
+  return state;
+};
+
 const loadState = () => {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) return JSON.parse(stored);
+    if (stored) return ensureAskLakeDemoState(JSON.parse(stored));
   } catch (error) {
     console.warn("Failed to load XFlow mock state", error);
   }
@@ -254,6 +864,20 @@ const loadState = () => {
 
 const saveState = (state) => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+};
+
+const cleanupDemoStorage = () => {
+  if (localStorage.getItem(CLEANUP_MARKER_KEY) === CLEANUP_VERSION) return;
+
+  Object.keys(localStorage).forEach((key) => {
+    if (
+      key.startsWith("xflow.frontendOnly.mockState.") ||
+      key.startsWith("xflow_analysis_board_state")
+    ) {
+      localStorage.removeItem(key);
+    }
+  });
+  localStorage.setItem(CLEANUP_MARKER_KEY, CLEANUP_VERSION);
 };
 
 const jsonResponse = (body, status = 200) =>
@@ -371,7 +995,9 @@ const qualitySummary = (state) => {
       healthy_count: results.filter((item) => item.status === "healthy").length,
       warning_count: results.filter((item) => item.status === "warning").length,
       critical_count: 0,
-      avg_score: Math.round(results.reduce((sum, item) => sum + item.overall_score, 0) / results.length),
+      avg_score: results.length
+        ? Math.round(results.reduce((sum, item) => sum + item.overall_score, 0) / results.length)
+        : 0,
     },
     results,
   };
@@ -488,17 +1114,19 @@ const handleRequest = async (input, init = {}) => {
   }
 
   if (segments[0] === "api" && segments[1] === "metadata") {
-    if (segments[3] === "tables") return jsonResponse(["orders", "customers", "payments"]);
-    if (segments[3] === "collections") return jsonResponse(["events", "sessions", "profiles"]);
-    if (segments[5] === "columns") return jsonResponse(makeColumns());
+    if (segments[3] === "tables") return jsonResponse(["order_transactions"]);
+    if (segments[3] === "collections") return jsonResponse(["customer_profiles"]);
+    if (segments[5] === "columns") {
+      return jsonResponse(segments[2] === "conn-mongodb" ? mongoCustomerColumns : postgresOrderColumns);
+    }
   }
 
   if (pathname === "/api/source-datasets") {
     return handleCollection(state, "sourceDatasets", "src", null, method, init);
   }
   if (segments[0] === "api" && segments[1] === "source-datasets") {
-    if (segments[2] === "kafka" && segments[3] === "topics") return jsonResponse(["product.events", "orders.cdc", "user.sessions"]);
-    if (segments[2] === "kafka" && segments[3] === "schema") return jsonResponse({ columns: sourceColumns, sample: sampleRows.map((row) => ({ raw_value: JSON.stringify(row) })) });
+    if (segments[2] === "kafka" && segments[3] === "topics") return jsonResponse(["commerce.order.events"]);
+    if (segments[2] === "kafka" && segments[3] === "schema") return jsonResponse({ columns: orderEventColumns, sample: sampleRows.map((row) => ({ raw_value: JSON.stringify(row) })) });
     if (segments[3] === "preview") return jsonResponse(previewPayload());
     if (segments[2] === "api" && segments[3] === "test") {
       return jsonResponse({ success: true, columns: sourceColumns, schema: sourceColumns, data: sampleRows, preview_data: sampleRows });
@@ -593,7 +1221,7 @@ const handleRequest = async (input, init = {}) => {
   if (segments[0] === "api" && segments[1] === "ai") {
     if (segments[2] === "health") return jsonResponse({ status: "mocked" });
     if (segments[2] === "generate-sql") {
-      return jsonResponse({ sql: "SELECT order_date, SUM(amount) AS revenue FROM daily_revenue_mart GROUP BY order_date ORDER BY order_date DESC LIMIT 10;" });
+      return jsonResponse({ sql: "SELECT month, product_name, revenue, order_count FROM gold_monthly_product_sales ORDER BY month DESC LIMIT 10;" });
     }
     if (segments[2] === "search-schema") return jsonResponse({ results: catalogItems(state) });
   }
@@ -609,15 +1237,15 @@ const handleRequest = async (input, init = {}) => {
       });
     }
     if (segments.includes("catalogs")) {
-      if (segments.length <= 3) return jsonResponse(["memory", "iceberg", "postgres"]);
-      if (segments.length <= 5) return jsonResponse(["public", "analytics"]);
-      if (segments.length <= 7) return jsonResponse(["daily_revenue_mart", "product_event_stream"]);
+      if (segments.length <= 3) return jsonResponse(["asklake"]);
+      if (segments.length <= 5) return jsonResponse(["bronze", "silver", "gold"]);
+      if (segments.length <= 7) return jsonResponse(["customer_order_raw", "customer_order_silver", "monthly_product_sales"]);
       if (segments[segments.length - 1] === "schema") return jsonResponse(makeColumns());
       if (segments[segments.length - 1] === "preview") return jsonResponse(queryResult());
     }
     if (segments[2] === "buckets") {
-      if (segments.length === 3) return jsonResponse(["xflow-demo", "analytics-sandbox"]);
-      return jsonResponse([{ key: "curated/daily_revenue_mart/part-000.parquet", size: 2481200, type: "file" }]);
+      if (segments.length === 3) return jsonResponse(["asklake-demo"]);
+      return jsonResponse([{ key: "gold/monthly_product_sales/part-000.parquet", size: 2481200, type: "file" }]);
     }
     if (segments[2] === "schema") return jsonResponse(makeColumns());
     return jsonResponse(queryResult());
@@ -646,7 +1274,8 @@ const isApiRequest = (input) => {
 };
 
 export const setupMockApi = () => {
-  if (import.meta.env[FRONTEND_ONLY_FLAG] !== "true") return;
+  if (import.meta.env[FRONTEND_ONLY_FLAG] === "false") return;
+  cleanupDemoStorage();
   if (window.__xflowMockApiInstalled) return;
 
   const nativeFetch = window.fetch.bind(window);
@@ -658,7 +1287,15 @@ export const setupMockApi = () => {
 
   window.__xflowMockApiInstalled = true;
   window.__xflowMockStateReset = () => {
-    localStorage.removeItem(STORAGE_KEY);
+    Object.keys(localStorage).forEach((key) => {
+      if (
+        key.startsWith("xflow.frontendOnly.mockState.") ||
+        key.startsWith("xflow_analysis_board_state")
+      ) {
+        localStorage.removeItem(key);
+      }
+    });
+    localStorage.setItem(CLEANUP_MARKER_KEY, CLEANUP_VERSION);
     return loadState();
   };
 

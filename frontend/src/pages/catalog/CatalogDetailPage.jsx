@@ -12,7 +12,27 @@ import {
   useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { Database, Save, Check, AlertCircle, Plus, Minus, Maximize2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Database,
+  Save,
+  Check,
+  AlertCircle,
+  Plus,
+  Minus,
+  Maximize2,
+  ShieldCheck,
+  Lock,
+  GitBranch,
+  Eye,
+  Table2,
+  Layers,
+  Clock,
+  User,
+  Server,
+  ArrowRight,
+  FileSearch,
+} from "lucide-react";
 
 import { SchemaNode } from "../domain/components/schema-node/SchemaNode";
 import { catalogAPI } from "../../services/catalog";
@@ -28,6 +48,292 @@ const nodeTypes = {
 const DEFAULT_EDGE_STYLE = { stroke: "#f97316", strokeWidth: 2 };
 const DIM_EDGE_STYLE = { opacity: 0.15 };
 const HIGHLIGHT_EDGE_STYLE = { stroke: "#f97316", strokeWidth: 3 };
+const ASKLAKE_DEMO_DATASET_ID = "ds-commerce-revenue-gold";
+
+const isAskLakeDemoDataset = (item) =>
+  item?.id === ASKLAKE_DEMO_DATASET_ID ||
+  item?.name === "월별 상품 매출 Gold Dataset" ||
+  item?.created_from_pipeline_demo ||
+  (item?.layer === "gold" && item?.tags?.includes("revenue"));
+
+const defaultGoldPreviewRows = [
+  {
+    month: "2026-04",
+    product_name: "러닝화 Pro",
+    category: "Shoes",
+    revenue: "49,000,000",
+    order_count: 910,
+    avg_order_amount: "53,846",
+  },
+  {
+    month: "2026-05",
+    product_name: "트레이닝 셋업",
+    category: "Apparel",
+    revenue: "58,000,000",
+    order_count: 1040,
+    avg_order_amount: "55,769",
+  },
+  {
+    month: "2026-06",
+    product_name: "러닝화 Pro",
+    category: "Shoes",
+    revenue: "64,000,000",
+    order_count: 1120,
+    avg_order_amount: "57,143",
+  },
+];
+
+function GoldDatasetShowcase({ catalogItem }) {
+  const navigate = useNavigate();
+  const [showcaseTab, setShowcaseTab] = useState("lineage");
+  const previewRows = catalogItem.preview_rows || defaultGoldPreviewRows;
+  const quality = catalogItem.quality || {
+    missing_rate: "0.00%",
+    duplicate_count: 0,
+    schema_status: "안정적",
+  };
+
+  const tabs = [
+    { id: "lineage", label: "리니지(데이터 계보)", icon: GitBranch },
+    { id: "quality", label: "품질 검사 리포트", icon: ShieldCheck },
+    { id: "preview", label: "데이터 미리보기(보안)", icon: Eye },
+  ];
+
+  return (
+    <div className="h-[calc(100vh-64px)] overflow-y-auto bg-gray-50">
+      <div className="border-b border-gray-200 bg-white px-4 py-4 sm:px-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <button
+              onClick={() => navigate("/catalog")}
+              className="mt-1 rounded-lg p-2 transition-colors hover:bg-gray-100"
+              aria-label="카탈로그로 돌아가기"
+            >
+              <ArrowLeft className="h-5 w-5 text-gray-500" />
+            </button>
+            <div className="flex min-w-0 gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-blue-100">
+                <Database className="h-5 w-5 text-blue-600" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="break-keep text-xl font-bold leading-tight text-gray-900 sm:text-2xl">
+                    {catalogItem.name}
+                  </h1>
+                  <span className="rounded-full bg-blue-600 px-2.5 py-1 text-xs font-semibold text-white">
+                    NEW
+                  </span>
+                </div>
+                <p className="mt-1 max-w-3xl text-sm leading-6 text-gray-600">
+                  PostgreSQL 주문 거래와 MongoDB 상품 카탈로그를 조인해 만든 커머스 매출 분석용 데이터셋입니다.
+                  AI Query와 대시보드에서 월별 매출과 주문 수를 바로 분석할 수 있습니다.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex shrink-0 flex-wrap gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm font-semibold text-green-700">
+              <ShieldCheck className="h-4 w-4" />
+              품질 {catalogItem.quality_score ?? 100}%
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
+              <Lock className="h-4 w-4" />
+              {catalogItem.permission_label || "마케터 권한 적용"}
+            </span>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-2 rounded-lg bg-gray-50 p-3 text-sm text-gray-600 md:grid-cols-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <User className="h-4 w-4 shrink-0 text-gray-400" />
+            <span className="truncate">소유자 {catalogItem.owner || "데이터 엔지니어링 팀"}</span>
+          </div>
+          <div className="flex min-w-0 items-center gap-2">
+            <Clock className="h-4 w-4 shrink-0 text-gray-400" />
+            <span className="truncate">마지막 갱신 3분 전 (정상)</span>
+          </div>
+          <div className="flex min-w-0 items-center gap-2">
+            <Server className="h-4 w-4 shrink-0 text-gray-400" />
+            <span className="truncate">연결 소스 PostgreSQL, MongoDB</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="px-4 py-5 sm:px-6">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-5 rounded-lg border border-blue-100 bg-blue-50 p-4">
+            <p className="text-sm font-semibold text-blue-900">UIUX 검토 포인트</p>
+            <p className="mt-1 text-sm leading-6 text-blue-800">
+              문제점은 데이터 분리가 약해 사용자가 원본과 결과물을 혼동한다는 점이고,
+              개선방안은 소스 데이터, 변환 규칙, 타겟 Gold Dataset을 화면에서 명확히 나누는 것입니다.
+            </p>
+          </div>
+
+          <div className="overflow-x-auto border-b border-gray-200">
+            <div className="flex min-w-max gap-2">
+              {tabs.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = showcaseTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setShowcaseTab(tab.id)}
+                    className={`inline-flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-semibold transition-colors ${
+                      isActive
+                        ? "border-blue-600 text-blue-700"
+                        : "border-transparent text-gray-500 hover:text-gray-900"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {showcaseTab === "lineage" && (
+            <div className="mt-5 rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+              <div className="mb-5">
+                <h2 className="text-base font-bold text-gray-900">데이터 흐름 추적</h2>
+                <p className="mt-1 text-sm text-gray-500">
+                  원본 데이터가 어떤 변환을 거쳐 Gold Dataset으로 등록되는지 보여줍니다.
+                </p>
+              </div>
+              <div className="overflow-x-auto">
+                <div className="grid min-w-[820px] grid-cols-[1fr_48px_1fr_48px_1fr] items-center gap-3">
+                  <div className="space-y-3">
+                    <div className="rounded-lg border border-blue-100 bg-blue-50 p-4">
+                      <div className="flex items-center gap-2 text-sm font-bold text-blue-900">
+                        <Database className="h-4 w-4" />
+                        PostgreSQL 주문 거래
+                      </div>
+                      <p className="mt-2 text-xs leading-5 text-blue-800">
+                        결제 완료 주문, 상품 ID, 주문 금액, 주문 시각 포함
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-green-100 bg-green-50 p-4">
+                      <div className="flex items-center gap-2 text-sm font-bold text-green-900">
+                        <Layers className="h-4 w-4" />
+                        MongoDB 상품 카탈로그
+                      </div>
+                      <p className="mt-2 text-xs leading-5 text-green-800">
+                        상품명, 카테고리, 브랜드, 기준 가격 메타데이터 포함
+                      </p>
+                    </div>
+                  </div>
+                  <ArrowRight className="mx-auto h-6 w-6 text-gray-400" />
+                  <div className="rounded-lg border border-purple-100 bg-purple-50 p-4">
+                    <div className="flex items-center gap-2 text-sm font-bold text-purple-900">
+                      <GitBranch className="h-4 w-4" />
+                      조인 및 비식별 처리
+                    </div>
+                    <ul className="mt-3 space-y-2 text-xs leading-5 text-purple-800">
+                      <li>product_id 기준으로 주문과 상품 카탈로그 조인</li>
+                      <li>결제 완료 주문만 분석 대상으로 필터링</li>
+                      <li>월별 매출, 주문 수, 평균 주문액 집계</li>
+                    </ul>
+                  </div>
+                  <ArrowRight className="mx-auto h-6 w-6 text-gray-400" />
+                  <div className="rounded-lg border border-green-100 bg-green-50 p-4">
+                    <div className="flex items-center gap-2 text-sm font-bold text-green-900">
+                      <Table2 className="h-4 w-4" />
+                      Gold Dataset
+                    </div>
+                    <p className="mt-2 text-xs leading-5 text-green-800">
+                      월별 상품 매출 테이블로 카탈로그에 등록되어 마케터와 분석가가 바로 탐색할 수 있습니다.
+                    </p>
+                    <p className="mt-3 rounded bg-white/70 px-2 py-1 font-mono text-xs text-green-900">
+                      s3://asklake/gold/monthly_product_sales
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {showcaseTab === "quality" && (
+            <div className="mt-5 rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+              <div className="mb-5">
+                <h2 className="text-base font-bold text-gray-900">파이프라인 품질 검증 결과</h2>
+                <p className="mt-1 text-sm text-gray-500">
+                  사용자가 이 데이터셋을 분석에 써도 되는지 빠르게 판단할 수 있게 핵심 지표만 보여줍니다.
+                </p>
+              </div>
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="rounded-lg border border-green-200 bg-green-50 p-5 text-center">
+                  <Check className="mx-auto h-7 w-7 text-green-600" />
+                  <p className="mt-3 text-sm font-semibold text-gray-600">결측률 (Missing Value)</p>
+                  <p className="mt-1 text-2xl font-bold text-gray-900">{quality.missing_rate || "0.00%"}</p>
+                  <p className="mt-1 text-xs text-green-700">허용 기준 통과</p>
+                </div>
+                <div className="rounded-lg border border-green-200 bg-green-50 p-5 text-center">
+                  <Check className="mx-auto h-7 w-7 text-green-600" />
+                  <p className="mt-3 text-sm font-semibold text-gray-600">중복 레코드</p>
+                  <p className="mt-1 text-2xl font-bold text-gray-900">{quality.duplicate_count ?? 0}건</p>
+                  <p className="mt-1 text-xs text-green-700">1.2억 건 기준</p>
+                </div>
+                <div className="rounded-lg border border-green-200 bg-green-50 p-5 text-center">
+                  <Check className="mx-auto h-7 w-7 text-green-600" />
+                  <p className="mt-3 text-sm font-semibold text-gray-600">스키마 변경</p>
+                  <p className="mt-1 text-2xl font-bold text-gray-900">{quality.schema_status || "안정적"}</p>
+                  <p className="mt-1 text-xs text-green-700">예상 컬럼 유지</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {showcaseTab === "preview" && (
+            <div className="mt-5 rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+              <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                <div>
+                  <h2 className="text-base font-bold text-gray-900">데이터 미리보기 (분석가 권한)</h2>
+                  <p className="mt-1 text-sm text-gray-500">
+                    상품별 월간 매출과 주문 수가 분석 가능한 집계 형태로 표시됩니다.
+                  </p>
+                </div>
+                <span className="inline-flex w-fit items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 font-mono text-xs text-gray-600">
+                  <FileSearch className="h-4 w-4" />
+                  SELECT * FROM gold_monthly_product_sales LIMIT 3;
+                </span>
+              </div>
+              <div className="overflow-x-auto rounded-lg border border-gray-200">
+                <table className="min-w-[760px] w-full divide-y divide-gray-200 text-sm">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-600">월</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-600">상품명</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-600">카테고리</th>
+                      <th className="px-4 py-3 text-right font-semibold text-gray-600">매출</th>
+                      <th className="px-4 py-3 text-right font-semibold text-gray-600">주문 수</th>
+                      <th className="px-4 py-3 text-right font-semibold text-gray-600">평균 주문액</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 bg-white">
+                    {previewRows.map((row) => (
+                      <tr key={`${row.month}-${row.product_name}`}>
+                        <td className="px-4 py-3 font-mono text-gray-600">{row.month}</td>
+                        <td className="px-4 py-3 font-semibold text-gray-900">{row.product_name}</td>
+                        <td className="px-4 py-3 text-gray-600">{row.category}</td>
+                        <td className="px-4 py-3 text-right font-semibold text-blue-700">{row.revenue}</td>
+                        <td className="px-4 py-3 text-right font-semibold text-gray-900">{row.order_count}</td>
+                        <td className="px-4 py-3 text-right text-gray-600">{row.avg_order_amount}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="mt-3 text-xs text-gray-500">
+                원본 주문 단위 데이터는 데이터 소스와 Silver Dataset에서 확인하고, Gold Dataset은 분석용 집계 결과만 제공합니다.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const getColumnName = (col) =>
   typeof col === "string"
@@ -639,6 +945,10 @@ function CatalogDetailContent() {
         불러오는 중...
       </div>
     );
+  }
+
+  if (isAskLakeDemoDataset(catalogItem)) {
+    return <GoldDatasetShowcase catalogItem={catalogItem} />;
   }
 
   let targetPath =

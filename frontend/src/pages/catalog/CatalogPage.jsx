@@ -10,10 +10,21 @@ import {
   ArrowRight,
   Layers,
   RefreshCw,
+  ShieldCheck,
+  CheckCircle,
+  Lock,
+  Sparkles,
 } from "lucide-react";
 import { API_BASE_URL } from "../../config/api";
 import { formatFileSize } from "../../utils/formatters";
 
+const ASKLAKE_DEMO_DATASET_ID = "ds-commerce-revenue-gold";
+
+const isAskLakeDemoDataset = (item) =>
+  item?.id === ASKLAKE_DEMO_DATASET_ID ||
+  item?.name === "월별 상품 매출 Gold Dataset" ||
+  item?.created_from_pipeline_demo ||
+  (item?.layer === "gold" && item?.tags?.includes("revenue"));
 
 
 export default function CatalogPage() {
@@ -39,9 +50,16 @@ export default function CatalogPage() {
       if (response.ok) {
         const data = await response.json();
         // Sort by updated_at descending (newest first)
-        const sortedData = data.sort(
-          (a, b) => new Date(b.updated_at) - new Date(a.updated_at)
-        );
+        const sortedData = data.sort((a, b) => {
+          const aIsDemo = isAskLakeDemoDataset(a);
+          const bIsDemo = isAskLakeDemoDataset(b);
+          if (aIsDemo && bIsDemo) {
+            return new Date(b.updated_at) - new Date(a.updated_at);
+          }
+          if (aIsDemo) return -1;
+          if (bIsDemo) return 1;
+          return new Date(b.updated_at) - new Date(a.updated_at);
+        });
         setCatalog(sortedData);
       } else {
         setCatalog([]);
@@ -54,8 +72,10 @@ export default function CatalogPage() {
     }
   };
 
-  // Get all unique tags
-  const allTags = [...new Set(catalog.flatMap((item) => item.tags || []))];
+  // Demo filter chips stay focused on the data layer, not every technical tag.
+  const allTags = ["bronze", "silver", "gold"].filter((tag) =>
+    catalog.some((item) => item.tags?.includes(tag) || item.layer === tag)
+  );
 
   // Filter catalog items
   const filteredCatalog = catalog.filter((item) => {
@@ -72,10 +92,10 @@ export default function CatalogPage() {
 
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold text-gray-900">데이터 카탈로그</h1>
           <p className="text-gray-500 mt-1">타겟 데이터셋을 찾고 구조를 확인합니다</p>
         </div>
@@ -139,21 +159,32 @@ export default function CatalogPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCatalog.map((item) => (
+          {filteredCatalog.map((item) => {
+            const isDemo = isAskLakeDemoDataset(item);
+            const qualityScore = item.quality_score ?? item.quality?.score;
+            return (
             <div
               key={item.id}
               onClick={() => navigate(`/catalog/${item.id}`, { state: { catalogItem: item } })}
-              className="bg-white rounded-lg shadow border border-gray-200 hover:shadow-lg hover:border-blue-300 transition-all cursor-pointer group"
+              className={`bg-white rounded-lg shadow border transition-all cursor-pointer group ${
+                isDemo
+                  ? "border-blue-300 ring-2 ring-blue-50 hover:shadow-xl"
+                  : "border-gray-200 hover:shadow-lg hover:border-blue-300"
+              }`}
             >
               {/* Card Header */}
               <div className="p-4 border-b border-gray-100">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-orange-100 rounded-lg">
-                      <Database className="w-5 h-5 text-orange-600" />
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-start gap-3">
+                    <div className={`shrink-0 rounded-lg p-2 ${isDemo ? "bg-blue-100" : "bg-orange-100"}`}>
+                      {isDemo ? (
+                        <Sparkles className="w-5 h-5 text-blue-600" />
+                      ) : (
+                        <Database className="w-5 h-5 text-orange-600" />
+                      )}
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-2">
                         {item.name}
                       </h3>
                       <p className="text-xs text-gray-500">{item.owner}</p>
@@ -161,6 +192,21 @@ export default function CatalogPage() {
                   </div>
                   <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-blue-500 transition-colors" />
                 </div>
+                {isDemo && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-600 px-2.5 py-1 text-xs font-semibold text-white">
+                      NEW
+                    </span>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-xs font-semibold text-green-700">
+                      <CheckCircle className="h-3 w-3" />
+                      품질 {qualityScore ?? 100}%
+                    </span>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700">
+                      <Lock className="h-3 w-3" />
+                      {item.permission_label || "마케터 권한 적용"}
+                    </span>
+                  </div>
+                )}
                 <p className="mt-2 text-sm text-gray-600 line-clamp-2">{item.description}</p>
               </div>
 
@@ -215,6 +261,18 @@ export default function CatalogPage() {
                   </div>
                 </div>
 
+                {isDemo && (
+                  <div className="flex items-start gap-2 rounded-lg bg-blue-50 px-3 py-2">
+                    <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-blue-800">검토용 UX 시나리오</p>
+                      <p className="mt-0.5 text-xs text-blue-700">
+                        원본 데이터와 타겟 데이터를 분리하고, Gold Dataset 등록 결과를 보여줍니다.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 {/* Stats */}
                 <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100">
                   <div className="text-center">
@@ -248,7 +306,8 @@ export default function CatalogPage() {
                 </div>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

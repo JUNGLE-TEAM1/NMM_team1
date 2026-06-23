@@ -1811,7 +1811,7 @@ export default function TargetWizard() {
                     데이터셋 접근 권한
                   </h3>
                   <p className="text-xs text-gray-500">
-                    선택한 역할의 사용자는 이 데이터셋을 조회하고 SQL 분석에
+                    선택한 역할의 사용자는 이 데이터셋을 조회하고 AI Query에
                     사용할 수 있습니다
                   </p>
                 </div>

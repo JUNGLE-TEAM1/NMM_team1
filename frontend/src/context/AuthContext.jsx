@@ -30,7 +30,7 @@ export const AuthProvider = ({ children }) => {
     if (storedSessionId && storedUser) {
       setSessionId(storedSessionId);
       setUser(JSON.parse(storedUser));
-    } else if (import.meta.env.VITE_FRONTEND_ONLY === "true") {
+    } else if (import.meta.env.VITE_FRONTEND_ONLY !== "false") {
       const mockSessionId = "mock-session-ui-review";
       setSessionId(mockSessionId);
       setUser(FRONTEND_ONLY_USER);

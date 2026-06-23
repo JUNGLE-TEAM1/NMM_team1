@@ -14,7 +14,7 @@ function Login() {
 
   // Redirect to dashboard if already logged in
   if (sessionId) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/catalog" replace />;
   }
 
   const handleSubmit = async (e) => {
@@ -39,12 +39,7 @@ function Login() {
 
       login(data.session_id, data.user);
 
-      // Redirect based on permissions
-      if (data.user.is_admin || data.user.etl_access) {
-        navigate("/dataset");
-      } else {
-        navigate("/catalog");
-      }
+      navigate("/catalog");
     } catch (error) {
       console.error("Error:", error);
       alert("로그인에 실패했습니다. 다시 시도해주세요.");

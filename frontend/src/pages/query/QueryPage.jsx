@@ -12,7 +12,7 @@ export default function QueryPage() {
         <div className="flex flex-col h-[calc(100vh-80px)] overflow-hidden bg-gray-50">
             {/* Top Header with View Mode Toggle */}
             <div className="flex items-center justify-between px-6 py-3 bg-white border-b border-gray-200">
-                <h1 className="text-lg font-semibold text-gray-900">SQL 분석</h1>
+                <h1 className="text-lg font-semibold text-gray-900">AI Query</h1>
 
                 {/* View Mode Toggle */}
                 <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">

@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
+  Activity,
+  AlertTriangle,
   Search,
   RefreshCw,
   GitBranch,
@@ -11,7 +13,12 @@ import {
   Play,
   Copy,
   Check,
+  CheckCircle2,
   Filter,
+  FileText,
+  History,
+  Settings2,
+  Timer,
   XCircle,
   Pause,
 } from "lucide-react";
@@ -39,6 +46,8 @@ const ACTIVE_STATE_LABELS = {
   active: "활성",
   inactive: "비활성",
 };
+
+const IS_FRONTEND_ONLY = import.meta.env.VITE_FRONTEND_ONLY !== "false";
 
 const RUN_STATUS_LABELS = {
   success: "성공",
@@ -383,12 +392,63 @@ export default function JobsPage() {
     console.log("Schedule saved:", { jobId, jobType, schedules });
   };
 
+  const createDemoRun = (jobId, status) => ({
+    id: `demo-run-${jobId}-${Date.now()}-${Math.random().toString(16).slice(2, 6)}`,
+    dataset_id: jobId,
+    status,
+    started_at: new Date().toISOString(),
+    finished_at: status === "running" ? null : new Date().toISOString(),
+    duration_seconds: status === "running" ? null : 138,
+    airflow_run_id: `frontend_demo_${Date.now()}`,
+  });
+
+  const prependDemoRun = (jobId, run) => {
+    setJobRuns((prev) => ({
+      ...prev,
+      [jobId]: [run, ...(prev[jobId] || [])].slice(0, 10),
+    }));
+  };
+
+  const completeDemoRun = (jobId, runId) => {
+    setJobRuns((prev) => ({
+      ...prev,
+      [jobId]: (prev[jobId] || []).map((run) =>
+        run.id === runId
+          ? {
+              ...run,
+              status: "success",
+              finished_at: new Date().toISOString(),
+              duration_seconds: 138,
+            }
+          : run
+      ),
+    }));
+    setJobs((prev) =>
+      prev.map((job) =>
+        job.id === jobId ? { ...job, updated_at: new Date().toISOString() } : job
+      )
+    );
+  };
+
   const handleToggle = async (jobId) => {
     const job = jobs.find((j) => j.id === jobId);
     if (!job) return;
     if (job.job_type === "streaming") return;
 
     const newActiveState = !job.is_active;
+
+    if (IS_FRONTEND_ONLY) {
+      setJobs((prev) =>
+        prev.map((j) =>
+          j.id === jobId ? { ...j, is_active: newActiveState } : j
+        )
+      );
+      showToast(
+        newActiveState ? "프론트 데모: 스케줄을 활성화했습니다" : "프론트 데모: 스케줄을 중지했습니다",
+        "success"
+      );
+      return;
+    }
 
     try {
       // If job has a schedule, use activate/deactivate API
@@ -481,6 +541,46 @@ export default function JobsPage() {
 
   const handleRun = async (jobId) => {
     const job = jobs.find((j) => j.id === jobId);
+    if (!job) return;
+
+    if (IS_FRONTEND_ONLY) {
+      if (job.job_type === "streaming") {
+        const isActive = !!streamingStates[jobId];
+        setStreamingStates((prev) => ({ ...prev, [jobId]: !isActive }));
+
+        if (isActive) {
+          setJobRuns((prev) => ({
+            ...prev,
+            [jobId]: (prev[jobId] || []).map((run, index) =>
+              index === 0 && run.status === "running"
+                ? {
+                    ...run,
+                    status: "success",
+                    finished_at: new Date().toISOString(),
+                    duration_seconds: 138,
+                  }
+                : run
+            ),
+          }));
+          showToast("프론트 데모: 스트리밍을 중지했습니다", "success");
+        } else {
+          prependDemoRun(jobId, createDemoRun(jobId, "running"));
+          showToast("프론트 데모: 스트리밍을 시작했습니다", "success");
+        }
+        return;
+      }
+
+      const runningRun = createDemoRun(jobId, "running");
+      prependDemoRun(jobId, runningRun);
+      showToast("프론트 데모: 파이프라인 실행을 시작했습니다", "success");
+
+      window.setTimeout(() => {
+        completeDemoRun(jobId, runningRun.id);
+        showToast("프론트 데모: 파이프라인 실행이 완료되었습니다", "success");
+      }, 1600);
+      return;
+    }
+
     try {
       if (job?.job_type === "streaming") {
         const isActive = !!streamingStates[jobId];
@@ -550,6 +650,187 @@ export default function JobsPage() {
       return `${mins}분 ${secs}초`;
     }
     return `${secs}초`;
+  };
+
+  const getLatestRun = (job) => jobRuns[job.id]?.[0] || null;
+
+  const getRunDuration = (run) => {
+    if (!run) return "-";
+    if (run.duration_seconds !== undefined && run.duration_seconds !== null) {
+      return formatDuration(run.duration_seconds);
+    }
+    if (!run.started_at) return "-";
+
+    const startTime = new Date(
+      run.started_at + (run.started_at.endsWith("Z") ? "" : "Z")
+    );
+    let endTime;
+
+    if (run.status === "running" || run.status === "pending") {
+      endTime = new Date();
+    } else if (run.ended_at || run.finished_at) {
+      const endStr = run.ended_at || run.finished_at;
+      endTime = new Date(endStr + (endStr.endsWith("Z") ? "" : "Z"));
+    } else {
+      return "-";
+    }
+
+    const diffSec = Math.max(0, Math.floor((endTime - startTime) / 1000));
+    return formatDuration(diffSec);
+  };
+
+  const getRelativeRunTime = (run) => {
+    if (!run?.started_at) return "-";
+    const startedAt = new Date(
+      run.started_at + (run.started_at.endsWith("Z") ? "" : "Z")
+    );
+    const diffMs = Date.now() - startedAt.getTime();
+    const diffMinutes = Math.max(0, Math.floor(diffMs / 60000));
+
+    if (diffMinutes < 1) return "방금 전";
+    if (diffMinutes < 60) return `${diffMinutes}분 전`;
+    const diffHours = Math.floor(diffMinutes / 60);
+    if (diffHours < 24) return `${diffHours}시간 전`;
+    return `${Math.floor(diffHours / 24)}일 전`;
+  };
+
+  const getRunStatusTone = (status) => {
+    if (status === "success" || status === "succeeded") return "green";
+    if (status === "failed" || status === "failure") return "red";
+    if (status === "running") return "blue";
+    if (status === "pending") return "yellow";
+    return "gray";
+  };
+
+  const getRunStatusClass = (tone) => {
+    if (tone === "green") return "bg-green-100 text-green-800";
+    if (tone === "red") return "bg-red-100 text-red-800";
+    if (tone === "blue") return "bg-blue-100 text-blue-800";
+    if (tone === "yellow") return "bg-yellow-100 text-yellow-800";
+    return "bg-gray-100 text-gray-600";
+  };
+
+  const getNextRunLabel = (job) => {
+    if (job.job_type === "streaming") {
+      return streamingStates[job.id] ? "계속 실행 중" : "중지됨";
+    }
+    if (!job.is_active) return "중지됨";
+    if (!job.schedule) return "수동 실행";
+
+    switch (job.schedule_frequency) {
+      case "daily":
+        return "내일 같은 시간";
+      case "hourly":
+        return "다음 1시간 내";
+      case "weekly":
+        return "다음 주";
+      case "monthly":
+        return "다음 달";
+      case "manual":
+        return "수동 실행";
+      default:
+        return "예약됨";
+    }
+  };
+
+  const getRunHistory = (job) => {
+    const runs = jobRuns[job.id] || [];
+    const fallback = job.is_active
+      ? ["success", "success", "running"]
+      : ["success", "success", "paused"];
+    return (runs.length > 0 ? runs.map((run) => run.status) : fallback).slice(0, 5);
+  };
+
+  const formatRowCount = (value) => {
+    if (!value && value !== 0) return "1.2억 건";
+    if (value >= 100000000) {
+      return `${(value / 100000000).toFixed(1).replace(".0", "")}억 건`;
+    }
+    if (value >= 10000) {
+      return `${(value / 10000).toFixed(1).replace(".0", "")}만 건`;
+    }
+    return `${value.toLocaleString()}건`;
+  };
+
+  const getProcessedRowsLabel = (job) => {
+    if (job?.row_count) return formatRowCount(job.row_count);
+    if (job?.name === "월별 상품 매출 Gold Dataset" || job?.id === "ds-commerce-revenue-gold") {
+      return "248만 건";
+    }
+    return "-";
+  };
+
+  const getFreshness = (job) => {
+    const latestRun = getLatestRun(job);
+    const status = latestRun?.status;
+
+    if (status === "failed" || status === "failure") {
+      return { label: "지연", detail: "마지막 실행 실패", className: "bg-red-50 text-red-700 border-red-100" };
+    }
+    if (job.job_type === "streaming") {
+      return streamingStates[job.id]
+        ? { label: "실시간", detail: "이벤트 수신 중", className: "bg-blue-50 text-blue-700 border-blue-100" }
+        : { label: "중지", detail: "스트림 정지", className: "bg-gray-50 text-gray-600 border-gray-200" };
+    }
+    if (!latestRun?.started_at) {
+      return { label: "미확인", detail: "실행 기록 없음", className: "bg-gray-50 text-gray-600 border-gray-200" };
+    }
+
+    const startedAt = new Date(
+      latestRun.started_at + (latestRun.started_at.endsWith("Z") ? "" : "Z")
+    );
+    const diffMinutes = Math.max(0, Math.floor((Date.now() - startedAt.getTime()) / 60000));
+
+    if (diffMinutes <= 15) {
+      return { label: "정상", detail: "15분 이내 갱신", className: "bg-green-50 text-green-700 border-green-100" };
+    }
+    if (diffMinutes <= 60) {
+      return { label: "주의", detail: "1시간 이내 갱신", className: "bg-amber-50 text-amber-700 border-amber-100" };
+    }
+    return { label: "지연", detail: "1시간 이상 미갱신", className: "bg-red-50 text-red-700 border-red-100" };
+  };
+
+  const getPipelineSteps = (run) => {
+    const status = run?.status || "success";
+    const baseSteps = ["소스 읽기", "변환", "품질 검사", "카탈로그 등록"];
+
+    if (status === "failed" || status === "failure") {
+      return baseSteps.map((label, index) => ({
+        label,
+        state: index === 0 ? "done" : index === 1 ? "error" : "waiting",
+      }));
+    }
+
+    if (status === "running" || status === "pending") {
+      return baseSteps.map((label, index) => ({
+        label,
+        state: index === 0 ? "done" : index === 1 ? "running" : "waiting",
+      }));
+    }
+
+    return baseSteps.map((label) => ({ label, state: "done" }));
+  };
+
+  const getStepClasses = (state) => {
+    if (state === "done") return "border-green-200 bg-green-50 text-green-700";
+    if (state === "running") return "border-blue-200 bg-blue-50 text-blue-700";
+    if (state === "error") return "border-red-200 bg-red-50 text-red-700";
+    return "border-gray-200 bg-gray-50 text-gray-500";
+  };
+
+  const getFailureReasonItems = () => {
+    if (failedJobs.length > 0) {
+      return failedJobs.slice(0, 3).map((job, index) => ({
+        title: ["스키마 불일치", "소스 연결 실패", "권한 오류"][index] || "실행 실패",
+        description: job.name,
+      }));
+    }
+
+    return [
+      { title: "스키마 불일치", description: "현재 감지된 항목 없음" },
+      { title: "소스 연결 실패", description: "현재 감지된 항목 없음" },
+      { title: "권한 오류", description: "현재 감지된 항목 없음" },
+    ];
   };
 
   const getJobStatus = (job, runs) => {
@@ -627,36 +908,290 @@ export default function JobsPage() {
     return matchesSearch && matchesJobType && matchesStatus && matchesActive;
   });
 
-  return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">실행 관리</h1>
-        <p className="text-gray-500 mt-1">데이터 처리 작업과 실행 상태를 관리합니다</p>
-      </div>
+  const runningCount = jobs.filter(
+    (job) => getJobStatus(job, jobRuns[job.id]).label === "Running"
+  ).length;
+  const scheduledCount = jobs.filter(
+    (job) => getJobStatus(job, jobRuns[job.id]).label === "Scheduled"
+  ).length;
+  const pausedCount = jobs.filter(
+    (job) => getJobStatus(job, jobRuns[job.id]).label === "Paused"
+  ).length;
+  const successCount = jobs.filter((job) => {
+    const status = getLatestRun(job)?.status;
+    return status === "success" || status === "succeeded";
+  }).length;
+  const failedJobs = jobs.filter((job) => {
+    const status = getLatestRun(job)?.status;
+    return status === "failed" || status === "failure";
+  });
+  const unscheduledJobs = jobs.filter(
+    (job) => getJobStatus(job, jobRuns[job.id]).label === "Unscheduled"
+  );
+  const featuredJob =
+    jobs.find((job) => job.id === "ds-commerce-revenue-gold") ||
+    jobs.find((job) => job.name === "월별 상품 매출 Gold Dataset") ||
+    jobs[0] ||
+    null;
+  const featuredRun =
+    (featuredJob && getLatestRun(featuredJob)) ||
+    (featuredJob
+      ? {
+          status: "success",
+          started_at: new Date(Date.now() - 3 * 60000).toISOString(),
+          duration_seconds: 138,
+        }
+      : null);
+  const featuredRunTone = getRunStatusTone(featuredRun?.status);
+  const featuredFreshness = featuredJob
+    ? getFreshness(featuredJob)
+    : { label: "정상", detail: "15분 이내 갱신", className: "bg-green-50 text-green-700 border-green-100" };
+  const pipelineSteps = getPipelineSteps(featuredRun);
+  const failureReasonItems = getFailureReasonItems();
 
-      <div className="mb-6 flex gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-          <input
-            type="text"
-            placeholder="데이터셋 검색..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+  const operationsSummary = [
+    {
+      label: "실행 중",
+      value: runningCount,
+      description: "현재 처리 중",
+      icon: Activity,
+      className: "border-blue-100 bg-blue-50 text-blue-700",
+    },
+    {
+      label: "최근 성공",
+      value: successCount,
+      description: "마지막 실행 성공",
+      icon: CheckCircle2,
+      className: "border-green-100 bg-green-50 text-green-700",
+    },
+    {
+      label: "실패/확인 필요",
+      value: failedJobs.length,
+      description: "조치가 필요한 실행",
+      icon: AlertTriangle,
+      className: "border-red-100 bg-red-50 text-red-700",
+    },
+    {
+      label: "예약됨",
+      value: scheduledCount,
+      description: "스케줄 활성",
+      icon: Calendar,
+      className: "border-indigo-100 bg-indigo-50 text-indigo-700",
+    },
+    {
+      label: "중지됨",
+      value: pausedCount,
+      description: "비활성/일시 중지",
+      icon: Pause,
+      className: "border-gray-200 bg-gray-50 text-gray-700",
+    },
+  ];
+
+  const attentionItems = [
+    {
+      title: "실패한 실행",
+      count: failedJobs.length,
+      description: failedJobs[0]?.name || "실패한 파이프라인이 없습니다.",
+      tone: failedJobs.length > 0 ? "text-red-700 bg-red-50 border-red-100" : "text-gray-600 bg-gray-50 border-gray-200",
+    },
+    {
+      title: "스케줄 없음",
+      count: unscheduledJobs.length,
+      description: unscheduledJobs[0]?.name || "스케줄 미설정 작업이 없습니다.",
+      tone: unscheduledJobs.length > 0 ? "text-amber-700 bg-amber-50 border-amber-100" : "text-gray-600 bg-gray-50 border-gray-200",
+    },
+    {
+      title: "중지된 작업",
+      count: pausedCount,
+      description: jobs.find((job) => getJobStatus(job, jobRuns[job.id]).label === "Paused")?.name || "중지된 파이프라인이 없습니다.",
+      tone: pausedCount > 0 ? "text-slate-700 bg-slate-50 border-slate-200" : "text-gray-600 bg-gray-50 border-gray-200",
+    },
+  ];
+
+  return (
+    <div className="p-6 bg-gray-50 min-h-screen">
+      <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">실행/모니터링</h1>
+          <p className="text-gray-500 mt-1">
+            파이프라인 실행 상태, 실패, 로그, 스케줄을 확인합니다.
+          </p>
         </div>
         <button
           onClick={fetchJobs}
-          className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50"
         >
           <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
           새로고침
         </button>
       </div>
 
+      <div className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+        {operationsSummary.map((item) => {
+          const Icon = item.icon;
+          return (
+            <div key={item.label} className={`rounded-lg border p-4 ${item.className}`}>
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold">{item.label}</p>
+                  <p className="mt-1 text-xs opacity-80">{item.description}</p>
+                </div>
+                <Icon className="h-5 w-5 shrink-0" />
+              </div>
+              <p className="mt-4 text-2xl font-bold text-gray-900">{item.value}</p>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mb-6 grid gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.8fr)]">
+        <div className="rounded-lg border border-blue-100 bg-white p-5 shadow-sm">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0">
+              <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+                <Activity className="h-3.5 w-3.5" />
+                최근 실행
+              </div>
+              <h2 className="text-lg font-bold text-gray-900">
+                {featuredJob?.name || "월별 상품 매출 Gold Dataset"}
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-gray-600">
+                데이터 구축에서 만든 파이프라인의 마지막 실행 상태를 확인하고 바로 조치합니다.
+              </p>
+            </div>
+            <span className={`inline-flex shrink-0 items-center rounded-full px-3 py-1 text-xs font-semibold ${getRunStatusClass(featuredRunTone)}`}>
+              {RUN_STATUS_LABELS[featuredRun?.status] || featuredRun?.status || "대기"}
+            </span>
+          </div>
+
+          <div className="mt-5 grid gap-3 md:grid-cols-4">
+            <div className="rounded-lg border border-gray-200 p-3">
+              <p className="text-xs font-medium text-gray-500">최근 실행</p>
+              <p className="mt-2 text-sm font-semibold text-gray-900">{getRelativeRunTime(featuredRun)}</p>
+            </div>
+            <div className="rounded-lg border border-gray-200 p-3">
+              <p className="text-xs font-medium text-gray-500">소요 시간</p>
+              <p className="mt-2 text-sm font-semibold text-gray-900">{getRunDuration(featuredRun)}</p>
+            </div>
+            <div className="rounded-lg border border-gray-200 p-3">
+              <p className="text-xs font-medium text-gray-500">처리량</p>
+              <p className="mt-2 text-sm font-semibold text-gray-900">
+                {featuredJob ? getProcessedRowsLabel(featuredJob) : "1.2억 건"}
+              </p>
+            </div>
+            <div className="rounded-lg border border-gray-200 p-3">
+              <p className="text-xs font-medium text-gray-500">데이터 최신성</p>
+              <p className="mt-2 text-sm font-semibold text-gray-900">
+                {featuredFreshness.label}
+              </p>
+              <p className="mt-1 text-xs text-gray-500">{featuredFreshness.detail}</p>
+            </div>
+          </div>
+
+          <div className="mt-5 rounded-lg border border-gray-200 bg-gray-50 p-4">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <p className="text-sm font-semibold text-gray-900">단계별 진행 상태</p>
+              <span className="text-xs text-gray-500">소스 읽기 → 변환 → 품질 검사 → 카탈로그 등록</span>
+            </div>
+            <div className="grid gap-3 md:grid-cols-4">
+              {pipelineSteps.map((step, index) => (
+                <div key={step.label} className={`rounded-lg border px-3 py-2 ${getStepClasses(step.state)}`}>
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/80 text-xs font-bold">
+                      {index + 1}
+                    </span>
+                    <span className="truncate text-sm font-semibold">{step.label}</span>
+                  </div>
+                  <p className="mt-1 text-xs opacity-80">
+                    {step.state === "done"
+                      ? "완료"
+                      : step.state === "running"
+                        ? "진행 중"
+                        : step.state === "error"
+                          ? "오류"
+                          : "대기"}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-5 flex flex-wrap gap-2">
+            <button
+              onClick={() => featuredJob && handleRun(featuredJob.id)}
+              disabled={!featuredJob}
+              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+            >
+              <Play className="h-4 w-4" />
+              다시 실행
+            </button>
+            <button
+              onClick={() => featuredJob && navigate(`/etl/job/${featuredJob.id}/runs`)}
+              disabled={!featuredJob}
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <History className="h-4 w-4" />
+              실행 기록
+            </button>
+            <button
+              onClick={() => featuredJob && setScheduleModal({ isOpen: true, job: featuredJob })}
+              disabled={!featuredJob}
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Settings2 className="h-4 w-4" />
+              스케줄 수정
+            </button>
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-amber-500" />
+            <h2 className="text-base font-semibold text-gray-900">확인 필요</h2>
+          </div>
+          <div className="mt-4 space-y-3">
+            {attentionItems.map((item) => (
+              <div key={item.title} className={`rounded-lg border p-3 ${item.tone}`}>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold">{item.title}</p>
+                  <span className="rounded-full bg-white/70 px-2 py-0.5 text-xs font-bold">{item.count}</span>
+                </div>
+                <p className="mt-1 truncate text-xs opacity-80" title={item.description}>
+                  {item.description}
+                </p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-5 border-t border-gray-200 pt-4">
+            <p className="text-sm font-semibold text-gray-900">실패 원인 Top 3</p>
+            <div className="mt-3 space-y-2">
+              {failureReasonItems.map((item) => (
+                <div key={item.title} className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+                  <p className="text-xs font-semibold text-gray-900">{item.title}</p>
+                  <p className="mt-1 truncate text-xs text-gray-500" title={item.description}>
+                    {item.description}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Filters */}
       <div className="mb-6 bg-white rounded-lg border border-gray-200 p-4">
         <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="relative min-w-[240px] flex-1 lg:max-w-md">
+            <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 transform text-gray-400" />
+            <input
+              type="text"
+              placeholder="파이프라인 검색..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
               <Filter className="w-4 h-4 text-gray-400" />
@@ -789,218 +1324,250 @@ export default function JobsPage() {
             <p>데이터셋이 없습니다</p>
           </div>
         ) : (
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  작업 ID
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  담당자
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  상태
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  유형
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  최근 실행
-                </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase w-px whitespace-nowrap">
-                  작업
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {filteredJobs.map((job) => (
-                <tr
-                  key={job.id}
-                  className="hover:bg-gray-50 cursor-pointer"
-                  onClick={() => navigate(`/etl/job/${job.id}/runs`)}
-                >
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <div className="font-medium text-gray-900">
-                        {job.name}
-                      </div>
-                      <button
-                        onClick={(e) => handleCopyId(job.name, e)}
-                        className="p-1 hover:bg-gray-200 rounded transition-colors"
-                        title="작업 ID 복사"
-                      >
-                        {copiedId === job.name ? (
-                          <Check className="w-3.5 h-3.5 text-green-600" />
-                        ) : (
-                          <Copy className="w-3.5 h-3.5 text-gray-400" />
-                        )}
-                      </button>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
-                    {job.owner || "-"}
-                  </td>
-                  <td className="px-6 py-4">
-                    {(() => {
-                      const status = getJobStatus(job, jobRuns[job.id]);
-                      const colorClass =
-                        status.color === "green"
-                          ? "bg-green-100 text-green-800"
-                          : status.color === "blue"
-                            ? "bg-blue-100 text-blue-800"
-                            : status.color === "yellow"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : "bg-gray-100 text-gray-500";
+          <div className="overflow-x-auto">
+            <table className="min-w-[1420px] w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    파이프라인
+                  </th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    현재 상태
+                  </th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    실행 방식
+                  </th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    최근 실행 결과
+                  </th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    소요 시간
+                  </th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    처리량
+                  </th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    데이터 최신성
+                  </th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    다음 실행
+                  </th>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    최근 히스토리
+                  </th>
+                  <th className="px-5 py-3 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
+                    빠른 작업
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {filteredJobs.map((job) => {
+                  const status = getJobStatus(job, jobRuns[job.id]);
+                  const latestRun = getLatestRun(job);
+                  const runTone = getRunStatusTone(latestRun?.status);
+                  const freshness = getFreshness(job);
+                  const statusColorClass =
+                    status.color === "green"
+                      ? "bg-green-100 text-green-800"
+                      : status.color === "blue"
+                        ? "bg-blue-100 text-blue-800"
+                        : status.color === "yellow"
+                          ? "bg-yellow-100 text-yellow-800"
+                          : "bg-gray-100 text-gray-500";
 
-                      return (
+                  return (
+                    <tr
+                      key={job.id}
+                      className="hover:bg-gray-50 cursor-pointer"
+                      onClick={() => navigate(`/etl/job/${job.id}/runs`)}
+                    >
+                      <td className="px-5 py-4">
+                        <div className="flex items-start gap-2">
+                          <GitBranch className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" />
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="max-w-[260px] truncate font-medium text-gray-900" title={job.name}>
+                                {job.name}
+                              </p>
+                              <button
+                                onClick={(e) => handleCopyId(job.name, e)}
+                                className="shrink-0 rounded p-1 transition-colors hover:bg-gray-200"
+                                title="파이프라인 ID 복사"
+                              >
+                                {copiedId === job.name ? (
+                                  <Check className="w-3.5 h-3.5 text-green-600" />
+                                ) : (
+                                  <Copy className="w-3.5 h-3.5 text-gray-400" />
+                                )}
+                              </button>
+                            </div>
+                            <p className="mt-1 text-xs text-gray-500">{job.owner || "담당자 없음"}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4">
                         <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colorClass}`}
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColorClass}`}
                         >
                           {STATUS_LABELS[status.label] || status.label}
                         </span>
-                      );
-                    })()}
-                  </td>
-                  <td className="px-6 py-4">
-                    {job.job_type === "streaming" ? (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-600">
-                        실시간 스트리밍
-                      </span>
-                    ) : (
-                      <ScheduleBadge job={job} />
-                    )}
-                  </td>
-                  <td className="px-6 py-4">
-                    {jobRuns[job.id]?.[0] ? (
-                      <div className="text-sm">
-                        <div className="text-gray-900">
-                          {(() => {
-                            const dateStr = jobRuns[job.id][0].started_at;
-                            const date = new Date(
-                              dateStr + (dateStr.endsWith("Z") ? "" : "Z")
+                      </td>
+                      <td className="px-5 py-4">
+                        {job.job_type === "streaming" ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-600">
+                            <Activity className="h-3 w-3" />
+                            스트리밍
+                          </span>
+                        ) : (
+                          <ScheduleBadge job={job} />
+                        )}
+                      </td>
+                      <td className="px-5 py-4">
+                        {latestRun ? (
+                          <div className="text-sm">
+                            <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${getRunStatusClass(runTone)}`}>
+                              {RUN_STATUS_LABELS[latestRun.status] || latestRun.status}
+                            </span>
+                            <p className="mt-1 text-xs text-gray-500">{getRelativeRunTime(latestRun)}</p>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-gray-500">실행 기록 없음</span>
+                        )}
+                      </td>
+                      <td className="px-5 py-4 text-sm text-gray-700">
+                        <span className="inline-flex items-center gap-1">
+                          <Timer className="h-3.5 w-3.5 text-gray-400" />
+                          {getRunDuration(latestRun)}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4 text-sm font-medium text-gray-800">
+                        {getProcessedRowsLabel(job)}
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold ${freshness.className}`}>
+                          {freshness.label}
+                        </span>
+                        <p className="mt-1 text-xs text-gray-500">{freshness.detail}</p>
+                      </td>
+                      <td className="px-5 py-4 text-sm text-gray-700">
+                        {getNextRunLabel(job)}
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-1.5">
+                          {getRunHistory(job).map((statusItem, index) => {
+                            const tone = getRunStatusTone(statusItem);
+                            const dotClass =
+                              tone === "green"
+                                ? "bg-green-500"
+                                : tone === "red"
+                                  ? "bg-red-500"
+                                  : tone === "blue"
+                                    ? "bg-blue-500"
+                                    : tone === "yellow"
+                                      ? "bg-yellow-400"
+                                      : statusItem === "paused"
+                                        ? "bg-gray-300"
+                                        : "bg-gray-400";
+                            return (
+                              <button
+                                key={`${job.id}-history-${index}`}
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/etl/job/${job.id}/runs`);
+                                }}
+                                className={`h-2.5 w-8 rounded-full ${dotClass}`}
+                                title={RUN_STATUS_LABELS[statusItem] || statusItem}
+                              />
                             );
-                            return date.toLocaleString("ko-KR", {
-                              year: "numeric",
-                              month: "2-digit",
-                              day: "2-digit",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                              timeZone: "Asia/Seoul",
-                            });
-                          })()}
+                          })}
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className={`text-xs font-medium ${
-                            jobRuns[job.id][0].status === "success"
-                              ? "text-green-600"
-                              : jobRuns[job.id][0].status === "failed" || jobRuns[job.id][0].status === "failure"
-                                ? "text-red-600"
-                                : jobRuns[job.id][0].status === "running"
-                                  ? "text-blue-600"
-                                  : jobRuns[job.id][0].status === "pending"
-                                    ? "text-yellow-600"
-                                    : "text-gray-500"
-                          }`}>
-                            {RUN_STATUS_LABELS[jobRuns[job.id][0].status] ||
-                              jobRuns[job.id][0].status}
-                          </span>
-                          <span className="text-xs text-gray-400">·</span>
-                          <span className="text-xs text-gray-500">
-                            {(() => {
-                              const run = jobRuns[job.id][0];
-
-                              // Use duration_seconds if available
-                              if (run.duration_seconds !== undefined && run.duration_seconds !== null) {
-                                return formatDuration(run.duration_seconds);
+                      </td>
+                      <td className="px-5 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          {job.job_type !== "cdc" && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRun(job.id);
+                              }}
+                              className={`inline-flex items-center justify-center p-2 rounded-lg transition-colors ${job.job_type === "streaming" && streamingStates[job.id]
+                                  ? "text-orange-600 bg-orange-50 hover:bg-orange-100"
+                                  : job.job_type === "streaming"
+                                    ? "text-green-600 bg-green-50 hover:bg-green-100"
+                                    : "text-blue-600 bg-blue-50 hover:bg-blue-100"
+                                }`}
+                              title={
+                                job.job_type === "streaming"
+                                  ? (streamingStates[job.id] ? "중지" : "시작")
+                                  : "수동 실행"
                               }
-
-                              // Calculate from timestamps
-                              if (!run.started_at) return "-";
-
-                              const startTime = new Date(
-                                run.started_at + (run.started_at.endsWith("Z") ? "" : "Z")
-                              );
-
-                              let endTime;
-                              if (run.status === "running" || run.status === "pending") {
-                                endTime = new Date(); // Current time for running jobs
-                              } else if (run.ended_at || run.finished_at) {
-                                const endStr = run.ended_at || run.finished_at;
-                                endTime = new Date(
-                                  endStr + (endStr.endsWith("Z") ? "" : "Z")
-                                );
-                              } else {
-                                return "-";
-                              }
-
-                              const diffMs = endTime - startTime;
-                              const diffSec = Math.floor(diffMs / 1000);
-                              return formatDuration(diffSec);
-                            })()}
-                          </span>
+                            >
+                              {job.job_type === "streaming" && streamingStates[job.id] ? (
+                                <Pause className="w-4 h-4" />
+                              ) : (
+                                <Play className="w-4 h-4" />
+                              )}
+                            </button>
+                          )}
+                          {job.job_type !== "streaming" && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleToggle(job.id);
+                              }}
+                              className={`inline-flex items-center justify-center rounded-lg p-2 transition-colors ${
+                                job.is_active
+                                  ? "bg-orange-50 text-orange-600 hover:bg-orange-100"
+                                  : "bg-green-50 text-green-600 hover:bg-green-100"
+                              }`}
+                              title={job.is_active ? "스케줄 중지" : "스케줄 활성화"}
+                            >
+                              {job.is_active ? (
+                                <Pause className="h-4 w-4" />
+                              ) : (
+                                <Play className="h-4 w-4" />
+                              )}
+                            </button>
+                          )}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/etl/job/${job.id}/runs`);
+                            }}
+                            className="inline-flex items-center justify-center rounded-lg bg-gray-50 p-2 text-gray-600 transition-colors hover:bg-gray-100"
+                            title="실행 기록"
+                          >
+                            <History className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setScheduleModal({ isOpen: true, job });
+                            }}
+                            className="inline-flex items-center justify-center rounded-lg bg-gray-50 p-2 text-gray-600 transition-colors hover:bg-gray-100"
+                            title="스케줄 수정"
+                          >
+                            <Settings2 className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/etl/job/${job.id}/runs`);
+                            }}
+                            className="inline-flex items-center justify-center rounded-lg bg-gray-50 p-2 text-gray-600 transition-colors hover:bg-gray-100"
+                            title="로그 보기"
+                          >
+                            <FileText className="h-4 w-4" />
+                          </button>
                         </div>
-                      </div>
-                    ) : (
-                      <span className="text-sm text-gray-500">-</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-3">
-                      {job.job_type !== "cdc" && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRun(job.id);
-                          }}
-                          className={`inline-flex items-center justify-center p-2 rounded-lg transition-colors ${job.job_type === "streaming" && streamingStates[job.id]
-                              ? "text-orange-600 bg-orange-50 hover:bg-orange-100"
-                              : job.job_type === "streaming"
-                                ? "text-green-600 bg-green-50 hover:bg-green-100"
-                                : "text-purple-600 bg-purple-50 hover:bg-purple-100"
-                            }`}
-                          title={
-                            job.job_type === "streaming"
-                              ? (streamingStates[job.id] ? "일시 중지" : "시작")
-                              : "즉시 실행"
-                          }
-                        >
-                          {job.job_type === "streaming" ? (
-                            streamingStates[job.id] ? (
-                              <Pause className="w-4 h-4" />
-                            ) : (
-                              <Play className="w-4 h-4" />
-                            )
-                          ) : (
-                            <Zap className="w-4 h-4" />
-                          )}
-                        </button>
-                      )}
-                      {/* Run/Pause button for scheduled jobs */}
-                      {job.job_type !== "streaming" && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleToggle(job.id);
-                          }}
-                          className={`inline-flex items-center justify-center p-2 rounded-lg transition-colors ${job.is_active
-                            ? "text-orange-600 bg-orange-50 hover:bg-orange-100"
-                            : "text-green-600 bg-green-50 hover:bg-green-100"
-                            }`}
-                          title={job.is_active ? "스케줄 일시 중지" : "스케줄 실행"}
-                        >
-                          {job.is_active ? (
-                            <Pause className="w-4 h-4" />
-                          ) : (
-                            <Play className="w-4 h-4" />
-                          )}
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 

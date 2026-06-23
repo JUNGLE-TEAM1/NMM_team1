@@ -1,12 +1,29 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
-import { Plus, Trash2, Search, Database } from "lucide-react";
+import {
+  ArrowRight,
+  Plus,
+  Trash2,
+  Search,
+  Database,
+  GitBranch,
+  Sparkles,
+  ShieldCheck,
+  CheckCircle,
+  ListChecks,
+  Workflow,
+} from "lucide-react";
 import ConfirmationModal from "../../components/common/ConfirmationModal";
-import CreateDatasetModal from "../../components/etl/CreateDatasetModal";
 import TargetImportModal from "../../components/etl/TargetImportModal";
 import { useToast } from "../../components/common/Toast";
 import { API_BASE_URL } from "../../config/api";
 const ITEMS_PER_PAGE = 10;
+const ASKLAKE_DEMO_DATASET_ID = "ds-commerce-revenue-gold";
+
+const isGoldDataset = (job) =>
+  job?.id === ASKLAKE_DEMO_DATASET_ID ||
+  job?.layer === "gold" ||
+  job?.name === "월별 상품 매출 Gold Dataset";
 
 export default function ETLMain() {
   const [jobs, setJobs] = useState([]);
@@ -18,12 +35,13 @@ export default function ETLMain() {
     jobId: null,
     jobName: "",
   });
-  const [showCreateModal, setShowCreateModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { showToast } = useToast();
+  const openFreshPipeline = () =>
+    navigate("/etl/visual", { state: { startFromScratch: true } });
 
   // Filter jobs by search query
   const filteredJobs = jobs.filter(
@@ -32,6 +50,51 @@ export default function ETLMain() {
       (job.description &&
         job.description.toLowerCase().includes(searchQuery.toLowerCase()))
   );
+
+  const sourceDatasets = jobs.filter(
+    (job) => (job.dataset_type || "source") === "source"
+  );
+  const targetDatasets = jobs.filter(
+    (job) => (job.dataset_type || "source") !== "source"
+  );
+  const goldDatasets = jobs.filter(isGoldDataset);
+  const pipelineCount = targetDatasets.length;
+
+  const pipelineGroups = [
+    {
+      title: "수집 파이프라인",
+      count: sourceDatasets.length,
+      description: "연결된 원본 시스템에서 구축에 사용할 데이터를 고릅니다.",
+      icon: Database,
+      iconClass: "bg-emerald-100 text-emerald-700",
+      borderClass: "border-emerald-100",
+      chips: sourceDatasets.slice(0, 2).map((job) => job.name),
+      actionLabel: "원본 데이터 등록",
+      action: () => navigate("/source"),
+    },
+    {
+      title: "변환 파이프라인",
+      count: pipelineCount,
+      description: "소스 데이터를 조인, 정제, 마스킹해 결과 데이터셋을 만듭니다.",
+      icon: GitBranch,
+      iconClass: "bg-purple-100 text-purple-700",
+      borderClass: "border-purple-100",
+      chips: targetDatasets.slice(0, 2).map((job) => job.name),
+      actionLabel: "시각화로 만들기",
+      action: openFreshPipeline,
+    },
+    {
+      title: "Gold Dataset",
+      count: goldDatasets.length,
+      description: "품질 검증과 권한 정책이 적용되어 바로 활용 가능한 분석용 데이터입니다.",
+      icon: Sparkles,
+      iconClass: "bg-blue-100 text-blue-700",
+      borderClass: "border-blue-200 ring-2 ring-blue-50",
+      chips: goldDatasets.slice(0, 2).map((job) => job.name),
+      actionLabel: "Gold 시나리오 열기",
+      action: () => navigate("/etl/visual", { state: { useTemplate: true } }),
+    },
+  ];
 
   // Pagination calculations (based on filtered jobs)
   const totalPages = Math.ceil(filteredJobs.length / ITEMS_PER_PAGE);
@@ -135,35 +198,93 @@ export default function ETLMain() {
     setDeleteModal({ isOpen: false, jobId: null, jobName: "" });
   };
 
-  const handleCreateDataset = (datasetType) => {
-    navigate("/etl/visual", { state: { datasetType } });
-  };
-
   return (
     <div className="min-h-screen max-w-full overflow-hidden bg-gray-50 px-4 pt-2 pb-6 sm:px-6">
       {/* Header with Create Button */}
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="min-w-0 text-xl font-bold text-gray-900 sm:text-2xl">
-          데이터셋 관리
-        </h1>
+        <div className="min-w-0">
+          <h1 className="min-w-0 text-xl font-bold text-gray-900 sm:text-2xl">
+            데이터 구축
+          </h1>
+        </div>
         <button
-          onClick={() => setShowCreateModal(true)}
+          onClick={openFreshPipeline}
           className="inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
         >
           <Plus className="w-4 h-4" />
-          데이터셋 생성
+          새 파이프라인 만들기
         </button>
+      </div>
+
+      <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
+        {pipelineGroups.map((group) => {
+          const Icon = group.icon;
+          return (
+            <div
+              key={group.title}
+              className={`rounded-lg border bg-white p-4 shadow-sm ${group.borderClass}`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 items-start gap-3">
+                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${group.iconClass}`}>
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-gray-900">{group.title}</p>
+                    <p className="mt-1 text-xs leading-5 text-gray-500">{group.description}</p>
+                  </div>
+                </div>
+                <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-700">
+                  {group.count}개
+                </span>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {group.chips.length > 0 ? (
+                  group.chips.map((name) => (
+                    <span
+                      key={name}
+                      className="max-w-full truncate rounded-full bg-gray-50 px-2.5 py-1 text-xs text-gray-600"
+                      title={name}
+                    >
+                      {name}
+                    </span>
+                  ))
+                ) : (
+                  <span className="rounded-full bg-gray-50 px-2.5 py-1 text-xs text-gray-400">
+                    아직 없음
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={group.action}
+                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50"
+              >
+                {group.actionLabel}
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
+          );
+        })}
       </div>
 
       {/* Datasets Table */}
       <div className="max-w-full overflow-hidden rounded-lg bg-white shadow">
         {/* Header with Actions */}
-        <div className="flex flex-col gap-3 border-b border-gray-200 px-4 py-4 sm:px-6 md:flex-row md:items-center">
+        <div className="flex flex-col gap-3 border-b border-gray-200 px-4 py-4 sm:px-6 md:flex-row md:items-center md:justify-between">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <ListChecks className="h-5 w-5 text-gray-400" />
+              <h2 className="text-base font-semibold text-gray-900">구축 중인 파이프라인</h2>
+            </div>
+            <p className="mt-1 text-sm text-gray-500">
+              소스, 변환, 결과 데이터셋이 연결된 작업을 확인합니다.
+            </p>
+          </div>
           <div className="relative w-full md:max-w-sm">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="데이터셋 검색..."
+              placeholder="파이프라인 검색..."
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
@@ -179,12 +300,12 @@ export default function ETLMain() {
           /* Empty State */
           <div className="px-6 py-12 text-center">
             <div className="max-w-md mx-auto">
-              <Database className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <Workflow className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">
-                데이터셋이 없습니다
+                구축 중인 파이프라인이 없습니다
               </h3>
               <p className="text-gray-600">
-                위 버튼을 눌러 데이터셋을 생성하세요.
+                새 파이프라인을 만들어 소스, 변환, 결과 데이터셋을 연결하세요.
               </p>
             </div>
           </div>
@@ -195,22 +316,22 @@ export default function ETLMain() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="w-[17%] px-3 py-3 text-left text-xs font-medium text-gray-500 tracking-wider whitespace-nowrap">
-                    데이터셋 이름
+                    파이프라인 이름
                   </th>
                   <th className="w-[10%] px-3 py-3 text-left text-xs font-medium text-gray-500 tracking-wider whitespace-nowrap">
                     담당자
                   </th>
                   <th className="w-[11%] px-3 py-3 text-left text-xs font-medium text-gray-500 tracking-wider whitespace-nowrap">
-                    유형
+                    결과 유형
                   </th>
                   <th className="w-[8%] px-3 py-3 text-left text-xs font-medium text-gray-500 tracking-wider whitespace-nowrap">
-                    상태
+                    구축 상태
                   </th>
                   <th className="w-[12%] px-3 py-3 text-left text-xs font-medium text-gray-500 tracking-wider whitespace-nowrap">
-                    처리 방식
+                    실행 방식
                   </th>
                   <th className="w-[18%] px-3 py-3 text-left text-xs font-medium text-gray-500 tracking-wider whitespace-nowrap">
-                    설명
+                    목적
                   </th>
                   <th className="w-[17%] px-3 py-3 text-left text-xs font-medium text-gray-500 tracking-wider whitespace-nowrap">
                     최근 수정일
@@ -228,9 +349,7 @@ export default function ETLMain() {
                       onClick={() => {
                         const datasetType = job.dataset_type || "source";
                         if (datasetType === "target") {
-                          navigate(`/target`, {
-                            state: { jobId: job.id, editMode: true },
-                          });
+                          navigate(`/etl/job/${job.id}`);
                         } else {
                           navigate(`/source`, {
                             state: { jobId: job.id, editMode: true },
@@ -241,6 +360,21 @@ export default function ETLMain() {
                       <span className="block truncate" title={job.name}>
                         {job.name}
                       </span>
+                      {isGoldDataset(job) && (
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          <span className="inline-flex items-center rounded-full bg-blue-600 px-2 py-0.5 text-[11px] font-semibold text-white">
+                            NEW
+                          </span>
+                          <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-[11px] font-semibold text-green-700">
+                            <CheckCircle className="h-3 w-3" />
+                            품질 100%
+                          </span>
+                          <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-700">
+                            <ShieldCheck className="h-3 w-3" />
+                            권한 적용
+                          </span>
+                        </div>
+                      )}
                     </td>
                     <td className="px-3 py-3 text-sm text-gray-600">
                       <span className="block truncate" title={job.owner || "-"}>
@@ -248,17 +382,24 @@ export default function ETLMain() {
                       </span>
                     </td>
                     <td className="px-3 py-3 text-sm">
-                      <span
-                        className={`inline-flex max-w-full items-center rounded-full px-2 py-1 text-xs font-semibold whitespace-nowrap ${
-                          (job.dataset_type || "source") === "source"
-                            ? "bg-emerald-100 text-emerald-800"
-                            : "bg-orange-100 text-orange-800"
-                        }`}
-                      >
-                        {(job.dataset_type || "source") === "source"
-                          ? "원본 데이터"
-                          : "타겟 데이터"}
-                      </span>
+                      {isGoldDataset(job) ? (
+                        <span className="inline-flex max-w-full items-center gap-1 rounded-full bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-800 whitespace-nowrap">
+                          <Sparkles className="h-3 w-3" />
+                          Gold Dataset
+                        </span>
+                      ) : (
+                        <span
+                          className={`inline-flex max-w-full items-center rounded-full px-2 py-1 text-xs font-semibold whitespace-nowrap ${
+                            (job.dataset_type || "source") === "source"
+                              ? "bg-emerald-100 text-emerald-800"
+                              : "bg-orange-100 text-orange-800"
+                          }`}
+                        >
+                          {(job.dataset_type || "source") === "source"
+                            ? "수집 대상"
+                            : "결과 데이터셋"}
+                        </span>
+                      )}
                     </td>
                     <td className="px-3 py-3 text-sm">
                       <span
@@ -284,11 +425,11 @@ export default function ETLMain() {
                         </span>
                       ) : job.job_type === "streaming" ? (
                         <span className="inline-flex max-w-full items-center rounded-full bg-indigo-100 px-2 py-1 text-xs font-semibold text-indigo-800 whitespace-nowrap">
-                          실시간 스트리밍
+                          스트리밍
                         </span>
                       ) : (
                         <span className="inline-flex max-w-full items-center rounded-full bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-800 whitespace-nowrap">
-                          정기 처리
+                          배치
                         </span>
                       )}
                     </td>
@@ -366,18 +507,11 @@ export default function ETLMain() {
         isOpen={deleteModal.isOpen}
         onClose={closeDeleteModal}
         onConfirm={handleDelete}
-        title="데이터셋 삭제"
-        message={`"${deleteModal.jobName}" 데이터셋을 삭제할까요? 이 작업은 되돌릴 수 없습니다.`}
+        title="파이프라인 삭제"
+        message={`"${deleteModal.jobName}" 파이프라인을 삭제할까요? 이 작업은 되돌릴 수 없습니다.`}
         confirmText="삭제"
         cancelText="취소"
         variant="danger"
-      />
-
-      {/* Create Dataset Modal */}
-      <CreateDatasetModal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onSelect={handleCreateDataset}
       />
 
       {/* Target Import Modal */}

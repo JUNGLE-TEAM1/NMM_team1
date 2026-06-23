@@ -33,13 +33,7 @@ function LandingPage() {
     // Redirect if already logged in
     useEffect(() => {
         if (sessionId && user) {
-            // If user has ETL access or is admin, go to dataset page
-            // Otherwise go to catalog page
-            if (user.is_admin || user.etl_access) {
-                navigate("/dataset");
-            } else {
-                navigate("/catalog");
-            }
+            navigate("/catalog");
         }
     }, [sessionId, user, navigate]);
 

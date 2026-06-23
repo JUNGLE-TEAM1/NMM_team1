@@ -14,6 +14,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import {
   ArrowLeft,
+  ArrowRight,
   Save,
   Play,
   Pause,
@@ -27,9 +28,11 @@ import {
   Combine,
   Archive,
   Download,
+  Loader2,
+  ShieldCheck,
 } from "lucide-react";
 import { DeletionEdge } from "../domain/components/CustomEdges";
-import { SiPostgresql, SiMongodb } from "@icons-pack/react-simple-icons";
+import { SiPostgresql, SiMongodb, SiApachekafka } from "@icons-pack/react-simple-icons";
 import { useToast } from "../../components/common/Toast";
 import "./etl_job.css";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
@@ -54,6 +57,151 @@ import { saveScheduleToBackend, convertNodesToApiFormat, utcToLocalDatetimeStrin
 const initialNodes = [];
 
 const initialEdges = [];
+
+const ASKLAKE_DEMO_DATASET_ID = "ds-commerce-revenue-gold";
+const IS_FRONTEND_ONLY = import.meta.env.VITE_FRONTEND_ONLY !== "false";
+
+const askLakeDemoSchemas = {
+  orders: [
+    { key: "order_id", name: "order_id", type: "VARCHAR" },
+    { key: "user_id", name: "user_id", type: "VARCHAR" },
+    { key: "product_id", name: "product_id", type: "VARCHAR" },
+    { key: "order_amount", name: "order_amount", type: "NUMERIC" },
+    { key: "order_status", name: "order_status", type: "VARCHAR" },
+    { key: "ordered_at", name: "ordered_at", type: "TIMESTAMP" },
+  ],
+  productCatalog: [
+    { key: "product_id", name: "product_id", type: "VARCHAR" },
+    { key: "product_name", name: "product_name", type: "VARCHAR" },
+    { key: "category", name: "category", type: "VARCHAR" },
+    { key: "brand", name: "brand", type: "VARCHAR" },
+    { key: "list_price", name: "list_price", type: "NUMERIC" },
+    { key: "updated_at", name: "updated_at", type: "TIMESTAMP" },
+  ],
+  gold: [
+    { key: "month", name: "month", type: "VARCHAR" },
+    { key: "product_id", name: "product_id", type: "VARCHAR" },
+    { key: "product_name", name: "product_name", type: "VARCHAR" },
+    { key: "category", name: "category", type: "VARCHAR" },
+    { key: "revenue", name: "revenue", type: "NUMERIC" },
+    { key: "order_count", name: "order_count", type: "INTEGER" },
+    { key: "avg_order_amount", name: "avg_order_amount", type: "NUMERIC" },
+  ],
+};
+
+const askLakeDemoEdges = [
+  {
+    id: "asklake-edge-postgres-transform",
+    source: "asklake-source-postgres",
+    target: "asklake-transform-clean-join",
+    type: "deletion",
+    animated: true,
+    style: { stroke: "#3b82f6", strokeWidth: 2 },
+  },
+  {
+    id: "asklake-edge-mongodb-transform",
+    source: "asklake-source-mongodb",
+    target: "asklake-transform-clean-join",
+    type: "deletion",
+    animated: true,
+    style: { stroke: "#47a248", strokeWidth: 2 },
+  },
+  {
+    id: "asklake-edge-transform-gold",
+    source: "asklake-transform-clean-join",
+    target: "asklake-target-gold",
+    type: "deletion",
+    animated: true,
+    style: { stroke: "#10b981", strokeWidth: 3 },
+  },
+];
+
+const getDemoSourceDefaults = (sourceType) => {
+  if (sourceType === "kafka") {
+    return {
+      sourceId: "conn-kafka",
+      sourceName: "Kafka 주문 이벤트",
+      subtitle: "실시간 주문 이벤트",
+      tableName: "commerce.order.events",
+      schema: askLakeDemoSchemas.orders,
+      config: { topic: "commerce.order.events" },
+    };
+  }
+
+  if (sourceType === "s3") {
+    return {
+      sourceId: "conn-s3",
+      sourceName: "S3 원본 데이터",
+      subtitle: "데이터 레이크 원본",
+      tableName: "raw_commerce_orders",
+      schema: askLakeDemoSchemas.orders,
+      config: { bucket: "asklake", path: "bronze/commerce_orders/" },
+    };
+  }
+
+  if (sourceType === "mongodb") {
+    return {
+      sourceId: "conn-mongodb",
+      sourceName: "MongoDB 상품 카탈로그",
+      subtitle: "상품/카테고리 컬렉션",
+      tableName: "product_catalog",
+      collectionName: "product_catalog",
+      schema: askLakeDemoSchemas.productCatalog,
+      config: { database: "commerce", collection: "product_catalog" },
+    };
+  }
+
+  return {
+    sourceId: "conn-postgres",
+    sourceName: "PostgreSQL 주문 거래",
+    subtitle: "결제/주문 DB",
+    tableName: "orders",
+    schema: askLakeDemoSchemas.orders,
+    config: { database: "commerce", table: "orders" },
+  };
+};
+
+const buildDemoSourcePayload = (source, index) => {
+  const type = source?.type || (index === 1 ? "kafka" : "postgres");
+  const defaults = getDemoSourceDefaults(type);
+
+  return {
+    nodeId: source?.nodeId || defaults.sourceName || `demo-source-${index + 1}`,
+    type,
+    connection_id: source?.connection_id || defaults.sourceId,
+    config: Object.keys(source?.config || {}).length > 0 ? source.config : defaults.config,
+    table: source?.table || defaults.tableName,
+    collection: source?.collection || defaults.collectionName || "",
+    customRegex: source?.customRegex || null,
+  };
+};
+
+const defaultDemoSources = [
+  buildDemoSourcePayload({ nodeId: "asklake-source-postgres", type: "postgres" }, 0),
+  buildDemoSourcePayload({ nodeId: "asklake-source-mongodb", type: "mongodb" }, 1),
+];
+
+const defaultDemoDestination = {
+  nodeId: "asklake-target-gold",
+  type: "s3",
+  path: "s3://asklake/gold/monthly_product_sales",
+  format: "parquet",
+  options: { compression: "snappy" },
+};
+
+const defaultDemoTransform = {
+  nodeId: "asklake-transform-clean-join",
+  type: "join",
+  config: {
+    joinKey: "product_id",
+    rules: [
+      { label: "product_id 기준 조인", tone: "success" },
+      { label: "결제 완료 주문만 필터", tone: "success" },
+      { label: "월별 매출/주문 수 집계", tone: "success" },
+    ],
+  },
+  inputNodeIds: ["asklake-source-postgres", "asklake-source-mongodb"],
+};
 
 // 커스텀 노드 타입 정의
 const nodeTypes = {
@@ -167,15 +315,337 @@ export default function ETLJobPage() {
   const [showLineageMenu, setShowLineageMenu] = useState(false);
   const [lineageActiveTab, setLineageActiveTab] = useState("transform");
   const { showToast } = useToast();
+  const [demoRunState, setDemoRunState] = useState("idle"); // idle | running | complete
 
   // Check for target import from navigation state
   const fromTargetImport = location.state?.fromTargetImport || false;
+  const startFromScratch = location.state?.startFromScratch === true;
+  const isAskLakeDemo = nodes.some((node) => node.id === "asklake-source-postgres");
+  const builderSections = [
+    {
+      title: "데이터 소스",
+      description: "구축에 사용할 원본",
+      stage: "sources",
+      tone: "emerald",
+      icon: Archive,
+      items: [
+        { label: "PostgreSQL 주문 거래", detail: "orders", nodeId: "asklake-source-postgres" },
+        { label: "MongoDB 상품 카탈로그", detail: "product_catalog", nodeId: "asklake-source-mongodb" },
+      ],
+    },
+    {
+      title: "변환 규칙",
+      description: "데이터를 만드는 규칙",
+      stage: "transform",
+      tone: "purple",
+      icon: GitMerge,
+      items: [
+        { label: "product_id 기준 조인", detail: "주문 거래 + 상품 카탈로그", nodeId: "asklake-transform-clean-join" },
+        { label: "결제 완료 주문 필터", detail: "paid 상태만 분석 대상", nodeId: "asklake-transform-clean-join" },
+        { label: "월별 매출 집계", detail: "매출, 주문 수, 평균 주문액 계산", nodeId: "asklake-transform-clean-join" },
+      ],
+    },
+    {
+      title: "결과 데이터셋",
+      description: "카탈로그에 등록될 산출물",
+      stage: "target",
+      tone: "blue",
+      icon: ShieldCheck,
+      items: [
+        { label: "월별 상품 매출 Gold Dataset", detail: "품질 100% · 분석가 권한 적용", nodeId: "asklake-target-gold" },
+      ],
+    },
+  ];
+  const builderToneClasses = {
+    emerald: {
+      section: "border-emerald-100 bg-emerald-50",
+      icon: "bg-emerald-100 text-emerald-700",
+      active: "border-emerald-300 bg-white text-emerald-800",
+    },
+    purple: {
+      section: "border-purple-100 bg-purple-50",
+      icon: "bg-purple-100 text-purple-700",
+      active: "border-purple-300 bg-white text-purple-800",
+    },
+    blue: {
+      section: "border-blue-100 bg-blue-50",
+      icon: "bg-blue-100 text-blue-700",
+      active: "border-blue-300 bg-white text-blue-800",
+    },
+  };
+
+  const focusBuilderNode = (nodeId) => {
+    const node = nodes.find((item) => item.id === nodeId);
+    if (!node) return;
+
+    setSelectedNode(node);
+    setSelectedMetadataItem(null);
+
+    setTimeout(() => {
+      reactFlowInstance.current?.setCenter(node.position.x + 120, node.position.y + 80, {
+        zoom: 1.05,
+        duration: 220,
+      });
+    }, 20);
+  };
+
+  const createAskLakeDemoNodes = useCallback(() => {
+    const metadataSelect = (item) => {
+      isMetadataClickRef.current = true;
+      setSelectedMetadataItem(item);
+    };
+    const deleteNode = (nodeId) => {
+      setNodes((nds) => nds.filter((n) => n.id !== nodeId));
+      if (selectedNode?.id === nodeId) {
+        setSelectedNode(null);
+        setSelectedMetadataItem(null);
+      }
+    };
+
+    return [
+      {
+        id: "asklake-source-postgres",
+        type: "datasetNode",
+        position: { x: 70, y: 130 },
+        data: {
+          label: "PostgreSQL",
+          icon: SiPostgresql,
+          color: "#4169E1",
+          nodeCategory: "source",
+          sourceType: "postgres",
+          sourceId: "conn-postgres",
+          sourceName: "PostgreSQL 주문 거래",
+          subtitle: "결제/주문 DB",
+          tableName: "orders",
+          schema: askLakeDemoSchemas.orders,
+          config: { database: "commerce", table: "orders" },
+          nodeId: "asklake-source-postgres",
+          onDelete: deleteNode,
+          onMetadataSelect: metadataSelect,
+        },
+      },
+      {
+        id: "asklake-source-mongodb",
+        type: "datasetNode",
+        position: { x: 70, y: 285 },
+        data: {
+          label: "MongoDB",
+          icon: SiMongodb,
+          color: "#47a248",
+          nodeCategory: "source",
+          sourceType: "mongodb",
+          sourceId: "conn-mongodb",
+          sourceName: "MongoDB 상품 카탈로그",
+          subtitle: "상품/카테고리 컬렉션",
+          tableName: "product_catalog",
+          collectionName: "product_catalog",
+          schema: askLakeDemoSchemas.productCatalog,
+          config: { database: "commerce", collection: "product_catalog" },
+          nodeId: "asklake-source-mongodb",
+          onDelete: deleteNode,
+          onMetadataSelect: metadataSelect,
+        },
+      },
+      {
+        id: "asklake-transform-clean-join",
+        type: "datasetNode",
+        position: { x: 420, y: 205 },
+        data: {
+          label: "데이터 정제 & 조인",
+          icon: GitMerge,
+          color: "#2563eb",
+          nodeCategory: "transform",
+          transformType: "join",
+          sourceType: "mixed",
+          inputSchemas: [askLakeDemoSchemas.orders, askLakeDemoSchemas.productCatalog],
+          inputSchema: askLakeDemoSchemas.orders,
+          schema: askLakeDemoSchemas.gold,
+          subtitle: "Transform",
+          rules: [
+            { label: "product_id 기준 조인", tone: "success" },
+            { label: "결제 완료 주문 필터", tone: "success" },
+            { label: "월별 매출/주문 수 집계", tone: "success" },
+          ],
+          transformConfig: {
+            joinKey: "product_id",
+            rules: [
+              { label: "product_id 기준 조인", tone: "success" },
+              { label: "결제 완료 주문 필터", tone: "success" },
+              { label: "월별 매출/주문 수 집계", tone: "success" },
+            ],
+          },
+          nodeId: "asklake-transform-clean-join",
+          onDelete: deleteNode,
+          onMetadataSelect: metadataSelect,
+        },
+      },
+      {
+        id: "asklake-target-gold",
+        type: "datasetNode",
+        position: { x: 770, y: 205 },
+        data: {
+          label: "월별 상품 매출 Gold Dataset",
+          icon: ShieldCheck,
+          color: "#2563eb",
+          nodeCategory: "target",
+          sourceType: "s3",
+          subtitle: "사내 데이터 카탈로그 등록 대상",
+          badges: ["Gold", "NEW", "품질 100%"],
+          tableName: "gold_monthly_product_sales",
+          schema: askLakeDemoSchemas.gold,
+          s3Location: "s3://asklake/gold/monthly_product_sales",
+          compressionType: "snappy",
+          nodeId: "asklake-target-gold",
+          onDelete: deleteNode,
+          onMetadataSelect: metadataSelect,
+        },
+      },
+    ];
+  }, [selectedNode?.id, setNodes]);
+
+  const addGuidedPipelineStep = useCallback(
+    (stage) => {
+      const templateNodes = createAskLakeDemoNodes();
+      const nodeIdsByStage = {
+        sources: ["asklake-source-postgres", "asklake-source-mongodb"],
+        transform: [
+          "asklake-source-postgres",
+          "asklake-source-mongodb",
+          "asklake-transform-clean-join",
+        ],
+        target: [
+          "asklake-source-postgres",
+          "asklake-source-mongodb",
+          "asklake-transform-clean-join",
+          "asklake-target-gold",
+        ],
+      };
+      const edgeIdsByStage = {
+        sources: [],
+        transform: ["asklake-edge-postgres-transform", "asklake-edge-mongodb-transform"],
+        target: [
+          "asklake-edge-postgres-transform",
+          "asklake-edge-mongodb-transform",
+          "asklake-edge-transform-gold",
+        ],
+      };
+
+      const nodeIds = nodeIdsByStage[stage] || nodeIdsByStage.sources;
+      const edgeIds = edgeIdsByStage[stage] || [];
+
+      setJobName((prev) =>
+        prev === "Untitled Job" || prev === "새_파이프라인"
+          ? "월별_상품_매출_Gold_Dataset"
+          : prev
+      );
+      setJobDetails((prev) => ({
+        ...prev,
+        description:
+          prev.description ||
+          "PostgreSQL 주문 거래와 MongoDB 상품 카탈로그를 조인해 월별 상품 매출을 집계하는 Gold Dataset 데모입니다.",
+        jobType: "batch",
+        datasetType: "target",
+      }));
+      setSchedules((prev) =>
+        prev.length > 0
+          ? prev
+          : [
+              {
+                id: "guided-demo-schedule",
+                name: "월별 상품 매출 집계 배치",
+                cron: "demo",
+                frequency: "manual",
+                description: "프론트 UIUX 검토용 수동 실행 시나리오",
+                uiParams: {},
+              },
+            ]
+      );
+
+      setNodes((currentNodes) => {
+        const currentIds = new Set(currentNodes.map((node) => node.id));
+        const nodesToAdd = templateNodes.filter(
+          (node) => nodeIds.includes(node.id) && !currentIds.has(node.id)
+        );
+        return [...currentNodes, ...nodesToAdd];
+      });
+
+      setEdges((currentEdges) => {
+        const currentIds = new Set(currentEdges.map((edge) => edge.id));
+        const edgesToAdd = askLakeDemoEdges.filter(
+          (edge) => edgeIds.includes(edge.id) && !currentIds.has(edge.id)
+        );
+        return [...currentEdges, ...edgesToAdd];
+      });
+
+      const toastByStage = {
+        sources: "원본 데이터 2개를 캔버스에 올렸습니다.",
+        transform: "변환 규칙과 조인 연결선을 추가했습니다.",
+        target: "결과 Gold Dataset까지 연결했습니다.",
+      };
+      showToast(toastByStage[stage] || "단계를 추가했습니다.", "success");
+
+      setTimeout(() => {
+        reactFlowInstance.current?.fitView({
+          padding: 0.28,
+          maxZoom: 1.0,
+          duration: 400,
+        });
+      }, 80);
+    },
+    [createAskLakeDemoNodes, setEdges, setNodes, showToast]
+  );
 
   useEffect(() => {
     if (jobDetails.jobType === "streaming" && mainTab === "Schedules") {
       setMainTab("Visual");
     }
   }, [jobDetails.jobType, mainTab]);
+
+  useEffect(() => {
+    if (!startFromScratch || urlJobId || fromTargetImport) return;
+
+    setJobName("새_파이프라인");
+    setJobDetails((prev) => ({
+      ...prev,
+      description: "",
+      jobType: "batch",
+      datasetType: "target",
+    }));
+    setSchedules([]);
+    setNodes([]);
+    setEdges([]);
+    setSelectedNode(null);
+    setSelectedMetadataItem(null);
+    setDemoRunState("idle");
+  }, [fromTargetImport, setEdges, setNodes, startFromScratch, urlJobId]);
+
+  useEffect(() => {
+    if (startFromScratch || urlJobId || nodes.length > 0 || fromTargetImport) return;
+
+    setJobName("월별_상품_매출_Gold_Dataset");
+    setJobDetails((prev) => ({
+      ...prev,
+      description: "PostgreSQL 주문 거래와 MongoDB 상품 카탈로그를 조인해 월별 상품 매출을 집계하는 Gold Dataset 데모입니다.",
+      jobType: "batch",
+      datasetType: "target",
+    }));
+    setSchedules([
+      {
+        id: "asklake-demo-schedule",
+        name: "월별 상품 매출 집계 배치",
+        cron: "demo",
+        frequency: "manual",
+        description: "프론트 UIUX 검토용 수동 실행 시나리오",
+        uiParams: {},
+      },
+    ]);
+    setNodes(createAskLakeDemoNodes());
+    setEdges(askLakeDemoEdges);
+
+    setTimeout(() => {
+      reactFlowInstance.current?.fitView({ padding: 0.28, maxZoom: 1.0, duration: 500 });
+    }, 120);
+  }, [createAskLakeDemoNodes, fromTargetImport, nodes.length, setEdges, setNodes, urlJobId]);
 
   useEffect(() => {
     if (!jobId) return;
@@ -359,6 +829,12 @@ export default function ETLJobPage() {
         label: "PostgreSQL",
         icon: SiPostgresql,
         color: "#4169E1",
+      },
+      {
+        id: "kafka",
+        label: "Kafka Stream",
+        icon: SiApachekafka,
+        color: "#f59e0b",
       },
       { id: "mongodb", label: "MongoDB", icon: SiMongodb, color: "#47A248" },
     ],
@@ -648,20 +1124,183 @@ export default function ETLJobPage() {
 
   // Note: convertNodesToApiFormat is now imported from utils/etl_job.js
 
+  const getDemoDatasetDisplayName = () => {
+    const normalizedName = jobName.replace(/_/g, " ").trim();
+    return normalizedName || "월별 상품 매출 Gold Dataset";
+  };
+
+  const buildFrontendDemoCatalogPayload = () => {
+    const apiFormat = convertNodesToApiFormat(nodes, edges);
+    const sourcePayloads =
+      apiFormat.sources.length > 0
+        ? apiFormat.sources.map((source, index) => buildDemoSourcePayload(source, index))
+        : defaultDemoSources;
+    const transformPayloads =
+      apiFormat.transforms.length > 0 ? apiFormat.transforms : [defaultDemoTransform];
+    const destinationPayload = apiFormat.destination?.path
+      ? apiFormat.destination
+      : defaultDemoDestination;
+    const displayName = getDemoDatasetDisplayName();
+    const nowIso = new Date().toISOString();
+
+    return {
+      name: displayName,
+      description:
+        jobDetails.description ||
+        "데이터 구축 화면에서 만든 프론트 데모용 Gold Dataset입니다. PostgreSQL 주문 거래와 MongoDB 상품 카탈로그를 조인해 월별 상품 매출을 집계했습니다.",
+      owner: "데이터 엔지니어링 팀",
+      dataset_type: "target",
+      job_type: jobDetails.jobType || "batch",
+      layer: "gold",
+      catalog_status: "new",
+      created_from_pipeline_demo: true,
+      quality_score: 100,
+      permission_label: "마케터 권한 적용",
+      sources: sourcePayloads.map((source, index) => ({
+        nodeId: source.nodeId,
+        type: source.type,
+        table: source.table || source.config?.topic || source.collection,
+        name:
+          source.type === "mongodb"
+            ? "MongoDB 상품 카탈로그"
+            : index === 0
+              ? "PostgreSQL 주문 거래"
+              : "원본 데이터",
+      })),
+      transforms: transformPayloads,
+      targets: [
+        {
+          nodeId: destinationPayload.nodeId || "asklake-target-gold",
+          type: "s3",
+          config: {
+            path: destinationPayload.path,
+            format: destinationPayload.format || "parquet",
+          },
+        },
+      ],
+      destination: destinationPayload,
+      target: { type: "s3", path: destinationPayload.path },
+      schema: askLakeDemoSchemas.gold,
+      columns: askLakeDemoSchemas.gold,
+      nodes: nodes.length > 0 ? nodes : createAskLakeDemoNodes(),
+      edges: edges.length > 0 ? edges : askLakeDemoEdges,
+      schedule: "Batch 실행",
+      schedule_frequency: schedules.length > 0 ? schedules[0].frequency : "manual",
+      ui_params:
+        schedules.length > 0
+          ? {
+              ...schedules[0].uiParams,
+              scheduleName: schedules[0].name,
+              scheduleDescription: schedules[0].description,
+            }
+          : null,
+      incremental_config: jobDetails.incremental_config || null,
+      status: "active",
+      is_active: true,
+      import_ready: true,
+      size_bytes: 824633720,
+      actual_size_bytes: 824633720,
+      row_count: 2480000,
+      format: "PARQUET",
+      tags: ["gold", "commerce", "revenue", "orders", "quality-100", "pipeline-demo"],
+      preview_rows: [
+        {
+          month: "2026-04",
+          product_name: "러닝화 Pro",
+          category: "Shoes",
+          revenue: "49,000,000",
+          order_count: 910,
+          avg_order_amount: "53,846",
+        },
+        {
+          month: "2026-05",
+          product_name: "트레이닝 셋업",
+          category: "Apparel",
+          revenue: "58,000,000",
+          order_count: 1040,
+          avg_order_amount: "55,769",
+        },
+        {
+          month: "2026-06",
+          product_name: "러닝화 Pro",
+          category: "Shoes",
+          revenue: "64,000,000",
+          order_count: 1120,
+          avg_order_amount: "57,143",
+        },
+      ],
+      quality: {
+        missing_rate: "0.00%",
+        duplicate_count: 0,
+        schema_status: "안정적",
+      },
+      updated_at: nowIso,
+    };
+  };
+
+  const persistFrontendDemoCatalog = async ({ forceCreate = false } = {}) => {
+    const payload = buildFrontendDemoCatalogPayload();
+    const shouldUpdate = jobId && !forceCreate;
+    const response = await fetch(
+      shouldUpdate
+        ? `${API_BASE_URL}/api/datasets/${jobId}`
+        : `${API_BASE_URL}/api/datasets`,
+      {
+        method: shouldUpdate ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || "Failed to create frontend demo catalog item");
+    }
+
+    const data = await response.json();
+    setJobId(data.id);
+    return data;
+  };
+
   const handleSave = async () => {
     if (isSaving) return;
     setIsSaving(true);
 
-    const { sources, transforms, destination } = convertNodesToApiFormat(nodes, edges);
+    if (IS_FRONTEND_ONLY) {
+      try {
+        const data = await persistFrontendDemoCatalog();
+        console.log("Frontend demo pipeline saved:", data);
+        showToast("프론트 데모: 새 파이프라인과 Gold Dataset을 만들었습니다.", "success");
+      } catch (error) {
+        console.error("Frontend demo save failed:", error);
+        showToast(`저장 실패: ${error.message}`, "error");
+      } finally {
+        setIsSaving(false);
+      }
+      return;
+    }
+
+    const apiFormat = convertNodesToApiFormat(nodes, edges);
+    let { sources, transforms, destination } = apiFormat;
+
+    if (IS_FRONTEND_ONLY) {
+      sources =
+        sources.length > 0
+          ? sources.map((source, index) => buildDemoSourcePayload(source, index))
+          : defaultDemoSources;
+
+      transforms = transforms.length > 0 ? transforms : [defaultDemoTransform];
+      destination = destination?.path ? destination : defaultDemoDestination;
+    }
 
     // Validate required fields
-    if (!sources || sources.length === 0 || !sources[0]?.connection_id) {
-      showToast("Please select at least one source connection first.", "error");
+    if (!IS_FRONTEND_ONLY && (!sources || sources.length === 0 || !sources[0]?.connection_id)) {
+      showToast("먼저 원본 연결을 선택해주세요.", "error");
       setIsSaving(false);
       return;
     }
-    if (!destination?.path) {
-      showToast("Please set S3 destination path first.", "error");
+    if (!IS_FRONTEND_ONLY && !destination?.path) {
+      showToast("먼저 S3 타겟 경로를 설정해주세요.", "error");
       setIsSaving(false);
       return;
     }
@@ -711,10 +1350,15 @@ export default function ETLJobPage() {
       const data = await response.json();
       setJobId(data.id);
       console.log("Job saved:", data);
-      showToast("Job saved successfully!", "success");
+      showToast(
+        IS_FRONTEND_ONLY
+          ? "프론트 데모: 실제 데이터 없이 파이프라인을 연결했습니다."
+          : "작업이 저장되었습니다.",
+        "success"
+      );
     } catch (error) {
       console.error("Save failed:", error);
-      showToast(`Save failed: ${error.message}`, "error");
+      showToast(`저장 실패: ${error.message}`, "error");
     } finally {
       setIsSaving(false);
     }
@@ -722,8 +1366,59 @@ export default function ETLJobPage() {
 
   // Run job - Batch 또는 CDC 실행
   const handleRun = async () => {
+    if (IS_FRONTEND_ONLY) {
+      if (demoRunState === "running") return;
+      setDemoRunState("running");
+      showToast("프론트 데모: 새 파이프라인을 가동합니다", "success");
+
+      window.setTimeout(async () => {
+        try {
+          const catalogDataset = await persistFrontendDemoCatalog({
+            forceCreate: !jobId,
+          });
+          setDemoRunState("complete");
+          showToast("프론트 데모: 새 Gold Dataset이 카탈로그에 등록되었습니다", "success");
+          navigate(`/catalog/${catalogDataset.id}`, {
+            state: { catalogItem: catalogDataset },
+          });
+        } catch (error) {
+          console.error("Frontend demo run failed:", error);
+          setDemoRunState("idle");
+          showToast(`실행 실패: ${error.message}`, "error");
+        }
+      }, isAskLakeDemo ? 2400 : 1800);
+      return;
+    }
+
+    if (isAskLakeDemo) {
+      if (demoRunState === "running") return;
+      setDemoRunState("running");
+      showToast("데이터 파이프라인을 가동합니다", "success");
+
+      window.setTimeout(() => {
+        setDemoRunState("complete");
+        showToast("Gold Dataset이 카탈로그에 등록되었습니다", "success");
+        navigate(`/catalog/${ASKLAKE_DEMO_DATASET_ID}`);
+      }, 2400);
+      return;
+    }
+
     if (!jobId) {
-      showToast("Please save the job first.", "error");
+      if (IS_FRONTEND_ONLY) {
+        const demoJobId = `frontend-demo-${Date.now()}`;
+        setJobId(demoJobId);
+        setDemoRunState("running");
+        showToast("프론트 데모: 실제 데이터 없이 파이프라인을 가동합니다", "success");
+
+        window.setTimeout(() => {
+          setDemoRunState("complete");
+          showToast("프론트 데모: Gold Dataset이 카탈로그에 등록되었습니다", "success");
+          navigate(`/catalog/${ASKLAKE_DEMO_DATASET_ID}`);
+        }, 1800);
+        return;
+      }
+
+      showToast("먼저 작업을 저장해주세요.", "error");
       return;
     }
 
@@ -735,11 +1430,11 @@ export default function ETLJobPage() {
         });
 
         if (response.ok) {
-          showToast("CDC pipeline activated! Real-time sync started.", "success");
+          showToast("CDC 파이프라인이 활성화되었습니다. 실시간 동기화를 시작합니다.", "success");
           setIsCdcActive(true);
         } else {
           const error = await response.json();
-          showToast(`Failed to activate CDC: ${error.detail || 'Unknown error'}`, "error");
+          showToast(`CDC 활성화 실패: ${error.detail || '알 수 없는 오류'}`, "error");
         }
       } else if (jobDetails.jobType === "streaming") {
         const response = await fetch(`${API_BASE_URL}/api/streaming/jobs/${jobId}/start`, {
@@ -747,11 +1442,11 @@ export default function ETLJobPage() {
         });
 
         if (response.ok) {
-          showToast("Streaming job started.", "success");
+          showToast("스트리밍 작업을 시작했습니다.", "success");
           setIsStreamingActive(true);
         } else {
           const error = await response.json();
-          showToast(`Failed to start streaming: ${error.detail || 'Unknown error'}`, "error");
+          showToast(`스트리밍 시작 실패: ${error.detail || '알 수 없는 오류'}`, "error");
         }
       } else {
         // Batch 타입: 기존 배치 실행
@@ -761,15 +1456,15 @@ export default function ETLJobPage() {
 
         if (response.ok) {
           const data = await response.json();
-          showToast(`Batch job started! Run ID: ${data.run_id}`, "success");
+          showToast(`배치 작업을 시작했습니다. 실행 ID: ${data.run_id}`, "success");
         } else {
           const error = await response.json();
-          showToast(`Execution failed: ${error.detail || 'Unknown error'}`, "error");
+          showToast(`실행 실패: ${error.detail || '알 수 없는 오류'}`, "error");
         }
       }
     } catch (error) {
-      console.error("Run failed:", error);
-      showToast(`Execution failed: ${error.message}`, "error");
+      console.error("실행 실패:", error);
+      showToast(`실행 실패: ${error.message}`, "error");
     }
   };
 
@@ -895,6 +1590,45 @@ export default function ETLJobPage() {
     const uniqueId = `node_${Date.now()}_${Math.random()
       .toString(36)
       .substr(2, 9)}`;
+    const normalizedSourceType =
+      category === "source" ? normalizeSourceType(nodeOption.id) : undefined;
+    const demoSourceDefaults =
+      IS_FRONTEND_ONLY && category === "source"
+        ? getDemoSourceDefaults(normalizedSourceType)
+        : {};
+    const demoTargetDefaults =
+      IS_FRONTEND_ONLY && category === "target"
+        ? {
+            sourceType: "s3",
+            subtitle: "사내 데이터 카탈로그 등록 대상",
+            tableName: "gold_monthly_product_sales",
+            schema: askLakeDemoSchemas.gold,
+            s3Location: "s3://asklake/gold/monthly_product_sales",
+            compressionType: "snappy",
+            badges: ["Gold", "품질 100%"],
+          }
+        : {};
+    const demoTransformDefaults =
+      IS_FRONTEND_ONLY && category === "transform"
+        ? {
+            inputSchema: askLakeDemoSchemas.orders,
+            schema:
+              nodeOption.id === "join" || nodeOption.id === "aggregate"
+                ? askLakeDemoSchemas.gold
+                : askLakeDemoSchemas.orders,
+            sourceType: "postgres",
+            transformConfig:
+              nodeOption.id === "join"
+                ? {
+                    joinKey: "product_id",
+                    rules: [
+                      { label: "product_id 기준 조인", tone: "success" },
+                      { label: "월별 매출/주문 수 집계", tone: "success" },
+                    ],
+                  }
+                : {},
+          }
+        : {};
 
     const newNode = {
       id: uniqueId,
@@ -907,8 +1641,12 @@ export default function ETLJobPage() {
         transformType: category === "transform" ? nodeOption.id : undefined,
         sourceType:
           category === "source"
-            ? normalizeSourceType(nodeOption.id)
-            : undefined,
+            ? normalizedSourceType
+            : demoTargetDefaults.sourceType || demoTransformDefaults.sourceType,
+
+        ...demoSourceDefaults,
+        ...demoTransformDefaults,
+        ...demoTargetDefaults,
 
         nodeId: uniqueId, // 노드 ID 전달
 
@@ -1070,10 +1808,10 @@ export default function ETLJobPage() {
   return (
     <div className="h-full flex flex-col bg-gray-50 overflow-hidden">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex min-w-0 items-center gap-4">
           <button
-            onClick={() => navigate("/etl")}
+            onClick={() => navigate("/dataset")}
             className="p-2 hover:bg-gray-100 rounded-md transition-colors"
           >
             <ArrowLeft className="w-5 h-5 text-gray-600" />
@@ -1083,12 +1821,12 @@ export default function ETLJobPage() {
             type="text"
             value={jobName}
             onChange={(e) => setJobName(e.target.value.replace(/ /g, '_'))}
-            className="text-xl font-semibold border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2"
-            placeholder="Job name"
+            className="min-w-0 max-w-full text-lg sm:text-xl font-semibold border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2"
+            placeholder="작업 이름"
           />
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 flex-wrap items-center gap-3">
           {/* Import Button - shown in lineage mode */}
           {isLineageMode && (
             <button
@@ -1096,7 +1834,7 @@ export default function ETLJobPage() {
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
             >
               <Download className="w-4 h-4" />
-              Import
+              가져오기
             </button>
           )}
           <button
@@ -1104,7 +1842,7 @@ export default function ETLJobPage() {
             className="px-4 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors flex items-center gap-2"
           >
             <Save className="w-4 h-4" />
-            Save
+            저장
           </button>
           <button
             onClick={
@@ -1113,9 +1851,11 @@ export default function ETLJobPage() {
                 ? handleStop
                 : handleRun
             }
-            disabled={!jobId || isSaving}
-            className={`px-4 py-2 rounded-md transition-colors flex items-center gap-2 ${!jobId || isSaving
-              ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+            disabled={(!IS_FRONTEND_ONLY && !jobId && !isAskLakeDemo) || isSaving || demoRunState === "running"}
+            className={`px-4 py-2 rounded-md transition-colors flex items-center gap-2 ${(!IS_FRONTEND_ONLY && !jobId) || isSaving
+              ? isAskLakeDemo && !isSaving
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
               : (jobDetails.jobType === "cdc" && isCdcActive) ||
                 (jobDetails.jobType === "streaming" && isStreamingActive)
                 ? 'bg-red-600 text-white hover:bg-red-700'
@@ -1126,12 +1866,21 @@ export default function ETLJobPage() {
             (jobDetails.jobType === "streaming" && isStreamingActive) ? (
               <>
                 <Pause className="w-4 h-4" />
-                Stop
+                중지
+              </>
+            ) : demoRunState === "running" ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                처리 중
               </>
             ) : (
               <>
                 <Play className="w-4 h-4" />
-                {jobDetails.jobType === "streaming" ? "Start" : "Run"}
+                {isAskLakeDemo
+                  ? "파이프라인 실행"
+                  : jobDetails.jobType === "streaming"
+                    ? "시작"
+                    : "실행"}
               </>
             )}
           </button>
@@ -1139,7 +1888,7 @@ export default function ETLJobPage() {
       </div>
 
       {/* Main Tabs (Visual / Lineage / Job details / Runs / Schedules) */}
-      <div className="bg-white border-b border-gray-200 px-6 flex items-center gap-6">
+      <div className="bg-white border-b border-gray-200 px-4 sm:px-6 flex items-center gap-6 overflow-x-auto">
         {(() => {
           const baseTabs = isLineageMode
             ? ["Lineage", "Visual", "Job details", "Runs", "Schedules"]
@@ -1150,7 +1899,14 @@ export default function ETLJobPage() {
               : baseTabs;
 
           return visibleTabs.map((tab) => {
-            const isDisabled = !jobId && (tab === "Runs" || tab === "Schedules");
+            const isDisabled = !IS_FRONTEND_ONLY && !jobId && (tab === "Runs" || tab === "Schedules");
+            const tabLabels = {
+              Visual: "파이프라인",
+              Lineage: "리니지",
+              "Job details": "작업 설정",
+              Runs: "실행 기록",
+              Schedules: "스케줄",
+            };
             return (
               <button
                 key={tab}
@@ -1162,9 +1918,9 @@ export default function ETLJobPage() {
                     ? "text-gray-400 border-transparent cursor-not-allowed"
                     : "text-gray-600 border-transparent hover:text-gray-900 hover:border-gray-300"
                   }`}
-                title={isDisabled ? "Save the job first to access this tab" : ""}
+                title={isDisabled ? "먼저 작업을 저장해주세요" : ""}
               >
-                {tab}
+                {tabLabels[tab] || tab}
               </button>
             );
           });
@@ -1175,14 +1931,226 @@ export default function ETLJobPage() {
       {mainTab === "Visual" ? (
         <>
           <div className="flex-1 flex overflow-hidden min-h-0">
+            <aside className="hidden w-80 shrink-0 overflow-y-auto border-r border-gray-200 bg-white p-4 xl:block">
+              <div className="mb-4">
+                <p className="text-xs font-semibold text-blue-600">파이프라인 작업대</p>
+                <h2 className="mt-1 text-lg font-bold text-gray-900">구축 블록</h2>
+                <p className="mt-1 text-sm leading-6 text-gray-500">
+                  소스, 변환 규칙, 결과 데이터셋을 선택해 중앙 흐름을 확인합니다.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                {builderSections.map((section) => {
+                  const Icon = section.icon;
+                  const tone = builderToneClasses[section.tone];
+                  const stageNodeIds = section.items.map((item) => item.nodeId);
+                  const completedCount = stageNodeIds.filter((nodeId) =>
+                    nodes.some((node) => node.id === nodeId)
+                  ).length;
+                  const isSectionComplete = completedCount === stageNodeIds.length;
+
+                  return (
+                    <section key={section.title} className={`rounded-lg border p-3 ${tone.section}`}>
+                      <div className="mb-3 flex items-start justify-between gap-3">
+                        <div className="flex min-w-0 items-start gap-3">
+                          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${tone.icon}`}>
+                            <Icon className="h-4 w-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <h3 className="text-sm font-semibold text-gray-900">{section.title}</h3>
+                            <p className="mt-0.5 text-xs text-gray-500">{section.description}</p>
+                          </div>
+                        </div>
+                        <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                          isSectionComplete
+                            ? "bg-green-100 text-green-700"
+                            : "bg-white text-gray-500"
+                        }`}>
+                          {isSectionComplete ? "완료" : "추가"}
+                        </span>
+                      </div>
+
+                      <div className="space-y-2">
+                        {section.items.map((item) => {
+                          const isActive = selectedNode?.id === item.nodeId;
+                          const nodeExists = nodes.some((node) => node.id === item.nodeId);
+
+                          return (
+                            <button
+                              key={`${section.title}-${item.label}`}
+                              onClick={() =>
+                                nodeExists
+                                  ? focusBuilderNode(item.nodeId)
+                                  : addGuidedPipelineStep(section.stage)
+                              }
+                              className={`w-full rounded-lg border bg-white px-3 py-2 text-left transition-colors hover:border-gray-300 hover:bg-gray-50 ${
+                                isActive ? tone.active : "border-gray-200 text-gray-700"
+                              }`}
+                            >
+                              <span className="flex items-center justify-between gap-2">
+                                <span className="block truncate text-sm font-semibold" title={item.label}>
+                                  {item.label}
+                                </span>
+                                {!nodeExists && (
+                                  <Plus className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+                                )}
+                              </span>
+                              <span className="mt-0.5 block truncate text-xs text-gray-500" title={item.detail}>
+                                {item.detail}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {!isSectionComplete && (
+                        <button
+                          onClick={() => addGuidedPipelineStep(section.stage)}
+                          className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-50"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                          {section.title} 추가
+                        </button>
+                      )}
+                    </section>
+                  );
+                })}
+              </div>
+
+              <button
+                onClick={() => setShowMenu(true)}
+                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-gray-900 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-gray-800"
+              >
+                <Plus className="h-4 w-4" />
+                직접 블록 추가
+              </button>
+            </aside>
+
             {/* ReactFlow Canvas + Bottom Panel Wrapper */}
             <div className="flex-1 relative flex flex-col">
+              {startFromScratch && nodes.length === 0 && (
+                <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center p-4">
+                  <div className="pointer-events-auto w-[min(720px,100%)] rounded-2xl border border-blue-100 bg-white/95 p-6 shadow-xl backdrop-blur">
+                    <div className="text-center">
+                      <p className="text-xs font-semibold text-blue-600">
+                        새 파이프라인 만들기
+                      </p>
+                      <h2 className="mt-2 text-xl font-bold text-gray-900">
+                        원본 데이터부터 직접 연결하세요
+                      </h2>
+                      <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-gray-600">
+                        실제 데이터가 없어도 프론트 데모에서는 연결된 것처럼 동작합니다.
+                        아래 순서대로 추가하면 소스, 변환, 결과 Gold Dataset 흐름이 캔버스에 만들어집니다.
+                      </p>
+                    </div>
+
+                    <div className="mt-6 grid gap-3 md:grid-cols-3">
+                      <button
+                        onClick={() => addGuidedPipelineStep("sources")}
+                        className="rounded-xl border border-emerald-100 bg-emerald-50 p-4 text-left transition-colors hover:border-emerald-300 hover:bg-emerald-100"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-sm font-bold text-emerald-700">
+                            1
+                          </span>
+                          <Archive className="h-5 w-5 text-emerald-700" />
+                        </div>
+                        <p className="mt-3 text-sm font-bold text-gray-900">원본 데이터 추가</p>
+                        <p className="mt-1 text-xs leading-5 text-gray-600">
+                          PostgreSQL 주문 거래와 MongoDB 상품 카탈로그를 올립니다.
+                        </p>
+                      </button>
+
+                      <button
+                        onClick={() => addGuidedPipelineStep("transform")}
+                        className="rounded-xl border border-purple-100 bg-purple-50 p-4 text-left transition-colors hover:border-purple-300 hover:bg-purple-100"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-100 text-sm font-bold text-purple-700">
+                            2
+                          </span>
+                          <GitMerge className="h-5 w-5 text-purple-700" />
+                        </div>
+                        <p className="mt-3 text-sm font-bold text-gray-900">변환 규칙 추가</p>
+                        <p className="mt-1 text-xs leading-5 text-gray-600">
+                          product_id 조인, 결제 완료 주문 필터, 월별 집계를 연결합니다.
+                        </p>
+                      </button>
+
+                      <button
+                        onClick={() => addGuidedPipelineStep("target")}
+                        className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-left transition-colors hover:border-blue-300 hover:bg-blue-100"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 text-sm font-bold text-blue-700">
+                            3
+                          </span>
+                          <ShieldCheck className="h-5 w-5 text-blue-700" />
+                        </div>
+                        <p className="mt-3 text-sm font-bold text-gray-900">결과 데이터셋 추가</p>
+                        <p className="mt-1 text-xs leading-5 text-gray-600">
+                          Gold Dataset 타겟까지 연결해 카탈로그 등록 준비를 끝냅니다.
+                        </p>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {isAskLakeDemo && (
+                <div className="absolute left-4 top-4 z-10 max-w-[min(520px,calc(100%-2rem))] rounded-xl border border-blue-100 bg-white/95 p-4 shadow-lg backdrop-blur">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-blue-600">
+                        Step 1 & 2. 소스 연결 및 변환 규칙 설정
+                      </p>
+                      <h2 className="mt-1 text-lg font-bold text-gray-900">
+                        월별 상품 매출 Gold Dataset 만들기
+                      </h2>
+                      <p className="mt-1 text-sm text-gray-600">
+                        PostgreSQL 주문 거래와 MongoDB 상품 카탈로그를 <strong>product_id</strong> 기준으로 조인하고,
+                        결제 완료 주문만 필터링한 뒤 월별 매출과 주문 수를 집계합니다.
+                      </p>
+                    </div>
+                    <span className="shrink-0 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
+                      Gold
+                    </span>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                    <span className="rounded-full bg-blue-50 px-2 py-1 text-blue-700">PostgreSQL 주문 거래</span>
+                    <span className="rounded-full bg-green-50 px-2 py-1 text-green-700">MongoDB 상품 카탈로그</span>
+                    <span className="rounded-full bg-purple-50 px-2 py-1 text-purple-700">월별 매출 집계</span>
+                  </div>
+                </div>
+              )}
+
+              {demoRunState === "running" && (
+                <div className="absolute inset-0 z-30 flex items-center justify-center bg-white/75 backdrop-blur-sm">
+                  <div className="w-[min(480px,calc(100%-2rem))] rounded-2xl border border-blue-100 bg-white p-8 text-center shadow-2xl">
+                    <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-blue-50">
+                      <Loader2 className="h-9 w-9 animate-spin text-blue-600" />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900">
+                      데이터 파이프라인 가동 중...
+                    </h3>
+                    <p className="mt-2 text-sm text-gray-600">
+                      248만 건의 주문 거래와 상품 카탈로그를 조인하고 있습니다.
+                    </p>
+                    <div className="mt-5 grid grid-cols-3 gap-2 text-xs text-gray-600">
+                      <span className="rounded-lg bg-gray-50 px-2 py-2">소스 읽기</span>
+                      <span className="rounded-lg bg-blue-50 px-2 py-2 text-blue-700">조인/집계</span>
+                      <span className="rounded-lg bg-green-50 px-2 py-2 text-green-700">카탈로그 등록</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Add Node Button */}
               <div className="absolute top-4 right-4 z-10">
                 <button
                   onClick={() => setShowMenu(!showMenu)}
                   className="w-12 h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-110"
-                  title="Add new node"
+                  title="노드 추가"
                 >
                   <Plus className="w-6 h-6" />
                 </button>
@@ -1200,7 +2168,7 @@ export default function ETLJobPage() {
                           : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                           }`}
                       >
-                        Source
+                        원본
                       </button>
                       <button
                         onClick={() => setActiveTab("transform")}
@@ -1209,7 +2177,7 @@ export default function ETLJobPage() {
                           : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                           }`}
                       >
-                        Transform
+                        변환
                       </button>
                       <button
                         onClick={() => setActiveTab("target")}
@@ -1218,7 +2186,7 @@ export default function ETLJobPage() {
                           : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                           }`}
                       >
-                        Target
+                        타겟
                       </button>
                     </div>
 
@@ -1512,9 +2480,8 @@ export default function ETLJobPage() {
           {/* Info Panel */}
           <div className="bg-white border-t border-gray-200 px-6 py-3 text-sm text-gray-600">
             <p>
-              <span className="font-medium">Tip:</span> Drag nodes to reposition
-              • Connect nodes by dragging from the edge handles • Use scroll to
-              zoom • Right-click for more options
+              <span className="font-medium">안내:</span> 노드를 드래그해 위치를 조정하고,
+              노드 가장자리 핸들을 끌어 원본·변환·타겟을 연결할 수 있습니다.
             </p>
           </div>
         </>
@@ -1528,7 +2495,7 @@ export default function ETLJobPage() {
               <button
                 onClick={() => setShowLineageMenu(!showLineageMenu)}
                 className="w-12 h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-110"
-                title="Add new node"
+                title="노드 추가"
               >
                 <Plus className="w-6 h-6" />
               </button>
@@ -1545,7 +2512,7 @@ export default function ETLJobPage() {
                         : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                         }`}
                     >
-                      Transform
+                      변환
                     </button>
                     <button
                       onClick={() => setLineageActiveTab("target")}
@@ -1554,7 +2521,7 @@ export default function ETLJobPage() {
                         : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                         }`}
                     >
-                      Target
+                      타겟
                     </button>
                   </div>
 

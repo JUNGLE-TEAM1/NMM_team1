@@ -1,6 +1,6 @@
 import { memo, useState } from "react";
 import { Handle, Position } from "@xyflow/react";
-import { ChevronDown, ChevronUp, X } from "lucide-react";
+import { CheckCircle2, ChevronDown, ChevronUp, X, XCircle } from "lucide-react";
 
 /**
  * DatasetNode - 커스텀 ReactFlow 노드
@@ -22,6 +22,9 @@ const DatasetNode = ({ data, selected }) => {
     // ForwardRef components have $$typeof symbol, functions are direct components
     const IconComponent = data.icon && (typeof data.icon === 'function' || data.icon.$$typeof) ? data.icon : null;
     const hasSchema = data.schema && data.schema.length > 0;
+    const rules = data.rules || data.transformConfig?.rules || [];
+    const badges = data.badges || [];
+    const subtitle = data.subtitle || data.sourceName || data.s3Location || "";
 
     // 노드 카테고리별 설정
     const categoryConfig = {
@@ -55,7 +58,7 @@ const DatasetNode = ({ data, selected }) => {
             className={`
         bg-white rounded-lg shadow-md border transition-all duration-200 group relative
         ${selected ? "ring-2 ring-blue-500 shadow-lg" : "border-gray-200"}
-        min-w-[200px] max-w-[280px]
+        min-w-[220px] max-w-[300px]
       `}
         >
             {/* Delete Button (Top-Right, Hover Only) */}
@@ -103,6 +106,11 @@ const DatasetNode = ({ data, selected }) => {
                         <span className="text-sm font-semibold text-gray-900 truncate">
                             {data.label}
                         </span>
+                        {subtitle && (
+                            <span className="mt-0.5 max-w-[190px] truncate text-[11px] text-gray-500">
+                                {subtitle}
+                            </span>
+                        )}
                     </div>
 
                     {/* 토글 버튼 - 항상 표시 */}
@@ -121,6 +129,42 @@ const DatasetNode = ({ data, selected }) => {
                     </button>
                 </div>
             </div>
+
+            {(rules.length > 0 || badges.length > 0) && (
+                <div className="space-y-1.5 border-t border-gray-100 bg-white px-3 py-2">
+                    {rules.map((rule, index) => {
+                        const ruleLabel = typeof rule === "string" ? rule : rule.label;
+                        const tone = typeof rule === "string" ? "success" : rule.tone || "success";
+                        const RuleIcon = tone === "danger" ? XCircle : CheckCircle2;
+                        return (
+                            <div
+                                key={`${ruleLabel}-${index}`}
+                                className={`flex min-w-0 items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-medium ${
+                                    tone === "danger"
+                                        ? "bg-red-50 text-red-700"
+                                        : "bg-green-50 text-green-700"
+                                }`}
+                            >
+                                <RuleIcon className="h-3 w-3 shrink-0" />
+                                <span className="truncate">{ruleLabel}</span>
+                            </div>
+                        );
+                    })}
+
+                    {badges.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                            {badges.map((badge) => (
+                                <span
+                                    key={badge}
+                                    className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700"
+                                >
+                                    {badge}
+                                </span>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* 스키마 테이블 (토글 시 펼침) */}
             {schemaExpanded && (

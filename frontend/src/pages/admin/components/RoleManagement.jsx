@@ -119,10 +119,10 @@ export default function RoleManagement({ onEditRole, onAddRole }) {
                                 역할
                             </th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                데이터셋/실행 관리
+                                소스/구축/실행
                             </th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                SQL/AI
+                                AI Query
                             </th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 데이터셋

@@ -15,6 +15,8 @@ import ConnectionCreatePage from "./pages/sources/ConnectionCreatePage";
 import QueryPage from "./pages/query/QueryPage";
 import SqlLabPage from "./pages/query/SqlLabPage";
 import ExplorePage from "./pages/query/ExplorePage";
+import DashboardPage from "./pages/dashboard/DashboardPage";
+import DashboardInsightDetailPage from "./pages/dashboard/DashboardInsightDetailPage";
 import AdminPage from "./pages/admin/AdminPage";
 import QualityDashboard from "./pages/Quality/QualityDashboard";
 import CatalogPage from "./pages/catalog/CatalogPage";
@@ -168,6 +170,28 @@ function App() {
               <ProtectedRoute requireQueryAccess>
                 <MainLayout fullWidth={true}>
                   <ExplorePage />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute requireQueryAccess>
+                <MainLayout>
+                  <DashboardPage />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/dashboard/insights/:insightId"
+            element={
+              <ProtectedRoute requireQueryAccess>
+                <MainLayout fullWidth={true}>
+                  <DashboardInsightDetailPage />
                 </MainLayout>
               </ProtectedRoute>
             }

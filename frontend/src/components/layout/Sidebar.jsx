@@ -1,19 +1,18 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import {
-  Database,
   GitMerge,
   Search,
   LogOut,
   List,
-  ChevronLeft,
-  ChevronRight,
   Activity,
   Wrench,
+  Server,
+  LayoutDashboard,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import clsx from "clsx";
 import { CatalogSearch } from "../opensearch";
-import logo from "../../assets/icon.png";
+import logo from "../../assets/asklake-logo.png";
 
 export function Sidebar({ isCollapsed, onToggle }) {
   const navigate = useNavigate();
@@ -21,11 +20,13 @@ export function Sidebar({ isCollapsed, onToggle }) {
   const { logout, user } = useAuth();
 
   const allNavItems = [
-    { name: "데이터셋 관리", path: "/dataset", icon: Database, requiresDatasetEtlAccess: true },
-    { name: "실행 관리", path: "/etl", icon: List, requiresDatasetEtlAccess: true },
     { name: "데이터 카탈로그", path: "/catalog", icon: Activity },
-    { name: "SQL 분석", path: "/query", icon: Search, requiresQueryAiAccess: true },
-    { name: "사용자/권한 관리", path: "/admin", icon: Wrench, adminOnly: true },
+    { name: "데이터 소스", path: "/sources", icon: Server, requiresDatasetEtlAccess: true },
+    { name: "데이터 구축", path: "/dataset", icon: GitMerge, requiresDatasetEtlAccess: true },
+    { name: "실행/모니터링", path: "/etl", icon: List, requiresDatasetEtlAccess: true },
+    { name: "AI Query", path: "/query", icon: Search, requiresQueryAiAccess: true },
+    { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard, requiresQueryAiAccess: true },
+    { name: "사용자/권한", path: "/admin", icon: Wrench, adminOnly: true },
   ];
 
   // Filter items based on user permissions
@@ -68,24 +69,17 @@ export function Sidebar({ isCollapsed, onToggle }) {
       {/* Brand */}
       <div className="h-16 flex items-center px-4 border-b border-gray-200 overflow-hidden">
         <div className="flex items-center gap-2">
-          {/* Logo icon - fixed position */}
-          <div className="w-8 h-8 flex items-center justify-center shrink-0">
+          {/* Logo */}
+          <div className={clsx(
+            "h-9 flex items-center shrink-0 transition-all duration-300",
+            isCollapsed ? "w-10 overflow-hidden" : "w-36"
+          )}>
             <img
               src={logo}
-              alt="XFlow"
-              className="h-8 w-auto object-contain"
+              alt="AskLake"
+              className="h-9 w-auto max-w-none object-contain"
             />
           </div>
-
-          {/* Text label - fades out when collapsed */}
-          <span
-            className={clsx(
-              "text-xl font-bold text-gray-800 transition-all duration-300 whitespace-nowrap",
-              isCollapsed ? "opacity-0 w-0" : "opacity-100"
-            )}
-          >
-            xflow
-          </span>
         </div>
       </div>
 
@@ -93,7 +87,18 @@ export function Sidebar({ isCollapsed, onToggle }) {
       <nav className="flex-1 py-6 px-3 space-y-6 overflow-y-auto overflow-x-hidden">
         <div className="space-y-1">
           {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
+            const activePathGroups = {
+              "/catalog": ["/catalog"],
+              "/sources": ["/sources"],
+              "/dataset": ["/dataset", "/source", "/target", "/etl/visual"],
+              "/etl": ["/etl"],
+              "/query": ["/query"],
+              "/dashboard": ["/dashboard"],
+              "/admin": ["/admin"],
+            };
+            const isActive = (activePathGroups[item.path] || [item.path]).some(
+              (path) => location.pathname === path || location.pathname.startsWith(`${path}/`)
+            );
             return (
               <button
                 key={item.path}
