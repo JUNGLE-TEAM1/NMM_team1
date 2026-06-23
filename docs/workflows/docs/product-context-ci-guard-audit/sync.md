@@ -32,8 +32,8 @@ main 동기화와 integration readiness를 기록한다.
 - issue link: https://github.com/JUNGLE-TEAM1/NMM_team1/issues/49
 - issue creation result: created after PR handoff approval because this workspace started with `--no-issue`
 - PR closing keyword: Closes #49
-- pushed branch:
-- PR link:
-- merge status:
-- issue close status:
+- pushed branch: docs/product-context-ci-guard-audit
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/50
+- merge status: open
+- issue close status: open
 - deferral reason: local validation completed; push/PR is waiting on `Pre-PR Human Checkpoint` choice.
