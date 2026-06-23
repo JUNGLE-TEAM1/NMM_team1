@@ -37,6 +37,14 @@ AskLake의 Target MVP 대표 성공 시나리오는 `Trusted Dataset -> Query/As
 - [ ] 기존 M0~M5 report를 historical evidence로 유지하고 소급 수정하지 않는다.
 - [ ] 다음 구현 Phase가 하나로 제안되어 있다.
 
+### Modular Contract Baseline
+
+- [ ] `docs/03`이 Target MVP workstream별 shared contract와 owner를 정의한다.
+- [ ] 각 contract에 mock/fake adapter 허용 범위가 있다.
+- [ ] `docs/08`이 R1~R7을 선형 queue가 아니라 workstream alias와 integration spine으로 해석한다.
+- [ ] `.milestones/target-mvp/manifest.yaml` 또는 동등한 manifest가 workstream scope, contract, integration checkpoint를 기록한다.
+- [ ] 첫 병렬 wave와 integration checkpoint가 하나 이상 제안되어 있다.
+
 ### Trusted Dataset
 
 - [ ] dataset은 `Draft`, `Verifying`, `Trusted`, `Degraded`, `Blocked`, `Archived` 상태를 구분한다.
@@ -96,15 +104,25 @@ AskLake의 Target MVP 대표 성공 시나리오는 `Trusted Dataset -> Query/As
 - [ ] 알려진 제한 사항을 문서화했다.
 - [ ] 최신 report가 evidence와 acceptance criteria를 연결한다.
 
-## 7) Target MVP 마일스톤 수용 체크포인트
+## 7) Target MVP Workstream / Integration 체크포인트
 
-| 마일스톤 | 수용 체크포인트 |
+| Checkpoint | 수용 체크포인트 |
 | --- | --- |
 | R0. Product Rebaseline | current baseline과 Target MVP가 문서에서 분리되고 하네스 검증이 통과한다. |
-| R1. Trust State Model / Publish Gate | dataset trust status와 gate 결과가 API/UI에서 확인된다. |
-| R2. Control Plane Job State | job/task 상태, event, audit 기초가 중복 없이 기록된다. |
-| R3. Source 확장 | 선택한 source 1개가 연결 성공/실패와 schema discovery를 제공한다. |
-| R4. Query와 권한 Preflight | 허용/마스킹/차단 query가 정책과 audit evidence를 남긴다. |
-| R5. Ask와 Evidence | Ask 결과가 evidence 또는 보류 사유를 제공하고 권한 거부를 통과한다. |
-| R6. Operate와 Recovery | schema drift 또는 quality failure 후 영향 분석과 복구 상태 전이가 검증된다. |
-| R7. Packaging 안정화 | local/container 또는 dev-lite packaging smoke와 secret/config 검증이 통과한다. |
+| R0.5. Modular Contract Baseline | shared contract, owner, mock/fake boundary, integration spine이 문서와 manifest에 기록된다. |
+| Spine 1. Trusted Dataset Draft | source에서 dataset draft가 생성되고 trust gate reason을 가진다. |
+| Spine 2. Governed Query | Trusted 또는 Blocked 상태와 policy decision으로 query 허용/차단을 검증한다. |
+| Spine 3. Evidence & Recovery | Ask/Evidence와 Recovery가 같은 dataset/policy/audit contract를 공유한다. |
+| Release Checkpoint | local/container 또는 dev-lite packaging smoke와 secret/config 검증이 통과한다. |
+
+R1~R7은 아래 workstream alias로 유지한다.
+
+| Alias | Workstream | 수용 체크포인트 |
+| --- | --- | --- |
+| R1 | Catalog / Trust | dataset trust status와 gate 결과가 API/UI에서 확인된다. |
+| R2 | Job / Orchestrator | job/task 상태, event, audit 기초가 중복 없이 기록된다. |
+| R3 | Source Connector | 선택한 source 1개가 연결 성공/실패와 schema discovery를 제공한다. |
+| R4 | Query / Policy | 허용/마스킹/차단 query가 정책과 audit evidence를 남긴다. |
+| R5 | Ask / Evidence | Ask 결과가 evidence 또는 보류 사유를 제공하고 권한 거부를 통과한다. |
+| R6 | Recovery / Operate | schema drift 또는 quality failure 후 영향 분석과 복구 상태 전이가 검증된다. |
+| R7 | Packaging | local/container 또는 dev-lite packaging smoke와 secret/config 검증이 통과한다. |

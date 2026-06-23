@@ -58,6 +58,26 @@
 | Verification method | Target R1/R4/R5 manual verification에서 trust status별 Query/Ask 후보 여부 확인 |
 | Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07` |
 
+### Contract Baseline 없이 병렬 Workstream이 시작되는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | Target MVP 병렬 workstream은 shared contract, owner, mock/fake boundary, integration checkpoint 없이 시작하지 않는다. |
+| Failure condition | Catalog/Trust, Query/Policy, Ask/Evidence 같은 workstream이 `DatasetStatus`, `PolicyDecision`, `EvidenceItem` 등 공통 계약을 각자 다르게 정의한다. |
+| Expected behavior | R0.5 `Modular Contract Baseline`에서 `docs/03` shared contract와 `.milestones/target-mvp/manifest.yaml`을 먼저 확인하고, 필요한 계약 변경은 manifest 또는 Source of Truth에 반영한다. |
+| Verification method | `docs/03`, `docs/08`, `.milestones/target-mvp/manifest.yaml`, branch workspace `shared-docs.md`를 확인한다. |
+| Related docs/interface/Phase | `docs/03`, `docs/08`, `docs/17`, `.milestones/target-mvp/manifest.yaml` |
+
+### Mock/Fake Boundary를 넘어 실제 접근으로 진행되는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | mock/fake로 표시된 workstream은 사람 승인과 Decision Option Brief 없이 실제 권한 엔진, 실제 데이터 접근, 외부 LLM, Trino, cloud resource, secret을 사용하지 않는다. |
+| Failure condition | Query/Policy mock, Ask/Evidence deterministic route, Recovery fixture가 실제 provider 또는 민감 데이터 path를 사용하면서 `docs/14` 결정과 workstream `decisions.md` 기록이 없다. |
+| Expected behavior | workstream을 중단하고 mock/fake boundary 해제를 별도 결정으로 올린다. 승인 전에는 fixture, deterministic route, local fake provider만 사용한다. |
+| Verification method | `.milestones/target-mvp/manifest.yaml`, workstream `handoff.md`, branch `decisions.md`, secret/config diff를 확인한다. |
+| Related docs/interface/Phase | `docs/03`, `docs/08`, `docs/14`, `docs/17`, `.milestones/target-mvp/manifest.yaml` |
+
 ### 권한 없는 데이터가 SQL/RAG/Prompt에 들어가는 경우
 
 | 항목 | 내용 |

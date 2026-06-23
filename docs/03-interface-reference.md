@@ -145,7 +145,52 @@ Target MVP는 아래 family를 순차적으로 확정한다.
 | Admin / Audit API | user, role, config, audit search | `AuditEvent`, `InvestigationCase` | target R4+ |
 | Deployment / Health API | module health, readiness, config validation | `ModuleHealth`, `DeploymentProfile` | target R7 |
 
-## 6) Target 상태 모델
+## 6) Modular Contract Baseline
+
+R0.5 `Modular Contract Baseline`은 Target MVP를 병렬 workstream으로 구현하기 위한 최소 공유 계약이다.
+이 계약은 상세 endpoint나 저장소 schema를 고정하지 않고, module 간 mock/fake adapter와 integration spine이 같은 언어를 쓰게 하는 기준이다.
+
+| Contract | Owner Workstream | 최소 필드/상태 | Mock/Fake Boundary |
+| --- | --- | --- | --- |
+| `Dataset` | Catalog / Trust | `id`, `name`, `source_ref`, `schema_version`, `status`, `owner`, `freshness`, `trust_gate_result_id` | Source/Job workstream은 fixture dataset으로 대체 가능 |
+| `DatasetStatus` | Catalog / Trust | `Draft`, `Verifying`, `Trusted`, `Degraded`, `Blocked`, `Archived` | Query/Ask는 status fixture로 policy path를 검증 가능 |
+| `TrustGateResult` | Catalog / Trust | `dataset_id`, `status`, `required_gates`, `passed_gates`, `failed_gates`, `reasons`, `evaluated_at` | quality/PII/policy engine은 placeholder result 허용 |
+| `SourceConnection` | Source Connector | `id`, `type`, `display_name`, `secret_ref`, `connection_status`, `last_checked_at` | 실제 RDB/API 대신 local fixture connector 허용 |
+| `SchemaSnapshot` | Source Connector | `source_id`, `dataset_id`, `columns`, `sample_ref`, `row_count`, `captured_at` | sample rows는 bounded preview fixture 허용 |
+| `JobRun` | Job / Orchestrator | `id`, `job_type`, `status`, `dataset_id`, `idempotency_key`, `started_at`, `finished_at` | synchronous in-memory runner 허용 |
+| `TaskRun` | Job / Orchestrator | `id`, `job_run_id`, `task_type`, `status`, `attempt`, `error_summary` | single-task fixture 허용 |
+| `AuditEvent` | Job / Orchestrator | `id`, `actor`, `action`, `resource_ref`, `policy_decision_id`, `created_at` | append-only local event log 허용 |
+| `PolicyDecision` | Query / Policy | `id`, `actor`, `action`, `resource_ref`, `decision`, `masking`, `reason`, `decided_at` | allow/deny/mask rule fixture 허용 |
+| `QueryExecution` | Query / Policy | `id`, `dataset_id`, `status`, `sql_or_plan`, `policy_decision_id`, `evidence_refs` | local query fake 또는 dry-run plan 허용 |
+| `EvidenceItem` | Ask / Evidence | `id`, `type`, `resource_ref`, `summary`, `freshness`, `policy_decision_id`, `trace_ref` | static evidence fixture 허용 |
+| `RetrievalTrace` | Ask / Evidence | `id`, `question`, `route`, `retrieved_refs`, `blocked_refs`, `policy_decision_id` | external LLM 없이 deterministic route fixture 허용 |
+| `AssetImpact` | Recovery / Operate | `id`, `source_event_ref`, `affected_assets`, `severity`, `reason` | schema drift/quality failure fixture 허용 |
+| `RecoveryAction` | Recovery / Operate | `id`, `type`, `target_ref`, `range`, `idempotency_key`, `status` | retry/rerun/backfill simulation 허용 |
+| `ModuleHealth` | Packaging | `module`, `status`, `checks`, `config_warnings`, `checked_at` | local/container health fixture 허용 |
+
+### Workstream Ownership
+
+| Workstream | Owns | Must Not Own |
+| --- | --- | --- |
+| Catalog / Trust | dataset identity, trust status, publish gate result | source connector implementation, query execution engine |
+| Source Connector | connection config, schema discovery, source preview | trust decision, policy decision |
+| Job / Orchestrator | job/task status, idempotency, audit event write path | UI-only evidence rendering, external scheduler lock-in |
+| Query / Policy | policy preflight, query execution contract, masking/deny result | LLM answer generation, trust gate calculation |
+| Ask / Evidence | route decision, evidence assembly, retrieval trace | raw unauthorized data access, source ingestion |
+| Recovery / Operate | asset impact, incident/recovery action, retry/backfill record | source connector credentials, final policy override |
+| Packaging | health/config/secret validation profile | product trust semantics |
+
+### Integration Spine Contracts
+
+| Checkpoint | Required Contracts |
+| --- | --- |
+| Spine 0. Contract Baseline | all contracts in this section are named with owner and mock boundary |
+| Spine 1. Trusted Dataset Draft | `SourceConnection`, `SchemaSnapshot`, `Dataset`, `DatasetStatus`, `TrustGateResult` |
+| Spine 2. Governed Query | `Dataset`, `DatasetStatus`, `PolicyDecision`, `QueryExecution`, `AuditEvent` |
+| Spine 3. Evidence & Recovery | `EvidenceItem`, `RetrievalTrace`, `AssetImpact`, `RecoveryAction`, `AuditEvent` |
+| Release Checkpoint | `ModuleHealth`, deployment profile, secret/config validation |
+
+## 7) Target 상태 모델
 
 ### Pipeline Version
 
@@ -198,7 +243,7 @@ Ready/Stale/Failed -> Disabled
 
 Dataset이 `Blocked`되거나 policy가 강화되면 연결된 index는 즉시 `Stale` 또는 `Disabled`가 되어야 한다.
 
-## 7) Target 핵심 데이터 관계
+## 8) Target 핵심 데이터 관계
 
 ```mermaid
 flowchart LR
@@ -224,7 +269,7 @@ flowchart LR
     ANSWER --> AUDIT
 ```
 
-## 8) 주요 이벤트
+## 9) 주요 이벤트
 
 | Event | 목적 |
 | --- | --- |
@@ -247,7 +292,7 @@ flowchart LR
 이벤트는 중복 전달될 수 있다고 가정한다.
 소비자는 event id와 asset version을 이용해 멱등하게 처리하고, 중요 상태 변경은 Metadata DB 현재 상태로 재검증한다.
 
-## 9) 내부 도구와 외부 연동
+## 10) 내부 도구와 외부 연동
 
 ### GitHub PR Body Closing Keyword
 
@@ -264,9 +309,10 @@ flowchart LR
 - Output: Notion database and GitHub Project state updates
 - Timeout/retry/fallback: GitHub Actions 로그와 `Sync Error` 필드를 확인한다.
 
-## 10) 열린 이슈
+## 11) 열린 이슈
 
 - Target R1에서 `TrustGateResult`를 실제 품질/PII 엔진으로 계산할지, 먼저 manual/placeholder gate로 둘지 결정해야 한다.
 - Target R3 첫 확장 source는 PostgreSQL 또는 REST API 중 하나만 선택한다.
 - Target R4 query engine은 local-first 경로와 Trino 도입 시점을 결정해야 한다.
 - Target R5 Ask/Evidence는 외부 LLM 없이도 core policy/evidence 흐름을 검증할 수 있어야 한다.
+- R0.5 이후 R1~R7은 순서형 queue가 아니라 workstream alias로 유지한다.

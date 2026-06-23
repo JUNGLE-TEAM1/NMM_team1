@@ -64,6 +64,15 @@
 
 Target MVP 기능이 구현될 때 아래 경로를 단계별로 실제 manual verification 문서로 승격한다.
 
+### Modular Contract Baseline 점검
+
+1. `docs/03-interface-reference.md`에 `Dataset`, `TrustGateResult`, `PolicyDecision`, `EvidenceItem`, `AuditEvent` 같은 shared contract가 있는지 확인한다.
+2. 각 contract가 owner workstream과 mock/fake boundary를 가진지 확인한다.
+3. `docs/08-development-workflow.md`가 R1~R7을 workstream alias로 보존하고, 실행은 Workstream Pool과 Integration Spine으로 안내하는지 확인한다.
+4. `.milestones/target-mvp/manifest.yaml`이 workstream scope, contracts, integration checkpoint를 포함하는지 확인한다.
+5. Query/Ask workstream이 실제 Trust 구현 전에는 mock/fake policy boundary 안에서만 진행되도록 기록되어 있는지 확인한다.
+6. 첫 병렬 wave와 integration checkpoint가 `docs/05` acceptance checkpoint와 연결되는지 확인한다.
+
 ### Trust Gate 점검
 
 1. source를 등록하고 schema discovery 결과를 확인한다.
