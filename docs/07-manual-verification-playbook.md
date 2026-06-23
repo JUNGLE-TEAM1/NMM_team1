@@ -5,6 +5,7 @@
 ## 목적
 
 - 자동 테스트만으로 충분히 확인하기 어려운 demo, UX, integration, 사람-facing flow를 검증한다.
+- current baseline과 Target MVP 검증 경로를 구분한다.
 - 수동 검증 증거를 Phase report에 기록한다.
 - 실패한 수동 검증을 `docs/06` failure scenario 또는 현재 Phase TODO와 연결한다.
 
@@ -34,41 +35,72 @@
 - [실패 시나리오](manual-verification/06-failure-scenarios.md)
 - [MVP 데모 스크립트](manual-verification/07-mvp-demo-script.md)
 
-## AskLake 최소 수동 점검
+## AskLake 문서 Rebaseline 수동 점검
 
-1. `README.md`가 AskLake 프로젝트 작업을 설명하는지 확인한다.
-2. `AGENTS.md`의 Source of Truth, context loading, reporting rule이 이 저장소 기준인지 확인한다.
-3. `docs/01-product-planning.md`에 현재 MVP 질문 또는 요구사항이 기록되어 있는지 확인한다.
-4. `docs/08-development-workflow.md`의 다음 Phase가 project bootstrap 또는 실제 project feature인지 확인한다.
-5. `docs/workflows/`에 실제 branch와 연결되지 않은 stale example workspace가 없는지 확인한다.
-6. PR handoff 전에 linked GitHub issue가 workspace `sync.md`에 기록되어 있는지 확인한다.
+1. `README.md`가 AskLake를 Trusted Data & AI Platform 방향으로 설명하는지 확인한다.
+2. `README.md`와 `docs/01-product-planning.md`가 current implementation baseline을 제품 목표와 구분하는지 확인한다.
+3. `docs/01-product-planning.md`에 Target MVP가 `Trusted Dataset -> Query/Ask -> Evidence -> Recovery` 신뢰 루프로 기록되어 있는지 확인한다.
+4. `docs/02-architecture.md`에 current baseline과 target architecture가 분리되어 있는지 확인한다.
+5. `docs/03-interface-reference.md`에 baseline contract와 Target MVP interface family가 분리되어 있는지 확인한다.
+6. `docs/05`, `docs/06`, `docs/07`, `docs/08`이 같은 milestone/phase 이름을 사용하는지 확인한다.
+7. 과거 M0~M5 report가 historical evidence로만 남고 새 기준에 맞춰 소급 수정되지 않았는지 확인한다.
 
-## Container App Skeleton 수동 점검
+## Current Baseline 수동 점검
 
 1. `scripts/smoke-container-app.sh`를 실행한다.
 2. 필요하면 `BACKEND_PORT=18000 FRONTEND_PORT=13000 COMPOSE_PROJECT_NAME=asklake_m2_visual docker compose -p asklake_m2_visual up -d`로 앱을 띄운다.
 3. `curl -fsS http://localhost:18000/health`가 `status: ok` contract를 반환하는지 확인한다.
 4. `curl -fsS http://localhost:13000/`가 AskLake frontend HTML을 반환하는지 확인한다.
-5. 확인 뒤 `docker compose -p asklake_m2_visual down --remove-orphans`로 내린다.
+5. 샘플 CSV source를 등록한다.
+6. catalog detail에서 schema, row count, sample rows, ready status를 확인한다.
+7. `select_fields` 컬럼 선택 기반 최소 pipeline을 만든다.
+8. pipeline run을 실행한다.
+9. run status가 success 또는 failed로 명확히 표시되는지 확인한다.
+10. success인 경우 catalog에서 schema, row count, sample 또는 저장 위치를 확인한다.
+11. 실패 케이스 하나를 실행해 failed 상태와 오류 메시지가 표시되는지 확인한다.
+12. 확인 뒤 필요한 경우 docker compose를 내린다.
 
-## Source Catalog 수동 점검
+## Target MVP 수동 점검 후보
 
-1. `docker compose up`으로 backend/frontend를 실행한다.
-2. frontend에서 `sample_orders`, `samples/orders.csv`를 등록한다.
-3. catalog detail에서 schema, row count, sample rows, ready status를 확인한다.
-4. `curl -fsS http://localhost:8000/api/catalog/datasets`로 API 결과를 확인한다.
-5. 없는 path로 source 등록을 시도해 ready dataset으로 저장되지 않는지 확인한다.
+Target MVP 기능이 구현될 때 아래 경로를 단계별로 실제 manual verification 문서로 승격한다.
 
-## MVP 데이터 파이프라인 수동 점검
+### Trust Gate 점검
 
-1. `docs/manual-verification/07-mvp-demo-script.md`의 사전 조건을 확인한다.
-2. local app을 실행하고 frontend와 backend health가 열리는지 확인한다.
-3. 샘플 데이터 소스를 등록한다.
-4. `select_fields` 컬럼 선택 기반 최소 pipeline을 만든다.
-5. pipeline run을 실행한다.
-6. run status가 success 또는 failed로 명확히 표시되는지 확인한다.
-7. success인 경우 catalog에서 schema, row count, sample 또는 저장 위치를 확인한다.
-8. 실패 케이스 하나를 실행해 failed 상태와 오류 메시지가 표시되는지 확인한다.
+1. source를 등록하고 schema discovery 결과를 확인한다.
+2. catalog draft가 생성되는지 확인한다.
+3. dataset status가 `Draft` 또는 `Verifying`으로 시작하는지 확인한다.
+4. quality, PII, owner, access policy, approval gate 중 남은 조건이 표시되는지 확인한다.
+5. 조건 미충족 dataset이 일반 Query/Ask 후보로 노출되지 않는지 확인한다.
+6. 모든 필수 조건이 충족된 뒤에만 `Trusted`로 전환되는지 확인한다.
+7. gate 실패 시 `Blocked` 또는 제한 상태와 이유가 표시되는지 확인한다.
+
+### Query / Access 점검
+
+1. `Trusted` dataset에서 Query를 실행한다.
+2. Query 실행 전 policy preflight 결과를 확인한다.
+3. 권한 없는 column 또는 dataset으로 Query를 시도한다.
+4. 차단된 자원, 필요한 권한, masking 대안, access request 경로가 표시되는지 확인한다.
+5. query execution 결과가 audit event와 연결되는지 확인한다.
+
+### Ask / Evidence 점검
+
+1. 단일 dataset 수치 질문을 Ask에 입력한다.
+2. 여러 dataset join 질문을 Ask에 입력한다.
+3. 문서 근거가 필요한 질문을 Ask에 입력한다.
+4. 근거 없는 질문 또는 지원하지 않는 예측 질문을 입력한다.
+5. 권한 없는 데이터가 필요한 질문을 입력한다.
+6. 답변에 SQL, dataset, metric, document chunk, freshness, lineage, retrieval trace evidence가 연결되는지 확인한다.
+7. 근거 부족 또는 권한 거부 케이스가 confident answer로 표시되지 않는지 확인한다.
+
+### Recovery 점검
+
+1. schema drift 또는 quality failure sample을 준비한다.
+2. 실패한 task와 영향을 받는 dataset/query/dashboard/AI index가 표시되는지 확인한다.
+3. dataset이 `Degraded` 또는 `Blocked`로 전환되는지 확인한다.
+4. retry/rerun/backfill 범위와 idempotency 기준을 확인한다.
+5. 복구 후 quality/freshness를 재검증하는지 확인한다.
+6. 중복 또는 누락 없이 상태가 정상화되는지 확인한다.
+7. incident, audit event, notification 기록이 남는지 확인한다.
 
 ## Phase Report 기록 형식
 

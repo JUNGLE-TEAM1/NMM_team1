@@ -5,6 +5,7 @@
 ## 목적
 
 - 이미 구현되었거나 합의된 동작을 보호한다.
+- current baseline과 Target MVP가 섞여 문서/구현 맥락을 흐리는 것을 막는다.
 - 실패와 fallback의 기대 동작을 정의한다.
 - 회귀/실패 확인을 manual verification과 Phase report에 연결한다.
 
@@ -24,38 +25,68 @@
 | Must not break | 이 저장소는 AskLake 프로젝트 운영 문서와 검증 하네스를 포함한다. |
 | Failure condition | 핵심 문서가 다시 “다른 프로젝트에 복사하는 패키지”로 설명된다. |
 | Expected behavior | README, AGENTS, product planning, workflow docs가 현재 프로젝트 운영 기준을 설명한다. |
-| Verification method | README, AGENTS, `docs/01`, `docs/08`을 수동 검토하고 프로젝트 외부 적용 안내나 예시 프로젝트 설명이 핵심 문서에 남아 있지 않은지 확인한다. |
+| Verification method | README, AGENTS, `docs/01`, `docs/08`을 수동 검토한다. |
 | Related docs/interface/Phase | `README.md`, `AGENTS.md`, `docs/01`, `docs/08` |
 
-### Branch Workspace 깨끗한 시작
+### Current Baseline이 제품 목표처럼 남는 경우
 
 | 항목 | 내용 |
 | --- | --- |
-| Must not break | `docs/workflows/`는 실제 작업 workspace만 담고, 초기 적용 상태에서는 예시 workspace 없이 시작할 수 있다. |
-| Failure condition | 시뮬레이션 workspace가 실제 프로젝트 작업처럼 남아 혼동을 만든다. |
-| Expected behavior | `docs/workflows/README.md`만 기본으로 남고, 실제 작업 시 `scripts/start-workflow.sh`로 workspace를 만든다. |
-| Verification method | `find docs/workflows -mindepth 2 -maxdepth 2 -type d` |
-| Related docs/interface/Phase | `docs/workflows/README.md`, `scripts/start-workflow.sh` |
+| Must not break | 기존 CSV/local pipeline MVP는 `Current implementation baseline`으로만 남고 Target MVP를 대체하지 않는다. |
+| Failure condition | README 또는 `docs/01`이 AskLake의 제품 목표를 여전히 “경량 데이터 파이프라인 MVP”로 설명한다. |
+| Expected behavior | 제품 방향은 Trusted Data & AI Platform이고, baseline은 현재 구현 상태와 historical evidence로 구분한다. |
+| Verification method | `rg -n "경량 데이터 파이프라인 MVP|Current implementation baseline|Trusted Data" README.md docs/01-product-planning.md` |
+| Related docs/interface/Phase | `README.md`, `docs/01`, `docs/reports/` |
 
-### Linked Issue PR 자동 종료
-
-| 항목 | 내용 |
-| --- | --- |
-| Must not break | linked GitHub issue가 있는 PR은 merge 후 issue가 자동 close될 수 있어야 한다. |
-| Failure condition | `sync.md`나 PR body에 `Closes #<issue-number>` 또는 동등한 closing keyword가 없다. |
-| Expected behavior | PR 준비 전 linked issue와 closing keyword를 확인한다. |
-| Verification method | `scripts/status-workflow.sh <workspace>`와 PR template 확인 |
-| Related docs/interface/Phase | `docs/03`, `docs/04`, `.github/pull_request_template.md` |
-
-### MVP 범위 경계
+### Target MVP 범위 경계
 
 | 항목 | 내용 |
 | --- | --- |
-| Must not break | XFlow 참고 기능이 MVP에 무제한으로 들어오지 않는다. |
-| Failure condition | Airflow, Spark, Kafka, OpenSearch, Trino, Bedrock 같은 데이터 플랫폼 확장 기능이 첫 MVP 필수 조건으로 추가된다. |
-| Expected behavior | CI/CD, Docker, Kubernetes, AWS foundation은 선행하되, 제품 MVP 기능은 데이터 소스 등록, 최소 변환, 실행, 결과 확인으로 제한한다. |
-| Verification method | `docs/01`, `docs/02`, `docs/08`에서 Non-MVP와 milestone 범위를 확인한다. |
-| Related docs/interface/Phase | `docs/01`, `docs/02`, `docs/08` |
+| Must not break | Target MVP는 `Trusted Dataset -> Query/Ask -> Evidence -> Recovery` 신뢰 루프를 증명하며, 연결되지 않는 기능 확장을 우선하지 않는다. |
+| Failure condition | connector 수, dashboard 고도화, Kafka/Flink/전용 Vector DB/외부 Airflow 호환이 Trust/Evidence/Recovery보다 먼저 필수화된다. |
+| Expected behavior | post-MVP 또는 Decision 이후 범위를 명확히 분리하고, 다음 Phase는 하나의 검증 가능한 신뢰 루프 조각만 다룬다. |
+| Verification method | `docs/01`, `docs/05`, `docs/08`에서 Target MVP와 excluded/post-MVP 범위를 확인한다. |
+| Related docs/interface/Phase | `docs/01`, `docs/05`, `docs/08` |
+
+### Trust Gate 없이 Query/Ask가 진행되는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | `Trusted`가 아닌 dataset은 일반 Query/Ask 기본 후보가 되지 않는다. |
+| Failure condition | `Draft`, `Verifying`, `Blocked` dataset이 경고 없이 Query/Ask 후보로 사용된다. |
+| Expected behavior | Trust Gate 상태와 남은 조건을 표시하고, `Trusted` 조건을 통과하기 전에는 소비를 막거나 명확한 제한 상태로 처리한다. |
+| Verification method | Target R1/R4/R5 manual verification에서 trust status별 Query/Ask 후보 여부 확인 |
+| Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07` |
+
+### 권한 없는 데이터가 SQL/RAG/Prompt에 들어가는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | 권한 없는 dataset/column/document는 SQL 실행, RAG retrieval, prompt assembly, final answer 어느 단계에도 들어가지 않는다. |
+| Failure condition | 최종 답변에서만 가리거나, retrieval/prompt 단계에 이미 민감 데이터가 들어간다. |
+| Expected behavior | policy preflight, retrieval filtering, prompt redaction, audit event가 모두 적용된다. |
+| Verification method | denied dataset/column/document fixture로 Query와 Ask를 실행하고 trace/audit 확인 |
+| Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07`, `docs/12` |
+
+### Evidence 없는 AI 답변이 성공처럼 표시되는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | Ask 결과는 evidence 또는 보류 사유를 가져야 한다. |
+| Failure condition | SQL, dataset, metric, document chunk, freshness, lineage, retrieval trace 없이 confident answer가 표시된다. |
+| Expected behavior | evidence 부족 시 `Insufficient Evidence` 또는 보류 상태로 표시하고 필요한 다음 행동을 안내한다. |
+| Verification method | 근거 없는 질문, 모호한 KPI, 권한 거부 질문으로 Ask path 확인 |
+| Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07` |
+
+### Recovery/Backfill이 잘못된 Trusted 상태를 만드는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | retry/rerun/backfill은 중복, 누락, 검증 없는 `Trusted` 복구를 만들지 않는다. |
+| Failure condition | backfill 후 quality/freshness 검증 없이 `Trusted`로 돌아가거나 같은 구간이 중복 적재된다. |
+| Expected behavior | 대상 구간, idempotency key, output partition, quality result를 기록하고 검증 후 상태를 복구한다. |
+| Verification method | schema drift 또는 실패 sample에서 recovery manual verification 실행 |
+| Related docs/interface/Phase | `docs/02`, `docs/03`, `docs/05`, `docs/07` |
 
 ### 파이프라인 결과 무결성
 
@@ -109,32 +140,12 @@
 | Verification method | workspace `quality.md`, `scripts/status-workflow.sh <workspace>` |
 | Related docs/interface/Phase | `docs/04`, `docs/12`, workspace `quality.md` |
 
-### AWS resource가 승인 없이 생성되는 경우
-
-| 항목 | 내용 |
-| --- | --- |
-| Must not break | 비용이 발생하는 AWS resource는 승인 gate 없이 생성되지 않는다. |
-| Failure condition | EKS, ECR, S3, RDS, OpenSearch, Bedrock 등 비용/권한 영향이 있는 resource를 확인 없이 만든다. |
-| Expected behavior | IaC/manifest/CI 설정은 준비할 수 있지만 실제 생성은 비용/권한/rollback 확인 뒤 진행한다. |
-| Verification method | `docs/02` env/operations와 `docs/08` milestone scope 확인 |
-| Related docs/interface/Phase | `docs/01`, `docs/02`, `docs/08` |
-
-### 장기 로드맵이 MVP를 덮어쓰는 경우
-
-| 항목 | 내용 |
-| --- | --- |
-| Must not break | M5 이후 장기 로드맵이 M1~M4 MVP 완료 기준을 키우지 않는다. |
-| Failure condition | MVP 완료 기준에 Kafka, Spark, Airflow, OpenSearch, Trino, Bedrock 같은 확장 기능이 필수로 들어간다. |
-| Expected behavior | 인프라 foundation은 먼저 만들되, XFlow급 데이터 플랫폼 기능은 M6 이후 milestone으로 분리한다. |
-| Verification method | `docs/01`, `docs/05`, `docs/08`에서 MVP와 장기 로드맵 섹션이 분리되어 있는지 확인한다. |
-| Related docs/interface/Phase | `docs/01`, `docs/05`, `docs/08` |
-
 ### 고비용 인프라 승인 누락
 
 | 항목 | 내용 |
 | --- | --- |
-| Must not break | 비용이 발생하거나 운영 부담이 큰 인프라는 승인 gate 없이 필수화되지 않는다. |
-| Failure condition | AWS, EKS, S3, Bedrock, OpenSearch, Trino, Kafka, Spark, Airflow를 승인 없이 기본 실행 경로에 넣는다. |
+| Must not break | 비용이 발생하거나 운영 부담이 큰 인프라는 approval gate 없이 필수화되지 않는다. |
+| Failure condition | AWS, EKS, S3, RDS, Bedrock, OpenSearch, Trino, Kafka, Spark, Airflow를 승인 없이 기본 실행 경로에 넣거나 실제 resource를 만든다. |
 | Expected behavior | 각 고비용 기능은 container/local smoke 대체 경로와 option brief를 가진 뒤 승인된 Phase에서만 구현한다. |
 | Verification method | workspace `decisions.md`, `shared-docs.md`, `quality.md`, 관련 Phase report 확인 |
 | Related docs/interface/Phase | `docs/02`, `docs/08`, workspace `decisions.md` |
@@ -158,6 +169,9 @@
 - background job 실패
 - auth/access-control 실패
 - file 또는 input validation 실패
+- policy decision 누락
+- retrieval/index stale
+- audit event 저장 실패
 
 ## Phase Report 최소 형식
 
