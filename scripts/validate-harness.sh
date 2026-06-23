@@ -281,6 +281,15 @@ require_file() {
   [[ -f "$file" ]] || fail "Missing file: ${file}"
 }
 
+require_pattern() {
+  local file="$1"
+  local pattern="$2"
+  local description="$3"
+  if ! rg -q "$pattern" "$file"; then
+    fail "${description}: ${file}"
+  fi
+}
+
 require_file "AGENTS.md"
 require_file "docs/00-layer-map.md"
 require_file "docs/08-development-workflow.md"
@@ -786,6 +795,39 @@ fi
 
 if ! rg -q "PR이 이미 열려 있습니다.*1 PR 진행\\(merge, finalize, issue close 확인, automatic branch cleanup\\).*2 추가 보강.*3 보류.*4 다음 Phase" scripts/status-workflow.sh; then
   fail "scripts/status-workflow.sh must recommend existing PR choices before merge/finalize"
+fi
+
+for file in \
+  README.md \
+  docs/01-product-planning.md \
+  docs/02-architecture.md \
+  docs/03-interface-reference.md \
+  docs/05-acceptance-scenarios-and-checklist.md \
+  docs/06-regression-and-failure-scenarios.md \
+  docs/07-manual-verification-playbook.md \
+  docs/08-development-workflow.md; do
+  require_pattern "$file" "Current implementation baseline|Current Baseline|current baseline|현재 구현 baseline" "Product context guard requires current baseline separation"
+  require_pattern "$file" "Target MVP" "Product context guard requires Target MVP context"
+done
+
+for file in \
+  README.md \
+  docs/01-product-planning.md \
+  docs/05-acceptance-scenarios-and-checklist.md \
+  docs/08-development-workflow.md; do
+  require_pattern "$file" "Trusted Dataset -> Query/Ask -> Evidence -> Recovery" "Product context guard requires the Target MVP trust loop"
+done
+
+if ! rg -q "Current Baseline이 제품 목표처럼 남는 경우" docs/06-regression-and-failure-scenarios.md; then
+  fail "docs/06-regression-and-failure-scenarios.md must guard against current baseline becoming the product goal"
+fi
+
+if ! rg -q "Trust Gate 없이 Query/Ask가 진행되는 경우" docs/06-regression-and-failure-scenarios.md; then
+  fail "docs/06-regression-and-failure-scenarios.md must guard against Query/Ask before Trust Gate"
+fi
+
+if ! rg -q "feature/trust-state-model" docs/08-development-workflow.md; then
+  fail "docs/08-development-workflow.md must keep the next Target MVP implementation phase anchored on feature/trust-state-model"
 fi
 
 if ! rg -q "Existing Codebase Adoption|baseline \\+ next-change|docs/16-existing-codebase-adoption.md" README.md; then
