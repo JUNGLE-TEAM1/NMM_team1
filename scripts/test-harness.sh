@@ -525,6 +525,24 @@ case_existing_pr_status_does_not_recommend_auto_pr() {
   )
 }
 
+case_complete_pr_ready_status_requires_pre_pr_checkpoint() {
+  local repo="${tmp_root}/pre-pr-checkpoint-status"
+  copy_repo "$repo"
+  (
+    cd "$repo"
+    local base
+    base="$(base_commit)"
+    local workspace="docs/workflows/test/harness-pre-pr-checkpoint"
+    write_common_workspace "$workspace" "complete" "passed" "accepted" "$base"
+    git add "$workspace"
+    git commit -q -m "pre pr checkpoint status fixture"
+    scripts/status-workflow.sh "$workspace" > /tmp/harness-pre-pr-checkpoint-status.out
+    rg -q "Pre-PR Human Checkpoint" /tmp/harness-pre-pr-checkpoint-status.out
+    rg -q "로컬 완료로 보류" /tmp/harness-pre-pr-checkpoint-status.out
+    ! rg -q "자동 PR 생성 대상입니다" /tmp/harness-pre-pr-checkpoint-status.out
+  )
+}
+
 case_prepare_pr_check_is_local() {
   local repo="${tmp_root}/prepare-pr"
   copy_repo "$repo"
@@ -609,6 +627,7 @@ run_expect_failure "PR link exists but pushed branch missing fails" case_pr_link
 run_expect_failure "complete workspace with missing pre-merge sync fails" case_missing_premerge_fails
 run_expect_success "status workflow reports Source of Truth proposal status" case_status_reports_sot
 run_expect_success "existing PR status does not recommend auto PR" case_existing_pr_status_does_not_recommend_auto_pr
+run_expect_success "complete PR-ready status requires Pre-PR checkpoint" case_complete_pr_ready_status_requires_pre_pr_checkpoint
 run_expect_success "prepare-pr check stays local" case_prepare_pr_check_is_local
 run_expect_success "docs branch remote and tracking status is reported" case_docs_branch_remote_tracking_is_reported
 run_expect_failure "missing harness regression script fails validation" case_missing_harness_test_script_fails

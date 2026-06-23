@@ -722,16 +722,16 @@ if ! rg -q "automatic merged branch cleanup|자동 merged branch cleanup|cleanup
   fail "Automatic merged branch cleanup is not documented across workflow docs and prepare-pr"
 fi
 
-if ! rg -q "Automatic PR Creation|자동 PR 생성|--auto-pr" docs/08-development-workflow.md docs/10-next-action-menu.md docs/11-git-sync-policy.md docs/13-human-command-flow.md scripts/prepare-pr.sh; then
-  fail "Automatic PR creation policy is not documented across workflow docs and prepare-pr"
+if ! rg -q "Pre-PR Human Checkpoint" AGENTS.md docs/08-development-workflow.md docs/10-next-action-menu.md docs/11-git-sync-policy.md docs/12-quality-gates.md docs/13-human-command-flow.md docs/09-collaboration-agreement.md docs/workflows/README.md scripts/status-workflow.sh; then
+  fail "Pre-PR Human Checkpoint policy is not documented across workflow docs and status workflow"
 fi
 
 if ! rg -q "PR 올리지 마|로컬에만 둬|PR은 나중에|draft만" docs/08-development-workflow.md docs/11-git-sync-policy.md docs/13-human-command-flow.md; then
-  fail "Automatic PR creation opt-out phrases are not documented"
+  fail "PR hold/opt-out phrases are not documented"
 fi
 
-if ! rg -q "merge/finalize/branch cleanup은 포함하지 않는다|not part of automatic PR creation|merge, finalize, issue close, and branch cleanup are not part" docs/08-development-workflow.md docs/11-git-sync-policy.md; then
-  fail "Automatic PR creation must be separated from merge/finalize/cleanup"
+if ! rg -q "사람이 응답하지 않았거나 명시 승인이 없으면.*push/PR/merge를 실행하지 않는다|do not create a PR until the human chooses|does not push or create a PR from a status question alone" docs/08-development-workflow.md docs/11-git-sync-policy.md docs/13-human-command-flow.md; then
+  fail "Pre-PR Human Checkpoint must prevent push/PR/merge without explicit human approval"
 fi
 
 if ! rg -q -- "--auto-pr" scripts/prepare-pr.sh || ! rg -q "auto_pr=1" scripts/prepare-pr.sh; then
@@ -776,12 +776,12 @@ if ! rg -q "Complete And PR Ready|추가 보강|다음 Phase|보류|외부 실�
   fail "docs/10-next-action-menu.md must include complete PR-ready choice details"
 fi
 
-if ! rg -q "완료 \\+ PR 준비 상태입니다.*자동 PR 생성 대상입니다.*--auto-pr.*1 PR 진행\\(merge, finalize, issue close 확인, automatic branch cleanup\\).*2 추가 보강.*3 다음 Phase.*4 보류.*5 외부 실행 승인" scripts/status-workflow.sh; then
-  fail "scripts/status-workflow.sh must recommend completion handoff choices for complete PR-ready workspaces"
+if ! rg -q "완료 \\+ PR 준비 상태입니다.*Pre-PR Human Checkpoint.*1 PR 진행.*2 로컬 완료로 보류.*3 추가 보강.*4 다음 Phase.*5 외부 실행 승인" scripts/status-workflow.sh; then
+  fail "scripts/status-workflow.sh must recommend Pre-PR Human Checkpoint choices for complete PR-ready workspaces"
 fi
 
 if ! rg -q "PR이 이미 열려 있습니다.*1 PR 진행\\(merge, finalize, issue close 확인, automatic branch cleanup\\).*2 추가 보강.*3 보류.*4 다음 Phase" scripts/status-workflow.sh; then
-  fail "scripts/status-workflow.sh must recommend existing PR choices before auto PR creation"
+  fail "scripts/status-workflow.sh must recommend existing PR choices before merge/finalize"
 fi
 
 if ! rg -q "Existing Codebase Adoption|baseline \\+ next-change|docs/16-existing-codebase-adoption.md" README.md; then

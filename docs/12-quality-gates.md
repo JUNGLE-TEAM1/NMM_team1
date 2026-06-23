@@ -9,6 +9,7 @@ This document defines how TDD and CI/CD fit into the collaboration harness witho
 - CI/CD is a quality gate language first and an automation pipeline second.
 - A branch can be complete only when its agreed tests, harness validation, and manual verification evidence are recorded.
 - Deployment, publish, destructive migration, and production-impacting CD steps stay behind human confirmation.
+- Passing local quality gates does not authorize push, PR creation, merge, or handoff by itself; PR/push next steps require `Pre-PR Human Checkpoint`.
 
 ## 2) TDD Loop
 
@@ -36,6 +37,7 @@ Before a branch is considered complete:
 - `scripts/validate-harness.sh` passes.
 - `scripts/validate-harness.sh --strict` passes before integration or PR readiness.
 - Manual verification evidence is recorded when user-visible behavior changes.
+- If PR/push/handoff is the next natural action, `Pre-PR Human Checkpoint` is recorded in `confirmations.md`, `sync.md`, or `next-actions.md` before any remote-changing command.
 
 ## 4) CI Gate
 

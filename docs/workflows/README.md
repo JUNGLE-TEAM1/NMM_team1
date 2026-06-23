@@ -150,6 +150,12 @@ When a workspace has a linked GitHub issue, do not rename the branch to include 
 
 AI should ask for Git Sync Confirm before pull, merge, rebase, push, PR creation, or PR merge. If main or shared Source of Truth changes during a Phase, AI should stop and offer the next action menu from `docs/10-next-action-menu.md`.
 
+When local validation has passed and PR/push/handoff is the next natural action, AI must run `Pre-PR Human Checkpoint`:
+
+- present 2-4 choices such as `PR 진행`, `로컬 완료로 보류`, `추가 수정`, and `다음 Phase`
+- do not push, create PR, merge, finalize, or cleanup until the human explicitly chooses the remote action
+- if the human chooses hold or does not answer, record the deferral reason in `sync.md` and the resume condition in `next-actions.md`
+
 ## Quality Gates
 
 Each workspace records TDD and CI/CD state in `quality.md`.
@@ -192,6 +198,7 @@ Use these gates:
 - Integration Conflict Confirm
 - Git Sync Confirm
 - Sync Conflict Confirm
+- Pre-PR Human Checkpoint
 
 AI should ask the human before crossing a gate unless the user already gave an explicit instruction that covers it.
 

@@ -70,15 +70,16 @@ Target repository: `JUNGLE-TEAM1/NMM_team1`.
 14. `docs/reports/`는 증거 계층이지 Source of Truth가 아니다. 충돌하면 Change Propagation Rule에 따라 Source of Truth를 고친다.
 15. Phase 시작 전, upstream 변경 중, merge/PR 전에는 `docs/11-git-sync-policy.md`를 따른다.
 16. branch 상태나 remote 상태를 바꾸는 pull, merge, rebase, push, PR 생성, PR merge는 사람 확인 없이 실행하지 않는다.
-17. branch sync 상태는 workspace `sync.md`에 기록한다.
-18. TDD, branch check, CI, CD/deploy gate는 `docs/12-quality-gates.md`를 따른다.
-19. TDD와 CI/CD 증거는 workspace `quality.md`에 기록한다.
-20. PR/integration handoff 전 상태 요약이 필요하면 `scripts/status-workflow.sh`를 사용한다.
-21. 고영향 선택은 `docs/14-decision-option-brief.md`를 사용하고 결과를 workspace `decisions.md`에 기록한다.
-22. `docs/15-context-budget-rule.md`에 따라 Lite Read로 시작하고, 위험 신호가 있으면 Escalate Read, 전체 검토에는 Audit Read를 사용한다.
-23. 토큰을 아끼기 위해 필요한 Source of Truth 문맥을 생략하지 않는다.
-24. 사용자가 `병렬`, `병렬 마일스톤`, `병렬 리팩토링`, `parallel milestone`, `parallel worktree`를 명시하면 `docs/17-parallel-milestone-protocol.md`를 적용한다.
-25. 병렬 프로토콜은 기존 Phase Workflow를 대체하지 않는다. 병렬 worktree/thread가 2개 이상 필요하거나 scope ownership, shared contract, integration order가 중요한 작업에만 얇은 실행 계약 레이어로 추가한다.
+17. Phase가 local validation을 통과하고 PR/push/handoff가 다음 자연스러운 행동이면 `Pre-PR Human Checkpoint`를 제시하고, 사람이 선택하기 전에는 push/PR/merge를 실행하지 않는다.
+18. branch sync 상태는 workspace `sync.md`에 기록한다.
+19. TDD, branch check, CI, CD/deploy gate는 `docs/12-quality-gates.md`를 따른다.
+20. TDD와 CI/CD 증거는 workspace `quality.md`에 기록한다.
+21. PR/integration handoff 전 상태 요약이 필요하면 `scripts/status-workflow.sh`를 사용한다.
+22. 고영향 선택은 `docs/14-decision-option-brief.md`를 사용하고 결과를 workspace `decisions.md`에 기록한다.
+23. `docs/15-context-budget-rule.md`에 따라 Lite Read로 시작하고, 위험 신호가 있으면 Escalate Read, 전체 검토에는 Audit Read를 사용한다.
+24. 토큰을 아끼기 위해 필요한 Source of Truth 문맥을 생략하지 않는다.
+25. 사용자가 `병렬`, `병렬 마일스톤`, `병렬 리팩토링`, `parallel milestone`, `parallel worktree`를 명시하면 `docs/17-parallel-milestone-protocol.md`를 적용한다.
+26. 병렬 프로토콜은 기존 Phase Workflow를 대체하지 않는다. 병렬 worktree/thread가 2개 이상 필요하거나 scope ownership, shared contract, integration order가 중요한 작업에만 얇은 실행 계약 레이어로 추가한다.
 
 ## 한국어 협업 산출물 규칙
 
