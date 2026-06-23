@@ -389,14 +389,14 @@ Waiting on you:
 ### PR Ready
 
 - Current state: scope, verification, confirmations, and pre-merge sync are complete.
-- Recommended next action: confirm CI gate before PR-based integration.
+- Recommended next action: run `Pre-PR Human Checkpoint` before PR-based integration.
 - Options:
-  1. Run CI-equivalent local checks, then create or update the PR after confirmation.
-  2. Keep branch local and write handoff notes.
-  3. Run strict validation one more time.
-  4. Record CI not applicable with a reason.
-- Next AI action: record CI result in `quality.md`, PR link/status in `sync.md`, and update `report.md`.
-- Ask: "PR 전에 CI에 해당하는 검증을 한 번 더 돌릴까요?"
+  1. `PR 진행`: run final validation, then push/create PR only after this explicit approval.
+  2. `로컬 완료로 보류`: do not push or create PR; record deferral reason and resume condition.
+  3. `추가 수정`: strengthen docs/tests/evidence, then rerun validation.
+  4. `다음 Phase`: first decide whether this branch is held or should be PR'd.
+- Next AI action: update `confirmations.md`, `sync.md`, `next-actions.md`, and `report.md` according to the chosen path.
+- Ask: "검증이 통과했습니다. PR 진행, 로컬 보류, 추가 수정, 다음 Phase 중 무엇으로 갈까요?"
 
 ### PR Checklist Incomplete
 
@@ -413,7 +413,7 @@ Waiting on you:
 ### Complete And PR Ready
 
 - Current state: workspace is `complete`, pending confirmations are clear, and PR checklist is ready.
-- Recommended next action: automatically create the PR after final validation and PR sync checks, then explain the remaining choices with procedure, good-fit situation, advantage, caution/tradeoff, and remote/external state-change impact.
+- Recommended next action: ask the human to choose a `Pre-PR Human Checkpoint` option before any push, PR creation, merge, finalize, or cleanup.
 - Options:
   1. PR 진행
      - Procedure: final validation -> branch push -> PR creation -> CI check -> merge -> linked issue close check -> `prepare-pr --finalize` -> automatic merged branch cleanup -> finalization record commit/push.
@@ -440,8 +440,7 @@ Waiting on you:
      - Good fit: AWS resource creation, deploy, migration, or other outside-repo state change is next.
      - Advantage: enables real environment verification.
      - Caution: creates cost, permission, and operations risk; explicit human approval required.
-- Next AI action: ask the human to choose an option. If the human chooses `PR 진행`, continue through push, PR creation, CI check, merge, finalize, linked issue close verification, and automatic merged branch cleanup unless a stop condition appears.
-- Auto PR action: if no PR exists yet and the human did not opt out, run `scripts/prepare-pr.sh --auto-pr <workspace>`, record/push the PR link, check CI, and report the PR link plus remaining choices.
+- Next AI action: ask the human to choose an option. If the human chooses `PR 진행`, continue through the approved push/PR/merge/finalize scope unless a stop condition appears. If the human chooses hold or does not answer, do not push or create a PR and record the deferral.
 - Ask: "완료된 branch입니다. 선택지별 절차와 장단점은 위와 같고, 어떤 방향으로 진행할까요?"
 
 ### Remaining Branch Queue

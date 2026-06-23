@@ -465,7 +465,7 @@ elif [[ "${merge_status:-}" =~ ^merged ]] && [[ "${issue_close_status:-}" =~ ^CL
 elif [[ -n "${pr_link:-}" ]] && [[ ! "${merge_status:-}" =~ ^merged ]]; then
   recommendation="PR이 이미 열려 있습니다. CI/check 상태를 확인한 뒤 선택지: 1 PR 진행(merge, finalize, issue close 확인, automatic branch cleanup), 2 추가 보강(현재 PR에 추가 커밋), 3 보류(PR 유지 + 재개 조건 기록), 4 다음 Phase(현재 PR merge 또는 명시 보류 후 진행), 5 외부 실행 승인(deploy/AWS 등 별도 승인)."
 elif [[ "$pr_ready" == "yes" ]]; then
-  recommendation="완료 + PR 준비 상태입니다. 자동 PR 생성 대상입니다: scripts/prepare-pr.sh --auto-pr <workspace>로 push/PR 생성/PR 기록/CI 확인을 진행하세요. 이후 선택지: 1 PR 진행(merge, finalize, issue close 확인, automatic branch cleanup), 2 추가 보강, 3 다음 Phase, 4 보류, 5 외부 실행 승인(deploy/AWS 등 별도 승인)."
+  recommendation="완료 + PR 준비 상태입니다. Pre-PR Human Checkpoint가 필요합니다. 선택지: 1 PR 진행(승인 후 push/PR 생성/CI 확인/merge/finalize/issue close 확인/automatic branch cleanup), 2 로컬 완료로 보류(sync.md deferral reason + next-actions.md resume condition 기록), 3 추가 보강, 4 다음 Phase(현재 branch PR 또는 명시 보류 후 진행), 5 외부 실행 승인(deploy/AWS 등 별도 승인)."
 else
   recommendation="Prepare Completion Confirm or PR checklist."
 fi

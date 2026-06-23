@@ -10,6 +10,7 @@ push, PR 생성, merge 같은 추가 원격 변경은 사람이 명시한 명령
 - Re-sync with `main` before a Phase is considered complete or integration-ready.
 - Use `git pull --ff-only` as the default pull policy.
 - Do not pull, merge, rebase, push, or create PRs without human confirmation.
+- If local validation has passed and push, PR creation, PR handoff, or integration handoff is the next natural action, run `Pre-PR Human Checkpoint` before any remote-changing command.
 - Branch workspace를 만들 때 GitHub issue도 생성한다. 예외가 필요하면 `--no-issue`를 명시하고 이유를 `sync.md`에 기록한다.
 - Prefer feature branch push and PR review over direct push to `main`.
 - 다른 branch workspace로 이동하기 전에 worktree가 dirty이면 `scripts/start-workflow.sh`가 현재 branch에 checkpoint commit을 만든 뒤 이동한다.
@@ -93,9 +94,9 @@ scripts/start-workflow.sh --no-issue chore local-notes "Local notes only"
 ```
 
 PR 준비 단계에서는 linked issue가 있으면 closing keyword를 `sync.md`와 PR 본문에 반영한다.
-complete + PR-ready workspace의 remote push와 PR 생성은 팀 기본 자동화로 실행할 수 있다.
-자동 PR 생성은 `scripts/prepare-pr.sh --auto-pr <workspace>`를 사용하며, merge/finalize/branch cleanup은 포함하지 않는다.
-사람이 `PR 올리지 마`, `로컬에만 둬`, `보류`, `PR은 나중에`, `draft만`이라고 명시하면 자동 PR 생성을 하지 않는다.
+complete + PR-ready workspace라도 remote push와 PR 생성은 `Pre-PR Human Checkpoint`에서 사람이 `PR 진행`, `PR 생성`, 또는 동등한 승인을 선택한 뒤에만 실행한다.
+사람이 `PR 올리지 마`, `로컬에만 둬`, `보류`, `PR은 나중에`, `draft만`이라고 명시하거나 응답하지 않으면 PR 생성을 하지 않는다.
+사람이 로컬 완료 보류를 선택하면 `sync.md`의 `Pre-Merge Sync` 또는 `Push / PR` 섹션에 deferral reason을 기록하고 `next-actions.md`에 재개 조건을 남긴다.
 
 ```bash
 scripts/prepare-pr.sh docs/workflows/feature/project-bootstrap
@@ -140,6 +141,12 @@ For ready-for-review, complete, or integration-ready workspaces, Pre-Merge Sync 
 - a result, or
 - a deferral reason approved by the human.
 
+For PR handoff, `Pre-PR Human Checkpoint` must record one of:
+
+- human-approved PR/push action,
+- local hold / deferral reason, or
+- next Phase / additional work choice.
+
 Before PR handoff, run or review:
 
 ```bash
@@ -154,10 +161,10 @@ scripts/list-active-branches.sh
 
 If the workspace is complete and PR-ready, the handoff must present a choice menu instead of only asking whether to create a PR.
 The menu includes PR 진행, 추가 보강, 다음 Phase 이동, 보류, and 외부 실행 승인 단계 when relevant.
-Complete PR-ready workspaces create a PR automatically after final local validation and PR sync checks pass.
-Automatic PR creation reports the PR link, linked issue, CI/check status, and remaining choices.
+Complete PR-ready workspaces do not create a PR until the human chooses `PR 진행`, `PR 생성`, or an equivalent explicit action.
+If the human chooses local hold or does not answer, AI records a deferral reason and reports the next resume choice instead of pushing.
 `PR 진행` means final validation, push, PR creation, CI check, merge, PR finalize, linked issue close verification, and automatic merged branch cleanup for the current branch.
-Merge, finalize, issue close, and branch cleanup are not part of automatic PR creation; they require `PR 진행`, `머지해`, `진행해`, or equivalent explicit human command.
+If the human says `PR만`, `PR 생성만`, or `초안 PR`, stop after PR creation and ask again before merge, finalize, issue close, or branch cleanup.
 Stop and report back if CI fails, merge conflicts exist, required review is missing, scope drift appears, deployment/AWS resource creation is involved, or the human limited the command to PR creation/draft/hold merge.
 Deploy and AWS resource creation still require separate explicit human approval.
 

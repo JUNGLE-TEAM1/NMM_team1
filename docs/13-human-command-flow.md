@@ -171,7 +171,8 @@ AI does:
 - Resolves Source of Truth Impact Gate first; if required shared document changes exceed the current branch scope, asks for `Scope Change Confirm`.
 - Runs `scripts/prepare-pr.sh <workspace>` first to update local PR closing keyword.
 - Runs `scripts/prepare-pr.sh --check-pr-sync <workspace>` before creating or handing off the PR.
-- If the workspace is complete and PR-ready, runs `scripts/prepare-pr.sh --auto-pr <workspace>` without another question unless the human said not to create a PR.
+- Treats this user command as explicit approval to push/create PR within the stated scope after final local checks pass.
+- If the human says `PR만`, `PR 생성만`, or `초안 PR`, stops after PR creation and asks again before merge/finalize/cleanup.
 - Uses `Closes #123` style closing keyword so GitHub closes the linked issue when the PR is merged.
 - After merge, runs `scripts/prepare-pr.sh --check-issue <workspace>` and records `issue close status` in `sync.md`.
 - If a stacked PR was merged into a non-default branch and the linked issue remains open, runs `scripts/prepare-pr.sh --close-issue <workspace>` to close it with the merged PR as evidence.
@@ -218,8 +219,8 @@ AI does:
 
 - Runs `scripts/status-workflow.sh <workspace>`.
 - If workspace is `complete`, pending confirmations are clear, and PR checklist is ready, reports branch, linked issue, PR closing keyword, local validation result, remaining remote work, and any external approval need.
-- For complete PR-ready workspaces, creates the PR automatically with `scripts/prepare-pr.sh --auto-pr <workspace>` unless the human said "PR 올리지 마", "로컬에만 둬", "보류", "PR은 나중에", or "draft만".
-- After automatic PR creation, reports PR link, linked issue, CI/check state, and remaining choices.
+- For complete PR-ready workspaces, does not push or create a PR from a status question alone.
+- Runs `Pre-PR Human Checkpoint` and asks the human to choose the next handoff action.
 - Presents the completion handoff choice menu with a short explanation for each choice:
   - 1. PR 진행: final validation, push, PR creation, CI check, merge, issue close check, finalize, and automatic merged branch cleanup. If the human says "PR만 올려줘", stop after PR creation and do not merge.
   - 2. 추가 보강: name 1-5 concrete hardening candidates such as weak tests, unclear docs, cost risk, missing manual verification, or unclear next-phase contract. Explain the benefit and delay tradeoff.
