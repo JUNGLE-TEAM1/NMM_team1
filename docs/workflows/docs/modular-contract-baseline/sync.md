@@ -32,7 +32,7 @@ main 동기화와 integration readiness를 기록한다.
 - issue link: 
 - issue creation result: not requested; workspace was created with `--no-issue`
 - PR closing keyword: 
-- pushed branch:
-- PR link:
-- merge status:
-- issue close status:
+- pushed branch: docs/modular-contract-baseline
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/51
+- merge status: open
+- issue close status: open
