@@ -25,6 +25,40 @@ Waiting on you:
 
 ## State Menus
 
+### Milestone Classification Required
+
+- Current state: a new request may be a user-value feature, parallel milestone, dependent milestone, or lightweight Phase.
+- Recommended next action: classify whether milestone planning is needed before creating the Phase workspace.
+- Options:
+  1. Treat it as an independent milestone and draft the first Phase.
+  2. Treat it as a dependent milestone and identify shared contracts or blockers first.
+  3. Treat it as a lightweight Phase because the change is small and low-risk.
+  4. Defer broader roadmap planning and create a provisional milestone for only the current feature.
+- Next AI action: record the classification in `notes.md` or `report.md`, then continue to Scope Confirm or draft a milestone manifest when parallel execution needs it.
+- Ask: "이 요청은 정식 milestone으로 잡을까요, 아니면 작은 lightweight Phase로 바로 진행할까요?"
+
+### Provisional Milestone Needed
+
+- Current state: the full roadmap is unclear, but one immediate user-value feature is ready to start.
+- Recommended next action: define a provisional milestone and plan only the first Phase.
+- Options:
+  1. Draft a provisional milestone and first Phase now.
+  2. Narrow the current feature scope before creating the Phase.
+  3. Pause to identify shared API/schema/data risks first.
+- Next AI action: record milestone ID, user value, current Phase, included scope, excluded scope, shared contract risk, done criteria, and revisit questions.
+- Ask: "전체 로드맵은 나중에 보되, 지금 필요한 기능 하나만 provisional milestone로 잡고 시작할까요?"
+
+### Integration Milestone Check
+
+- Current state: multiple branches or milestones may need to be validated together.
+- Recommended next action: decide whether an integration milestone/Phase is actually required.
+- Options:
+  1. No integration branch: each independent milestone can finish with its own PR.
+  2. Create an integration Phase for the completed branches only.
+  3. Create or update a parallel milestone manifest because shared contracts or merge order matter.
+- Next AI action: record dependencies, source branches, shared contract impact, and integration requirement before creating an integration workspace.
+- Ask: "이 작업들은 각자 PR로 끝낼 수 있나요, 아니면 함께 합쳐 검증할 integration Phase가 필요할까요?"
+
 ### Decision Option Brief Required
 
 - Current state: a high-impact human decision affects scope, contract, quality, sync, integration, or enhancement direction.
