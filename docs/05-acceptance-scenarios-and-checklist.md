@@ -2,73 +2,90 @@
 
 ## 1) 대표 성공 시나리오
 
-1. 사용자가 웹 UI에서 샘플 데이터 소스를 등록한다.
-2. 사용자가 source -> transform -> target으로 이어지는 최소 파이프라인을 만든다.
-3. 사용자가 파이프라인을 실행한다.
-4. 시스템이 실행 상태, 로그 또는 오류를 보여준다.
-5. 사용자가 결과 데이터의 schema, row count, sample 또는 저장 위치를 카탈로그에서 확인한다.
+AskLake의 Target MVP 대표 성공 시나리오는 `Trusted Dataset -> Query/Ask -> Evidence -> Recovery` 신뢰 루프다.
 
-## 2) 핵심 성공 경로
+1. 데이터 엔지니어가 source를 연결하고 schema/sample을 확인한다.
+2. 시스템이 catalog draft와 pipeline/job 상태를 만든다.
+3. 스튜어드가 quality, PII, owner, access policy, approval 조건을 검토한다.
+4. 필수 gate를 통과한 dataset만 `Trusted`로 게시된다.
+5. 분석가 또는 업무 사용자가 Query 또는 Ask를 실행한다.
+6. 시스템은 권한 preflight와 masking/deny 정책을 적용한다.
+7. 결과는 SQL, dataset, metric, document chunk, freshness, lineage, policy decision, retrieval trace evidence를 보여준다.
+8. schema drift, freshness 지연, 품질 실패가 발생하면 영향을 받는 자산이 `Degraded` 또는 `Blocked`로 표시된다.
+9. retry/rerun/backfill 후 중복/누락 없이 상태가 복구되고 audit event가 남는다.
 
-- [ ] 프로젝트 목표와 MVP 범위가 `docs/01`에 기록되어 있다.
-- [ ] 아키텍처와 외부 연동이 `docs/02`에 기록되어 있다.
-- [ ] API/UI/CLI/PR metadata 계약이 `docs/03`에 기록되어 있다.
-- [ ] 제품 기능 개발 전에 CI/CD, Docker, Kubernetes, AWS foundation 계획과 approval gate가 기록되어 있다.
-- [ ] MVP 핵심 성공 경로가 소스 등록, 파이프라인 작성, 실행, 결과 확인을 포함한다.
-- [ ] 실행, 테스트, 브랜치, PR 규칙이 `docs/04`와 `docs/11`에 기록되어 있다.
-- [ ] 첫 실제 branch workspace가 `docs/workflows/` 아래에 생성된다.
-- [ ] linked GitHub issue가 있으면 `sync.md`와 PR body에 closing keyword가 기록된다.
-- [ ] `scripts/validate-harness.sh --strict`가 통과하거나 deferral reason이 기록된다.
+## 2) Current Baseline Acceptance
 
-## 3) 기능 완료 기준
+기존 M0~M5 current implementation baseline은 historical evidence로 보존한다.
+아래 기준은 baseline 회귀 확인용이며 Target MVP 전체 범위를 의미하지 않는다.
 
-### 프로젝트 부트스트랩
+- [ ] 사용자가 샘플 CSV/local file source를 등록할 수 있다.
+- [ ] Catalog detail에서 schema, row count, sample rows, status를 확인할 수 있다.
+- [ ] 사용자가 `select_fields` 기반 최소 pipeline run을 실행할 수 있다.
+- [ ] run status가 success 또는 failed로 명확히 표시된다.
+- [ ] result dataset의 status, row count, 저장 위치를 확인할 수 있다.
+- [ ] 실패한 output을 ready/success처럼 표시하지 않는다.
 
-- [ ] 프로젝트 운영 문서가 AskLake 기준으로 작성되어 있다.
-- [ ] XFlow 참고 범위와 MVP 제외 범위가 명확히 구분되어 있다.
-- [ ] 인프라 선행 마일스톤과 MVP 마일스톤이 `docs/01`과 `docs/08`에 기록되어 있다.
-- [ ] 초기 예시 workspace와 과거 report는 가져오지 않는다.
-- [ ] 첫 실제 Phase를 시작할 수 있는 branch workspace 생성 명령이 동작한다.
-- [ ] 관련 regression guard가 `docs/06`에 있다.
-- [ ] 관련 manual verification이 `docs/07` 또는 `docs/manual-verification/`에 있다.
+## 3) Target MVP Acceptance
 
-### 제품 기능
+### Product Rebaseline
 
-- [ ] happy path가 동작한다: source 등록 -> pipeline 생성 -> run 실행 -> catalog 확인
-- [ ] 필요한 상태가 저장되거나 결과물이 생성된다.
-- [ ] running, success, failed 상태가 사용자에게 보인다.
-- [ ] 실패한 output을 ready로 표시하지 않는다.
-- [ ] 관련 interface가 `docs/03`과 일치한다.
-- [ ] 관련 regression guard가 `docs/06`에 있다.
-- [ ] manual verification이 `docs/07` 또는 `docs/manual-verification/`에 있다.
+- [ ] `README.md`가 AskLake를 Trusted Data & AI Platform 방향으로 설명한다.
+- [ ] `docs/01`이 current baseline과 Target MVP를 구분한다.
+- [ ] `docs/02`가 current baseline과 target architecture를 구분한다.
+- [ ] `docs/03`이 baseline contract와 Target MVP interface family를 구분한다.
+- [ ] 기존 M0~M5 report를 historical evidence로 유지하고 소급 수정하지 않는다.
+- [ ] 다음 구현 Phase가 하나로 제안되어 있다.
 
-### M3 소스와 카탈로그
+### Trusted Dataset
 
-- [ ] 첫 source type은 CSV/local file로 구현되어 있다.
-- [ ] metadata store는 SQLite로 시작한다.
-- [ ] backend 내부에 `MetadataStore` 경계가 있어 PostgreSQL 또는 MongoDB 구현체로 교체 가능한 구조다.
-- [ ] API에 노출되는 source/dataset id는 string UUID다.
-- [ ] source 등록/list/detail과 catalog list/detail API가 있다.
-- [ ] catalog detail은 schema, row count, sample rows, status를 반환한다.
-- [ ] 없는 file path 또는 읽을 수 없는 CSV는 ready dataset으로 표시하지 않는다.
+- [ ] dataset은 `Draft`, `Verifying`, `Trusted`, `Degraded`, `Blocked`, `Archived` 상태를 구분한다.
+- [ ] 최초 실행 성공만으로 dataset이 `Trusted`가 되지 않는다.
+- [ ] 품질, PII, owner, access policy, approval gate 중 남은 조건이 사용자에게 보인다.
+- [ ] gate 실패 시 dataset은 일반 Query/Ask 후보로 노출되지 않는다.
+- [ ] `Blocked` dataset은 신규 소비가 차단된다.
+
+### Query / Ask
+
+- [ ] Query 실행 전 policy preflight가 적용된다.
+- [ ] 권한 없는 컬럼이나 dataset은 실행, retrieval, prompt 단계 전에 제거되거나 차단된다.
+- [ ] Ask는 SQL, RAG, Hybrid, Unsupported 중 하나로 route된다.
+- [ ] 근거가 부족한 답변은 성공처럼 표시되지 않고 보류 또는 `Insufficient Evidence`로 표시된다.
+- [ ] Query/Ask 결과는 evidence와 연결된다.
+
+### Evidence
+
+- [ ] Evidence는 최소한 사용 dataset, SQL 또는 query plan, freshness, policy decision을 포함한다.
+- [ ] 문서 기반 답변은 document chunk 또는 retrieval trace와 연결된다.
+- [ ] AI answer는 권한 결정과 audit event를 남긴다.
+- [ ] 사용자는 결과에서 dataset detail, query, access request, feedback 흐름으로 이동할 수 있다.
+
+### Recovery
+
+- [ ] schema drift, quality failure, freshness delay가 dataset status에 반영된다.
+- [ ] 영향 dataset, query, dashboard, AI index 또는 answer 후보를 확인할 수 있다.
+- [ ] retry/rerun/backfill은 대상 구간과 idempotency 기준을 기록한다.
+- [ ] 복구 후 quality/freshness를 재검증하고 상태를 갱신한다.
+- [ ] 복구 과정과 결과는 audit/incident 기록으로 남는다.
 
 ## 4) 문서와 계약 일관성
 
-- [ ] `docs/02` architecture가 구현과 일치한다.
-- [ ] `docs/03` interface contract가 구현과 일치한다.
-- [ ] `docs/06` regression/failure 기준이 실제 동작과 일치한다.
-- [ ] `docs/07` manual verification이 현재 workflow와 일치한다.
-- [ ] `docs/08` Phase 상태가 실제 진행 상태와 일치한다.
+- [ ] `docs/01` product scope가 `README.md` 외부 요약과 일치한다.
+- [ ] `docs/02` architecture가 `docs/03` interface family와 일치한다.
+- [ ] `docs/03` baseline contract가 현재 구현과 일치한다.
+- [ ] `docs/05` acceptance가 `docs/06` regression guard와 연결된다.
+- [ ] `docs/07` manual verification이 현재 workflow와 Target MVP를 구분한다.
+- [ ] `docs/08` 다음 Phase queue가 `docs/01` milestone과 일치한다.
 
 ## 5) 배포와 운영 기준
 
-- [ ] health/smoke check가 통과한다.
-- [ ] 필요한 env 값이 문서화되어 있다.
+- [ ] local/container health/smoke check가 통과한다.
+- [ ] 필요한 env 값이 실제 secret 없이 문서화되어 있다.
 - [ ] Docker image build/run 경로가 기록되어 있다.
 - [ ] Kubernetes manifest 또는 Helm 후보가 secret 없이 검증 가능하다.
 - [ ] AWS resource 생성 전 비용/권한/rollback approval gate가 기록되어 있다.
-- [ ] migration/data 변경이 검증되어 있다.
-- [ ] log가 조치 가능한 실패 원인을 보여준다.
+- [ ] migration/data 변경이 있으면 검증되어 있다.
+- [ ] log, status center, incident 또는 report가 조치 가능한 실패 원인을 보여준다.
 - [ ] rollback 또는 recovery note가 있다.
 
 ## 6) 릴리스 / 제출 게이트
@@ -79,17 +96,15 @@
 - [ ] 알려진 제한 사항을 문서화했다.
 - [ ] 최신 report가 evidence와 acceptance criteria를 연결한다.
 
-## 7) 장기 마일스톤 수용 체크포인트
+## 7) Target MVP 마일스톤 수용 체크포인트
 
 | 마일스톤 | 수용 체크포인트 |
 | --- | --- |
-| M6. 소스 확장 | 최소 1개 RDB source 연결 성공/실패가 UI/API에서 명확히 보인다. |
-| M7. 변환 확장 | 각 transform이 입력 schema와 출력 schema를 예측 가능하게 바꾼다. |
-| M8. 실행 관리 | run history, log, retry 또는 실패 상태가 한 화면에서 추적된다. |
-| M9. 카탈로그 고도화 | 사용자가 dataset을 검색/filter하고 상세 metadata를 이해할 수 있다. |
-| M10. 품질 검사 | 품질 결과가 catalog dataset과 연결되고 실패 원인이 표시된다. |
-| M11. Lineage와 시각 편집 | graph와 저장된 pipeline contract가 서로 일치한다. |
-| M12. SQL Lab | local query가 sample/result dataset에 대해 실행되고 결과가 표시된다. |
-| M13. AI Assistant | AI 없이도 core flow가 동작하며, AI 결과는 검토 가능한 draft로 표시된다. |
-| M14. Streaming/CDC 후보 | 도입/보류 결정이 비용, 운영, 대체 경로와 함께 기록된다. |
-| M15. 선택적 분산/클라우드 확장 | 승인 gate, rollback, 비용/운영 risk가 기록된 작은 PoC만 진행된다. |
+| R0. Product Rebaseline | current baseline과 Target MVP가 문서에서 분리되고 하네스 검증이 통과한다. |
+| R1. Trust State Model / Publish Gate | dataset trust status와 gate 결과가 API/UI에서 확인된다. |
+| R2. Control Plane Job State | job/task 상태, event, audit 기초가 중복 없이 기록된다. |
+| R3. Source 확장 | 선택한 source 1개가 연결 성공/실패와 schema discovery를 제공한다. |
+| R4. Query와 권한 Preflight | 허용/마스킹/차단 query가 정책과 audit evidence를 남긴다. |
+| R5. Ask와 Evidence | Ask 결과가 evidence 또는 보류 사유를 제공하고 권한 거부를 통과한다. |
+| R6. Operate와 Recovery | schema drift 또는 quality failure 후 영향 분석과 복구 상태 전이가 검증된다. |
+| R7. Packaging 안정화 | local/container 또는 dev-lite packaging smoke와 secret/config 검증이 통과한다. |

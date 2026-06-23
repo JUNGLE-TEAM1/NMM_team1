@@ -1,20 +1,32 @@
 # 03. 인터페이스 기준
 
 이 문서는 API, CLI 명령, UI 계약, event schema, background job, 내부 도구, 외부 연동 계약을 기록하는 기준 문서다.
+Current implementation baseline contract와 Target MVP interface family를 분리해 관리한다.
 
 ## 1) 공통 규칙
 
 - Base URL / command namespace / entrypoint: local backend `http://localhost:8000/api`
 - Request/response format: API는 JSON, 사람 작업 흐름은 browser UI
 - Naming conventions: code identifier는 원문을 유지하고, 협업 문서는 한국어로 작성한다.
-- Pagination/sorting/filtering: catalog list 검색/filter는 MVP 이후 확장 후보이며 첫 pipeline run에는 필수가 아니다.
-- Idempotency: run 요청은 새 `PipelineRun`을 만들고, source/pipeline create endpoint는 중복 이름을 검증하거나 명확한 오류를 반환한다.
+- Idempotency: 실행, backfill, event 소비는 중복 요청과 중복 event를 고려한다.
+- Secret: credential 값은 API payload나 metadata DB에 직접 저장하지 않고 secret reference로 저장한다.
+- Policy: Query, Ask, RAG retrieval, prompt assembly는 동일한 권한 판단을 공유해야 한다.
 
 ## 2) 인증과 접근 제어
 
-- Authentication: 팀이 login을 필수 데모 기능으로 선택하지 않는 한 MVP에서는 보류한다.
-- Authorization: MVP에서는 보류한다.
+### Current Baseline
+
+- Authentication: baseline demo에서는 보류한다.
+- Authorization: baseline demo에서는 보류한다.
 - Public/private boundaries: local demo만 대상으로 하며 실제 secret이나 production data를 사용하지 않는다.
+
+### Target MVP
+
+- Authentication: 사용자, 역할, 목적 정보를 policy decision과 audit event에 연결한다.
+- Authorization: dataset/table/column 단위 policy와 action별 권한을 구분한다.
+- Masking: 원본 접근이 불가능하면 마스킹 대안을 제공하거나 실행 전에 차단한다.
+- Access Request: 차단된 자원, 필요한 권한, 목적, 기간을 포함해 요청할 수 있어야 한다.
+- AI access: SQL, RAG retrieval, prompt, final answer 모든 단계에서 허용된 데이터만 사용한다.
 
 ## 3) 상태, 오류, 실패 형식
 
@@ -23,44 +35,12 @@
 | Invalid source config | API returns validation error and UI shows actionable message. |
 | Pipeline run fails | Run status becomes `failed` and stores a short error/log. |
 | Result dataset unavailable | Catalog detail shows not ready or failed state instead of pretending success. |
+| Trust gate remains incomplete | Dataset is not exposed as `Trusted`; remaining gate is visible. |
+| Policy denies query or ask | Request is blocked before execution/retrieval/prompt and access request path is offered when applicable. |
+| Evidence is insufficient | Ask result is `Insufficient Evidence` or deferred instead of a confident answer. |
+| Schema drift or quality failure occurs | Dataset becomes `Degraded` or `Blocked`; impacted assets are discoverable. |
 
-## 4) 인터페이스 목록
-
-| 인터페이스 | 타입 | 목적 |
-| --- | --- | --- |
-| GitHub PR body closing keyword | PR metadata | Linked issue가 있으면 `Closes #<issue-number>` 또는 동등한 closing keyword를 포함한다. |
-| Health API | API | frontend/backend/container/Kubernetes smoke에서 앱 기동 상태를 확인한다. |
-| Connection API | API | 데이터 소스를 등록하고 목록을 조회한다. |
-| Pipeline API | API | source, transform, target으로 구성된 파이프라인을 생성/조회한다. |
-| Pipeline Run API | API/Job | 파이프라인 실행을 요청하고 상태/로그를 조회한다. |
-| Catalog UI/API | UI/API | 결과 데이터의 schema, row count, sample 또는 저장 위치를 보여준다. |
-
-### 단계별 인터페이스 family
-
-| 단계 | Interface family | 후보 기능 | MVP 필수 여부 |
-| --- | --- | --- | --- |
-| M1~M3 | Health / App Shell | `/health`, frontend route, local config 확인 | 필수 |
-| M2~M5 | Source / Connection | CSV/local file create/list/detail, schema/sample preview | 일부 필수 |
-| M3~M8 | Pipeline / Run | pipeline create/update, run request, status/log/retry | 필수 |
-| M3~M8 | Catalog | dataset list/detail, schema/sample/row count, tags/domain | 일부 필수 |
-| M7 | Transform | select/drop/filter/union/sql transform config | 확장 |
-| M10 | Quality | quality run, rule result, score summary | 확장 |
-| M11 | Lineage / Visual Graph | graph nodes/edges, lineage read model | 확장 |
-| M11 | SQL Lab | query execute, query history, result preview | 확장 |
-| M12 | AI Assistant | schema context, SQL draft, explanation assist | 승인 gate 후 확장 |
-| M13~M15 | Distributed / Cloud | CDC, Airflow, Spark, S3, OpenSearch, Trino, Kubernetes | 별도 승인 필요 |
-
-## 5) 핵심 인터페이스 상세
-
-### GitHub PR Body Closing Keyword
-
-- Type: PR metadata
-- Input: linked GitHub issue number
-- Output: PR body contains a closing keyword such as `Closes #123`
-- Success behavior: merge 후 GitHub issue가 자동 close되고 downstream Project/Notion sync가 정리된다.
-- Failure behavior: issue가 열린 상태로 남을 수 있으므로 PR 전에 수정한다.
-- Related acceptance criteria: `docs/05`
-- Related regression/failure scenarios: `docs/06`
+## 4) Current Baseline Interface
 
 ### Health API
 
@@ -76,45 +56,11 @@
 }
 ```
 
-- Success behavior: local backend, frontend app, Docker Compose smoke, Kubernetes readiness probe가 기동 상태를 확인할 수 있다.
-- Failure behavior: API가 200을 반환하지 않으면 frontend는 확인 필요 상태를 보여주고 container/cloud deploy smoke는 실패로 처리한다.
-
-### MVP 파이프라인 계약
-
-- Type: API/UI/Job
-- Input: registered source dataset, `select_fields` transform config, target dataset name
-- Output: `PipelineRun` with `queued`, `running`, `success`, or `failed` status
-- Success behavior: 결과 dataset metadata가 catalog에 보인다.
-- Failure behavior: run status와 error message가 보이고 partial output은 ready로 표시하지 않는다.
-- Related acceptance criteria: `docs/05`
-- Related regression/failure scenarios: `docs/06`
-- Current MVP endpoints:
-
-```text
-POST /api/pipelines
-GET /api/pipelines
-GET /api/pipelines/{pipeline_id}
-POST /api/pipelines/{pipeline_id}/runs
-GET /api/pipeline-runs/{run_id}
-```
-
-- `POST /api/pipelines` minimum request:
-
-```json
-{
-  "name": "orders_amounts",
-  "source_dataset_id": "dataset_uuid",
-  "select_fields": ["order_id", "amount"],
-  "target_name": "orders_amounts_result"
-}
-```
-
-### M3 Source / Catalog 계약
+### Source / Catalog 계약
 
 - Type: API/UI/Internal store
 - Default source type: CSV/local file
 - Metadata store: SQLite implementation behind `MetadataStore`
-- Future store candidates: PostgreSQL 또는 MongoDB. API response contract는 유지한다.
 - ID rule: API에 노출되는 `source_id`, `dataset_id`는 string UUID로 둔다.
 - Required endpoints:
 
@@ -155,11 +101,161 @@ GET /api/catalog/datasets/{dataset_id}
 }
 ```
 
-- Success behavior: CSV source metadata, inferred schema, row count, sample rows가 SQLite-backed catalog에 저장되고 UI에서 list/detail로 확인된다.
-- Failure behavior: file path가 없거나 읽을 수 없으면 4xx validation error를 반환하고, catalog에는 ready dataset으로 표시하지 않는다.
-- Excluded from M3: file upload UI, PostgreSQL connection, pipeline execution, transform, advanced catalog search/filter.
+### Baseline Pipeline 계약
 
-## 6) 내부 도구와 외부 연동
+- Type: API/UI/Job
+- Input: registered source dataset, `select_fields` transform config, target dataset name
+- Output: `PipelineRun` with `queued`, `running`, `success`, or `failed` status
+- Current endpoints:
+
+```text
+POST /api/pipelines
+GET /api/pipelines
+GET /api/pipelines/{pipeline_id}
+POST /api/pipelines/{pipeline_id}/runs
+GET /api/pipeline-runs/{run_id}
+```
+
+- `POST /api/pipelines` minimum request:
+
+```json
+{
+  "name": "orders_amounts",
+  "source_dataset_id": "dataset_uuid",
+  "select_fields": ["order_id", "amount"],
+  "target_name": "orders_amounts_result"
+}
+```
+
+## 5) Target MVP Interface Family
+
+Target MVP는 아래 family를 순차적으로 확정한다.
+이번 rebaseline에서는 상세 endpoint를 과도하게 확정하지 않고 family, 상태, 핵심 contract만 둔다.
+
+| Family | 목적 | 핵심 contract | 상태 |
+| --- | --- | --- | --- |
+| Source API | 연결 등록, 연결 테스트, schema discovery | `SourceConnection`, secret reference, schema/sample preview | baseline + 확장 |
+| Pipeline / Job API | version, validation, deploy, run, retry, rerun, backfill | `PipelineVersion`, `JobRun`, `TaskRun`, idempotency key | target R2 |
+| Catalog / Trust API | draft, dataset detail, trust status, lineage, usage | `Dataset`, `DatasetStatus`, `TrustGateResult` | target R1 |
+| Quality / PII API | quality rule, result, PII candidate, classification | `QualityRule`, `QualityResult`, `Classification` | target R1/R2 |
+| Policy / Access API | RBAC, masking, access request, approval | `AccessPolicy`, `PolicyDecision`, `AccessRequest` | target R4 |
+| Query API | preflight, SQL execution, result, saved query | `QueryExecution`, scan/cost/policy result | target R4 |
+| Ask / Evidence API | route, answer, evidence, retrieval trace | `AskAnswer`, `EvidenceItem`, `RetrievalTrace` | target R5 |
+| Operation / Incident API | status center, alert, incident, impacted asset | `Incident`, `AssetImpact`, `RecoveryAction` | target R6 |
+| Admin / Audit API | user, role, config, audit search | `AuditEvent`, `InvestigationCase` | target R4+ |
+| Deployment / Health API | module health, readiness, config validation | `ModuleHealth`, `DeploymentProfile` | target R7 |
+
+## 6) Target 상태 모델
+
+### Pipeline Version
+
+```text
+Draft -> Validating -> Approval Pending -> Approved -> Deploying -> Active
+Active -> Suspended
+* -> Archived
+```
+
+### Run / Task
+
+```text
+Queued -> Running -> Succeeded
+Queued -> Running -> Failed
+Queued -> Running -> Partially Succeeded
+Queued/Running -> Cancelled
+```
+
+### Dataset
+
+```text
+Draft -> Verifying -> Trusted
+Trusted -> Degraded
+Trusted/Degraded -> Blocked
+* -> Archived
+```
+
+`Trusted`만 일반 Catalog 검색, Query, Ask 기본 후보가 된다.
+`Degraded`는 마지막 정상 데이터를 사용할 수 있지만 freshness/quality 경고를 표시한다.
+`Blocked`는 신규 소비를 막는다.
+
+### Approval
+
+```text
+Pending -> Approved
+Pending -> Rejected
+Pending -> Changes Requested
+Pending -> Cancelled
+Pending -> Expired
+```
+
+### RAG Index
+
+```text
+Not Configured -> Draft -> Building -> Ready
+Ready -> Stale
+Ready/Stale -> Failed
+Ready/Stale/Failed -> Disabled
+```
+
+Dataset이 `Blocked`되거나 policy가 강화되면 연결된 index는 즉시 `Stale` 또는 `Disabled`가 되어야 한다.
+
+## 7) Target 핵심 데이터 관계
+
+```mermaid
+flowchart LR
+    USER[User / Role] --> POLICY[Access Policy]
+    SOURCE[Source Connection] --> PIPE[Pipeline Version]
+    PIPE --> RUN[Job Run / Task Run]
+    PIPE --> DATASET[Dataset / Schema Version]
+    DATASET --> QUALITY[Quality Result]
+    DATASET --> CLASS[Classification]
+    POLICY --> DATASET
+    DATASET --> LINEAGE[Lineage Graph]
+    DATASET --> QUERY[Query Execution]
+    DATASET --> METRIC[Semantic Metric]
+    QUERY --> DASH[Dashboard]
+    DATASET --> INDEX[RAG Index / Chunk]
+    METRIC --> ANSWER[AI Answer]
+    INDEX --> ANSWER
+    QUERY --> ANSWER
+    ANSWER --> TRACE[Retrieval Trace]
+    USER --> AUDIT[Audit Event]
+    RUN --> AUDIT
+    QUERY --> AUDIT
+    ANSWER --> AUDIT
+```
+
+## 8) 주요 이벤트
+
+| Event | 목적 |
+| --- | --- |
+| `SourceConnected` | 연결 검증과 schema discovery 시작 |
+| `PipelineValidated` | pipeline version 검증 완료 |
+| `PipelineApproved` | 승인된 pipeline version 기록 |
+| `RunStarted` | run/task 상태 시작 |
+| `TaskFailed` | 실패 원인, 재시도, 영향 분석 시작 |
+| `RunSucceeded` | output과 quality 검증 시작 |
+| `QualityFailed` | dataset trust 상태 변경 |
+| `DatasetPublished` | `Trusted` 게시 |
+| `DatasetDegraded` | freshness/schema/상류 실패 전파 |
+| `AccessDenied` | 권한 부족 안내와 access request 연결 |
+| `AccessRequested` | 접근 요청 workflow 시작 |
+| `RAGIndexUpdated` | index version 갱신 |
+| `RAGIndexStale` | 원본/정책 변경으로 index stale 처리 |
+| `DashboardRefreshFailed` | serving/dashboard 영향 표시 |
+| `SecurityAlertRaised` | 이상 접근 조사 시작 |
+
+이벤트는 중복 전달될 수 있다고 가정한다.
+소비자는 event id와 asset version을 이용해 멱등하게 처리하고, 중요 상태 변경은 Metadata DB 현재 상태로 재검증한다.
+
+## 9) 내부 도구와 외부 연동
+
+### GitHub PR Body Closing Keyword
+
+- Type: PR metadata
+- Input: linked GitHub issue number
+- Output: PR body contains a closing keyword such as `Closes #123`
+- Success behavior: merge 후 GitHub issue가 자동 close되고 downstream Project/Notion sync가 정리된다.
+- Failure behavior: issue가 열린 상태로 남을 수 있으므로 PR 전에 수정한다.
 
 ### Notion Issue Sync
 
@@ -168,7 +264,9 @@ GET /api/catalog/datasets/{dataset_id}
 - Output: Notion database and GitHub Project state updates
 - Timeout/retry/fallback: GitHub Actions 로그와 `Sync Error` 필드를 확인한다.
 
-## 7) 열린 이슈
+## 10) 열린 이슈
 
-- M3는 sample path 등록으로 제한한다. file upload UI는 실제 사용자 데이터 입력이 필요해질 때 별도 Phase에서 결정한다.
-- 장기 milestone의 상세 schema는 각 구현 Phase에서 해당 interface family 단위로 확정한다.
+- Target R1에서 `TrustGateResult`를 실제 품질/PII 엔진으로 계산할지, 먼저 manual/placeholder gate로 둘지 결정해야 한다.
+- Target R3 첫 확장 source는 PostgreSQL 또는 REST API 중 하나만 선택한다.
+- Target R4 query engine은 local-first 경로와 Trino 도입 시점을 결정해야 한다.
+- Target R5 Ask/Evidence는 외부 LLM 없이도 core policy/evidence 흐름을 검증할 수 있어야 한다.
