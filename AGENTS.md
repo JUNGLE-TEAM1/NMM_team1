@@ -39,9 +39,10 @@ Target repository: `JUNGLE-TEAM1/NMM_team1`.
 15. Decision Option Brief: `docs/14-decision-option-brief.md`
 16. Context Budget Rule: `docs/15-context-budget-rule.md`
 17. Existing Codebase Adoption: `docs/16-existing-codebase-adoption.md`
-18. Branch Workspaces: `docs/workflows/`
-19. Evidence: `docs/reports/`
-20. External Summary: `README.md`
+18. Parallel Milestone Protocol: `docs/17-parallel-milestone-protocol.md`
+19. Branch Workspaces: `docs/workflows/`
+20. Evidence: `docs/reports/`
+21. External Summary: `README.md`
 
 ## 기술 스택
 
@@ -76,6 +77,8 @@ Target repository: `JUNGLE-TEAM1/NMM_team1`.
 21. 고영향 선택은 `docs/14-decision-option-brief.md`를 사용하고 결과를 workspace `decisions.md`에 기록한다.
 22. `docs/15-context-budget-rule.md`에 따라 Lite Read로 시작하고, 위험 신호가 있으면 Escalate Read, 전체 검토에는 Audit Read를 사용한다.
 23. 토큰을 아끼기 위해 필요한 Source of Truth 문맥을 생략하지 않는다.
+24. 사용자가 `병렬`, `병렬 마일스톤`, `병렬 리팩토링`, `parallel milestone`, `parallel worktree`를 명시하면 `docs/17-parallel-milestone-protocol.md`를 적용한다.
+25. 병렬 프로토콜은 기존 Phase Workflow를 대체하지 않는다. 병렬 worktree/thread가 2개 이상 필요하거나 scope ownership, shared contract, integration order가 중요한 작업에만 얇은 실행 계약 레이어로 추가한다.
 
 ## 한국어 협업 산출물 규칙
 
@@ -104,6 +107,7 @@ Target repository: `JUNGLE-TEAM1/NMM_team1`.
 - Quality gate change: Development Operations -> Acceptance -> Regression -> Manual Verification -> Workflow -> Collaboration Agreement -> Next Action Menu
 - Human command flow change: Workflow -> Collaboration Agreement -> Next Action Menu
 - Decision option brief change: Workflow -> Collaboration Agreement -> Next Action Menu
+- Parallel milestone protocol change: Workflow -> Collaboration Agreement -> Next Action Menu
 - Acceptance scenario change: Acceptance -> Regression -> Manual Verification -> Workflow
 - Regression/failure criteria change: Regression -> Manual Verification -> Workflow
 - Manual verification change: Manual Verification -> Workflow
