@@ -37,7 +37,7 @@ Before a branch is considered complete:
 - `scripts/validate-harness.sh` passes.
 - `scripts/validate-harness.sh --strict` passes before integration or PR readiness.
 - Manual verification evidence is recorded when user-visible behavior changes.
-- If PR/push/handoff is the next natural action, `Pre-PR Human Checkpoint` is recorded in `confirmations.md`, `sync.md`, or `next-actions.md` before any remote-changing command.
+- If PR/push/handoff is the next natural action, `Pre-PR Human Checkpoint` is recorded in `confirmations.md` before any remote-changing command; approved action or deferral details are also recorded in `sync.md` and `next-actions.md` as applicable.
 
 ## 4) CI Gate
 

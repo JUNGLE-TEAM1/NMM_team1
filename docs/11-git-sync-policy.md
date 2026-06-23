@@ -101,12 +101,15 @@ complete + PR-ready workspace라도 remote push와 PR 생성은 `Pre-PR Human Ch
 ```bash
 scripts/prepare-pr.sh docs/workflows/feature/project-bootstrap
 scripts/prepare-pr.sh --check-pr-sync docs/workflows/feature/project-bootstrap
-scripts/prepare-pr.sh --auto-pr docs/workflows/feature/project-bootstrap
+scripts/prepare-pr.sh --approved-pr docs/workflows/feature/project-bootstrap
 scripts/prepare-pr.sh --push --create-pr docs/workflows/feature/project-bootstrap
 scripts/prepare-pr.sh --check-issue docs/workflows/feature/project-bootstrap
 scripts/prepare-pr.sh --close-issue docs/workflows/feature/project-bootstrap
 scripts/prepare-pr.sh --finalize docs/workflows/feature/project-bootstrap
 ```
+
+`--approved-pr`는 `Pre-PR Human Checkpoint`에서 사람이 PR 생성/진행을 승인한 뒤 사용하는 helper다.
+`--auto-pr`는 과거 호환용 deprecated alias이며, 사람 승인 없이 쓰지 않는다.
 
 중간에 다른 작업이 끼어들면 같은 범위의 작업은 해당 workspace의 `notes.md`, `quality.md`, `sync.md`, `report.md`에 추가 기록한다.
 범위가 바뀌면 `Scope Change Confirm`을 해결하고, 필요하면 새 branch workspace를 만든다.
@@ -147,6 +150,12 @@ For PR handoff, `Pre-PR Human Checkpoint` must record one of:
 - local hold / deferral reason, or
 - next Phase / additional work choice.
 
+Preferred evidence location:
+
+- `confirmations.md`: `## Pre-PR Human Checkpoint` section with human choice and result
+- `sync.md`: approved push/PR action or deferral reason
+- `next-actions.md`: resume condition when held
+
 Before PR handoff, run or review:
 
 ```bash
@@ -164,6 +173,7 @@ The menu includes PR 진행, 추가 보강, 다음 Phase 이동, 보류, and 외
 Complete PR-ready workspaces do not create a PR until the human chooses `PR 진행`, `PR 생성`, or an equivalent explicit action.
 If the human chooses local hold or does not answer, AI records a deferral reason and reports the next resume choice instead of pushing.
 `PR 진행` means final validation, push, PR creation, CI check, merge, PR finalize, linked issue close verification, and automatic merged branch cleanup for the current branch.
+After approval, prefer `scripts/prepare-pr.sh --approved-pr <workspace>` over the deprecated `--auto-pr` alias.
 If the human says `PR만`, `PR 생성만`, or `초안 PR`, stop after PR creation and ask again before merge, finalize, issue close, or branch cleanup.
 Stop and report back if CI fails, merge conflicts exist, required review is missing, scope drift appears, deployment/AWS resource creation is involved, or the human limited the command to PR creation/draft/hold merge.
 Deploy and AWS resource creation still require separate explicit human approval.

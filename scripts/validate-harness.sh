@@ -734,8 +734,12 @@ if ! rg -q "사람이 응답하지 않았거나 명시 승인이 없으면.*push
   fail "Pre-PR Human Checkpoint must prevent push/PR/merge without explicit human approval"
 fi
 
-if ! rg -q -- "--auto-pr" scripts/prepare-pr.sh || ! rg -q "auto_pr=1" scripts/prepare-pr.sh; then
-  fail "scripts/prepare-pr.sh must provide --auto-pr"
+if ! rg -q -- "--approved-pr" scripts/prepare-pr.sh || ! rg -q "approved_pr=1" scripts/prepare-pr.sh; then
+  fail "scripts/prepare-pr.sh must provide --approved-pr for human-approved PR handoff"
+fi
+
+if ! rg -q "deprecated compatibility alias for --approved-pr|--auto-pr is deprecated" scripts/prepare-pr.sh docs/11-git-sync-policy.md; then
+  fail "Deprecated --auto-pr compatibility behavior must be documented"
 fi
 
 if ! rg -q "cleanup-merged-branches.sh" scripts/prepare-pr.sh || ! rg -q "scripts/cleanup-merged-branches.sh" docs/11-git-sync-policy.md; then
