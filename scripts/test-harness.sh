@@ -571,6 +571,18 @@ case_prepare_pr_documents_approved_pr() {
   )
 }
 
+case_product_context_guard_missing_trust_loop_fails() {
+  local repo="${tmp_root}/product-context-missing-loop"
+  copy_repo "$repo"
+  (
+    cd "$repo"
+    perl -0pi -e 's/Trusted Dataset -> Query\/Ask -> Evidence -> Recovery/Trusted Dataset -> Evidence/g' README.md
+    git add README.md
+    git commit -q -m "remove target trust loop from readme"
+    scripts/validate-harness.sh --strict >/tmp/harness-product-context.out 2>/tmp/harness-product-context.err
+  )
+}
+
 case_docs_branch_remote_tracking_is_reported() {
   local repo="${tmp_root}/docs-branch"
   local remote="${tmp_root}/docs-branch-origin.git"
@@ -642,6 +654,7 @@ run_expect_success "existing PR status does not recommend auto PR" case_existing
 run_expect_success "complete PR-ready status requires Pre-PR checkpoint" case_complete_pr_ready_status_requires_pre_pr_checkpoint
 run_expect_success "prepare-pr check stays local" case_prepare_pr_check_is_local
 run_expect_success "prepare-pr documents approved PR helper" case_prepare_pr_documents_approved_pr
+run_expect_failure "product context guard catches missing trust loop" case_product_context_guard_missing_trust_loop_fails
 run_expect_success "docs branch remote and tracking status is reported" case_docs_branch_remote_tracking_is_reported
 run_expect_failure "missing harness regression script fails validation" case_missing_harness_test_script_fails
 run_expect_success "harness test skip record passes" case_harness_test_skip_record_passes
