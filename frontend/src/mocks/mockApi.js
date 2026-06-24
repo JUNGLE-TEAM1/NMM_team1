@@ -1112,7 +1112,7 @@ const handleRequest = async (input, init = {}) => {
 
   if (pathname === "/api/connections") return handleCollection(state, "connections", "conn", null, method, init);
   if (segments[0] === "api" && segments[1] === "connections") {
-    if (segments[2] === "test") return jsonResponse({ status: "connected", message: "Mock connection successful" });
+    if (segments[2] === "test") return jsonResponse({ status: "connected", message: "Connection successful" });
     return handleCollection(state, "connections", "conn", segments[2], method, init);
   }
 
