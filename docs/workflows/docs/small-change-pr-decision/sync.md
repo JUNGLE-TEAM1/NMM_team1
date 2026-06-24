@@ -39,10 +39,10 @@ main 동기화와 integration readiness를 기록한다.
 
 ## Push / PR
 
-- linked GitHub issue: 
-- issue link: 
-- issue creation result: not requested
-- PR closing keyword: 
+- linked GitHub issue: #59
+- issue link: https://github.com/JUNGLE-TEAM1/NMM_team1/issues/59
+- issue creation result: created after PR approval request
+- PR closing keyword: Closes #59
 - pushed branch:
 - PR link:
 - merge status:
