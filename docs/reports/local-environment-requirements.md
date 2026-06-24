@@ -5,9 +5,9 @@
 - Type: docs
 - Date: 2026-06-24
 - Changed: macOS/Windows 로컬 개발 지원 기준을 `docs/04`에 Source of Truth로 정리하고, WSL2 권장 경로, native Windows 미검증 범위, Docker Compose 권장 경로, 후속 cross-platform audit/tooling 후보를 문서화했다.
-- Verified: `scripts/validate-harness.sh`, `scripts/validate-harness.sh --strict`, `git diff --check`
+- Verified: `scripts/validate-harness.sh`, `scripts/validate-harness.sh --strict`, `git diff --check`, PR #67 GitHub Actions `harness`, `container-smoke`, `manifest-smoke`
 - Remaining: 실제 Windows WSL2/native Windows smoke evidence와 PowerShell/Python helper 같은 tooling 개선은 별도 Phase 후보로 남았다.
-- Next context: `PR 진행`, `로컬 완료로 보류`, `추가 수정`, 또는 `docs/cross-platform-smoke-audit` 중 선택.
+- Next context: PR #67은 merge 완료. `docs/windows-wsl2-smoke-audit`, cross-platform tooling, local cleanup, 또는 다음 Phase 중 선택.
 - Risk: 문서 기준 보강만 수행했으며 native Windows PowerShell/CMD 지원은 아직 보장하지 않는다.
 
 ## Phase
@@ -63,7 +63,7 @@ git diff --check
 - Workspace file: `docs/workflows/docs/local-environment-requirements/quality.md`
 - Quality gate status: passed
 - TDD status: not applicable, docs-only change
-- CI/check result: local harness validation passed
+- CI/check result: local harness validation passed; PR #67 GitHub Actions `harness`, `container-smoke`, `manifest-smoke` passed
 - Skipped checks: product runtime smoke, Windows WSL2 smoke, native Windows smoke
 - CD/deploy gate: not required
 

@@ -5,31 +5,31 @@
 ## Current State / 현재 상태
 
 - State: complete
-- Summary: 로컬 개발 환경 요구사항과 macOS/Windows 지원 기준을 Source of Truth와 검증 문서에 반영했고 local harness validation이 통과했다.
+- Summary: 로컬 개발 환경 요구사항과 macOS/Windows 지원 기준을 Source of Truth와 검증 문서에 반영했고 PR #67이 merge됐다.
 
 ## Recommended Next Action / 권장 다음 행동
 
-- Small Change Completion Decision을 진행한다.
-- Reason: 팀 공유 하네스 기준 변경이므로 PR 후보지만, 현재 worktree에는 기존 unrelated 변경이 있어 포함 파일을 분리해야 한다.
+- 다음 Phase 또는 후속 Windows WSL2 smoke evidence 작업을 선택한다.
+- Reason: PR #67 merge와 CI 통과까지 완료됐고, 실제 Windows 실행 증거는 별도 환경이 필요한 후속 작업이다.
 
 ## Options / 선택지
 
-1. PR 진행: 이번 Phase 파일만 선별해 PR packaging을 준비한다.
-2. 로컬 완료로 보류: 현재 변경을 local complete 상태로 두고 후속 Windows audit 전에 재개한다.
-3. 추가 수정: 로컬 환경 문구나 후속 Phase 후보를 더 다듬는다.
-4. 다음 Phase 시작: `docs/cross-platform-smoke-audit` 또는 `chore/cross-platform-tooling`을 별도 Phase로 시작한다.
+1. 다음 Phase 시작: `docs/windows-wsl2-smoke-audit` 또는 `chore/cross-platform-tooling`을 별도 Phase로 진행한다.
+2. 로컬 정리: stale local branch/worktree와 `.DS_Store` 정리를 사람 확인 후 진행한다.
+3. 추가 보강: 로컬 환경 문구나 후속 Phase 후보를 더 다듬는다.
+4. 보류: 현재 merged 상태를 유지하고 Windows machine 확보 후 재개한다.
 
 ## Waiting On Human / 사람 응답 대기
 
-- `PR 진행`, `로컬 완료로 보류`, `추가 수정`, `다음 Phase` 중 하나를 고른다.
+- `다음 Phase`, `로컬 정리`, `추가 보강`, `보류` 중 하나를 고른다.
 
 ## Last User Choice / 마지막 사용자 선택
 
-- "프롬프트를 적용해줘"
+- "지금 진행중인 작업보고 확인해서 못한작업 마무리해줘"
 
 ## Next AI Action / 다음 AI 행동
 
-- option 1이면 unrelated 변경과 `.DS_Store`를 제외하고 이번 Phase 파일만 보고한 뒤 PR 준비를 진행한다.
-- option 2이면 `sync.md`에 local hold를 유지한다.
+- option 1이면 별도 workspace/branch 기준을 확인하고 후속 Phase를 시작한다.
+- option 2이면 삭제 대상 목록을 제시하고 사람 확인 후 정리한다.
 - option 3이면 해당 문서만 추가 수정하고 validation을 재실행한다.
-- option 4이면 별도 workspace를 만들기 전에 branch/sync 상태를 다시 확인한다.
+- option 4이면 `sync.md`와 후속 workspace에 resume condition을 기록한다.
