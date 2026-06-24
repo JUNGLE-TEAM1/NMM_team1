@@ -45,7 +45,6 @@ import S3TransformPanel from "../../components/etl/S3TransformPanel";
 import S3TargetPropertiesPanel from "../../components/etl/S3TargetPropertiesPanel";
 import JobDetailsPanel from "../../components/etl/JobDetailsPanel";
 import SchedulesPanel from "../../components/etl/SchedulesPanel";
-import RunsPanel from "../../components/etl/RunsPanel";
 import { applyTransformToSchema } from "../../utils/schemaTransforms";
 import DatasetNode from "../../components/common/nodes/DatasetNode";
 import { SchemaNode } from "../domain/components/schema-node/SchemaNode";
@@ -329,7 +328,6 @@ export default function ETLJobPage() {
     maxRetries: 0,
   });
   const [schedules, setSchedules] = useState([]);
-  const [runs, setRuns] = useState([]);
   const [jobId, setJobId] = useState(urlJobId || null);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(!!urlJobId);
@@ -779,13 +777,6 @@ export default function ETLJobPage() {
     Sort: ArrowUpDown,
   };
 
-  // Load runs when switching to Runs tab
-  useEffect(() => {
-    if (mainTab === "Runs" && jobId) {
-      fetchRuns();
-    }
-  }, [mainTab, jobId]);
-
   // Load job data if jobId is provided in URL
   useEffect(() => {
     if (urlJobId) {
@@ -914,11 +905,6 @@ export default function ETLJobPage() {
       setIsLoading(false);
     }
   };
-
-  // Tabs shown based on whether job is saved
-  const availableTabs = jobId
-    ? ["Visual", "Job details", "Runs", "Schedules"]
-    : ["Visual", "Job details"];
 
   const nodeOptions = {
     source: [
@@ -1621,30 +1607,6 @@ export default function ETLJobPage() {
     }
   };
 
-  const fetchRuns = async () => {
-    if (!jobId) return;
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/job-runs?dataset_id=${jobId}`
-      );
-      if (response.ok) {
-        const data = await response.json();
-        // Transform API response to match RunsPanel format
-        const formattedRuns = data.map((run) => ({
-          id: run.id,
-          status: run.status === "success" ? "succeeded" : run.status,
-          startTime: run.started_at,
-          endTime: run.finished_at,
-          duration: run.duration_seconds,
-          trigger: "Manual",
-        }));
-        setRuns(formattedRuns);
-      }
-    } catch (error) {
-      console.error("Failed to fetch runs:", error);
-    }
-  };
-
   const fetchStreamingStatus = async () => {
     try {
       const response = await fetch(
@@ -1986,24 +1948,23 @@ export default function ETLJobPage() {
         </div>
       </div>
 
-      {/* Main Tabs (Visual / Lineage / Job details / Runs / Schedules) */}
+      {/* Main Tabs (Visual / Lineage / Job details / Schedules) */}
       <div className="bg-white border-b border-gray-200 px-4 sm:px-6 flex items-center gap-6 overflow-x-auto">
         {(() => {
           const baseTabs = isLineageMode
-            ? ["Lineage", "Visual", "Job details", "Runs", "Schedules"]
-            : ["Visual", "Job details", "Runs", "Schedules"];
+            ? ["Lineage", "Visual", "Job details", "Schedules"]
+            : ["Visual", "Job details", "Schedules"];
           const visibleTabs =
             jobDetails.jobType === "streaming"
               ? baseTabs.filter((tab) => tab !== "Schedules")
               : baseTabs;
 
           return visibleTabs.map((tab) => {
-            const isDisabled = !IS_FRONTEND_ONLY && !jobId && (tab === "Runs" || tab === "Schedules");
+            const isDisabled = !IS_FRONTEND_ONLY && !jobId && tab === "Schedules";
             const tabLabels = {
               Visual: "파이프라인",
               Lineage: "리니지",
               "Job details": "작업 설정",
-              Runs: "실행 기록",
               Schedules: "스케줄",
             };
             return (
@@ -2860,8 +2821,6 @@ export default function ETLJobPage() {
             }
           }}
         />
-      ) : mainTab === "Runs" ? (
-        <RunsPanel runs={runs} onRefresh={fetchRuns} />
       ) : (
         <div className="flex-1 flex items-center justify-center bg-gray-50">
           <div className="text-center">
