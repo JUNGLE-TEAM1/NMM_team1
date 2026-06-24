@@ -28,6 +28,7 @@ def create_app(store: MetadataStore | None = None, settings: Settings | None = N
         create_source_catalog_router(
             container.metadata_store,
             container.source_catalog_service,
+            container.catalog_trust_service,
         )
     )
     app.include_router(

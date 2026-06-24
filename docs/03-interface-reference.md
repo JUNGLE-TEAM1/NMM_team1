@@ -97,9 +97,64 @@ GET /api/catalog/datasets/{dataset_id}
   "sample": [
     { "order_id": "A001", "amount": 12000 }
   ],
-  "status": "ready"
+  "status": "ready",
+  "owner": "unassigned",
+  "trust_status": "Draft",
+  "trust_gate_result": {
+    "id": "trust_gate_001",
+    "dataset_id": "dataset_001",
+    "status": "Draft",
+    "required_gates": ["schema", "quality", "pii", "owner", "policy", "approval"],
+    "passed_gates": ["schema"],
+    "failed_gates": ["quality", "pii", "owner", "policy", "approval"],
+    "reasons": ["quality gate is pending"],
+    "evaluated_at": "2026-06-24T00:00:00Z"
+  }
 }
 ```
+
+### Catalog / Trust Gate 계약
+
+- Type: API/UI/Internal store
+- Scope: Target R1 최소 구현. baseline `status: ready`는 유지하고 Target 신뢰 상태는 `trust_status`와 `trust_gate_result`로 분리한다.
+- Mock/Fake boundary: quality, PII, owner, policy, approval gate는 deterministic placeholder로 계산한다. 실제 PII 탐지, 외부 policy service, secret-backed provider는 포함하지 않는다.
+- Endpoint:
+
+```text
+POST /api/catalog/datasets/{dataset_id}/trust-gate
+```
+
+- Request:
+
+```json
+{
+  "owner": "data-team",
+  "passed_gates": ["schema", "quality", "pii", "owner", "policy", "approval"],
+  "failed_gates": []
+}
+```
+
+- Response: `TrustGateResult`
+
+```json
+{
+  "id": "trust_gate_001",
+  "dataset_id": "dataset_001",
+  "status": "Trusted",
+  "required_gates": ["schema", "quality", "pii", "owner", "policy", "approval"],
+  "passed_gates": ["schema", "quality", "pii", "owner", "policy", "approval"],
+  "failed_gates": [],
+  "reasons": ["all required trust gates passed"],
+  "evaluated_at": "2026-06-24T00:00:00Z"
+}
+```
+
+Trust status rule:
+
+- `Trusted`: all required gates are passed.
+- `Verifying`: no gate has explicitly failed, but one or more required gates are still pending.
+- `Blocked`: one or more gates are explicitly listed in `failed_gates`.
+- Query / Ask follow-up phases must treat only `Trusted` as the default consumable candidate. `Draft`, `Verifying`, and `Blocked` are default block/defer candidates until a later policy contract states otherwise.
 
 ### Baseline Pipeline 계약
 

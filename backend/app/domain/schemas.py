@@ -37,6 +37,9 @@ class CatalogDataset(BaseModel):
     row_count: int
     sample: list[dict[str, object]]
     status: str
+    owner: str = "unassigned"
+    trust_status: str = "Draft"
+    trust_gate_result: dict[str, object] | None = None
     error_message: str | None = None
     created_at: str
 
@@ -44,6 +47,12 @@ class CatalogDataset(BaseModel):
 class SourceRegistration(BaseModel):
     source: SourceRecord
     dataset: CatalogDataset
+
+
+class TrustGateEvaluationRequest(BaseModel):
+    owner: str | None = Field(default=None, min_length=1, max_length=80)
+    passed_gates: list[str] = []
+    failed_gates: list[str] = []
 
 
 class PipelineCreate(BaseModel):

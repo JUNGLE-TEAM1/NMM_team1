@@ -28,6 +28,10 @@ def test_register_csv_source_and_read_catalog_detail() -> None:
     assert payload["source"]["id"]
     assert payload["source"]["dataset_id"] == payload["dataset"]["id"]
     assert payload["dataset"]["status"] == "ready"
+    assert payload["dataset"]["trust_status"] == "Draft"
+    assert payload["dataset"]["trust_gate_result"]["status"] == "Draft"
+    assert payload["dataset"]["trust_gate_result"]["passed_gates"] == ["schema"]
+    assert "quality gate is pending" in payload["dataset"]["trust_gate_result"]["reasons"]
     assert payload["dataset"]["row_count"] == 5
     assert payload["dataset"]["schema"][0] == {"name": "order_id", "type": "string"}
     assert payload["dataset"]["schema"][2] == {"name": "amount", "type": "integer"}
@@ -48,6 +52,97 @@ def test_register_csv_source_and_read_catalog_detail() -> None:
     dataset_detail = client.get(f"/api/catalog/datasets/{payload['dataset']['id']}")
     assert dataset_detail.status_code == 200
     assert dataset_detail.json()["sample"][1]["customer"] == "Lee"
+    assert dataset_detail.json()["trust_status"] == "Draft"
+
+
+def test_catalog_dataset_can_be_published_when_all_trust_gates_pass() -> None:
+    client = make_client()
+    source_response = client.post(
+        "/api/sources",
+        json={"name": "trusted_orders", "type": "csv", "path": "samples/orders.csv"},
+    )
+    assert source_response.status_code == 201
+    dataset_id = source_response.json()["dataset"]["id"]
+
+    response = client.post(
+        f"/api/catalog/datasets/{dataset_id}/trust-gate",
+        json={
+            "owner": "data-team",
+            "passed_gates": ["schema", "quality", "pii", "owner", "policy", "approval"],
+        },
+    )
+
+    assert response.status_code == 200
+    gate = response.json()
+    assert gate["dataset_id"] == dataset_id
+    assert gate["status"] == "Trusted"
+    assert gate["failed_gates"] == []
+    assert "all required trust gates passed" in gate["reasons"]
+
+    dataset = client.get(f"/api/catalog/datasets/{dataset_id}").json()
+    assert dataset["owner"] == "data-team"
+    assert dataset["trust_status"] == "Trusted"
+    assert dataset["trust_gate_result"]["id"] == gate["id"]
+
+
+def test_catalog_dataset_stays_verifying_when_required_trust_gates_are_pending() -> None:
+    client = make_client()
+    source_response = client.post(
+        "/api/sources",
+        json={"name": "verifying_orders", "type": "csv", "path": "samples/orders.csv"},
+    )
+    assert source_response.status_code == 201
+    dataset_id = source_response.json()["dataset"]["id"]
+
+    response = client.post(
+        f"/api/catalog/datasets/{dataset_id}/trust-gate",
+        json={"owner": "data-team", "passed_gates": ["schema", "quality"]},
+    )
+
+    assert response.status_code == 200
+    gate = response.json()
+    assert gate["status"] == "Verifying"
+    assert gate["failed_gates"] == []
+    assert "pii gate is pending" in gate["reasons"]
+
+    dataset = client.get(f"/api/catalog/datasets/{dataset_id}").json()
+    assert dataset["trust_status"] == "Verifying"
+
+
+def test_catalog_dataset_stays_blocked_when_required_trust_gate_fails() -> None:
+    client = make_client()
+    source_response = client.post(
+        "/api/sources",
+        json={"name": "blocked_orders", "type": "csv", "path": "samples/orders.csv"},
+    )
+    assert source_response.status_code == 201
+    dataset_id = source_response.json()["dataset"]["id"]
+
+    response = client.post(
+        f"/api/catalog/datasets/{dataset_id}/trust-gate",
+        json={"owner": "data-team", "passed_gates": ["schema", "quality"], "failed_gates": ["pii"]},
+    )
+
+    assert response.status_code == 200
+    gate = response.json()
+    assert gate["status"] == "Blocked"
+    assert gate["failed_gates"] == ["pii"]
+    assert "pii gate failed" in gate["reasons"]
+
+    dataset = client.get(f"/api/catalog/datasets/{dataset_id}").json()
+    assert dataset["trust_status"] == "Blocked"
+
+
+def test_trust_gate_returns_not_found_for_missing_dataset() -> None:
+    client = make_client()
+
+    response = client.post(
+        "/api/catalog/datasets/not-found/trust-gate",
+        json={"passed_gates": ["schema"]},
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Catalog dataset not found"
 
 
 def test_register_missing_csv_returns_validation_error() -> None:

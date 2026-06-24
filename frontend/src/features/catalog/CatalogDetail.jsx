@@ -1,4 +1,6 @@
 export function CatalogDetail({ dataset }) {
+  const trustGate = dataset.trust_gate_result;
+
   return (
     <div className="dataset-detail">
       <div className="dataset-header">
@@ -23,6 +25,29 @@ export function CatalogDetail({ dataset }) {
           <dd>{dataset.source_type}</dd>
         </div>
       </dl>
+
+      <section className="trust-panel" aria-label="Dataset trust status">
+        <div className="trust-heading">
+          <div>
+            <span>Trust</span>
+            <strong>{dataset.trust_status}</strong>
+          </div>
+          <small>{dataset.owner}</small>
+        </div>
+        {trustGate ? (
+          <div className="gate-grid">
+            <div>
+              <span>Passed</span>
+              <strong>{trustGate.passed_gates.length}</strong>
+            </div>
+            <div>
+              <span>Remaining</span>
+              <strong>{trustGate.failed_gates.length}</strong>
+            </div>
+            <p>{trustGate.reasons.join(", ")}</p>
+          </div>
+        ) : null}
+      </section>
 
       <div className="schema-list">
         {dataset.schema.map((column) => (
