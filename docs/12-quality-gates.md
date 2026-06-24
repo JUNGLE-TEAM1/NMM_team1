@@ -37,6 +37,7 @@ Before a branch is considered complete:
 - Harness Test Update Gate evidence is recorded when harness rules, scripts, or CI harness jobs change.
 - `scripts/validate-harness.sh` passes.
 - `scripts/validate-harness.sh --strict` passes before integration or PR readiness.
+- After PR conflict resolution, `sync.md` records conflict type, resolution method, resolved files, rerun validation, and remaining PR/CI/merge risk before PR progression resumes. `quality.md` records rerun check commands/results when tests or harness validation are affected.
 - Manual verification evidence is recorded when user-visible behavior changes.
 - If PR/push/handoff is the next natural action, `Pre-PR Human Checkpoint` is recorded in `confirmations.md` before any remote-changing command; approved action or deferral details are also recorded in `sync.md` and `next-actions.md` as applicable.
 
@@ -91,6 +92,7 @@ Each workspace uses `quality.md` to record:
 - failing test first evidence
 - implementation pass evidence
 - local tool/runtime readiness checks, safe start attempts, fallback attempts, and remaining manual action when validation depends on local runtime
+- PR conflict detection/resolution evidence when conflict handling happened: `sync.md` keeps detection/resolution fields, and `quality.md` keeps rerun validation/check result when applicable
 - CI/check commands
 - CI/check result
 - Source of Truth impact: `none`, `required`, `applied`, or `deferred`

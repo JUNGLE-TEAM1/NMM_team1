@@ -201,6 +201,23 @@ AI does:
 Human says:
 
 ```text
+PR 충돌 해결해
+```
+
+AI does:
+
+- Checks PR conflict state with read-only commands first, such as `gh pr view`, `git status --short`, and existing workspace `sync.md`.
+- Reports current branch, PR number, base branch, detection command, conflict type, affected files, and impacted layer.
+- Does not run merge, rebase, pull, push, PR merge, force push, destructive cleanup, or continuation commands without the human choosing a resolution path.
+- Classifies the conflict as Git text, Source of Truth, contract/interface/schema, test/quality gate, generated artifact/report/workspace evidence, or external dependency/lockfile.
+- Records detection and selected path in `sync.md`; updates `shared-docs.md`, `decisions.md`, `quality.md`, `next-actions.md`, or `report.md` when applicable.
+- Presents options: 1. main 반영 후 현재 branch에서 해결, 2. Source of Truth 우선 결정, 3. 작업 분리, 4. PR 보류, 5. 사람 직접 해결.
+- After an approved resolution, reruns `git status --short`, `scripts/validate-harness.sh`, `scripts/validate-harness.sh --strict`, relevant project checks, and `scripts/test-harness.sh` when harness behavior changed.
+- Stops and reports back if conflicts remain, CI fails, required review is missing, or the human limited the action to analysis/hold/manual resolution.
+
+Human says:
+
+```text
 하네스 규칙 수정해
 검증 규칙 추가해
 workflow 보강해
@@ -287,6 +304,7 @@ AI does:
 
 - Runs `scripts/status-workflow.sh <workspace>`.
 - If workspace is `complete`, pending confirmations are clear, and PR checklist is ready, reports branch, linked issue, PR closing keyword, local validation result, remaining remote work, and any external approval need.
+- If `scripts/status-workflow.sh` reports unresolved PR conflict evidence, presents `PR Conflict Detected` before PR-ready or merge/finalize choices.
 - For complete PR-ready workspaces, does not push or create a PR from a status question alone.
 - Runs `Pre-PR Human Checkpoint` and asks the human to choose the next handoff action.
 - Presents the completion handoff choice menu with a short explanation for each choice:

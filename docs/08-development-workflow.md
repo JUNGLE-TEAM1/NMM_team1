@@ -263,6 +263,7 @@ Workspace state 값:
 - Harness Test Update Gate: when harness rules, workflow docs, validation/status/prepare/start scripts, or CI harness jobs change, decide whether fixture regression tests must be added or updated.
 - Push / PR: prefer PR-based integration and record branch, PR link, and merge status in `sync.md`.
 - PR Sync Preflight: before PR handoff or PR creation, run `scripts/prepare-pr.sh --check-pr-sync <workspace>` to catch stale or contradictory `sync.md` Push / PR fields.
+- PR Conflict Resolution: if GitHub PR conflict, local merge/rebase conflict, unmerged path, or Source of Truth proposal conflict appears, stop PR progression, classify the conflict, record evidence in `sync.md`, and ask for `PR Conflict Confirm` or the matching sync/integration confirm before merge/rebase/push/PR merge continues.
 - Pre-PR Human Checkpoint: when local validation passed and push, PR creation, PR handoff, or integration handoff is the next natural action, present a 2-4 option handoff menu before any remote action.
 - PR Approval Scope: only a human choice such as `PR 진행`, `PR 생성`, or equivalent authorizes branch push, PR creation, CI/check status follow-up, merge, finalize, or cleanup within the stated scope.
 - PR Finalization: after PR merge, run `scripts/prepare-pr.sh --finalize <workspace>` and record final merge/issue close status in `sync.md`; finalize also runs automatic merged branch cleanup.
@@ -538,7 +539,8 @@ AI는 각 선택지마다 진행 절차, 선택하면 좋은 상황, 장점, 주
 사람이 `PR 진행`을 명시하면 해당 branch의 push, PR 생성, CI 확인, merge, finalize, linked issue close 확인, merged branch cleanup까지 승인한 것으로 본다.
 사람이 `PR 생성만`, `초안 PR`, `PR만 올려줘`, `머지는 보류`라고 제한하면 PR 생성까지만 승인한 것으로 보고 merge/finalize/cleanup 전 다시 멈춘다.
 사람이 응답하지 않았거나 명시 승인이 없으면 local validation 완료까지만 보고하고 push/PR/merge를 실행하지 않는다.
-단, CI 실패, merge conflict, required review 미충족, scope drift, deploy/AWS resource 생성, 데이터 변경/마이그레이션 같은 추가 위험이 발견되면 멈추고 사람에게 보고한다.
+단, CI 실패, PR conflict/merge conflict, required review 미충족, scope drift, deploy/AWS resource 생성, 데이터 변경/마이그레이션 같은 추가 위험이 발견되면 멈추고 사람에게 보고한다.
+PR conflict가 발견되면 `docs/11-git-sync-policy.md`의 `PR Conflict Resolution Protocol`에 따라 conflict 유형, 감지 명령, 영향 계층, 해결 선택지, 재검증 결과를 `sync.md`, `quality.md`, 필요 시 `shared-docs.md`/`decisions.md`/`report.md`에 기록한다.
 사람이 `PR 올리지 마`, `로컬에만 둬`, `보류`, `PR은 나중에`, `draft만`이라고 명시하면 PR 생성을 하지 않는다.
 추가 보강이 현재 branch 범위를 넘으면 `Scope Change Confirm`을 먼저 해결한다.
 다음 Phase로 이동하면 branch switch/checkpoint 규칙을 따른다.

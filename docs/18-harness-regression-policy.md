@@ -45,6 +45,12 @@ When changing an existing rule:
 - add a new fixture if the old test would not fail for the new behavior
 - record the changed test result in the current workspace `quality.md`
 
+PR conflict workflow changes should be protected by a fixture or static guard that checks:
+
+- `scripts/start-workflow.sh` creates `PR Conflict Confirm` and `PR Conflict Resolution` evidence fields
+- `scripts/status-workflow.sh` summarizes PR conflict evidence read-only and prioritizes unresolved conflict resolution
+- `docs/11-git-sync-policy.md`, `docs/10-next-action-menu.md`, and `docs/13-human-command-flow.md` keep the protocol/menu/command flow connected
+
 When test work is skipped or deferred:
 
 - `skipped` needs a reason in `quality.md`

@@ -735,6 +735,26 @@ if ! rg -q "Pre-PR Human Checkpoint" AGENTS.md docs/08-development-workflow.md d
   fail "Pre-PR Human Checkpoint policy is not documented across workflow docs and status workflow"
 fi
 
+if ! rg -q "PR Conflict Resolution Protocol" docs/11-git-sync-policy.md; then
+  fail "docs/11-git-sync-policy.md must document PR Conflict Resolution Protocol"
+fi
+
+if ! rg -q "PR Conflict Detected" docs/10-next-action-menu.md; then
+  fail "docs/10-next-action-menu.md must include PR Conflict Detected menu"
+fi
+
+if ! rg -q "PR 충돌 해결해|PR conflict" docs/13-human-command-flow.md; then
+  fail "docs/13-human-command-flow.md must document a PR conflict command flow"
+fi
+
+if ! rg -q "PR Conflict Confirm" scripts/start-workflow.sh || ! rg -q "PR Conflict Resolution" scripts/start-workflow.sh; then
+  fail "scripts/start-workflow.sh must template PR Conflict Confirm and PR Conflict Resolution evidence"
+fi
+
+if ! rg -q "PR Conflict" scripts/status-workflow.sh || ! rg -q "pr_conflict_" scripts/status-workflow.sh; then
+  fail "scripts/status-workflow.sh must summarize PR conflict evidence read-only"
+fi
+
 if ! rg -q "PR 올리지 마|로컬에만 둬|PR은 나중에|draft만" docs/08-development-workflow.md docs/11-git-sync-policy.md docs/13-human-command-flow.md; then
   fail "PR hold/opt-out phrases are not documented"
 fi

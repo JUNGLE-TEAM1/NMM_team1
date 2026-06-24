@@ -253,6 +253,14 @@ if [[ -f "$sync_file" ]]; then
   pr_link="$(section_value "$sync_file" "## Push / PR" "- PR link:")"
   merge_status="$(section_value "$sync_file" "## Push / PR" "- merge status:")"
   issue_close_status="$(section_value "$sync_file" "## Push / PR" "- issue close status:")"
+  pr_conflict_detected_at="$(section_value "$sync_file" "## PR Conflict Resolution" "- conflict detected at:")"
+  pr_conflict_command="$(section_value "$sync_file" "## PR Conflict Resolution" "- conflict detection command:")"
+  pr_conflict_type="$(section_value "$sync_file" "## PR Conflict Resolution" "- conflict type:")"
+  pr_conflict_affected_files="$(section_value "$sync_file" "## PR Conflict Resolution" "- affected files:")"
+  pr_conflict_resolution_path="$(section_value "$sync_file" "## PR Conflict Resolution" "- resolution path:")"
+  pr_conflict_resolved_files="$(section_value "$sync_file" "## PR Conflict Resolution" "- resolved files:")"
+  pr_conflict_revalidation="$(section_value "$sync_file" "## PR Conflict Resolution" "- revalidation:")"
+  pr_conflict_remaining_risk="$(section_value "$sync_file" "## PR Conflict Resolution" "- remaining risk:")"
   echo "  - Start Sync base commit: ${start_base:-missing}"
   echo "  - Start Sync result: ${start_result:-missing}"
   echo "  - Pre-Merge main commit: ${pre_main:-missing}"
@@ -270,6 +278,19 @@ else
   echo "  - sync.md missing"
 fi
 echo
+
+if [[ -n "${pr_conflict_detected_at:-}${pr_conflict_command:-}${pr_conflict_type:-}${pr_conflict_affected_files:-}${pr_conflict_resolution_path:-}${pr_conflict_revalidation:-}${pr_conflict_remaining_risk:-}" ]]; then
+  echo "PR Conflict"
+  echo "  - Detected at: ${pr_conflict_detected_at:-missing}"
+  echo "  - Detection command: ${pr_conflict_command:-missing}"
+  echo "  - Conflict type: ${pr_conflict_type:-missing}"
+  echo "  - Affected files: ${pr_conflict_affected_files:-missing}"
+  echo "  - Resolution path: ${pr_conflict_resolution_path:-missing}"
+  echo "  - Resolved files: ${pr_conflict_resolved_files:-missing}"
+  echo "  - Revalidation: ${pr_conflict_revalidation:-missing}"
+  echo "  - Remaining risk: ${pr_conflict_remaining_risk:-missing}"
+  echo
+fi
 
 echo "Quality"
 if [[ -f "$quality" ]]; then
@@ -449,6 +470,8 @@ elif [[ "$closing_keyword_recorded" == "no" ]]; then
   recommendation="Record the PR closing keyword in sync.md so the linked issue closes after merge."
 elif [[ "${source_of_truth_state:-none}" == "unresolved" ]]; then
   recommendation="Resolve Source of Truth proposals before PR: update the proposed docs or record deferred decisions with revisit trigger and target phase/branch."
+elif [[ -n "${pr_conflict_detected_at:-}${pr_conflict_command:-}${pr_conflict_type:-}${pr_conflict_affected_files:-}" && ( -z "${pr_conflict_resolution_path:-}" || -z "${pr_conflict_revalidation:-}" ) ]]; then
+  recommendation="PR conflict evidence is present but resolution or revalidation is missing. Ask for PR Conflict Confirm before PR progression: choose current-branch resolution, Source of Truth decision, split work, hold PR, or human manual resolution."
 elif [[ "$decision_status" == "none" && -f "$shared_docs" ]] && awk -F '|' '
   /^\| `docs\// {
     value=$3 $4

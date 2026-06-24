@@ -276,6 +276,11 @@ EOF_SOURCES
 - Status: not needed
 - Human response: fixture
 
+## PR Conflict Confirm / PR 충돌 확인
+
+- Status: not needed
+- Human response: fixture
+
 ## Completion Confirm / 완료 확인
 
 - Status: accepted
@@ -319,6 +324,17 @@ EOF_NEXT
 - validation: fixture
 - result: ready for PR preparation
 - deferral reason:
+
+## PR Conflict Resolution
+
+- conflict detected at:
+- conflict detection command:
+- conflict type:
+- affected files:
+- resolution path:
+- resolved files:
+- revalidation:
+- remaining risk:
 
 ## Push / PR
 
@@ -543,6 +559,32 @@ case_complete_pr_ready_status_requires_pre_pr_checkpoint() {
   )
 }
 
+case_status_reports_pr_conflict_priority() {
+  local repo="${tmp_root}/pr-conflict-status"
+  copy_repo "$repo"
+  (
+    cd "$repo"
+    local base
+    base="$(base_commit)"
+    local workspace="docs/workflows/test/harness-pr-conflict"
+    write_common_workspace "$workspace" "complete" "passed" "accepted" "$base"
+    awk '
+      /^- conflict detected at:/ { print "- conflict detected at: 2026-06-24"; next }
+      /^- conflict detection command:/ { print "- conflict detection command: gh pr view 99 --json mergeable"; next }
+      /^- conflict type:/ { print "- conflict type: Git text conflict"; next }
+      /^- affected files:/ { print "- affected files: docs/11-git-sync-policy.md"; next }
+      { print }
+    ' "${workspace}/sync.md" > "${workspace}/sync.md.tmp"
+    mv "${workspace}/sync.md.tmp" "${workspace}/sync.md"
+    git add "$workspace"
+    git commit -q -m "pr conflict status fixture"
+    scripts/status-workflow.sh "$workspace" > /tmp/harness-pr-conflict-status.out
+    rg -q "PR Conflict" /tmp/harness-pr-conflict-status.out
+    rg -q "Conflict type: Git text conflict" /tmp/harness-pr-conflict-status.out
+    rg -q "PR Conflict Confirm" /tmp/harness-pr-conflict-status.out
+  )
+}
+
 case_prepare_pr_check_is_local() {
   local repo="${tmp_root}/prepare-pr"
   copy_repo "$repo"
@@ -652,6 +694,7 @@ run_expect_failure "complete workspace with missing pre-merge sync fails" case_m
 run_expect_success "status workflow reports Source of Truth proposal status" case_status_reports_sot
 run_expect_success "existing PR status does not recommend auto PR" case_existing_pr_status_does_not_recommend_auto_pr
 run_expect_success "complete PR-ready status requires Pre-PR checkpoint" case_complete_pr_ready_status_requires_pre_pr_checkpoint
+run_expect_success "status workflow prioritizes PR conflict resolution" case_status_reports_pr_conflict_priority
 run_expect_success "prepare-pr check stays local" case_prepare_pr_check_is_local
 run_expect_success "prepare-pr documents approved PR helper" case_prepare_pr_documents_approved_pr
 run_expect_failure "product context guard catches missing trust loop" case_product_context_guard_missing_trust_loop_fails
