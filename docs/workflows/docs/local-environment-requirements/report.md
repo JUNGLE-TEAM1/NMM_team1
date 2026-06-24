@@ -11,7 +11,7 @@
 - Escalated context read: `docker-compose.yml`, `infra/docker/backend.Dockerfile`, `infra/docker/frontend.Dockerfile`, `backend/requirements.txt`, `frontend/package.json`, `.env.example`, `scripts/*.sh` search results
 - Context omitted intentionally: product architecture/interface full review; no API/schema/data/runtime behavior changed
 - Changed: local environment requirements, OS support tiers, WSL2 recommendation, native Windows limitation, manual verification readiness, follow-up cross-platform audit/tooling candidates
-- Verified: `scripts/validate-harness.sh`, `scripts/validate-harness.sh --strict`, `git diff --check`
+- Verified: `scripts/validate-harness.sh`, `scripts/validate-harness.sh --strict`, `git diff --check`, PR #67 GitHub Actions `harness`, `container-smoke`, `manifest-smoke`
 - Remaining: actual Windows WSL2/native Windows smoke evidence and cross-platform tooling improvements are follow-up Phase candidates
-- Next context: choose PR handoff, local hold, additional wording changes, or `docs/cross-platform-smoke-audit`
+- Next context: PR #67 is merged; choose Windows WSL2 smoke evidence, cross-platform tooling, local cleanup, or another next Phase
 - Risk: current changes are docs-only; native Windows support is explicitly not guaranteed until evidence/tooling exists

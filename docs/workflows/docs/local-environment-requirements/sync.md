@@ -45,5 +45,6 @@ main 동기화와 integration readiness를 기록한다.
 - PR closing keyword: 
 - pushed branch: docs/local-environment-requirements
 - PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/67
-- merge status: open
+- merge status: merged
 - issue close status: not applicable, no linked issue
+- remote branch status: deleted after merge (`git ls-remote --heads origin docs/local-environment-requirements` returned no refs)
