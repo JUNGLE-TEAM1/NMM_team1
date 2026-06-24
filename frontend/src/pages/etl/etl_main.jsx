@@ -1,12 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import {
-  ArrowRight,
   Plus,
   Trash2,
   Search,
-  Database,
-  GitBranch,
   Sparkles,
   ShieldCheck,
   CheckCircle,
@@ -50,51 +47,6 @@ export default function ETLMain() {
       (job.description &&
         job.description.toLowerCase().includes(searchQuery.toLowerCase()))
   );
-
-  const sourceDatasets = jobs.filter(
-    (job) => (job.dataset_type || "source") === "source"
-  );
-  const targetDatasets = jobs.filter(
-    (job) => (job.dataset_type || "source") !== "source"
-  );
-  const goldDatasets = jobs.filter(isGoldDataset);
-  const pipelineCount = targetDatasets.length;
-
-  const pipelineGroups = [
-    {
-      title: "수집 파이프라인",
-      count: sourceDatasets.length,
-      description: "연결된 원본 시스템에서 구축에 사용할 데이터를 고릅니다.",
-      icon: Database,
-      iconClass: "bg-emerald-100 text-emerald-700",
-      borderClass: "border-emerald-100",
-      chips: sourceDatasets.slice(0, 2).map((job) => job.name),
-      actionLabel: "원본 데이터 등록",
-      action: () => navigate("/source"),
-    },
-    {
-      title: "변환 파이프라인",
-      count: pipelineCount,
-      description: "소스 데이터를 조인, 정제, 마스킹해 결과 데이터셋을 만듭니다.",
-      icon: GitBranch,
-      iconClass: "bg-purple-100 text-purple-700",
-      borderClass: "border-purple-100",
-      chips: targetDatasets.slice(0, 2).map((job) => job.name),
-      actionLabel: "시각화로 만들기",
-      action: openFreshPipeline,
-    },
-    {
-      title: "Gold Dataset",
-      count: goldDatasets.length,
-      description: "품질 검증과 권한 정책이 적용되어 바로 활용 가능한 분석용 데이터입니다.",
-      icon: Sparkles,
-      iconClass: "bg-blue-100 text-blue-700",
-      borderClass: "border-blue-200 ring-2 ring-blue-50",
-      chips: goldDatasets.slice(0, 2).map((job) => job.name),
-      actionLabel: "Gold 시나리오 열기",
-      action: () => navigate("/etl/visual", { state: { useTemplate: true } }),
-    },
-  ];
 
   // Pagination calculations (based on filtered jobs)
   const totalPages = Math.ceil(filteredJobs.length / ITEMS_PER_PAGE);
@@ -214,57 +166,6 @@ export default function ETLMain() {
           <Plus className="w-4 h-4" />
           새 파이프라인 만들기
         </button>
-      </div>
-
-      <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
-        {pipelineGroups.map((group) => {
-          const Icon = group.icon;
-          return (
-            <div
-              key={group.title}
-              className={`rounded-lg border bg-white p-4 shadow-sm ${group.borderClass}`}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex min-w-0 items-start gap-3">
-                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${group.iconClass}`}>
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-gray-900">{group.title}</p>
-                    <p className="mt-1 text-xs leading-5 text-gray-500">{group.description}</p>
-                  </div>
-                </div>
-                <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-700">
-                  {group.count}개
-                </span>
-              </div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {group.chips.length > 0 ? (
-                  group.chips.map((name) => (
-                    <span
-                      key={name}
-                      className="max-w-full truncate rounded-full bg-gray-50 px-2.5 py-1 text-xs text-gray-600"
-                      title={name}
-                    >
-                      {name}
-                    </span>
-                  ))
-                ) : (
-                  <span className="rounded-full bg-gray-50 px-2.5 py-1 text-xs text-gray-400">
-                    아직 없음
-                  </span>
-                )}
-              </div>
-              <button
-                onClick={group.action}
-                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50"
-              >
-                {group.actionLabel}
-                <ArrowRight className="h-4 w-4" />
-              </button>
-            </div>
-          );
-        })}
       </div>
 
       {/* Datasets Table */}
