@@ -43,7 +43,7 @@ main 동기화와 integration readiness를 기록한다.
 - issue link: https://github.com/JUNGLE-TEAM1/NMM_team1/issues/59
 - issue creation result: created after PR approval request
 - PR closing keyword: Closes #59
-- pushed branch:
-- PR link:
-- merge status:
-- issue close status:
+- pushed branch: docs/small-change-pr-decision
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/60
+- merge status: open
+- issue close status: open
