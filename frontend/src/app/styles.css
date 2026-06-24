@@ -317,6 +317,71 @@ button {
   font-weight: 900;
 }
 
+.trust-panel {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #d8e1e4;
+  border-radius: 8px;
+  background: #f8fbfc;
+}
+
+.trust-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.trust-heading div {
+  display: grid;
+  gap: 3px;
+}
+
+.trust-heading span,
+.gate-grid span,
+.trust-heading small {
+  color: #62737a;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.trust-heading strong {
+  color: #17262c;
+  font-size: 22px;
+}
+
+.gate-grid {
+  display: grid;
+  grid-template-columns: 88px 108px minmax(0, 1fr);
+  gap: 10px;
+  align-items: stretch;
+}
+
+.gate-grid div {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border: 1px solid #d8e1e4;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.gate-grid strong {
+  color: #17262c;
+  font-size: 18px;
+}
+
+.gate-grid p {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid #d8e1e4;
+  border-radius: 8px;
+  background: #fff;
+  color: #405259;
+  overflow-wrap: anywhere;
+}
+
 .schema-list {
   display: flex;
   flex-wrap: wrap;
@@ -386,6 +451,7 @@ tr:last-child td {
   .pipeline-form,
   .catalog-grid,
   .run-summary,
+  .gate-grid,
   .metrics {
     grid-template-columns: 1fr;
   }

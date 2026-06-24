@@ -30,6 +30,14 @@ class MetadataStore(Protocol):
 
     def get_catalog_dataset(self, dataset_id: str) -> CatalogDataset | None: ...
 
+    def update_catalog_dataset_trust(
+        self,
+        dataset_id: str,
+        owner: str,
+        trust_status: str,
+        trust_gate_result: dict[str, object],
+    ) -> CatalogDataset | None: ...
+
     def create_pipeline(self, pipeline: PipelineCreate) -> PipelineRecord: ...
 
     def list_pipelines(self) -> list[PipelineRecord]: ...

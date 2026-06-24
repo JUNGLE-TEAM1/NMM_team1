@@ -48,6 +48,9 @@ class SQLiteMetadataStore:
                     row_count INTEGER NOT NULL,
                     sample_json TEXT NOT NULL,
                     status TEXT NOT NULL,
+                    owner TEXT NOT NULL DEFAULT 'unassigned',
+                    trust_status TEXT NOT NULL DEFAULT 'Draft',
+                    trust_gate_result_json TEXT,
                     error_message TEXT,
                     created_at TEXT NOT NULL,
                     FOREIGN KEY(source_id) REFERENCES sources(id)
@@ -79,6 +82,9 @@ class SQLiteMetadataStore:
                 );
                 """
             )
+            ensure_column(connection, "catalog_datasets", "owner", "TEXT NOT NULL DEFAULT 'unassigned'")
+            ensure_column(connection, "catalog_datasets", "trust_status", "TEXT NOT NULL DEFAULT 'Draft'")
+            ensure_column(connection, "catalog_datasets", "trust_gate_result_json", "TEXT")
 
     def create_source_with_dataset(
         self,
@@ -103,9 +109,9 @@ class SQLiteMetadataStore:
                 """
                 INSERT INTO catalog_datasets (
                     id, source_id, name, source_type, path, schema_json, row_count,
-                    sample_json, status, error_message, created_at
+                    sample_json, status, owner, trust_status, trust_gate_result_json, error_message, created_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     dataset_id,
@@ -117,6 +123,9 @@ class SQLiteMetadataStore:
                     row_count,
                     json.dumps(sample, ensure_ascii=False),
                     "ready",
+                    "unassigned",
+                    "Draft",
+                    json.dumps(default_trust_gate_result(dataset_id), ensure_ascii=False),
                     None,
                     created_at,
                 ),
@@ -143,6 +152,31 @@ class SQLiteMetadataStore:
         with self.connect() as connection:
             row = connection.execute("SELECT * FROM catalog_datasets WHERE id = ?", (dataset_id,)).fetchone()
         return dataset_from_row(row) if row else None
+
+    def update_catalog_dataset_trust(
+        self,
+        dataset_id: str,
+        owner: str,
+        trust_status: str,
+        trust_gate_result: dict[str, object],
+    ) -> CatalogDataset | None:
+        with self.connect() as connection:
+            connection.execute(
+                """
+                UPDATE catalog_datasets
+                SET owner = ?,
+                    trust_status = ?,
+                    trust_gate_result_json = ?
+                WHERE id = ?
+                """,
+                (
+                    owner,
+                    trust_status,
+                    json.dumps(trust_gate_result, ensure_ascii=False),
+                    dataset_id,
+                ),
+            )
+        return self.get_catalog_dataset(dataset_id)
 
     def create_pipeline(self, pipeline: PipelineCreate) -> PipelineRecord:
         pipeline_id = str(uuid.uuid4())
@@ -251,9 +285,9 @@ class SQLiteMetadataStore:
                 """
                 INSERT INTO catalog_datasets (
                     id, source_id, name, source_type, path, schema_json, row_count,
-                    sample_json, status, error_message, created_at
+                    sample_json, status, owner, trust_status, trust_gate_result_json, error_message, created_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     dataset_id,
@@ -265,6 +299,9 @@ class SQLiteMetadataStore:
                     row_count,
                     json.dumps(sample, ensure_ascii=False),
                     "ready",
+                    "unassigned",
+                    "Draft",
+                    json.dumps(default_trust_gate_result(dataset_id), ensure_ascii=False),
                     None,
                     created_at,
                 ),
@@ -287,6 +324,26 @@ def sqlite_path_from_url(url: str) -> Path:
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def ensure_column(connection: sqlite3.Connection, table: str, column: str, definition: str) -> None:
+    columns = [row["name"] for row in connection.execute(f"PRAGMA table_info({table})").fetchall()]
+    if column not in columns:
+        connection.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
+
+
+def default_trust_gate_result(dataset_id: str) -> dict[str, object]:
+    failed_gates = ["quality", "pii", "owner", "policy", "approval"]
+    return {
+        "id": f"trust_gate_{uuid.uuid4().hex[:12]}",
+        "dataset_id": dataset_id,
+        "status": "Draft",
+        "required_gates": ["schema", "quality", "pii", "owner", "policy", "approval"],
+        "passed_gates": ["schema"],
+        "failed_gates": failed_gates,
+        "reasons": [f"{gate} gate is pending" for gate in failed_gates],
+        "evaluated_at": now_iso(),
+    }
 
 
 def source_from_row(row: sqlite3.Row) -> SourceRecord:
@@ -313,6 +370,9 @@ def dataset_from_row(row: sqlite3.Row) -> CatalogDataset:
         row_count=row["row_count"],
         sample=json.loads(row["sample_json"]),
         status=row["status"],
+        owner=row["owner"],
+        trust_status=row["trust_status"],
+        trust_gate_result=json.loads(row["trust_gate_result_json"]) if row["trust_gate_result_json"] else None,
         error_message=row["error_message"],
         created_at=row["created_at"],
     )
