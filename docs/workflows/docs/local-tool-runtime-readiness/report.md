@@ -33,7 +33,7 @@
 | `docs/10-next-action-menu.md` | `Mid-Phase Steering Received` 메뉴 추가 |
 | `docs/12-quality-gates.md` | `quality.md`에 readiness/fallback/manual action evidence 기록 요구 추가 |
 | `docs/13-human-command-flow.md` | 검증 응답 상태 구분과 Mid-Phase Steering 사람 명령 예시 추가 |
-| `docs/reports/README.md` | Mid-Phase Steering report index 추가 |
+| `docs/reports/README.md` | Local Tool Runtime Readiness와 Mid-Phase Steering report index 추가 |
 
 ## Docker 사건 적용 예시
 

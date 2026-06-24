@@ -14,7 +14,7 @@ integration branch는 branch 작업을 합치기 전에 이 파일을 읽는다.
 | `docs/10-next-action-menu.md` | `Mid-Phase Steering Received` 메뉴 추가 | 새 지시를 scope detail, scope change, Hotfix, 다음 Phase 후보, 보류, 고영향 결정으로 분류하게 함 | Low |
 | `docs/12-quality-gates.md` | quality evidence에 local runtime readiness 항목 추가 | `quality.md`가 readiness attempt/fallback/manual action을 기록하게 함 | Low |
 | `docs/13-human-command-flow.md` | 검증 응답에서 installed/running/stopped/fallback/blocked 상태 구분과 Mid-Phase Steering 예시 추가 | agent 최종 보고와 작업 중 조향 처리를 명확히 함 | Low |
-| `docs/reports/README.md` | Mid-Phase Steering report index 추가 | 최신 evidence 탐색을 쉽게 함 | Low |
+| `docs/reports/README.md` | Local Tool Runtime Readiness와 Mid-Phase Steering report index 추가 | 최신 evidence 탐색을 쉽게 함 | Low |
 
 ## Integration Notes / 통합 메모
 
