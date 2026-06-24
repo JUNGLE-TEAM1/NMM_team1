@@ -12,6 +12,7 @@ import {
   RefreshCw,
   CheckCircle,
   Sparkles,
+  Lock,
 } from "lucide-react";
 import { API_BASE_URL } from "../../config/api";
 import { formatFileSize } from "../../utils/formatters";
@@ -199,11 +200,9 @@ export default function CatalogPage() {
                       <CheckCircle className="h-3 w-3" />
                       품질 {qualityScore ?? 100}%
                     </span>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
-                      AI-ready
-                    </span>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2.5 py-1 text-xs font-semibold text-orange-700">
-                      Evidence Index 연결
+                    <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700">
+                      <Lock className="h-3 w-3" />
+                      마케터 권한 적용
                     </span>
                   </div>
                 )}

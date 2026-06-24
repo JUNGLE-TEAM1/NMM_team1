@@ -28,8 +28,8 @@ import {
   Clock,
   User,
   Server,
-  ArrowRight,
   FileSearch,
+  BarChart3,
 } from "lucide-react";
 
 import { SchemaNode } from "../domain/components/schema-node/SchemaNode";
@@ -64,9 +64,9 @@ function GoldDatasetShowcase({ catalogItem }) {
     finance: false,
   });
   const [governanceSettings, setGovernanceSettings] = useState({
-    includeEvidenceIndex: true,
     maskCustomerIdentifiers: true,
     monthlyAggregateOnly: true,
+    allowPreviewExport: false,
   });
   const quality = catalogItem.quality || {
     missing_rate: "0.00%",
@@ -79,18 +79,176 @@ function GoldDatasetShowcase({ catalogItem }) {
     { id: "quality", label: "품질 검사 리포트", icon: ShieldCheck },
     { id: "governance", label: "거버넌스 설정", icon: User },
   ];
+  const lineageCards = [
+    {
+      id: "source-postgres",
+      title: "주문 거래 PostgreSQL",
+      subtitle: "orders",
+      body: "결제 상태, 주문 금액, 상품 ID, 주문 시각",
+      icon: Database,
+      x: 20,
+      y: 36,
+      tone: "blue",
+    },
+    {
+      id: "source-mongodb",
+      title: "커머스 MongoDB",
+      subtitle: "product_catalog",
+      body: "상품명, 카테고리, 브랜드, 기준 가격",
+      icon: Layers,
+      x: 20,
+      y: 246,
+      tone: "green",
+    },
+    {
+      id: "source-s3",
+      title: "AskLake S3 Lake",
+      subtitle: "order_events_raw",
+      body: "취소, 정산, 보정 이벤트 원본 로그",
+      icon: FileSearch,
+      x: 20,
+      y: 456,
+      tone: "orange",
+    },
+    {
+      id: "bronze-orders",
+      title: "주문 Bronze",
+      subtitle: "orders_raw",
+      body: "원본 주문 스냅샷과 파티션 보존",
+      icon: Database,
+      x: 300,
+      y: 36,
+      tone: "blue",
+    },
+    {
+      id: "bronze-products",
+      title: "상품 Bronze",
+      subtitle: "product_catalog_raw",
+      body: "MongoDB 문서 원본 형태로 적재",
+      icon: Layers,
+      x: 300,
+      y: 246,
+      tone: "green",
+    },
+    {
+      id: "bronze-events",
+      title: "이벤트 Bronze",
+      subtitle: "order_events_raw",
+      body: "S3 이벤트 로그를 재처리 가능하게 보존",
+      icon: FileSearch,
+      x: 300,
+      y: 456,
+      tone: "orange",
+    },
+    {
+      id: "silver-orders",
+      title: "주문 Silver",
+      subtitle: "orders_paid_clean",
+      body: "paid 주문 필터와 금액 검증",
+      icon: ShieldCheck,
+      x: 580,
+      y: 36,
+      tone: "blue",
+    },
+    {
+      id: "silver-products",
+      title: "상품 Silver",
+      subtitle: "product_catalog_clean",
+      body: "상품 마스터 표준화와 중복 제거",
+      icon: ShieldCheck,
+      x: 580,
+      y: 246,
+      tone: "green",
+    },
+    {
+      id: "silver-events",
+      title: "이벤트 Silver",
+      subtitle: "settlement_events_clean",
+      body: "취소/정산 이벤트 표준화",
+      icon: ShieldCheck,
+      x: 580,
+      y: 456,
+      tone: "orange",
+    },
+    {
+      id: "join",
+      title: "product_id 조인",
+      subtitle: "orders x products x events",
+      body: "세 갈래 Silver 데이터를 조인하고 보정 금액 반영",
+      icon: GitBranch,
+      x: 880,
+      y: 246,
+      tone: "purple",
+    },
+    {
+      id: "aggregate",
+      title: "월별 상품 매출 집계",
+      subtitle: "monthly_product_sales_agg",
+      body: "월, 상품, 카테고리별 매출/주문 수 계산",
+      icon: BarChart3,
+      x: 1160,
+      y: 120,
+      tone: "teal",
+    },
+    {
+      id: "quality",
+      title: "품질 검증",
+      subtitle: "quality gate",
+      body: "결측률 0.00%, 중복 0건, 권한 정책 적용",
+      icon: ShieldCheck,
+      x: 1160,
+      y: 370,
+      tone: "green",
+    },
+    {
+      id: "target",
+      title: "월별 상품 매출 Gold Dataset",
+      subtitle: "s3://asklake/gold/monthly_product_sales",
+      body: "카탈로그와 AI Query에서 바로 사용할 최종 데이터셋",
+      icon: Table2,
+      x: 1460,
+      y: 246,
+      tone: "gold",
+    },
+  ];
+  const lineagePaths = [
+    "M238 88 H300",
+    "M518 88 H580",
+    "M238 298 H300",
+    "M518 298 H580",
+    "M238 508 H300",
+    "M518 508 H580",
+    "M798 88 H838 V298 H880",
+    "M798 298 H880",
+    "M798 508 H838 V298 H880",
+    "M1098 298 H1130 V172 H1160",
+    "M1098 298 H1130 V422 H1160",
+    "M1378 172 H1416 V298 H1460",
+    "M1378 422 H1416 V298 H1460",
+  ];
+  const toneClasses = {
+    blue: "border-blue-100 bg-blue-50 text-blue-900",
+    green: "border-green-100 bg-green-50 text-green-900",
+    orange: "border-orange-100 bg-orange-50 text-orange-900",
+    purple: "border-purple-100 bg-purple-50 text-purple-900",
+    teal: "border-teal-100 bg-teal-50 text-teal-900",
+    gold: "border-amber-100 bg-amber-50 text-amber-900",
+  };
+  const iconToneClasses = {
+    blue: "bg-blue-100 text-blue-700",
+    green: "bg-green-100 text-green-700",
+    orange: "bg-orange-100 text-orange-700",
+    purple: "bg-purple-100 text-purple-700",
+    teal: "bg-teal-100 text-teal-700",
+    gold: "bg-amber-100 text-amber-700",
+  };
   const departmentOptions = [
     { id: "marketing", label: "마케팅팀", description: "캠페인/상품군별 매출 분석" },
-    { id: "product", label: "프로덕트팀", description: "상품 성과와 고객 피드백 탐색" },
+    { id: "product", label: "프로덕트팀", description: "상품 성과와 카테고리 매출 확인" },
     { id: "sales", label: "세일즈팀", description: "고객군별 매출 추이 확인" },
     { id: "finance", label: "재무팀", description: "월별 매출 집계 검토" },
   ];
   const governanceOptions = [
-    {
-      id: "includeEvidenceIndex",
-      label: "고객 원문 검색 인덱스 연결 공개",
-      description: "다른 부서가 데이터셋과 함께 원문 검색 인덱스 연결 정보를 확인할 수 있도록 노출합니다.",
-    },
     {
       id: "maskCustomerIdentifiers",
       label: "고객 식별자 마스킹 유지",
@@ -100,6 +258,11 @@ function GoldDatasetShowcase({ catalogItem }) {
       id: "monthlyAggregateOnly",
       label: "월별 집계 결과만 공개",
       description: "원본 주문 행이 아니라 월별 상품 매출 Gold Dataset 단위로만 열람하게 합니다.",
+    },
+    {
+      id: "allowPreviewExport",
+      label: "미리보기 내보내기 허용",
+      description: "선택한 부서가 샘플 미리보기 결과를 내려받을 수 있게 허용합니다.",
     },
   ];
   const toggleDepartmentAccess = (id) => {
@@ -135,8 +298,8 @@ function GoldDatasetShowcase({ catalogItem }) {
                   </span>
                 </div>
                 <p className="mt-1 max-w-3xl text-sm leading-6 text-gray-600">
-                  월별 상품 매출 Gold Dataset에 Customer Voice Evidence Index 연결 정보를 더한 AI-ready 데이터셋입니다.
-                  AI Query에서 SQL 집계와 Evidence Index 검색을 함께 사용할 수 있습니다.
+                  PostgreSQL 주문 거래, MongoDB 상품 카탈로그, AskLake S3 이벤트를 Bronze/Silver 단계로 정제한 뒤
+                  월별 상품 매출을 집계하는 Gold Dataset입니다.
                 </p>
               </div>
             </div>
@@ -161,7 +324,7 @@ function GoldDatasetShowcase({ catalogItem }) {
           </div>
           <div className="flex min-w-0 items-center gap-2">
             <Server className="h-4 w-4 shrink-0 text-gray-400" />
-            <span className="truncate">연결 소스 PostgreSQL, MongoDB, Evidence Index</span>
+            <span className="truncate">연결 소스 PostgreSQL, MongoDB, S3</span>
           </div>
         </div>
       </div>
@@ -196,66 +359,50 @@ function GoldDatasetShowcase({ catalogItem }) {
               <div className="mb-5">
                 <h2 className="text-base font-bold text-gray-900">데이터 흐름 추적</h2>
                 <p className="mt-1 text-sm text-gray-500">
-                  등록된 데이터 소스와 원문 검색 인덱스 메타데이터가 어떻게 Gold Dataset으로 등록되는지 보여줍니다.
+                  세 개의 원천 데이터가 Bronze/Silver 정제 단계를 거쳐 Gold Dataset으로 합쳐지는 흐름입니다.
                 </p>
               </div>
               <div className="overflow-x-auto">
-                <div className="grid min-w-[820px] grid-cols-[1fr_48px_1fr_48px_1fr] items-center gap-3">
-                  <div className="space-y-3">
-                    <div className="rounded-lg border border-blue-100 bg-blue-50 p-4">
-                      <div className="flex items-center gap-2 text-sm font-bold text-blue-900">
-                        <Database className="h-4 w-4" />
-                        주문 거래 PostgreSQL
+                <div className="relative h-[610px] min-w-[1710px] rounded-xl border border-gray-200 bg-slate-50 p-4">
+                  <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 1710 610" fill="none">
+                    <defs>
+                      <marker id="lineage-arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+                        <path d="M0 0 L10 5 L0 10 z" fill="#94a3b8" />
+                      </marker>
+                    </defs>
+                    {lineagePaths.map((path) => (
+                      <path
+                        key={path}
+                        d={path}
+                        stroke="#94a3b8"
+                        strokeWidth="2.5"
+                        strokeDasharray="7 7"
+                        markerEnd="url(#lineage-arrow)"
+                      />
+                    ))}
+                  </svg>
+
+                  {lineageCards.map((card) => {
+                    const Icon = card.icon;
+                    return (
+                      <div
+                        key={card.id}
+                        className={`absolute w-[220px] rounded-xl border p-4 shadow-sm ${toneClasses[card.tone]}`}
+                        style={{ left: card.x, top: card.y }}
+                      >
+                        <div className="flex items-start gap-3">
+                          <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${iconToneClasses[card.tone]}`}>
+                            <Icon className="h-4 w-4" />
+                          </span>
+                          <div className="min-w-0">
+                            <p className="break-keep text-sm font-bold leading-5">{card.title}</p>
+                            <p className="mt-0.5 truncate font-mono text-xs opacity-70">{card.subtitle}</p>
+                          </div>
+                        </div>
+                        <p className="mt-3 min-h-[40px] text-xs leading-5 opacity-80">{card.body}</p>
                       </div>
-                      <p className="mt-2 text-xs leading-5 text-blue-800">
-                        결제 완료 주문, 상품 ID, 주문 금액, 주문 시각 포함
-                      </p>
-                    </div>
-                    <div className="rounded-lg border border-green-100 bg-green-50 p-4">
-                      <div className="flex items-center gap-2 text-sm font-bold text-green-900">
-                        <Layers className="h-4 w-4" />
-                        커머스 MongoDB
-                      </div>
-                      <p className="mt-2 text-xs leading-5 text-green-800">
-                        상품명, 카테고리, 브랜드, 기준 가격 메타데이터 포함
-                      </p>
-                    </div>
-                    <div className="rounded-lg border border-orange-100 bg-orange-50 p-4">
-                      <div className="flex items-center gap-2 text-sm font-bold text-orange-900">
-                        <FileSearch className="h-4 w-4" />
-                        AskLake S3 Lake
-                      </div>
-                      <p className="mt-2 text-xs leading-5 text-orange-800">
-                        customer_voice_raw 원문 데이터를 저장하는 등록된 S3 데이터 레이크
-                      </p>
-                    </div>
-                  </div>
-                  <ArrowRight className="mx-auto h-6 w-6 text-gray-400" />
-                  <div className="rounded-lg border border-purple-100 bg-purple-50 p-4">
-                    <div className="flex items-center gap-2 text-sm font-bold text-purple-900">
-                      <GitBranch className="h-4 w-4" />
-                      조인 및 비식별 처리
-                    </div>
-                    <ul className="mt-3 space-y-2 text-xs leading-5 text-purple-800">
-                      <li>product_id 기준으로 주문과 상품 카탈로그 조인</li>
-                      <li>결제 완료 주문만 분석 대상으로 필터링</li>
-                      <li>월별 매출, 주문 수, 평균 주문액 집계</li>
-                      <li>원문 검색 인덱스 연결 메타데이터 보존</li>
-                    </ul>
-                  </div>
-                  <ArrowRight className="mx-auto h-6 w-6 text-gray-400" />
-                  <div className="rounded-lg border border-green-100 bg-green-50 p-4">
-                    <div className="flex items-center gap-2 text-sm font-bold text-green-900">
-                      <Table2 className="h-4 w-4" />
-                      AI-ready Gold Dataset
-                    </div>
-                    <p className="mt-2 text-xs leading-5 text-green-800">
-                      월별 상품 매출 테이블과 Customer Voice Evidence Index 연결 정보가 함께 카탈로그에 등록됩니다.
-                    </p>
-                    <p className="mt-3 rounded bg-white/70 px-2 py-1 font-mono text-xs text-green-900">
-                      s3://asklake/gold/monthly_product_sales
-                    </p>
-                  </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -298,12 +445,12 @@ function GoldDatasetShowcase({ catalogItem }) {
                 <div>
                   <h2 className="text-base font-bold text-gray-900">거버넌스 설정</h2>
                   <p className="mt-1 text-sm text-gray-500">
-                    데이터셋을 만든 팀이 다른 부서의 열람 범위와 Evidence Index 공개 여부를 설정합니다.
+                    데이터셋을 만든 팀이 다른 부서의 열람 범위와 공개 정책을 설정합니다.
                   </p>
                 </div>
                 <span className="inline-flex w-fit items-center gap-2 rounded-lg bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700">
                   <ShieldCheck className="h-4 w-4" />
-                  AI-ready 공유 정책
+                  Gold Dataset 공유 정책
                 </span>
               </div>
 
@@ -312,7 +459,7 @@ function GoldDatasetShowcase({ catalogItem }) {
                   <div className="mb-3">
                     <h3 className="text-sm font-bold text-gray-900">부서별 열람 허용</h3>
                     <p className="mt-1 text-xs text-gray-500">
-                      Gold Dataset과 Evidence Index 연결 정보를 사용할 부서를 선택합니다.
+                      월별 상품 매출 Gold Dataset을 열람할 부서를 선택합니다.
                     </p>
                   </div>
                   <div className="space-y-2">
@@ -370,7 +517,7 @@ function GoldDatasetShowcase({ catalogItem }) {
                   <div>
                     <p className="text-sm font-bold text-green-900">공개 준비 완료</p>
                     <p className="mt-1 text-xs leading-5 text-green-700">
-                      선택한 부서에는 월별 매출 Gold Dataset과 허용된 Evidence Index 연결 정보만 노출됩니다.
+                      선택한 부서에는 월별 상품 매출 Gold Dataset과 허용된 미리보기 범위만 노출됩니다.
                     </p>
                   </div>
                   <button className="inline-flex w-fit items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-green-700">

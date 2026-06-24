@@ -1,7 +1,7 @@
 const FRONTEND_ONLY_FLAG = "VITE_FRONTEND_ONLY";
-const STORAGE_KEY = "xflow.frontendOnly.mockState.commerceRevenueDemo.v4";
+const STORAGE_KEY = "xflow.frontendOnly.mockState.commerceRevenueDemo.v5";
 const CLEANUP_MARKER_KEY = "xflow.frontendOnly.cleanupVersion";
-const CLEANUP_VERSION = "commerce-revenue-demo-v4-reset-generated-demo";
+const CLEANUP_VERSION = "commerce-revenue-demo-v5-gold-lineage";
 
 const now = () => new Date().toISOString();
 
@@ -384,7 +384,7 @@ const createAskLakeDemoItems = (createdAt = now()) => {
     id: "ds-commerce-revenue-gold",
     job_id: "ds-commerce-revenue-gold",
     name: "월별 상품 매출 Gold Dataset",
-    description: "월별 상품 매출 Gold Dataset에 Customer Voice Evidence Index 연결 정보를 더한 AI-ready 데이터셋입니다.",
+    description: "PostgreSQL 주문 거래, MongoDB 상품 카탈로그, AskLake S3 이벤트를 조인해 월별 상품 매출을 집계하는 Gold Dataset 파이프라인입니다.",
     owner: "데이터 엔지니어링 팀",
     dataset_type: "target",
     layer: "gold",
@@ -393,25 +393,84 @@ const createAskLakeDemoItems = (createdAt = now()) => {
     sources: [
       { nodeId: "asklake-source-postgres", type: "postgres", table: "orders", name: "주문 거래 PostgreSQL" },
       { nodeId: "asklake-source-mongodb", type: "mongodb", table: "product_catalog", name: "커머스 MongoDB" },
-      { nodeId: "asklake-source-customer-voice", type: "s3", table: "customer_voice_raw", name: "AskLake S3 Lake" },
+      { nodeId: "asklake-source-s3", type: "s3", table: "order_events_raw", name: "AskLake S3 Lake" },
     ],
     transforms: [
       {
-        nodeId: "asklake-transform-clean-join",
-        type: "join-aggregate",
+        nodeId: "asklake-bronze-orders",
+        type: "bronze-landing",
+        config: {
+          input: "orders",
+          partition_key: "partition_date",
+          raw_retention: "원본 주문 거래 보존",
+        },
+      },
+      {
+        nodeId: "asklake-bronze-products",
+        type: "bronze-landing",
+        config: {
+          input: "product_catalog",
+          partition_key: "snapshot_date",
+          raw_retention: "원본 상품 문서 보존",
+        },
+      },
+      {
+        nodeId: "asklake-bronze-events",
+        type: "bronze-landing",
+        config: {
+          input: "order_events_raw",
+          partition_key: "event_date",
+          raw_retention: "원본 이벤트 로그 보존",
+        },
+      },
+      {
+        nodeId: "asklake-silver-orders",
+        type: "silver-clean",
+        config: {
+          filters: ["order_status = 'paid'"],
+          validations: ["order_amount > 0", "product_id IS NOT NULL"],
+        },
+      },
+      {
+        nodeId: "asklake-silver-products",
+        type: "silver-mastering",
+        config: {
+          selected_fields: ["product_id", "product_name", "category", "brand"],
+          dedupe_key: "product_id",
+        },
+      },
+      {
+        nodeId: "asklake-silver-events",
+        type: "silver-events-clean",
+        config: {
+          selected_fields: ["event_id", "order_id", "product_id", "event_name", "amount", "event_time"],
+          validations: ["order_id IS NOT NULL", "product_id IS NOT NULL"],
+        },
+      },
+      {
+        nodeId: "asklake-transform-product-join",
+        type: "join",
         config: {
           join_key: "product_id",
-          filters: ["order_status = 'paid'"],
+          join_type: "left",
+          inputs: ["orders_paid_clean", "product_catalog_clean", "settlement_events_clean"],
+        },
+      },
+      {
+        nodeId: "asklake-transform-monthly-aggregate",
+        type: "aggregate",
+        config: {
+          group_by: ["month", "product_id", "product_name", "category"],
           metrics: ["revenue", "order_count", "avg_order_amount"],
         },
       },
       {
-        nodeId: "asklake-transform-evidence-index",
-        type: "evidence-index",
+        nodeId: "asklake-transform-quality-check",
+        type: "quality-gate",
         config: {
-          chunking_strategy: "semantic_metadata_chunking",
-          index: "customer_voice_evidence_index",
-          preserved_metadata: ["month", "customer_segment", "issue_type"],
+          missing_rate: "0.00%",
+          duplicate_count: 0,
+          permission_policy: "마케터 권한 적용",
         },
       },
     ],
@@ -433,7 +492,7 @@ const createAskLakeDemoItems = (createdAt = now()) => {
           schema: commerceOrderColumns,
           description: "커머스 주문 거래에서 주문 금액, 상태, 상품 ID를 가져옵니다.",
         },
-        position: { x: 80, y: 80 },
+        position: { x: 60, y: 80 },
       },
       {
         id: "asklake-source-mongodb",
@@ -443,39 +502,151 @@ const createAskLakeDemoItems = (createdAt = now()) => {
           name: "product_catalog",
           platform: "MongoDB",
           nodeCategory: "source",
-          columns: mongoCustomerColumns,
-          schema: mongoCustomerColumns,
+          columns: productCatalogColumns,
+          schema: productCatalogColumns,
           description: "상품명, 카테고리, 브랜드 등 상품 메타데이터를 가져옵니다.",
         },
-        position: { x: 80, y: 280 },
+        position: { x: 60, y: 420 },
       },
       {
-        id: "asklake-transform-clean-join",
+        id: "asklake-source-s3",
         type: "custom",
         data: {
-          label: "조인 및 비식별 처리",
-          name: "product_id 기준 조인",
+          label: "AskLake S3 Lake",
+          name: "order_events_raw",
+          platform: "S3",
+          nodeCategory: "source",
+          columns: orderEventColumns,
+          schema: orderEventColumns,
+          description: "취소, 정산, 보정 이벤트를 담은 원본 로그 데이터입니다.",
+        },
+        position: { x: 60, y: 760 },
+      },
+      {
+        id: "asklake-bronze-orders",
+        type: "custom",
+        data: {
+          label: "주문 원본 Bronze",
+          name: "orders_raw",
+          platform: "S3 Bronze",
+          nodeCategory: "transform",
+          columns: commerceOrderColumns,
+          schema: commerceOrderColumns,
+          description: "주문 거래 원본을 파티션 기준으로 보존해 재처리 가능한 Bronze 레이어를 만듭니다.",
+        },
+        position: { x: 360, y: 80 },
+      },
+      {
+        id: "asklake-bronze-products",
+        type: "custom",
+        data: {
+          label: "상품 원본 Bronze",
+          name: "product_catalog_raw",
+          platform: "S3 Bronze",
+          nodeCategory: "transform",
+          columns: productCatalogColumns,
+          schema: productCatalogColumns,
+          description: "MongoDB 상품 문서를 원본 형태로 스냅샷 저장합니다.",
+        },
+        position: { x: 360, y: 420 },
+      },
+      {
+        id: "asklake-bronze-events",
+        type: "custom",
+        data: {
+          label: "이벤트 원본 Bronze",
+          name: "order_events_raw",
+          platform: "S3 Bronze",
+          nodeCategory: "transform",
+          columns: orderEventColumns,
+          schema: orderEventColumns,
+          description: "S3 이벤트 로그를 원본 형태로 파티션 저장합니다.",
+        },
+        position: { x: 360, y: 760 },
+      },
+      {
+        id: "asklake-silver-orders",
+        type: "custom",
+        data: {
+          label: "주문 거래 Silver",
+          name: "orders_paid_clean",
+          platform: "S3 Silver",
+          nodeCategory: "transform",
+          columns: commerceOrderColumns,
+          schema: commerceOrderColumns,
+          description: "결제 완료 주문만 남기고 금액/상품 ID 품질 검사를 통과시킵니다.",
+        },
+        position: { x: 660, y: 80 },
+      },
+      {
+        id: "asklake-silver-products",
+        type: "custom",
+        data: {
+          label: "상품 마스터 Silver",
+          name: "product_catalog_clean",
+          platform: "S3 Silver",
+          nodeCategory: "transform",
+          columns: productCatalogColumns,
+          schema: productCatalogColumns,
+          description: "상품명, 카테고리, 브랜드 필드를 표준화하고 product_id 중복을 제거합니다.",
+        },
+        position: { x: 660, y: 420 },
+      },
+      {
+        id: "asklake-silver-events",
+        type: "custom",
+        data: {
+          label: "정산 이벤트 Silver",
+          name: "settlement_events_clean",
+          platform: "S3 Silver",
+          nodeCategory: "transform",
+          columns: orderEventColumns,
+          schema: orderEventColumns,
+          description: "취소/정산 이벤트를 표준화해 매출 보정에 사용할 수 있게 정제합니다.",
+        },
+        position: { x: 660, y: 760 },
+      },
+      {
+        id: "asklake-transform-product-join",
+        type: "custom",
+        data: {
+          label: "product_id 조인",
+          name: "orders_x_products",
           platform: "Transform",
           nodeCategory: "transform",
           columns: commerceGoldColumns,
           schema: commerceGoldColumns,
-          description: "product_id로 주문과 상품을 조인하고 결제 완료 주문만 월별로 집계합니다.",
+          description: "정제된 주문, 상품, 이벤트 Silver를 product_id와 order_id 기준으로 조인합니다.",
         },
-        position: { x: 420, y: 180 },
+        position: { x: 990, y: 250 },
       },
       {
-        id: "asklake-source-customer-voice",
+        id: "asklake-transform-monthly-aggregate",
         type: "custom",
         data: {
-          label: "AskLake S3 Lake",
-          name: "customer_voice_raw",
-          platform: "S3",
-          nodeCategory: "source",
-          columns: [],
-          schema: [],
-          description: "리뷰, 상담, 정책 문서가 적재되는 고객 원문 데이터 레이크 소스입니다.",
+          label: "월별 상품 매출 집계",
+          name: "monthly_product_sales_agg",
+          platform: "Transform",
+          nodeCategory: "transform",
+          columns: commerceGoldColumns,
+          schema: commerceGoldColumns,
+          description: "월, 상품, 카테고리 단위로 매출/주문 수/평균 주문 금액을 계산합니다.",
         },
-        position: { x: 80, y: 480 },
+        position: { x: 1320, y: 250 },
+      },
+      {
+        id: "asklake-transform-quality-check",
+        type: "custom",
+        data: {
+          label: "품질 검증",
+          name: "quality_gate",
+          platform: "Quality",
+          nodeCategory: "transform",
+          columns: commerceGoldColumns,
+          schema: commerceGoldColumns,
+          description: "결측률, 중복 레코드, 스키마 안정성을 검사하고 마케터 권한 정책을 적용합니다.",
+        },
+        position: { x: 1650, y: 250 },
       },
       {
         id: "asklake-target-gold",
@@ -487,16 +658,24 @@ const createAskLakeDemoItems = (createdAt = now()) => {
           nodeCategory: "target",
           columns: commerceGoldColumns,
           schema: commerceGoldColumns,
-          description: "월별 매출 집계와 Customer Voice Evidence Index 연결 정보를 함께 가진 AI-ready Gold Dataset입니다.",
+          description: "월별 상품 매출을 바로 분석할 수 있도록 카탈로그에 등록된 Gold Dataset입니다.",
         },
-        position: { x: 760, y: 180 },
+        position: { x: 1980, y: 250 },
       },
     ],
     edges: [
-      { id: "asklake-edge-1", source: "asklake-source-postgres", target: "asklake-transform-clean-join", animated: true },
-      { id: "asklake-edge-2", source: "asklake-source-mongodb", target: "asklake-transform-clean-join", animated: true },
-      { id: "asklake-edge-3", source: "asklake-transform-clean-join", target: "asklake-target-gold", animated: true },
-      { id: "asklake-edge-4", source: "asklake-source-customer-voice", target: "asklake-target-gold", animated: true },
+      { id: "asklake-edge-postgres-bronze", source: "asklake-source-postgres", target: "asklake-bronze-orders", animated: true },
+      { id: "asklake-edge-mongodb-bronze", source: "asklake-source-mongodb", target: "asklake-bronze-products", animated: true },
+      { id: "asklake-edge-s3-bronze", source: "asklake-source-s3", target: "asklake-bronze-events", animated: true },
+      { id: "asklake-edge-bronze-orders-silver", source: "asklake-bronze-orders", target: "asklake-silver-orders", animated: true },
+      { id: "asklake-edge-bronze-products-silver", source: "asklake-bronze-products", target: "asklake-silver-products", animated: true },
+      { id: "asklake-edge-bronze-events-silver", source: "asklake-bronze-events", target: "asklake-silver-events", animated: true },
+      { id: "asklake-edge-silver-orders-join", source: "asklake-silver-orders", target: "asklake-transform-product-join", animated: true },
+      { id: "asklake-edge-silver-products-join", source: "asklake-silver-products", target: "asklake-transform-product-join", animated: true },
+      { id: "asklake-edge-silver-events-join", source: "asklake-silver-events", target: "asklake-transform-product-join", animated: true },
+      { id: "asklake-edge-join-aggregate", source: "asklake-transform-product-join", target: "asklake-transform-monthly-aggregate", animated: true },
+      { id: "asklake-edge-aggregate-quality", source: "asklake-transform-monthly-aggregate", target: "asklake-transform-quality-check", animated: true },
+      { id: "asklake-edge-quality-gold", source: "asklake-transform-quality-check", target: "asklake-target-gold", animated: true },
     ],
     schedule: "Batch 실행",
     schedule_frequency: "manual",
@@ -508,7 +687,7 @@ const createAskLakeDemoItems = (createdAt = now()) => {
     actual_size_bytes: 824633720,
     row_count: 2480000,
     format: "PARQUET",
-    tags: ["gold", "commerce", "revenue", "orders", "quality-100"],
+    tags: ["gold", "commerce"],
     preview_rows: [
       { month: "2026-04", product_name: "러닝화 Pro", category: "Shoes", revenue: "49,000,000", order_count: 910, avg_order_amount: "53,846" },
       { month: "2026-05", product_name: "트레이닝 셋업", category: "Apparel", revenue: "58,000,000", order_count: 1040, avg_order_amount: "55,769" },
@@ -815,9 +994,23 @@ const seedState = () => {
       askLakeDemo.s3Connection,
     ],
     sourceDatasets: [askLakeDemo.mongoCustomerSource, askLakeDemo.postgresOrderSource],
-    datasets: [askLakeDemo.customerOrderSilverDataset, askLakeDemo.customerOrderBronzeDataset],
+    datasets: [
+      askLakeDemo.goldDataset,
+      askLakeDemo.customerOrderSilverDataset,
+      askLakeDemo.customerOrderBronzeDataset,
+    ],
     domains: [],
     jobRuns: {
+      "ds-commerce-revenue-gold": [
+        {
+          id: "run-commerce-revenue-gold",
+          dataset_id: "ds-commerce-revenue-gold",
+          status: "success",
+          started_at: createdAt,
+          finished_at: createdAt,
+          airflow_run_id: "mock_monthly_product_sales_gold",
+        },
+      ],
       "ds-customer-order-silver": [
         {
           id: "run-customer-order-silver",
@@ -860,6 +1053,10 @@ const ensureAskLakeDemoState = (state) => {
   }
   if (!state.datasets?.some((item) => item.id === demo.customerOrderBronzeDataset.id)) {
     state.datasets = [...(state.datasets || []), demo.customerOrderBronzeDataset];
+    changed = true;
+  }
+  if (!state.datasets?.some((item) => item.id === demo.goldDataset.id)) {
+    state.datasets = [demo.goldDataset, ...(state.datasets || [])];
     changed = true;
   }
   if (!state.connections?.some((item) => item.id === demo.mongoConnection.id)) {
