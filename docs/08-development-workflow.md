@@ -260,6 +260,21 @@ Integration Spine:
 - Query / Policy mock은 실제 권한 엔진, 실제 데이터 접근, Trino, 외부 LLM 호출을 포함하지 않는다. 이 경계를 넘으면 `docs/14-decision-option-brief.md`와 workstream `decisions.md`가 필요하다.
 - 제외 후보: 실제 고급 PII 탐지, Trino, 외부 LLM, production cloud resource.
 
+## Local Environment Follow-up Queue
+
+로컬 환경 요구사항은 `docs/04-development-guide.md`를 Source of Truth로 둔다.
+macOS와 Windows 개발 환경 동등성은 문서 기준, 실제 환경 evidence, tooling 개선을 분리해서 진행한다.
+
+후속 Phase 후보:
+
+| 후보 | 목표 | 포함 범위 | 제외 범위 |
+| --- | --- | --- | --- |
+| `docs/cross-platform-smoke-audit` | macOS, Windows WSL2, 가능하면 native Windows에서 Docker Compose와 smoke script 실행 evidence를 기록 | OS/shell별 readiness, `docker compose build/up`, `scripts/smoke-container-app.sh`, 실패/skip reason | PowerShell wrapper 구현, 대규모 script rewrite |
+| `chore/cross-platform-tooling` | smoke/helper가 필요한 경우 cross-platform 실행성을 개선 | PowerShell wrapper 또는 Python helper, `python3` launcher fallback, line ending/path separator 점검, version pinning 검토 | 제품 기능 변경, cloud resource 생성 |
+
+Windows native PowerShell/CMD 지원은 위 audit evidence 없이 완료로 선언하지 않는다.
+Windows 기본 지원 경로는 WSL2 + Docker Desktop integration + bash-compatible shell이다.
+
 Workspace state 값:
 
 - `draft`: newly created or not yet scoped.

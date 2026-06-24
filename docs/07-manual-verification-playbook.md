@@ -48,7 +48,7 @@
 
 ## Current Baseline 수동 점검
 
-0. Docker가 필요한 경우 `command -v docker`, `docker --version`, `docker info`를 확인한다. macOS에서 `/Applications/Docker.app`이 설치되어 있고 꺼져 있으면 `open -a Docker`로 safe start를 시도한 뒤 readiness loop를 돈다.
+0. Docker가 필요한 경우 `command -v docker`, `docker --version`, `docker compose version`, `docker info`를 확인한다. macOS에서 `/Applications/Docker.app`이 설치되어 있고 꺼져 있으면 macOS 전용 safe start로 `open -a Docker`를 시도한 뒤 readiness loop를 돈다. Windows는 WSL2 + Docker Desktop integration shell에서 검증하는 것을 기본 경로로 두고, native PowerShell/CMD 동일 실행은 별도 evidence 없이는 미검증으로 기록한다.
 1. `scripts/smoke-container-app.sh`를 실행한다. Docker BuildKit/Compose local variant 오류가 있으면 `DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 scripts/smoke-container-app.sh` 같은 local-only fallback을 시도하고 결과를 기록한다.
 2. 필요하면 `BACKEND_PORT=18000 FRONTEND_PORT=13000 COMPOSE_PROJECT_NAME=asklake_m2_visual docker compose -p asklake_m2_visual up -d`로 앱을 띄운다.
 3. `curl -fsS http://localhost:18000/health`가 `status: ok` contract를 반환하는지 확인한다.

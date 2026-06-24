@@ -9,13 +9,16 @@ local 또는 target 검증 환경이 준비되었는지 확인한다.
 - 필요한 도구가 설치되어 있다.
 - 필요한 env example 또는 설정 안내가 있다.
 - 실제 secret이 commit되어 있지 않다.
+- OS/shell 조합이 `docs/04-development-guide.md`의 지원 등급과 일치한다.
 
 ## 절차
 
-1. setup command가 있다면 실행한다.
-2. migration 또는 init command가 필요하면 실행한다.
-3. service 또는 app을 시작한다.
-4. health/smoke target을 확인한다.
+1. OS와 shell을 기록한다. Windows는 WSL2 + Docker Desktop integration인지 native PowerShell/CMD인지 구분한다.
+2. `git`, `docker`, `docker compose`, `bash`, `rg`, `curl`, `python3`, `node`, `npm` readiness를 확인한다.
+3. setup command가 있다면 실행한다.
+4. migration 또는 init command가 필요하면 실행한다.
+5. service 또는 app을 시작한다.
+6. health/smoke target을 확인한다.
 
 ## 기대 결과
 
@@ -29,6 +32,7 @@ local 또는 target 검증 환경이 준비되었는지 확인한다.
 - port/process 충돌을 확인한다.
 - dependency 설치 상태를 확인한다.
 - migration/data 초기화 상태를 확인한다.
+- Windows native shell이면 WSL2 경로로 재검증할지 또는 cross-platform tooling Phase로 분리할지 기록한다.
 
 ## 증거
 

@@ -128,6 +128,16 @@
 | Verification method | `scripts/smoke-container-app.sh` |
 | Related docs/interface/Phase | `docs/03`, `docs/04`, `docs/08`, M2 `feature/container-app-skeleton` |
 
+### 로컬 환경 지원 범위가 불명확해지는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | macOS, Windows WSL2, native Windows shell의 지원 범위와 미검증 범위가 구분되어 있다. |
+| Failure condition | README 또는 개발 가이드가 Windows native PowerShell/CMD에서도 `scripts/*.sh`가 동일하게 동작한다고 암시하거나, WSL2 권장 경로를 지운다. |
+| Expected behavior | `docs/04`가 Docker Compose 권장 경로, WSL2 지원 경로, native Windows 미검증 범위, bash-compatible shell 요구사항을 유지한다. |
+| Verification method | `rg -n "WSL2|PowerShell|bash-compatible|Docker Compose|support tier|지원 등급" docs/04-development-guide.md docs/07-manual-verification-playbook.md docs/manual-verification` |
+| Related docs/interface/Phase | `docs/04`, `docs/05`, `docs/07`, `docs/08` |
+
 ### Source Catalog Ready State
 
 | 항목 | 내용 |
