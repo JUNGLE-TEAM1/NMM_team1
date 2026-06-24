@@ -100,6 +100,8 @@ TDD 기본값:
 | Not yet guaranteed | native Windows PowerShell/CMD | Docker Compose 일부 명령은 가능할 수 있으나 `scripts/*.sh` 동일 실행은 미검증 | 후속 검증 필요 |
 
 Windows 개발자는 기본적으로 WSL2 shell에서 repository를 열고 Docker Desktop WSL integration을 켠 상태로 작업한다.
+WSL shell에서 사용할 worktree와 branch workspace는 WSL git으로 만들고, Windows shell에서 사용할 worktree는 Windows Git으로 만든다.
+한 shell에서 만든 worktree metadata를 다른 shell의 Git 구현으로 재사용하는 것은 보장하지 않는다.
 native PowerShell/CMD를 공식 지원하려면 별도 cross-platform smoke audit과 tooling Phase가 필요하다.
 
 ### 최소 도구
@@ -110,10 +112,10 @@ native PowerShell/CMD를 공식 지원하려면 별도 cross-platform smoke audi
 | Docker Desktop 또는 Docker Engine | 필수 | 권장 local/container 실행 | `docker --version` |
 | Docker Compose | 필수 | backend/frontend container 실행 | `docker compose version` |
 | bash-compatible shell | 필수 | `scripts/*.sh` 하네스 실행 | `bash --version` |
-| ripgrep | 필수 | 문서/하네스 정적 검증 | `rg --version` |
+| ripgrep | 권장 | 문서/하네스 정적 검증 가속. 없으면 harness scripts는 Python fallback search backend를 사용한다. | `rg --version` |
 | curl | 필수 | health/smoke HTTP 확인 | `curl --version` |
 | Python / `python3` | 필수 | backend test와 smoke JSON parsing | `python3 --version` |
-| Node/npm | 필수 | frontend build/dev 직접 실행 | `node --version`, `npm --version` |
+| Node/npm | 선택 | frontend build/dev를 host에서 직접 실행할 때 사용한다. Docker Compose Tier 1 경로만 쓰면 host Node는 필수가 아니다. | `node --version`, `npm --version` |
 | GitHub CLI | 선택 | 승인된 issue/PR helper | `gh --version` |
 | AWS CLI | 선택 | 승인된 AWS readiness/bootstrap | `aws --version` |
 
@@ -166,6 +168,8 @@ scripts/validate-harness.sh --integration
 
 `scripts/*.sh`는 bash-compatible shell을 전제로 한다.
 Windows에서는 WSL2 shell에서 실행하는 것을 기본 지원 경로로 둔다.
+.gitattributes는 `*.sh`를 LF로 checkout하도록 강제한다.
+기존 clone이 이미 CRLF로 checkout돼 있다면 affected script를 현재 shell 기준으로 다시 checkout하거나 새 worktree/clone에서 재검증한다.
 native PowerShell/CMD에서 동등하게 실행하려면 `python3`, `curl`, `rg`, `mktemp`, path separator, line ending, Docker Desktop WSL integration, port conflict를 별도로 확인한다.
 
 ### Local Tool/Runtime Readiness
@@ -216,6 +220,8 @@ Docker BuildKit/Compose variant처럼 local-only fallback이 있으면 안전한
 ```bash
 DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 scripts/smoke-container-app.sh
 ```
+
+WSL2 + Docker Desktop integration 경로에서 `docker-buildx` plugin이나 `docker-credential-desktop.exe`가 없으면 `scripts/smoke-container-app.sh`는 local-only fallback으로 classic builder와 temporary local `DOCKER_CONFIG`를 자동 재시도한다.
 
 M3 source/catalog API 확인:
 

@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/lib/portable-tools.sh
+source "${script_dir}/lib/portable-tools.sh"
+
 usage() {
   cat <<'USAGE'
 Usage:

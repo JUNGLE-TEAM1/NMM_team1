@@ -2,6 +2,8 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=scripts/lib/portable-tools.sh
+source "${repo_root}/scripts/lib/portable-tools.sh"
 tmp_root="$(mktemp -d "${TMPDIR:-/tmp}/asklake-harness-test.XXXXXX")"
 test_count=0
 
@@ -462,7 +464,7 @@ case_valid_workspace_passes() {
     echo "# Harness fixture valid" > docs/harness-fixture-valid.md
     git add docs/harness-fixture-valid.md "$workspace"
     git commit -q -m "valid harness fixture"
-    scripts/validate-harness.sh --strict >/tmp/harness-valid.out 2>/tmp/harness-valid.err
+    ASKLAKE_FORCE_PORTABLE_RG=1 scripts/validate-harness.sh --strict >/tmp/harness-valid.out 2>/tmp/harness-valid.err
   )
 }
 
@@ -557,7 +559,7 @@ case_status_reports_sot() {
     echo "# Harness fixture status" > docs/harness-fixture-status.md
     git add docs/harness-fixture-status.md "$workspace"
     git commit -q -m "status harness fixture"
-    scripts/status-workflow.sh "$workspace" > /tmp/harness-status.out
+    ASKLAKE_FORCE_PORTABLE_RG=1 scripts/status-workflow.sh "$workspace" > /tmp/harness-status.out
     rg -q "proposal status: applied" /tmp/harness-status.out
   )
 }
