@@ -204,7 +204,7 @@ export default function ETLMain() {
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <h1 className="min-w-0 text-xl font-bold text-gray-900 sm:text-2xl">
-            데이터 구축
+            파이프라인 구축
           </h1>
         </div>
         <button

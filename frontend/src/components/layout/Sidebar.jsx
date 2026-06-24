@@ -22,7 +22,7 @@ export function Sidebar({ isCollapsed, onToggle }) {
   const allNavItems = [
     { name: "데이터 카탈로그", path: "/catalog", icon: Activity },
     { name: "데이터 소스", path: "/sources", icon: Server, requiresDatasetEtlAccess: true },
-    { name: "데이터 구축", path: "/dataset", icon: GitMerge, requiresDatasetEtlAccess: true },
+    { name: "파이프라인 구축", path: "/dataset", icon: GitMerge, requiresDatasetEtlAccess: true },
     { name: "실행/모니터링", path: "/etl", icon: List, requiresDatasetEtlAccess: true },
     { name: "AI Query", path: "/query", icon: Search, requiresQueryAiAccess: true },
     { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard, requiresQueryAiAccess: true },

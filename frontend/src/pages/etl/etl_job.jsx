@@ -1147,7 +1147,7 @@ export default function ETLJobPage() {
       name: displayName,
       description:
         jobDetails.description ||
-        "데이터 구축 화면에서 만든 Gold Dataset입니다. PostgreSQL 주문 거래와 MongoDB 상품 카탈로그를 조인해 월별 상품 매출을 집계했습니다.",
+        "파이프라인 구축 화면에서 만든 Gold Dataset입니다. PostgreSQL 주문 거래와 MongoDB 상품 카탈로그를 조인해 월별 상품 매출을 집계했습니다.",
       owner: "데이터 엔지니어링 팀",
       dataset_type: "target",
       job_type: jobDetails.jobType || "batch",
