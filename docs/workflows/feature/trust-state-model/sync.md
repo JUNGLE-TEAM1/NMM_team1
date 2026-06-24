@@ -43,7 +43,7 @@ main 동기화와 integration readiness를 기록한다.
 - issue link: https://github.com/JUNGLE-TEAM1/NMM_team1/issues/57
 - issue creation result: created
 - PR closing keyword: Closes #57
-- pushed branch:
-- PR link:
-- merge status:
+- pushed branch: feature/trust-state-model
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/58
+- merge status: open
 - issue close status:
