@@ -95,8 +95,8 @@ const askLakeDemoSchemas = {
     { key: "revenue", name: "revenue", type: "NUMERIC" },
     { key: "order_count", name: "order_count", type: "INTEGER" },
     { key: "avg_order_amount", name: "avg_order_amount", type: "NUMERIC" },
-    { key: "rag_complaint_mentions", name: "rag_complaint_mentions", type: "INTEGER" },
-    { key: "evidence_chunk_ids", name: "evidence_chunk_ids", type: "ARRAY<VARCHAR>" },
+    { key: "voice_signal_mentions", name: "voice_signal_mentions", type: "INTEGER" },
+    { key: "search_index_doc_ids", name: "search_index_doc_ids", type: "ARRAY<VARCHAR>" },
   ],
 };
 
@@ -118,9 +118,9 @@ const askLakeDemoEdges = [
     style: { stroke: "#47a248", strokeWidth: 2 },
   },
   {
-    id: "asklake-edge-voice-rag",
+    id: "asklake-edge-voice-index",
     source: "asklake-source-customer-voice",
-    target: "asklake-transform-rag-chunking",
+    target: "asklake-transform-search-index",
     type: "deletion",
     animated: true,
     style: { stroke: "#f97316", strokeWidth: 2 },
@@ -134,8 +134,8 @@ const askLakeDemoEdges = [
     style: { stroke: "#10b981", strokeWidth: 3 },
   },
   {
-    id: "asklake-edge-rag-gold",
-    source: "asklake-transform-rag-chunking",
+    id: "asklake-edge-index-gold",
+    source: "asklake-transform-search-index",
     target: "asklake-target-gold",
     type: "deletion",
     animated: true,
@@ -169,8 +169,8 @@ const getDemoSourceDefaults = (sourceType) => {
   if (sourceType === "mongodb") {
     return {
       sourceId: "conn-mongodb",
-      sourceName: "MongoDB 상품 카탈로그",
-      subtitle: "상품/카테고리 컬렉션",
+      sourceName: "커머스 MongoDB",
+      subtitle: "product_catalog",
       tableName: "product_catalog",
       collectionName: "product_catalog",
       schema: askLakeDemoSchemas.productCatalog,
@@ -180,8 +180,8 @@ const getDemoSourceDefaults = (sourceType) => {
 
   return {
     sourceId: "conn-postgres",
-    sourceName: "PostgreSQL 주문 거래",
-    subtitle: "결제/주문 DB",
+    sourceName: "주문 거래 PostgreSQL",
+    subtitle: "orders",
     tableName: "orders",
     schema: askLakeDemoSchemas.orders,
     config: { database: "commerce", table: "orders" },
@@ -220,7 +220,7 @@ const defaultDemoSources = [
 const defaultDemoDestination = {
   nodeId: "asklake-target-gold",
   type: "s3",
-  path: "s3://asklake/gold/monthly_revenue_rag",
+  path: "s3://asklake/gold/monthly_revenue_search_index",
   format: "parquet",
   options: { compression: "snappy" },
 };
@@ -364,9 +364,9 @@ export default function ETLJobPage() {
       tone: "emerald",
       icon: Archive,
       items: [
-        { label: "PostgreSQL 주문 거래", detail: "orders", nodeId: "asklake-source-postgres" },
-        { label: "MongoDB 상품 카탈로그", detail: "product_catalog", nodeId: "asklake-source-mongodb" },
-        { label: "S3 고객 원문 수집", detail: "customer_voice_raw", nodeId: "asklake-source-customer-voice" },
+        { label: "주문 거래 PostgreSQL", detail: "orders", nodeId: "asklake-source-postgres" },
+        { label: "커머스 MongoDB", detail: "product_catalog", nodeId: "asklake-source-mongodb" },
+        { label: "AskLake S3 Lake", detail: "customer_voice_raw", nodeId: "asklake-source-customer-voice" },
       ],
     },
     {
@@ -379,7 +379,7 @@ export default function ETLJobPage() {
         { label: "product_id 기준 조인", detail: "주문 거래 + 상품 카탈로그", nodeId: "asklake-transform-clean-join" },
         { label: "결제 완료 주문 필터", detail: "paid 상태만 분석 대상", nodeId: "asklake-transform-clean-join" },
         { label: "월별 매출 집계", detail: "매출, 주문 수, 평균 주문액 계산", nodeId: "asklake-transform-clean-join" },
-        { label: "원문 청킹/임베딩", detail: "Evidence Index 메타데이터 보존", nodeId: "asklake-transform-rag-chunking" },
+        { label: "원문 검색 인덱스 생성", detail: "월/고객군/이슈 메타데이터 보존", nodeId: "asklake-transform-search-index" },
       ],
     },
     {
@@ -389,7 +389,7 @@ export default function ETLJobPage() {
       tone: "blue",
       icon: ShieldCheck,
       items: [
-        { label: "월별 매출 Gold Dataset + Evidence Index", detail: "AI Query용 인덱스 연결 정보", nodeId: "asklake-target-gold" },
+        { label: "월별 매출 Gold Dataset + 검색 인덱스", detail: "카탈로그 등록 메타데이터", nodeId: "asklake-target-gold" },
       ],
     },
   ];
@@ -445,14 +445,14 @@ export default function ETLJobPage() {
         type: "datasetNode",
         position: { x: 70, y: 95 },
         data: {
-          label: "PostgreSQL",
+          label: "주문 거래 PostgreSQL",
           icon: SiPostgresql,
           color: "#4169E1",
           nodeCategory: "source",
           sourceType: "postgres",
           sourceId: "conn-postgres",
-          sourceName: "PostgreSQL 주문 거래",
-          subtitle: "결제/주문 DB",
+          sourceName: "주문 거래 PostgreSQL",
+          subtitle: "orders",
           tableName: "orders",
           schema: askLakeDemoSchemas.orders,
           config: { database: "commerce", table: "orders" },
@@ -466,14 +466,14 @@ export default function ETLJobPage() {
         type: "datasetNode",
         position: { x: 70, y: 250 },
         data: {
-          label: "MongoDB",
+          label: "커머스 MongoDB",
           icon: SiMongodb,
           color: "#47a248",
           nodeCategory: "source",
           sourceType: "mongodb",
           sourceId: "conn-mongodb",
-          sourceName: "MongoDB 상품 카탈로그",
-          subtitle: "상품/카테고리 컬렉션",
+          sourceName: "커머스 MongoDB",
+          subtitle: "product_catalog",
           tableName: "product_catalog",
           collectionName: "product_catalog",
           schema: askLakeDemoSchemas.productCatalog,
@@ -488,14 +488,14 @@ export default function ETLJobPage() {
         type: "datasetNode",
         position: { x: 70, y: 405 },
         data: {
-          label: "S3 Customer Voice",
+          label: "AskLake S3 Lake",
           icon: FileText,
           color: "#f97316",
           nodeCategory: "source",
           sourceType: "s3",
-          sourceId: "conn-s3-customer-voice",
-          sourceName: "고객 원문/CS 로그",
-          subtitle: "리뷰 · 상담 · 정책 문서",
+          sourceId: "conn-s3",
+          sourceName: "AskLake S3 Lake",
+          subtitle: "customer_voice_raw",
           tableName: "customer_voice_raw",
           schema: askLakeDemoSchemas.customerVoice,
           config: { bucket: "asklake", path: "bronze/customer_voice/" },
@@ -538,20 +538,20 @@ export default function ETLJobPage() {
         },
       },
       {
-        id: "asklake-transform-rag-chunking",
+        id: "asklake-transform-search-index",
         type: "datasetNode",
         position: { x: 420, y: 365 },
         data: {
-          label: "Evidence Index 청킹 & 임베딩",
+          label: "원문 검색 인덱스 생성",
           icon: GitMerge,
           color: "#f97316",
           nodeCategory: "transform",
-          transformType: "rag_chunking",
+          transformType: "search_indexing",
           sourceType: "s3",
           inputSchemas: [askLakeDemoSchemas.customerVoice],
           inputSchema: askLakeDemoSchemas.customerVoice,
           schema: askLakeDemoSchemas.customerVoice,
-          subtitle: "Semantic chunking + vector index",
+          subtitle: "Semantic chunking + OpenSearch index",
           rules: [
             { label: "상담 턴/리뷰 문장 단위 청킹", tone: "success" },
             { label: "month/customer_segment/issue_type 보존", tone: "success" },
@@ -565,7 +565,7 @@ export default function ETLJobPage() {
               { label: "OpenSearch vector index 적재", tone: "success" },
             ],
           },
-          nodeId: "asklake-transform-rag-chunking",
+          nodeId: "asklake-transform-search-index",
           onDelete: deleteNode,
           onMetadataSelect: metadataSelect,
         },
@@ -575,16 +575,16 @@ export default function ETLJobPage() {
         type: "datasetNode",
         position: { x: 790, y: 265 },
         data: {
-          label: "월별 매출 Gold Dataset + Evidence Index",
+          label: "월별 매출 Gold Dataset + 검색 인덱스",
           icon: ShieldCheck,
           color: "#2563eb",
           nodeCategory: "target",
           sourceType: "s3",
-          subtitle: "AI Query용 Gold + Evidence 연결",
-          badges: ["Gold", "AI-ready", "Evidence Index"],
-          tableName: "gold_monthly_revenue_rag",
+          subtitle: "카탈로그 등록용 데이터 산출물",
+          badges: ["Gold", "Search Index", "Metadata"],
+          tableName: "gold_monthly_revenue_indexed",
           schema: askLakeDemoSchemas.gold,
-          s3Location: "s3://asklake/gold/monthly_revenue_rag",
+          s3Location: "s3://asklake/gold/monthly_revenue_indexed",
           compressionType: "snappy",
           nodeId: "asklake-target-gold",
           onDelete: deleteNode,
@@ -604,26 +604,26 @@ export default function ETLJobPage() {
           "asklake-source-mongodb",
           "asklake-source-customer-voice",
           "asklake-transform-clean-join",
-          "asklake-transform-rag-chunking",
+          "asklake-transform-search-index",
         ],
         target: [
           "asklake-source-postgres",
           "asklake-source-mongodb",
           "asklake-source-customer-voice",
           "asklake-transform-clean-join",
-          "asklake-transform-rag-chunking",
+          "asklake-transform-search-index",
           "asklake-target-gold",
         ],
       };
       const edgeIdsByStage = {
         sources: [],
-        transform: ["asklake-edge-postgres-transform", "asklake-edge-mongodb-transform", "asklake-edge-voice-rag"],
+        transform: ["asklake-edge-postgres-transform", "asklake-edge-mongodb-transform", "asklake-edge-voice-index"],
         target: [
           "asklake-edge-postgres-transform",
           "asklake-edge-mongodb-transform",
-          "asklake-edge-voice-rag",
+          "asklake-edge-voice-index",
           "asklake-edge-transform-gold",
-          "asklake-edge-rag-gold",
+          "asklake-edge-index-gold",
         ],
       };
 
@@ -639,7 +639,7 @@ export default function ETLJobPage() {
         ...prev,
         description:
           prev.description ||
-          "정형 주문 지표와 Customer Voice Evidence Index 연결 정보를 함께 준비하는 AI-ready Gold Dataset 파이프라인입니다.",
+          "정형 주문 지표와 Customer Voice 원문 검색 인덱스 메타데이터를 함께 준비하는 Gold Dataset 파이프라인입니다.",
         jobType: "batch",
         datasetType: "target",
       }));
@@ -652,7 +652,7 @@ export default function ETLJobPage() {
                 name: "월별 매출 Gold Dataset 준비 배치",
                 cron: "demo",
                 frequency: "manual",
-                description: "월별 매출 지표와 Customer Voice Evidence Index 연결 정보를 준비하는 수동 파이프라인",
+                description: "월별 매출 지표와 Customer Voice 검색 인덱스 메타데이터를 준비하는 수동 파이프라인",
                 uiParams: {},
               },
             ]
@@ -676,8 +676,8 @@ export default function ETLJobPage() {
 
       const toastByStage = {
         sources: "정형 데이터와 고객 원문 소스를 캔버스에 올렸습니다.",
-        transform: "정형 변환과 원문 청킹/임베딩, Evidence Index 연결선을 추가했습니다.",
-        target: "AI-ready Gold Dataset과 Evidence Index 연결 정보까지 준비했습니다.",
+        transform: "정형 변환과 원문 청킹/임베딩, 검색 인덱스 생성 단계를 추가했습니다.",
+        target: "Gold Dataset과 검색 인덱스 메타데이터까지 준비했습니다.",
       };
       showToast(toastByStage[stage] || "단계를 추가했습니다.", "success");
 
@@ -722,7 +722,7 @@ export default function ETLJobPage() {
     setJobName("월별_매출_Gold_Dataset_Evidence_Index");
     setJobDetails((prev) => ({
       ...prev,
-      description: "정형 주문 지표와 Customer Voice Evidence Index 연결 정보를 함께 준비하는 AI-ready Gold Dataset 파이프라인입니다.",
+      description: "정형 주문 지표와 Customer Voice 원문 검색 인덱스 메타데이터를 함께 준비하는 Gold Dataset 파이프라인입니다.",
       jobType: "batch",
       datasetType: "target",
     }));
@@ -732,7 +732,7 @@ export default function ETLJobPage() {
         name: "월별 매출 Gold Dataset 준비 배치",
         cron: "demo",
         frequency: "manual",
-        description: "월별 매출 지표와 Customer Voice Evidence Index 연결 정보를 준비하는 수동 파이프라인",
+        description: "월별 매출 지표와 Customer Voice 검색 인덱스 메타데이터를 준비하는 수동 파이프라인",
         uiParams: {},
       },
     ]);
@@ -1211,7 +1211,7 @@ export default function ETLJobPage() {
 
   const getDemoDatasetDisplayName = () => {
     const normalizedName = jobName.replace(/_/g, " ").trim();
-    return normalizedName || "월별 매출 Gold Dataset + Evidence Index";
+    return normalizedName || "월별 매출 Gold Dataset + 검색 인덱스";
   };
 
   const buildFrontendDemoCatalogPayload = () => {
@@ -1232,7 +1232,7 @@ export default function ETLJobPage() {
       name: displayName,
       description:
         jobDetails.description ||
-        "데이터 구축 화면에서 만든 AI-ready Gold Dataset입니다. 월별 매출 지표와 Customer Voice Evidence Index 연결 정보를 함께 등록해 AI Query에서 SQL + RAG 분석에 사용할 수 있습니다.",
+        "데이터 구축 화면에서 만든 Gold Dataset입니다. 월별 매출 지표와 Customer Voice 검색 인덱스 메타데이터를 함께 등록합니다.",
       owner: "데이터 엔지니어링 팀",
       dataset_type: "target",
       job_type: jobDetails.jobType || "batch",
@@ -1246,11 +1246,11 @@ export default function ETLJobPage() {
         table: source.table || source.config?.topic || source.collection,
         name:
           source.type === "mongodb"
-            ? "MongoDB 상품 카탈로그"
+            ? "커머스 MongoDB"
             : source.type === "s3" || source.nodeId === "asklake-source-customer-voice"
-              ? "Customer Voice Evidence Index"
+              ? "AskLake S3 Lake"
             : index === 0
-              ? "PostgreSQL 주문 거래"
+              ? "주문 거래 PostgreSQL"
               : "원본 데이터",
       })),
       transforms: transformPayloads,
@@ -1662,12 +1662,12 @@ export default function ETLJobPage() {
       IS_FRONTEND_ONLY && category === "target"
         ? {
             sourceType: "s3",
-            subtitle: "AI Query용 Gold + Evidence 연결",
-            tableName: "gold_monthly_revenue_rag",
+            subtitle: "카탈로그 등록용 데이터 산출물",
+            tableName: "gold_monthly_revenue_indexed",
             schema: askLakeDemoSchemas.gold,
-            s3Location: "s3://asklake/gold/monthly_revenue_rag",
+            s3Location: "s3://asklake/gold/monthly_revenue_indexed",
             compressionType: "snappy",
-            badges: ["Gold", "AI-ready", "Evidence Index"],
+            badges: ["Gold", "Search Index", "Metadata"],
           }
         : {};
     const demoTransformDefaults =
@@ -2117,7 +2117,7 @@ export default function ETLJobPage() {
                         </div>
                         <p className="mt-3 text-sm font-bold text-gray-900">원본 데이터 추가</p>
                         <p className="mt-1 text-xs leading-5 text-gray-600">
-                          PostgreSQL 주문 거래와 MongoDB 상품 카탈로그를 올립니다.
+                          주문 거래 PostgreSQL, 커머스 MongoDB, AskLake S3 Lake를 올립니다.
                         </p>
                       </button>
 
@@ -2165,11 +2165,11 @@ export default function ETLJobPage() {
                         Step 1 & 2. 정형 소스 + 고객 원문 수집
                       </p>
                       <h2 className="mt-1 text-lg font-bold text-gray-900">
-                        월별 매출 Gold Dataset + Evidence Index 준비
+                        월별 매출 Gold Dataset + 검색 인덱스 준비
                       </h2>
                       <p className="mt-1 text-sm text-gray-600">
                         주문 거래와 상품 카탈로그를 조인하고 고객 원문을 의미 단위로 청킹/임베딩해,
-                        AI Query가 참조할 Customer Voice Evidence Index 연결 정보를 준비합니다.
+                        카탈로그에 등록할 Customer Voice 검색 인덱스 메타데이터를 준비합니다.
                       </p>
                     </div>
                     <span className="shrink-0 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
@@ -2177,10 +2177,10 @@ export default function ETLJobPage() {
                     </span>
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                    <span className="rounded-full bg-blue-50 px-2 py-1 text-blue-700">PostgreSQL 주문 거래</span>
-                    <span className="rounded-full bg-green-50 px-2 py-1 text-green-700">MongoDB 상품 카탈로그</span>
-                    <span className="rounded-full bg-orange-50 px-2 py-1 text-orange-700">Customer Voice Evidence Index</span>
-                    <span className="rounded-full bg-purple-50 px-2 py-1 text-purple-700">AI-ready Gold Dataset</span>
+                    <span className="rounded-full bg-blue-50 px-2 py-1 text-blue-700">주문 거래 PostgreSQL</span>
+                    <span className="rounded-full bg-green-50 px-2 py-1 text-green-700">커머스 MongoDB</span>
+                    <span className="rounded-full bg-orange-50 px-2 py-1 text-orange-700">AskLake S3 Lake</span>
+                    <span className="rounded-full bg-purple-50 px-2 py-1 text-purple-700">카탈로그 등록 메타데이터</span>
                   </div>
                 </div>
               )}
@@ -2195,12 +2195,12 @@ export default function ETLJobPage() {
                       데이터 파이프라인 가동 중...
                     </h3>
                     <p className="mt-2 text-sm text-gray-600">
-                      주문 거래를 집계하고 고객 원문을 청킹/임베딩해 Evidence Index 연결 정보를 준비하고 있습니다.
+                      주문 거래를 집계하고 고객 원문을 청킹/임베딩해 검색 인덱스 메타데이터를 준비하고 있습니다.
                     </p>
                     <div className="mt-5 grid grid-cols-3 gap-2 text-xs text-gray-600">
                       <span className="rounded-lg bg-gray-50 px-2 py-2">소스 읽기</span>
                       <span className="rounded-lg bg-blue-50 px-2 py-2 text-blue-700">SQL 집계</span>
-                      <span className="rounded-lg bg-orange-50 px-2 py-2 text-orange-700">Evidence Index</span>
+                      <span className="rounded-lg bg-orange-50 px-2 py-2 text-orange-700">검색 인덱스</span>
                     </div>
                   </div>
                 </div>

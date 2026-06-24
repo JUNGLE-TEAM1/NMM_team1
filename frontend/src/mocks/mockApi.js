@@ -1,7 +1,7 @@
 const FRONTEND_ONLY_FLAG = "VITE_FRONTEND_ONLY";
-const STORAGE_KEY = "xflow.frontendOnly.mockState.commerceRevenueDemo.v3";
+const STORAGE_KEY = "xflow.frontendOnly.mockState.commerceRevenueDemo.v4";
 const CLEANUP_MARKER_KEY = "xflow.frontendOnly.cleanupVersion";
-const CLEANUP_VERSION = "commerce-revenue-demo-v3-reset-generated-demo";
+const CLEANUP_VERSION = "commerce-revenue-demo-v4-reset-generated-demo";
 
 const now = () => new Date().toISOString();
 
@@ -164,14 +164,14 @@ const createAskLakeDemoItems = (createdAt = now()) => {
     id: "ds-customer-order-bronze",
     job_id: "ds-customer-order-bronze",
     name: "고객 주문 원본 Bronze Dataset",
-    description: "MongoDB 고객 프로필과 PostgreSQL 주문 거래 데이터를 원본 형태로 S3 Bronze 영역에 적재한 데이터셋입니다.",
+    description: "MongoDB 고객 프로필과 주문 거래 PostgreSQL 데이터를 원본 형태로 S3 Bronze 영역에 적재한 데이터셋입니다.",
     owner: "데이터 엔지니어링 팀",
     dataset_type: "target",
     layer: "bronze",
     quality_score: 88,
     sources: [
       { nodeId: "bronze-source-mongo", type: "mongodb", table: "customer_profiles", name: "MongoDB 고객 프로필" },
-      { nodeId: "bronze-source-postgres", type: "postgres", table: "order_transactions", name: "PostgreSQL 주문 거래" },
+      { nodeId: "bronze-source-postgres", type: "postgres", table: "order_transactions", name: "주문 거래 PostgreSQL" },
     ],
     transforms: [
       { nodeId: "bronze-ingest", type: "raw-ingest", config: { mode: "append", keep_raw_payload: true } },
@@ -199,7 +199,7 @@ const createAskLakeDemoItems = (createdAt = now()) => {
         id: "bronze-source-postgres",
         type: "custom",
         data: {
-          label: "PostgreSQL 주문 거래",
+          label: "주문 거래 PostgreSQL",
           name: "order_transactions",
           platform: "PostgreSQL",
           nodeCategory: "source",
@@ -269,7 +269,7 @@ const createAskLakeDemoItems = (createdAt = now()) => {
     quality_score: 97,
     sources: [
       { nodeId: "silver-source-mongo", type: "mongodb", table: "customer_profiles", name: "MongoDB 고객 프로필" },
-      { nodeId: "silver-source-postgres", type: "postgres", table: "order_transactions", name: "PostgreSQL 주문 거래" },
+      { nodeId: "silver-source-postgres", type: "postgres", table: "order_transactions", name: "주문 거래 PostgreSQL" },
       { nodeId: "silver-source-bronze", type: "s3", table: "customer_order_raw", name: "고객 주문 원본 Bronze Dataset" },
     ],
     transforms: [
@@ -306,7 +306,7 @@ const createAskLakeDemoItems = (createdAt = now()) => {
         id: "silver-source-postgres",
         type: "custom",
         data: {
-          label: "PostgreSQL 주문 거래",
+          label: "주문 거래 PostgreSQL",
           name: "order_transactions",
           platform: "PostgreSQL",
           nodeCategory: "source",
@@ -391,9 +391,9 @@ const createAskLakeDemoItems = (createdAt = now()) => {
     catalog_status: "new",
     quality_score: 100,
     sources: [
-      { nodeId: "asklake-source-postgres", type: "postgres", table: "orders", name: "PostgreSQL 주문 거래" },
-      { nodeId: "asklake-source-mongodb", type: "mongodb", table: "product_catalog", name: "MongoDB 상품 카탈로그" },
-      { nodeId: "asklake-source-customer-voice", type: "opensearch", table: "customer_voice_evidence_index", name: "Customer Voice Evidence Index" },
+      { nodeId: "asklake-source-postgres", type: "postgres", table: "orders", name: "주문 거래 PostgreSQL" },
+      { nodeId: "asklake-source-mongodb", type: "mongodb", table: "product_catalog", name: "커머스 MongoDB" },
+      { nodeId: "asklake-source-customer-voice", type: "s3", table: "customer_voice_raw", name: "AskLake S3 Lake" },
     ],
     transforms: [
       {
@@ -425,7 +425,7 @@ const createAskLakeDemoItems = (createdAt = now()) => {
         id: "asklake-source-postgres",
         type: "custom",
         data: {
-          label: "PostgreSQL 주문 거래",
+          label: "주문 거래 PostgreSQL",
           name: "orders",
           platform: "PostgreSQL",
           nodeCategory: "source",
@@ -439,7 +439,7 @@ const createAskLakeDemoItems = (createdAt = now()) => {
         id: "asklake-source-mongodb",
         type: "custom",
         data: {
-          label: "MongoDB 상품 카탈로그",
+          label: "커머스 MongoDB",
           name: "product_catalog",
           platform: "MongoDB",
           nodeCategory: "source",
@@ -467,13 +467,13 @@ const createAskLakeDemoItems = (createdAt = now()) => {
         id: "asklake-source-customer-voice",
         type: "custom",
         data: {
-          label: "Customer Voice Evidence Index",
-          name: "customer_voice_evidence_index",
-          platform: "OpenSearch",
+          label: "AskLake S3 Lake",
+          name: "customer_voice_raw",
+          platform: "S3",
           nodeCategory: "source",
           columns: [],
           schema: [],
-          description: "리뷰, 상담, 정책 문서를 청킹/임베딩해 AI Query에서 검색할 수 있도록 연결된 Customer Voice Evidence Index입니다.",
+          description: "리뷰, 상담, 정책 문서가 적재되는 고객 원문 데이터 레이크 소스입니다.",
         },
         position: { x: 80, y: 480 },
       },
@@ -533,7 +533,7 @@ const createAskLakeDemoItems = (createdAt = now()) => {
     layer: "silver",
     quality_score: 96,
     sources: [
-      { nodeId: "silver-source-postgres", type: "postgres", table: "orders", name: "PostgreSQL 주문 거래" },
+      { nodeId: "silver-source-postgres", type: "postgres", table: "orders", name: "주문 거래 PostgreSQL" },
     ],
     transforms: [
       { nodeId: "silver-transform-clean", type: "clean", config: { selected_fields: ["order_id", "user_id", "product_id", "order_amount", "order_status"] } },

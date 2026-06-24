@@ -88,8 +88,8 @@ function GoldDatasetShowcase({ catalogItem }) {
   const governanceOptions = [
     {
       id: "includeEvidenceIndex",
-      label: "Customer Voice Evidence Index 연결 공개",
-      description: "AI Query가 원문 근거 검색을 함께 사용할 수 있도록 인덱스 연결 정보를 노출합니다.",
+      label: "고객 원문 검색 인덱스 연결 공개",
+      description: "다른 부서가 데이터셋과 함께 원문 검색 인덱스 연결 정보를 확인할 수 있도록 노출합니다.",
     },
     {
       id: "maskCustomerIdentifiers",
@@ -196,7 +196,7 @@ function GoldDatasetShowcase({ catalogItem }) {
               <div className="mb-5">
                 <h2 className="text-base font-bold text-gray-900">데이터 흐름 추적</h2>
                 <p className="mt-1 text-sm text-gray-500">
-                  원본 데이터와 Customer Voice Evidence Index 연결 정보가 어떻게 Gold Dataset으로 등록되는지 보여줍니다.
+                  등록된 데이터 소스와 원문 검색 인덱스 메타데이터가 어떻게 Gold Dataset으로 등록되는지 보여줍니다.
                 </p>
               </div>
               <div className="overflow-x-auto">
@@ -205,7 +205,7 @@ function GoldDatasetShowcase({ catalogItem }) {
                     <div className="rounded-lg border border-blue-100 bg-blue-50 p-4">
                       <div className="flex items-center gap-2 text-sm font-bold text-blue-900">
                         <Database className="h-4 w-4" />
-                        PostgreSQL 주문 거래
+                        주문 거래 PostgreSQL
                       </div>
                       <p className="mt-2 text-xs leading-5 text-blue-800">
                         결제 완료 주문, 상품 ID, 주문 금액, 주문 시각 포함
@@ -214,7 +214,7 @@ function GoldDatasetShowcase({ catalogItem }) {
                     <div className="rounded-lg border border-green-100 bg-green-50 p-4">
                       <div className="flex items-center gap-2 text-sm font-bold text-green-900">
                         <Layers className="h-4 w-4" />
-                        MongoDB 상품 카탈로그
+                        커머스 MongoDB
                       </div>
                       <p className="mt-2 text-xs leading-5 text-green-800">
                         상품명, 카테고리, 브랜드, 기준 가격 메타데이터 포함
@@ -223,10 +223,10 @@ function GoldDatasetShowcase({ catalogItem }) {
                     <div className="rounded-lg border border-orange-100 bg-orange-50 p-4">
                       <div className="flex items-center gap-2 text-sm font-bold text-orange-900">
                         <FileSearch className="h-4 w-4" />
-                        Customer Voice Evidence Index
+                        AskLake S3 Lake
                       </div>
                       <p className="mt-2 text-xs leading-5 text-orange-800">
-                        리뷰, 상담, 정책 문서를 청킹/임베딩하고 월, 고객군, 이슈 메타데이터 보존
+                        customer_voice_raw 원문 데이터를 저장하는 등록된 S3 데이터 레이크
                       </p>
                     </div>
                   </div>
@@ -240,7 +240,7 @@ function GoldDatasetShowcase({ catalogItem }) {
                       <li>product_id 기준으로 주문과 상품 카탈로그 조인</li>
                       <li>결제 완료 주문만 분석 대상으로 필터링</li>
                       <li>월별 매출, 주문 수, 평균 주문액 집계</li>
-                      <li>AI Query가 참조할 Evidence Index 연결 정보 보존</li>
+                      <li>원문 검색 인덱스 연결 메타데이터 보존</li>
                     </ul>
                   </div>
                   <ArrowRight className="mx-auto h-6 w-6 text-gray-400" />
