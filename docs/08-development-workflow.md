@@ -283,7 +283,7 @@ Workspace state 값:
 - PR Conflict Resolution: if GitHub PR conflict, local merge/rebase conflict, unmerged path, or Source of Truth proposal conflict appears, stop PR progression, classify the conflict, record evidence in `sync.md`, and ask for `PR Conflict Confirm` or the matching sync/integration confirm before merge/rebase/push/PR merge continues.
 - Pre-PR Human Checkpoint: when local validation passed and push, PR creation, PR handoff, or integration handoff is the next natural action, present a 2-4 option handoff menu before any remote action.
 - PR Approval Scope: only a human choice such as `PR 진행`, `PR 생성`, or equivalent authorizes branch push, PR creation, CI/check status follow-up, merge, finalize, or cleanup within the stated scope.
-- PR Finalization: after PR merge, run `scripts/prepare-pr.sh --finalize <workspace>` and record final merge/issue close status in `sync.md`; finalize also runs automatic merged branch cleanup.
+- PR Finalization: after PR merge, run `scripts/prepare-pr.sh --finalize <workspace>` to verify GitHub PR/issue state and run automatic merged branch cleanup; local `sync.md` final fields may be stale in `main` because finalization happens after merge.
 - Branch Issue Default: `scripts/start-workflow.sh` creates a GitHub issue by default for every branch workspace; use `--no-issue` only as an explicit exception.
 - Linked Issue: when a branch maps to a GitHub issue, keep the existing branch/workspace name and record the issue plus PR closing keyword in `sync.md`.
 - Branch Switch Checkpoint: when moving from one branch workspace to another with dirty changes, checkpoint tracked modifications/deletions on the current branch before switching; report excluded untracked files instead of auto-staging them.
@@ -460,7 +460,7 @@ The human can answer with a number or natural language, such as "1번으로 진�
 11. Next action menu updated for the human's next choice.
 12. `sync.md` records pre-merge sync status or a human-approved reason for deferral.
 13. Before PR handoff, `scripts/prepare-pr.sh --check-pr-sync <workspace>` has passed or a reason is recorded.
-14. After PR merge, `scripts/prepare-pr.sh --finalize <workspace>` has updated `sync.md` with merged/closed status or a reason is recorded.
+14. After PR merge, `scripts/prepare-pr.sh --finalize <workspace>` has verified GitHub PR/issue state and cleanup result, or a reason is recorded. Do not require post-merge `sync.md` final fields to be present in `main`.
 15. `quality.md` records TDD status, branch checks, CI status, skipped checks, Source of Truth impact evidence, harness test impact evidence, and CD gate if relevant.
 15a. `quality.md` records local tool/runtime readiness evidence when validation depends on Docker, browser runtime, database service, or other local runtime.
 16. `decisions.md` records accepted/deferred high-impact decisions and rollback/revisit conditions.
@@ -523,7 +523,7 @@ AI는 각 선택지마다 진행 절차, 선택하면 좋은 상황, 장점, 주
 현재 branch 상황에 맞지 않는 선택지는 숨기거나 권장하지 않음으로 표시한다.
 
 1. PR 진행
-   - 진행 절차: 최종 validation -> branch push -> PR 생성 -> CI 확인 -> CI 통과 시 merge -> linked issue close 확인 -> `scripts/prepare-pr.sh --finalize <workspace>` -> 자동 merged branch cleanup -> finalization 기록 commit/push.
+   - 진행 절차: 최종 validation -> branch push -> PR 생성 -> CI 확인 -> CI 통과 시 merge -> linked issue close 확인 -> `scripts/prepare-pr.sh --finalize <workspace>` -> 자동 merged branch cleanup -> GitHub 상태와 남은 branch queue 확인.
    - 선택하면 좋은 상황: 현재 branch를 main에 반영해도 되고 CI/리뷰 흐름으로 넘길 준비가 된 경우.
    - 장점: 변경이 main에 들어가 다음 Phase가 같은 기준에서 시작된다.
    - 주의사항 또는 단점: 원격 상태가 바뀐다. 사용자가 "PR만 올려줘"라고 하면 PR 생성까지만 하고 merge 전 멈춘다.

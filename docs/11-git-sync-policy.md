@@ -89,7 +89,9 @@ Preferred flow:
 feature branch push -> PR -> review -> merge to main
 ```
 
-Record pushed branch, PR link, merge status, and issue close status in `sync.md`.
+Record pushed branch and PR link in `sync.md`.
+Before merge, `sync.md` may also hold local handoff values such as `merge status: open` and `issue close status: open`.
+After merge, GitHub PR/issue state is the authoritative status source because local finalization edits can happen after the PR has already been merged into `main`.
 
 GitHub issue는 branch 생성 시 기본으로 만든다. 이 동작은 팀 규칙이며, `scripts/start-workflow.sh` 실행이 issue 생성까지 포함하는 시작 절차다.
 
@@ -124,12 +126,15 @@ Stacked PR처럼 default branch가 아닌 feature branch로 merge되는 PR은 `C
 PR merge 후 `scripts/prepare-pr.sh --check-issue <workspace>`로 issue 상태를 확인한다.
 PR이 merged이고 issue가 아직 open이면 `scripts/prepare-pr.sh --close-issue <workspace>`로 PR merge 근거 comment를 남기고 issue를 닫은 뒤 `sync.md`에 `merge status`와 `issue close status`를 기록한다.
 PR 전에는 `scripts/prepare-pr.sh --check-pr-sync <workspace>`로 `sync.md`의 linked issue, closing keyword, pushed branch, PR link, merge/issue status 정적 일관성을 확인한다.
-PR merge 후에는 `scripts/prepare-pr.sh --finalize <workspace>`로 PR merged 상태와 issue close 상태를 확인하고 `sync.md`를 최종화한다.
+PR merge 후에는 `scripts/prepare-pr.sh --finalize <workspace>`로 PR merged 상태와 issue close 상태를 확인한다.
+이 명령이 local `sync.md`를 갱신하더라도, 그 갱신은 이미 merge된 PR에 자동으로 다시 포함되지 않는다.
+따라서 `sync.md`의 final fields는 local evidence일 수 있고, `scripts/status-workflow.sh`와 `scripts/list-active-branches.sh`는 PR link가 있으면 GitHub PR/issue 상태를 조회해 stale `sync.md` 값을 보정해서 해석한다.
 `scripts/prepare-pr.sh --finalize <workspace>`는 성공 후 `scripts/cleanup-merged-branches.sh`를 실행해 merged/closed workspace branch cleanup을 자동 수행한다.
 PR merge/finalize 후에는 `scripts/list-active-branches.sh`로 남은 작업 브랜치 큐를 확인한다.
 남은 브랜치는 active local branch, open PR branch, merged cleanup candidate, no workspace / unknown으로 분류한다.
 `PR 진행`은 merged branch cleanup까지 포함하므로 PR finalize 성공 후 별도 추가 승인 없이 local branch, remote branch, stale remote-tracking ref cleanup을 실행한다.
-cleanup 대상은 workspace `sync.md`에 `merge status: merged`와 `issue close status: CLOSED`가 기록되어 있고, 현재 checkout branch가 아니며, PR이 `main`에 merge된 workspace branch다.
+cleanup 대상은 현재 checkout branch가 아니며, PR이 `main`에 merge된 workspace branch다.
+가능하면 GitHub PR/issue 상태의 `MERGED`/`CLOSED`를 우선 사용하고, GitHub 조회가 불가능할 때만 workspace `sync.md`의 `merge status: merged`와 `issue close status: CLOSED` 기록을 사용한다.
 workspace branch prefix는 `feature/*`, `fix/*`, `docs/*`, `test/*`, `chore/*`, `hotfix/*`다.
 cleanup 실행 순서는 allowed workspace branch 원격 조회, `git push origin --delete <branch...>`, `git branch -d <branch...>`, `git fetch --prune`, `scripts/list-active-branches.sh`, allowed workspace branch local/remote 확인이다.
 `git branch -D` 강제 삭제는 자동 실행하지 않는다. `git branch -d`가 실패하면 이유를 보고하고 별도 사람 확인을 받는다.

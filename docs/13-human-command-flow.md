@@ -276,7 +276,7 @@ AI does:
 - Uses `Closes #123` style closing keyword so GitHub closes the linked issue when the PR is merged.
 - After merge, runs `scripts/prepare-pr.sh --check-issue <workspace>` and records `issue close status` in `sync.md`.
 - If a stacked PR was merged into a non-default branch and the linked issue remains open, runs `scripts/prepare-pr.sh --close-issue <workspace>` to close it with the merged PR as evidence.
-- For final handoff after merge, runs `scripts/prepare-pr.sh --finalize <workspace>` to verify PR merged state, issue close state, final `sync.md` values, and automatic merged branch cleanup.
+- For final handoff after merge, runs `scripts/prepare-pr.sh --finalize <workspace>` to verify PR merged state, issue close state, and automatic merged branch cleanup. If local `sync.md` final fields differ from GitHub because finalization happened after merge, reports GitHub as current state and treats `sync.md` as stale evidence.
 - If unrelated or expanded work appears mid-flow, records same-scope work in the current workspace; for scope changes, resolves `Scope Change Confirm` and creates a separate workspace when needed.
 - After PR merge/finalize, runs automatic merged branch cleanup, then runs or summarizes `scripts/list-active-branches.sh` and reports remaining active branches, open PR branches, and cleanup candidates.
 
@@ -305,6 +305,7 @@ AI does:
 
 - Runs or summarizes `scripts/list-active-branches.sh`.
 - Reports branch name, ahead count, local branch presence, remote branch presence, remote-tracking status, workspace path, workspace state, linked issue, PR link/open PR state, merge status, issue close status, and recommended next action.
+- If `sync.md` still says `open` but GitHub says the PR is `MERGED` and issue is `CLOSED`, reports the stale local value and recommends cleanup or next Phase instead of another PR attempt.
 - Separates merged/closed branches as cleanup candidates.
 - Notes that merged/closed branch cleanup is automatic after `PR 진행` merge/finalize; manual branch cleanup outside PR 진행 still needs explicit human approval.
 - If remaining work branches exist, offers: 1. 남은 브랜치 PR 진행, 2. 남은 브랜치 보류, 3. main에서 다음 Phase 시작, 4. cleanup 후보 정리 검토.

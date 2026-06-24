@@ -20,6 +20,7 @@ This document records shared collaboration agreements that should not change per
 - Use `scripts/start-workflow.sh` to create the branch and workspace together.
 - Record proposed shared Source of Truth changes in `shared-docs.md`.
 - Record branch freshness, base commit, upstream checks, and PR status in `sync.md`.
+- Treat GitHub PR/issue state as authoritative after PR merge; `sync.md` final merge/issue fields can be stale because local finalization happens after the PR has already entered `main`.
 - Record TDD and CI/CD evidence in `quality.md`.
 - Record high-impact accepted/deferred decisions in `decisions.md`.
 
@@ -229,6 +230,7 @@ A branch is complete when:
 - Required human confirmation gates are recorded in `confirmations.md`.
 - Current next action menu is recorded in `next-actions.md`.
 - Git sync and PR status are recorded in `sync.md`.
+- Post-merge status is verified from GitHub when available; stale `sync.md` final fields do not by themselves make a merged branch active again.
 - TDD and CI/CD quality gate status are recorded in `quality.md`.
 - High-impact choices are recorded in `decisions.md`.
 - Context Budget mode and primary/escalated context are recorded in `report.md` or the Phase report.

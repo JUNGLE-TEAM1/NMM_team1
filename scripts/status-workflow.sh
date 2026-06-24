@@ -46,6 +46,44 @@ section_value() {
   ' "$file"
 }
 
+pr_number_from_link() {
+  local value="$1"
+  if [[ "$value" =~ /pull/([0-9]+) ]]; then
+    printf '%s\n' "${BASH_REMATCH[1]}"
+  fi
+}
+
+issue_number_from_value() {
+  local value="$1"
+  if [[ "$value" =~ ^#([0-9]+)$ ]]; then
+    printf '%s\n' "${BASH_REMATCH[1]}"
+  elif [[ "$value" =~ /issues/([0-9]+) ]]; then
+    printf '%s\n' "${BASH_REMATCH[1]}"
+  fi
+}
+
+gh_ready() {
+  command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1
+}
+
+remote_pr_state() {
+  local pr_number="$1"
+  [[ -n "$pr_number" ]] || return 1
+  gh pr view "$pr_number" --json state --jq .state 2>/dev/null
+}
+
+remote_issue_state() {
+  local issue_number="$1"
+  [[ -n "$issue_number" ]] || return 1
+  gh issue view "$issue_number" --json state --jq .state 2>/dev/null
+}
+
+stale_note() {
+  local local_value="$1"
+  local remote_value="$2"
+  [[ -n "$local_value" && -n "$remote_value" && "$local_value" != "$remote_value" ]]
+}
+
 source_of_truth_files() {
   local file="$1"
   [[ -f "$file" ]] || return 0
@@ -253,6 +291,18 @@ if [[ -f "$sync_file" ]]; then
   pr_link="$(section_value "$sync_file" "## Push / PR" "- PR link:")"
   merge_status="$(section_value "$sync_file" "## Push / PR" "- merge status:")"
   issue_close_status="$(section_value "$sync_file" "## Push / PR" "- issue close status:")"
+  remote_pr_status=""
+  remote_issue_status=""
+  remote_status_source="not checked"
+  if gh_ready; then
+    pr_number="$(pr_number_from_link "$pr_link")"
+    issue_number="$(issue_number_from_value "${linked_issue:-$issue_link}")"
+    remote_pr_status="$(remote_pr_state "$pr_number" || true)"
+    remote_issue_status="$(remote_issue_state "$issue_number" || true)"
+    remote_status_source="GitHub"
+  else
+    remote_status_source="unavailable: GitHub CLI unavailable or unauthenticated"
+  fi
   pr_conflict_detected_at="$(section_value "$sync_file" "## PR Conflict Resolution" "- conflict detected at:")"
   pr_conflict_command="$(section_value "$sync_file" "## PR Conflict Resolution" "- conflict detection command:")"
   pr_conflict_type="$(section_value "$sync_file" "## PR Conflict Resolution" "- conflict type:")"
@@ -274,6 +324,15 @@ if [[ -f "$sync_file" ]]; then
   echo "  - PR link: ${pr_link:-missing}"
   echo "  - Merge status: ${merge_status:-missing}"
   echo "  - Issue close status: ${issue_close_status:-missing}"
+  echo "  - Remote status source: ${remote_status_source}"
+  echo "  - Remote PR state: ${remote_pr_status:-not checked}"
+  echo "  - Remote issue state: ${remote_issue_status:-not checked}"
+  if stale_note "${merge_status:-}" "${remote_pr_status:-}"; then
+    echo "  - Stale sync warning: sync.md merge status '${merge_status}' differs from GitHub PR state '${remote_pr_status}'"
+  fi
+  if stale_note "${issue_close_status:-}" "${remote_issue_status:-}"; then
+    echo "  - Stale sync warning: sync.md issue close status '${issue_close_status}' differs from GitHub issue state '${remote_issue_status}'"
+  fi
 else
   echo "  - sync.md missing"
 fi
@@ -483,8 +542,12 @@ elif [[ "$decision_status" == "none" && -f "$shared_docs" ]] && awk -F '|' '
   recommendation="Review shared-doc proposals and decide whether decisions.md needs an accepted/deferred decision."
 elif [[ "$workspace" == docs/workflows/*/integrate-* || "$workspace" == docs/workflows/*/*-integration ]]; then
   recommendation="Run scripts/validate-harness.sh --integration before integration completion."
+elif [[ "${remote_pr_status:-}" == "MERGED" && "${remote_issue_status:-}" == "CLOSED" ]]; then
+  recommendation="Phase is merged and linked issue is closed according to GitHub; sync.md final fields may be stale after post-merge finalization."
 elif [[ "${merge_status:-}" =~ ^merged ]] && [[ "${issue_close_status:-}" =~ ^CLOSED ]]; then
   recommendation="Phase is merged and linked issue is closed; choose the next phase or archive/cleanup follow-up."
+elif [[ -n "${pr_link:-}" ]] && [[ "${remote_pr_status:-}" == "MERGED" ]]; then
+  recommendation="PR is merged according to GitHub. Run or review finalize/cleanup evidence; do not treat stale sync.md open fields as an active PR."
 elif [[ -n "${pr_link:-}" ]] && [[ ! "${merge_status:-}" =~ ^merged ]]; then
   recommendation="PR이 이미 열려 있습니다. CI/check 상태를 확인한 뒤 선택지: 1 PR 진행(merge, finalize, issue close 확인, automatic branch cleanup), 2 추가 보강(현재 PR에 추가 커밋), 3 보류(PR 유지 + 재개 조건 기록), 4 다음 Phase(현재 PR merge 또는 명시 보류 후 진행), 5 외부 실행 승인(deploy/AWS 등 별도 승인)."
 elif [[ "$pr_ready" == "yes" ]]; then
