@@ -4,7 +4,7 @@ milestone:
   id: target-mvp
   status: planned
   last_update: 2026-06-24
-  runtime_implementation: not_started
+  runtime_implementation: thin_core_available
   parallel_execution_approval: required
 
 first_parallel_wave:
@@ -18,7 +18,27 @@ first_parallel_wave:
   guardrails:
     - Query/Policy remains mock/fake only until real policy and data access are approved.
     - Parallel worktree/thread/branch creation requires a separate human checkpoint.
-    - R0.5 is a planning and contract baseline, not runtime implementation evidence.
+    - R0.6 provides only thin runtime skeleton and fake providers, not completed feature implementation.
+
+thin_runtime_core:
+  status: available
+  branch: feature/thin-runtime-core
+  code_mapping:
+    contracts: backend/app/domain/target_contracts.py
+    fakes: backend/app/fakes/
+    ports:
+      - backend/app/ports/policy_engine.py
+      - backend/app/ports/query_engine.py
+      - backend/app/ports/job_runner.py
+    services:
+      - backend/app/services/catalog_trust.py
+      - backend/app/services/query_policy.py
+      - backend/app/services/job_orchestrator.py
+    frontend_features:
+      - frontend/src/features/catalog/
+      - frontend/src/features/sources/
+      - frontend/src/features/jobs/
+      - frontend/src/features/query/
 
 workstreams:
   - id: catalog_trust
