@@ -24,7 +24,7 @@ main 동기화와 integration readiness를 기록한다.
 - conflicts: none checked by pull/merge/rebase; local WSL worktree was created from current main
 - validation: `bash -n scripts/start-workflow.sh scripts/status-workflow.sh scripts/validate-harness.sh scripts/test-harness.sh scripts/smoke-container-app.sh scripts/lib/portable-tools.sh`; `python3 -m py_compile scripts/lib/portable_rg.py`; `./scripts/validate-harness.sh`; `./scripts/validate-harness.sh --strict`; `./scripts/test-harness.sh`; `./scripts/smoke-container-app.sh`; `git diff --check`
 - result: WSL2 shell에서 harness validation, strict validation, harness regression, container smoke가 통과했다. smoke는 missing buildx plugin 뒤 local-only fallback으로 재시도했고, `rg`는 host binary 대신 Python fallback backend로 처리됐다.
-- deferral reason: remote sync/push/PR action은 요청되지 않았고, host `node` readiness와 mixed Windows Git/WSL git worktree auto-healing은 follow-up 범위로 남긴다.
+- deferral reason: host `node` readiness와 mixed Windows Git/WSL git worktree auto-healing은 follow-up 범위로 남긴다.
 
 ## PR Conflict Resolution
 
@@ -42,8 +42,8 @@ main 동기화와 integration readiness를 기록한다.
 - linked GitHub issue: 
 - issue link: 
 - issue creation result: not requested
-- PR closing keyword: 
-- pushed branch:
-- PR link:
-- merge status:
-- issue close status:
+- PR closing keyword: not used
+- pushed branch: `chore/cross-platform-tooling`
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/70
+- merge status: open
+- issue close status: not requested
