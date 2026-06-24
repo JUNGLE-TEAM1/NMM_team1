@@ -11,7 +11,6 @@ import {
   Layers,
   RefreshCw,
   CheckCircle,
-  Lock,
   Sparkles,
 } from "lucide-react";
 import { API_BASE_URL } from "../../config/api";
@@ -200,9 +199,11 @@ export default function CatalogPage() {
                       <CheckCircle className="h-3 w-3" />
                       품질 {qualityScore ?? 100}%
                     </span>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700">
-                      <Lock className="h-3 w-3" />
-                      {item.permission_label || "마케터 권한 적용"}
+                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
+                      AI-ready
+                    </span>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2.5 py-1 text-xs font-semibold text-orange-700">
+                      Evidence Index 연결
                     </span>
                   </div>
                 )}
@@ -217,7 +218,7 @@ export default function CatalogPage() {
                   <div className="flex-1">
                     <p className="text-xs text-gray-500 mb-1">원본 데이터</p>
                     <div className="flex flex-wrap gap-1">
-                      {item.sources?.slice(0, 2).map((source, idx) => {
+                      {item.sources?.slice(0, 3).map((source, idx) => {
                         const sourceName = typeof source === "string"
                           ? source.split(".").pop()
                           : source?.table || source?.name || "원본";
@@ -230,9 +231,9 @@ export default function CatalogPage() {
                           </span>
                         );
                       })}
-                      {item.sources?.length > 2 && (
+                      {item.sources?.length > 3 && (
                         <span className="text-xs text-gray-500">
-                          외 {item.sources.length - 2}개
+                          외 {item.sources.length - 3}개
                         </span>
                       )}
                     </div>

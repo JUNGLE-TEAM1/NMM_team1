@@ -1,5 +1,5 @@
 const FRONTEND_ONLY_FLAG = "VITE_FRONTEND_ONLY";
-const STORAGE_KEY = "xflow.frontendOnly.mockState.commerceRevenueDemo.v2";
+const STORAGE_KEY = "xflow.frontendOnly.mockState.commerceRevenueDemo.v3";
 const CLEANUP_MARKER_KEY = "xflow.frontendOnly.cleanupVersion";
 const CLEANUP_VERSION = "commerce-revenue-demo-v3-reset-generated-demo";
 
@@ -384,16 +384,16 @@ const createAskLakeDemoItems = (createdAt = now()) => {
     id: "ds-commerce-revenue-gold",
     job_id: "ds-commerce-revenue-gold",
     name: "월별 상품 매출 Gold Dataset",
-    description: "PostgreSQL 주문 거래와 MongoDB 상품 카탈로그를 조인해 월별 상품 매출과 주문 수를 집계한 Gold Dataset입니다.",
+    description: "월별 상품 매출 Gold Dataset에 Customer Voice Evidence Index 연결 정보를 더한 AI-ready 데이터셋입니다.",
     owner: "데이터 엔지니어링 팀",
     dataset_type: "target",
     layer: "gold",
     catalog_status: "new",
     quality_score: 100,
-    permission_label: "마케터 권한 적용",
     sources: [
       { nodeId: "asklake-source-postgres", type: "postgres", table: "orders", name: "PostgreSQL 주문 거래" },
       { nodeId: "asklake-source-mongodb", type: "mongodb", table: "product_catalog", name: "MongoDB 상품 카탈로그" },
+      { nodeId: "asklake-source-customer-voice", type: "opensearch", table: "customer_voice_evidence_index", name: "Customer Voice Evidence Index" },
     ],
     transforms: [
       {
@@ -403,6 +403,15 @@ const createAskLakeDemoItems = (createdAt = now()) => {
           join_key: "product_id",
           filters: ["order_status = 'paid'"],
           metrics: ["revenue", "order_count", "avg_order_amount"],
+        },
+      },
+      {
+        nodeId: "asklake-transform-evidence-index",
+        type: "evidence-index",
+        config: {
+          chunking_strategy: "semantic_metadata_chunking",
+          index: "customer_voice_evidence_index",
+          preserved_metadata: ["month", "customer_segment", "issue_type"],
         },
       },
     ],
@@ -455,6 +464,20 @@ const createAskLakeDemoItems = (createdAt = now()) => {
         position: { x: 420, y: 180 },
       },
       {
+        id: "asklake-source-customer-voice",
+        type: "custom",
+        data: {
+          label: "Customer Voice Evidence Index",
+          name: "customer_voice_evidence_index",
+          platform: "OpenSearch",
+          nodeCategory: "source",
+          columns: [],
+          schema: [],
+          description: "리뷰, 상담, 정책 문서를 청킹/임베딩해 AI Query에서 검색할 수 있도록 연결된 Customer Voice Evidence Index입니다.",
+        },
+        position: { x: 80, y: 480 },
+      },
+      {
         id: "asklake-target-gold",
         type: "custom",
         data: {
@@ -464,7 +487,7 @@ const createAskLakeDemoItems = (createdAt = now()) => {
           nodeCategory: "target",
           columns: commerceGoldColumns,
           schema: commerceGoldColumns,
-          description: "마케터와 기획자가 바로 분석에 사용할 수 있는 정제 데이터셋입니다.",
+          description: "월별 매출 집계와 Customer Voice Evidence Index 연결 정보를 함께 가진 AI-ready Gold Dataset입니다.",
         },
         position: { x: 760, y: 180 },
       },
@@ -473,6 +496,7 @@ const createAskLakeDemoItems = (createdAt = now()) => {
       { id: "asklake-edge-1", source: "asklake-source-postgres", target: "asklake-transform-clean-join", animated: true },
       { id: "asklake-edge-2", source: "asklake-source-mongodb", target: "asklake-transform-clean-join", animated: true },
       { id: "asklake-edge-3", source: "asklake-transform-clean-join", target: "asklake-target-gold", animated: true },
+      { id: "asklake-edge-4", source: "asklake-source-customer-voice", target: "asklake-target-gold", animated: true },
     ],
     schedule: "Batch 실행",
     schedule_frequency: "manual",

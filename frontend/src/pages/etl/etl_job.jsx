@@ -366,7 +366,7 @@ export default function ETLJobPage() {
       items: [
         { label: "PostgreSQL 주문 거래", detail: "orders", nodeId: "asklake-source-postgres" },
         { label: "MongoDB 상품 카탈로그", detail: "product_catalog", nodeId: "asklake-source-mongodb" },
-        { label: "S3 고객 원문/CS 로그", detail: "customer_voice_chunks", nodeId: "asklake-source-customer-voice" },
+        { label: "S3 고객 원문 수집", detail: "customer_voice_raw", nodeId: "asklake-source-customer-voice" },
       ],
     },
     {
@@ -379,7 +379,7 @@ export default function ETLJobPage() {
         { label: "product_id 기준 조인", detail: "주문 거래 + 상품 카탈로그", nodeId: "asklake-transform-clean-join" },
         { label: "결제 완료 주문 필터", detail: "paid 상태만 분석 대상", nodeId: "asklake-transform-clean-join" },
         { label: "월별 매출 집계", detail: "매출, 주문 수, 평균 주문액 계산", nodeId: "asklake-transform-clean-join" },
-        { label: "RAG 청킹/임베딩", detail: "월/고객군/이슈 메타데이터 보존", nodeId: "asklake-transform-rag-chunking" },
+        { label: "원문 청킹/임베딩", detail: "Evidence Index 메타데이터 보존", nodeId: "asklake-transform-rag-chunking" },
       ],
     },
     {
@@ -389,7 +389,7 @@ export default function ETLJobPage() {
       tone: "blue",
       icon: ShieldCheck,
       items: [
-        { label: "매출 + RAG 근거 Gold Dataset", detail: "차트 지표와 원문 근거 동시 제공", nodeId: "asklake-target-gold" },
+        { label: "월별 매출 Gold Dataset + Evidence Index", detail: "AI Query용 인덱스 연결 정보", nodeId: "asklake-target-gold" },
       ],
     },
   ];
@@ -542,7 +542,7 @@ export default function ETLJobPage() {
         type: "datasetNode",
         position: { x: 420, y: 365 },
         data: {
-          label: "RAG 청킹 & 임베딩",
+          label: "Evidence Index 청킹 & 임베딩",
           icon: GitMerge,
           color: "#f97316",
           nodeCategory: "transform",
@@ -551,7 +551,7 @@ export default function ETLJobPage() {
           inputSchemas: [askLakeDemoSchemas.customerVoice],
           inputSchema: askLakeDemoSchemas.customerVoice,
           schema: askLakeDemoSchemas.customerVoice,
-          subtitle: "Semantic chunking + metadata rerank",
+          subtitle: "Semantic chunking + vector index",
           rules: [
             { label: "상담 턴/리뷰 문장 단위 청킹", tone: "success" },
             { label: "month/customer_segment/issue_type 보존", tone: "success" },
@@ -575,13 +575,13 @@ export default function ETLJobPage() {
         type: "datasetNode",
         position: { x: 790, y: 265 },
         data: {
-          label: "매출 + RAG 근거 Gold Dataset",
+          label: "월별 매출 Gold Dataset + Evidence Index",
           icon: ShieldCheck,
           color: "#2563eb",
           nodeCategory: "target",
           sourceType: "s3",
-          subtitle: "분석 차트와 원문 근거 제공",
-          badges: ["Gold", "RAG", "품질 100%"],
+          subtitle: "AI Query용 Gold + Evidence 연결",
+          badges: ["Gold", "AI-ready", "Evidence Index"],
           tableName: "gold_monthly_revenue_rag",
           schema: askLakeDemoSchemas.gold,
           s3Location: "s3://asklake/gold/monthly_revenue_rag",
@@ -632,14 +632,14 @@ export default function ETLJobPage() {
 
       setJobName((prev) =>
         prev === "Untitled Job" || prev === "새_파이프라인"
-          ? "월별_매출_RAG_근거_Gold_Dataset"
+          ? "월별_매출_Gold_Dataset_Evidence_Index"
           : prev
       );
       setJobDetails((prev) => ({
         ...prev,
         description:
           prev.description ||
-          "정형 주문 데이터와 고객 원문 RAG chunk를 함께 사용해 월별 매출 원인 분석용 Gold Dataset을 만드는 파이프라인입니다.",
+          "정형 주문 지표와 Customer Voice Evidence Index 연결 정보를 함께 준비하는 AI-ready Gold Dataset 파이프라인입니다.",
         jobType: "batch",
         datasetType: "target",
       }));
@@ -649,10 +649,10 @@ export default function ETLJobPage() {
           : [
               {
                 id: "guided-demo-schedule",
-                name: "월별 매출 + RAG 근거 집계 배치",
+                name: "월별 매출 Gold Dataset 준비 배치",
                 cron: "demo",
                 frequency: "manual",
-                description: "월별 매출 지표와 RAG 원문 근거를 함께 만드는 수동 실행 파이프라인",
+                description: "월별 매출 지표와 Customer Voice Evidence Index 연결 정보를 준비하는 수동 파이프라인",
                 uiParams: {},
               },
             ]
@@ -676,8 +676,8 @@ export default function ETLJobPage() {
 
       const toastByStage = {
         sources: "정형 데이터와 고객 원문 소스를 캔버스에 올렸습니다.",
-        transform: "정형 변환과 RAG 청킹/임베딩 연결선을 추가했습니다.",
-        target: "RAG 근거가 포함된 Gold Dataset까지 연결했습니다.",
+        transform: "정형 변환과 원문 청킹/임베딩, Evidence Index 연결선을 추가했습니다.",
+        target: "AI-ready Gold Dataset과 Evidence Index 연결 정보까지 준비했습니다.",
       };
       showToast(toastByStage[stage] || "단계를 추가했습니다.", "success");
 
@@ -719,20 +719,20 @@ export default function ETLJobPage() {
   useEffect(() => {
     if (startFromScratch || urlJobId || nodes.length > 0 || fromTargetImport) return;
 
-    setJobName("월별_매출_RAG_근거_Gold_Dataset");
+    setJobName("월별_매출_Gold_Dataset_Evidence_Index");
     setJobDetails((prev) => ({
       ...prev,
-      description: "정형 주문 데이터와 고객 원문 RAG chunk를 함께 사용해 월별 매출 원인 분석용 Gold Dataset을 만드는 파이프라인입니다.",
+      description: "정형 주문 지표와 Customer Voice Evidence Index 연결 정보를 함께 준비하는 AI-ready Gold Dataset 파이프라인입니다.",
       jobType: "batch",
       datasetType: "target",
     }));
     setSchedules([
       {
         id: "asklake-demo-schedule",
-        name: "월별 매출 + RAG 근거 집계 배치",
+        name: "월별 매출 Gold Dataset 준비 배치",
         cron: "demo",
         frequency: "manual",
-        description: "월별 매출 지표와 RAG 원문 근거를 함께 만드는 수동 실행 파이프라인",
+        description: "월별 매출 지표와 Customer Voice Evidence Index 연결 정보를 준비하는 수동 파이프라인",
         uiParams: {},
       },
     ]);
@@ -1211,7 +1211,7 @@ export default function ETLJobPage() {
 
   const getDemoDatasetDisplayName = () => {
     const normalizedName = jobName.replace(/_/g, " ").trim();
-    return normalizedName || "월별 매출 RAG 근거 Gold Dataset";
+    return normalizedName || "월별 매출 Gold Dataset + Evidence Index";
   };
 
   const buildFrontendDemoCatalogPayload = () => {
@@ -1232,7 +1232,7 @@ export default function ETLJobPage() {
       name: displayName,
       description:
         jobDetails.description ||
-        "데이터 구축 화면에서 만든 Gold Dataset입니다. 정형 주문 지표와 고객 원문 RAG chunk를 결합해 월별 매출 원인 분석에 사용합니다.",
+        "데이터 구축 화면에서 만든 AI-ready Gold Dataset입니다. 월별 매출 지표와 Customer Voice Evidence Index 연결 정보를 함께 등록해 AI Query에서 SQL + RAG 분석에 사용할 수 있습니다.",
       owner: "데이터 엔지니어링 팀",
       dataset_type: "target",
       job_type: jobDetails.jobType || "batch",
@@ -1240,7 +1240,6 @@ export default function ETLJobPage() {
       catalog_status: "new",
       created_from_pipeline_demo: true,
       quality_score: 100,
-      permission_label: "마케터 권한 적용",
       sources: sourcePayloads.map((source, index) => ({
         nodeId: source.nodeId,
         type: source.type,
@@ -1248,6 +1247,8 @@ export default function ETLJobPage() {
         name:
           source.type === "mongodb"
             ? "MongoDB 상품 카탈로그"
+            : source.type === "s3" || source.nodeId === "asklake-source-customer-voice"
+              ? "Customer Voice Evidence Index"
             : index === 0
               ? "PostgreSQL 주문 거래"
               : "원본 데이터",
@@ -1661,12 +1662,12 @@ export default function ETLJobPage() {
       IS_FRONTEND_ONLY && category === "target"
         ? {
             sourceType: "s3",
-            subtitle: "분석 차트와 원문 근거 제공",
+            subtitle: "AI Query용 Gold + Evidence 연결",
             tableName: "gold_monthly_revenue_rag",
             schema: askLakeDemoSchemas.gold,
             s3Location: "s3://asklake/gold/monthly_revenue_rag",
             compressionType: "snappy",
-            badges: ["Gold", "RAG", "품질 100%"],
+            badges: ["Gold", "AI-ready", "Evidence Index"],
           }
         : {};
     const demoTransformDefaults =
@@ -2161,14 +2162,14 @@ export default function ETLJobPage() {
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="text-xs font-semibold text-blue-600">
-                        Step 1 & 2. 정형 소스 + RAG 원문 소스 연결
+                        Step 1 & 2. 정형 소스 + 고객 원문 수집
                       </p>
                       <h2 className="mt-1 text-lg font-bold text-gray-900">
-                        매출 + RAG 근거 Gold Dataset 만들기
+                        월별 매출 Gold Dataset + Evidence Index 준비
                       </h2>
                       <p className="mt-1 text-sm text-gray-600">
-                        주문 거래와 상품 카탈로그를 조인하고 고객 원문을 의미 단위로 청킹해,
-                        월별 매출 지표와 근거 chunk를 함께 제공합니다.
+                        주문 거래와 상품 카탈로그를 조인하고 고객 원문을 의미 단위로 청킹/임베딩해,
+                        AI Query가 참조할 Customer Voice Evidence Index 연결 정보를 준비합니다.
                       </p>
                     </div>
                     <span className="shrink-0 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
@@ -2178,8 +2179,8 @@ export default function ETLJobPage() {
                   <div className="mt-3 flex flex-wrap gap-2 text-xs">
                     <span className="rounded-full bg-blue-50 px-2 py-1 text-blue-700">PostgreSQL 주문 거래</span>
                     <span className="rounded-full bg-green-50 px-2 py-1 text-green-700">MongoDB 상품 카탈로그</span>
-                    <span className="rounded-full bg-orange-50 px-2 py-1 text-orange-700">고객 원문 RAG</span>
-                    <span className="rounded-full bg-purple-50 px-2 py-1 text-purple-700">월별 매출 + 근거 집계</span>
+                    <span className="rounded-full bg-orange-50 px-2 py-1 text-orange-700">Customer Voice Evidence Index</span>
+                    <span className="rounded-full bg-purple-50 px-2 py-1 text-purple-700">AI-ready Gold Dataset</span>
                   </div>
                 </div>
               )}
@@ -2194,12 +2195,12 @@ export default function ETLJobPage() {
                       데이터 파이프라인 가동 중...
                     </h3>
                     <p className="mt-2 text-sm text-gray-600">
-                      주문 거래를 집계하고 고객 원문 chunk를 임베딩/재랭킹하고 있습니다.
+                      주문 거래를 집계하고 고객 원문을 청킹/임베딩해 Evidence Index 연결 정보를 준비하고 있습니다.
                     </p>
                     <div className="mt-5 grid grid-cols-3 gap-2 text-xs text-gray-600">
                       <span className="rounded-lg bg-gray-50 px-2 py-2">소스 읽기</span>
                       <span className="rounded-lg bg-blue-50 px-2 py-2 text-blue-700">SQL 집계</span>
-                      <span className="rounded-lg bg-orange-50 px-2 py-2 text-orange-700">RAG 청킹</span>
+                      <span className="rounded-lg bg-orange-50 px-2 py-2 text-orange-700">Evidence Index</span>
                     </div>
                   </div>
                 </div>
