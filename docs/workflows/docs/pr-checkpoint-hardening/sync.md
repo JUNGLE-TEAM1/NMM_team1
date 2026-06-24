@@ -43,8 +43,8 @@ main 동기화와 integration readiness를 기록한다.
 - issue link: https://github.com/JUNGLE-TEAM1/NMM_team1/issues/61
 - issue creation result: created
 - PR closing keyword: Closes #61
-- pushed branch:
-- PR link:
-- merge status:
-- issue close status:
+- pushed branch: docs/pr-checkpoint-hardening
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/62
+- merge status: open
+- issue close status: open
 - remote action deferral: PR/push not requested for this turn; keep branch local until Pre-PR Human Checkpoint approval.
