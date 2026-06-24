@@ -44,7 +44,8 @@ export default function SchedulesPanel({ schedules = [], onUpdate }) {
     // Helper to generate human-readable summary
     const generateSummary = (s) => {
         const { frequency, uiParams } = s;
-        if (!uiParams) return s.cron || ''; // Fallback for legacy
+        const fallbackSummary = s.cron === 'demo' ? '수동 실행' : (s.cron || '');
+        if (!uiParams) return fallbackSummary; // Fallback for legacy
 
         // If backend hasn't generated cron yet, we can still show summary based on params
 
@@ -69,7 +70,7 @@ export default function SchedulesPanel({ schedules = [], onUpdate }) {
             if (frequency === 'monthly') return `매월 ${date.getDate()}일 ${timeStr} 실행`;
         }
 
-        return s.cron;
+        return fallbackSummary;
     };
 
     // Min datetime for validation (current time)
