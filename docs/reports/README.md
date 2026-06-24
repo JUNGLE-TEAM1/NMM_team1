@@ -48,6 +48,7 @@ report가 늘어나면 영역별 최신 report index를 작게 유지한다. 이
 | Cross-Platform Smoke Audit | [`cross-platform-smoke-audit.md`](cross-platform-smoke-audit.md) | macOS Docker Compose smoke evidence와 Windows WSL2/native Windows 남은 검증 범위 확인 |
 | Windows WSL2 Smoke Audit | [`windows-wsl2-smoke-audit.md`](windows-wsl2-smoke-audit.md) | Windows WSL2 smoke 검증 handoff와 현재 macOS 환경의 not-executed evidence 확인 |
 | Windows WSL2 Smoke Execution | [`windows-wsl2-smoke-execution.md`](windows-wsl2-smoke-execution.md) | 실제 WSL2 shell에서 smoke를 재실행하고 repo-local portability fix와 남은 host prerequisite를 확인 |
+| WSL2 Known Gaps Guidance | [`wsl2-known-gaps-guidance.md`](wsl2-known-gaps-guidance.md) | WSL2 Tier 1 경로를 유지하면서 CRLF, Git metadata 혼용, native Windows 보류 기준을 확인 |
 | Small Change PR Decision | [`small-change-pr-decision.md`](small-change-pr-decision.md) | 작은 변경 완료 후 PR 진행, 로컬 보류, 큰 branch 흡수, 개인 초안 유지, 포함/제외 파일 정리 기준 확인 |
 | PR Checkpoint Hardening | [`pr-checkpoint-hardening.md`](pr-checkpoint-hardening.md) | 작은 변경의 PR 진행이 Pre-PR checkpoint를 우회하지 않는지, dirty checkpoint가 untracked 파일을 자동 추적하지 않는지 확인 |
 | PR Finalization State Source | [`pr-finalization-state-source.md`](pr-finalization-state-source.md) | PR merge 뒤 stale `sync.md` final field가 남아도 GitHub PR/issue 상태로 완료 여부를 올바르게 해석하는지 확인 |

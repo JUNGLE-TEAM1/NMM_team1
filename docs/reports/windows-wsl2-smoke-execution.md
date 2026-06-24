@@ -93,3 +93,8 @@ git diff --check
 - 기존 Windows checkout이 이미 CRLF로 내려와 있다면 `.gitattributes`만으로 즉시 복구되지는 않으므로 현재 shell 기준 재checkout 또는 새 worktree/clone이 필요할 수 있다.
 - WSL git으로 만든 worktree metadata를 Windows Git에서, Windows Git으로 만든 metadata를 WSL git에서 자동 복구하는 문제는 아직 다루지 않았다. 이번 Phase는 clearer error와 docs guidance까지 보강했다.
 - native Windows PowerShell/CMD 지원은 여전히 별도 audit/tooling Phase가 필요하다.
+
+## Follow-up Note / 후속 메모
+
+- 후속 문서 보강은 WSL2 Tier 1 경로를 유지하면서 기존 checkout의 CRLF 확인, 새 WSL worktree/clone 권장, WSL Git / Windows Git metadata 혼용 금지를 운영 지침으로 더 명확히 남기는 방향이 적절하다.
+- 이 후속은 과거 smoke evidence를 바꾸지 않고, native Windows PowerShell/CMD 지원 범위를 넓히지 않는다.
