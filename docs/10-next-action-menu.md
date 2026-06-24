@@ -344,6 +344,19 @@ Waiting on you:
 - Next AI action: update integration `shared-docs.md`, `sources.md`, `confirmations.md`, and `sync.md`.
 - Ask: "공통 Source of Truth 충돌이 있습니다. 어느 방향으로 확정할까요?"
 
+### PR Conflict Detected
+
+- Current state: GitHub PR, local merge/rebase/pull attempt, `git status`, or Source of Truth preflight reports a PR conflict.
+- Recommended next action: stop PR progression and ask for `PR Conflict Confirm`, `Sync Conflict Confirm`, or `Integration Conflict Confirm` before merge/rebase/push/PR merge continues.
+- Options:
+  1. `main 반영 후 현재 branch에서 해결`: choose merge or rebase explicitly, resolve conflicts, rerun validation, then resume PR checks.
+  2. `Source of Truth 우선 결정`: resolve product/architecture/interface/workflow contract direction in `shared-docs.md`, `decisions.md`, or `Decision Option Brief`.
+  3. `작업 분리`: move part of the conflict to a follow-up branch/Phase and reduce current PR scope.
+  4. `PR 보류`: keep the PR open and record hold reason plus resume condition in `sync.md` and `next-actions.md`.
+  5. `사람 직접 해결`: AI records conflict files, type, and current state, then stops.
+- Next AI action: record current branch, PR number, base branch, detection command, conflict type, affected files, and impacted Source of Truth layer in `sync.md`; update `quality.md`, `shared-docs.md`, `decisions.md`, or `report.md` when applicable.
+- Ask: "PR 충돌이 감지됐습니다. 현재 branch에서 해결할까요, Source of Truth 결정을 먼저 할까요, 작업을 분리/보류할까요?"
+
 ### Verification Ready
 
 - Current state: implementation is done or ready to check.

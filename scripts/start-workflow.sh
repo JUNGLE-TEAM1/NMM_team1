@@ -582,7 +582,7 @@ AI가 멈추고 사람 확인을 받아야 하는 지점을 기록한다.
   - 포함 범위
   - 제외 범위
   - 영향받는 Source of Truth 문서
-- Human response: 
+- Human response:
 
 ## Contract Confirm / 계약 확인
 
@@ -641,6 +641,23 @@ AI가 멈추고 사람 확인을 받아야 하는 지점을 기록한다.
   - 공유 Source of Truth 문서가 이 branch와 충돌하는 경우
   - merge/rebase/pull/push/PR action이 필요한 경우
 - Human response: 
+
+## PR Conflict Confirm / PR 충돌 확인
+
+- Status: not needed
+- Ask human when:
+  - GitHub PR이 conflict 상태를 보고하는 경우
+  - \`gh pr view\` 또는 PR status에서 conflict가 의심되는 경우
+  - 승인된 merge/rebase/pull 중 conflict가 발생한 경우
+  - \`git status\`에 unmerged path가 있는 경우
+  - Source of Truth proposal이 base/main 변경과 충돌하는 경우
+- Confirm:
+  - conflict type
+  - affected files
+  - resolution path
+  - revalidation commands/result
+- Relationship: \`Sync Conflict Confirm\`은 main/upstream sync 선택이고, \`Integration Conflict Confirm\`은 여러 source branch 계약 충돌 선택이다. \`PR Conflict Confirm\`은 open PR 또는 PR-ready branch의 conflict 해결 경로 선택이다.
+- Human response:
 
 ## Completion Confirm / 완료 확인
 
@@ -732,6 +749,17 @@ main 동기화와 integration readiness를 기록한다.
 - validation:
 - result:
 - deferral reason:
+
+## PR Conflict Resolution
+
+- conflict detected at:
+- conflict detection command:
+- conflict type:
+- affected files:
+- resolution path:
+- resolved files:
+- revalidation:
+- remaining risk:
 
 ## Push / PR
 

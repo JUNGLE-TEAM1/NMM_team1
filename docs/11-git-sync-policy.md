@@ -180,7 +180,80 @@ Deploy and AWS resource creation still require separate explicit human approval.
 
 Use `.github/pull_request_template.md` as the checklist when the project uses PRs.
 
-## 6) Conflict Handling
+## 6) PR Conflict Resolution Protocol
+
+PR conflict는 GitHub PR conflict, local merge/rebase conflict, 또는 Source of Truth proposal drift를 포함한다.
+AI는 conflict를 발견하면 임의로 merge/rebase/push/PR merge를 계속하지 않고, conflict를 분류한 뒤 사람에게 `PR Conflict Confirm` 또는 기존 `Sync Conflict Confirm`/`Integration Conflict Confirm` 선택지를 제시한다.
+
+Conflict 감지 조건:
+
+- GitHub PR이 `This branch has conflicts` 또는 동등한 conflict 상태를 보고한다.
+- `gh pr view` 또는 PR status에서 `mergeable`이 `CONFLICTING`이거나 conflict 의심 상태다.
+- 승인된 `git merge`, `git rebase`, 또는 `git pull` 중 conflict가 발생했다.
+- `git status`에 unmerged path가 있다.
+- base/main 변경과 branch의 Source of Truth proposal이 충돌한다.
+
+Conflict 유형:
+
+- Git text conflict: 같은 파일의 같은 hunk가 충돌한다.
+- Source of Truth conflict: `README.md` 또는 `docs/00~18` Source of Truth가 서로 다른 제품/architecture/workflow 방향을 제안한다.
+- contract/interface/schema conflict: API, schema, data model, event, CLI, UI contract가 충돌한다.
+- test/quality gate conflict: test expectation, CI/check, manual verification, quality gate가 충돌한다.
+- generated artifact / report / workspace evidence conflict: report, workspace evidence, generated artifact가 Source of Truth 또는 현재 branch 증거와 맞지 않는다.
+- external dependency / lockfile conflict: dependency version, lockfile, toolchain, container/runtime 설정이 충돌한다.
+
+Conflict 감지 직후 AI는 아래를 수행한다.
+
+1. 현재 branch, PR 번호, base branch, conflict 감지 방법을 보고한다.
+2. destructive cleanup, 임의 hunk 선택, 자동 rebase continuation, push, PR merge를 실행하지 않는다.
+3. conflict 파일과 영향 계층을 `docs/00-layer-map.md` 기준으로 분류한다.
+4. `sync.md`에 conflict 감지 시각, 감지 명령, conflict summary, conflict type, affected files를 기록한다.
+5. 필요하면 `shared-docs.md`, `decisions.md`, `quality.md`, `report.md`에 영향과 보류/결정 상태를 기록한다.
+6. 사람에게 해결 선택지를 제시한다.
+
+새 workspace의 `sync.md` template은 `## PR Conflict Resolution` 섹션을 포함한다.
+`scripts/status-workflow.sh <workspace>`는 이 섹션의 conflict type, affected files, resolution path, revalidation, remaining risk를 read-only로 요약한다.
+Conflict evidence가 있지만 resolution path 또는 revalidation이 비어 있으면 PR 진행보다 `PR Conflict Confirm`을 우선 권장한다.
+
+사람에게 제시할 기본 선택지:
+
+1. `main 반영 후 현재 branch에서 해결`: 사람이 merge 또는 rebase 방식을 명시하면 그 방식으로 해결한다.
+2. `Source of Truth 우선 결정`: 문서/contract 충돌을 먼저 `Decision Option Brief`, `shared-docs.md`, 또는 `decisions.md`에서 확정한다.
+3. `작업 분리`: 충돌 범위를 follow-up branch/Phase로 분리하고 현재 PR 범위를 줄인다.
+4. `PR 보류`: PR은 유지하고 `sync.md`와 `next-actions.md`에 재개 조건을 기록한다.
+5. `사람 직접 해결`: AI는 현재 상태와 conflict 목록만 남기고 멈춘다.
+
+merge vs rebase 선택:
+
+- 기본은 repo의 현재 Git sync policy와 사람 지시에 맞춘다.
+- merge/rebase/pull은 모두 사람 확인 전 실행하지 않는다.
+- history rewrite 가능성이 있는 rebase는 더 명시적인 확인이 필요하다.
+- conflict 해결 중 `git rebase --continue`, `git merge --continue`, force push, branch deletion, destructive cleanup은 별도 승인 또는 이미 승인된 정확한 절차 안에서만 실행한다.
+
+Conflict 해결 후 필수 재검증:
+
+```bash
+git status --short
+scripts/validate-harness.sh
+scripts/validate-harness.sh --strict
+```
+
+추가로 관련 test/build/smoke/manual verification을 다시 실행한다.
+하네스 규칙, script, CI harness job이 바뀌었으면 `scripts/test-harness.sh`도 실행하거나 skip/deferred reason을 `quality.md`와 `decisions.md`에 기록한다.
+Source of Truth 변경이 있으면 `shared-docs.md`, `decisions.md`, `quality.md`, `report.md`의 정합성을 다시 확인한다.
+
+PR 재진행 기준:
+
+- conflict가 사라졌다.
+- local validation이 통과했다.
+- PR CI/check 상태를 다시 확인했다.
+- `sync.md`에 resolution method, resolved files, validation result, remaining risk가 기록됐다.
+- 사람이 제한한 범위, 예를 들어 `PR만`, `merge 보류`, `사람 직접 해결`을 넘지 않는다.
+
+Final response는 conflict 유형, 해결 방식, 재검증 결과, 남은 PR/CI/merge 상태를 요약한다.
+Conflict를 보류하면 재개 조건과 사람이 해야 할 다음 선택을 명확히 남긴다.
+
+## 7) Conflict Handling
 
 When main or another branch changes shared Source of Truth:
 
@@ -190,7 +263,7 @@ When main or another branch changes shared Source of Truth:
 4. Present a Next Action Menu.
 5. Ask for Sync Conflict Confirm or Integration Conflict Confirm.
 
-## 7) Why Not Fully Automate
+## 8) Why Not Fully Automate
 
 Pull, merge, rebase, push, and PR operations can change history, mix unrelated work, or publish incomplete decisions.
 The harness automates recording and validation, but keeps these operations behind human confirmation.
