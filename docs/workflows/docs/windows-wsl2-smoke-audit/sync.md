@@ -45,8 +45,8 @@ main 동기화와 integration readiness를 기록한다.
 - PR closing keyword:
 - pushed branch: docs/windows-wsl2-smoke-audit-pr
 - PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/69
-- merge status: open
-- issue close status:
+- merge status: OPEN
+- issue close status: not applicable, no linked issue
 - remote status source: GitHub
 - remote PR state: OPEN
 - remote issue state: not applicable, no linked issue
