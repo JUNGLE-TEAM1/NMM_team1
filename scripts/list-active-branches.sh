@@ -52,6 +52,38 @@ section_value() {
   ' "$file"
 }
 
+pr_number_from_link() {
+  local value="$1"
+  if [[ "$value" =~ /pull/([0-9]+) ]]; then
+    printf '%s\n' "${BASH_REMATCH[1]}"
+  fi
+}
+
+issue_number_from_value() {
+  local value="$1"
+  if [[ "$value" =~ ^#([0-9]+)$ ]]; then
+    printf '%s\n' "${BASH_REMATCH[1]}"
+  elif [[ "$value" =~ /issues/([0-9]+) ]]; then
+    printf '%s\n' "${BASH_REMATCH[1]}"
+  fi
+}
+
+gh_ready() {
+  command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1
+}
+
+remote_pr_state() {
+  local pr_number="$1"
+  [[ -n "$pr_number" ]] || return 1
+  gh pr view "$pr_number" --json state --jq .state 2>/dev/null
+}
+
+remote_issue_state() {
+  local issue_number="$1"
+  [[ -n "$issue_number" ]] || return 1
+  gh issue view "$issue_number" --json state --jq .state 2>/dev/null
+}
+
 current_branch="$(git branch --show-current 2>/dev/null || true)"
 main_ref="origin/main"
 workspace_branch_regex='^(feature|fix|docs|test|chore|hotfix)/'
@@ -64,12 +96,14 @@ echo "Base ref: ${main_ref}"
 echo
 
 open_pr_status="available"
+remote_status_available=0
 open_pr_file="$(mktemp)"
 remote_heads_file="$(mktemp)"
 remote_tracking_file="$(mktemp)"
 trap 'rm -f "$open_pr_file" "$remote_heads_file" "$remote_tracking_file"' EXIT
 
 if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
+  remote_status_available=1
   if ! gh pr list --state open --json number,headRefName,url --jq '.[] | [.headRefName, .number, .url] | @tsv' > "$open_pr_file" 2>/dev/null; then
     open_pr_status="skipped: GitHub PR list unavailable for this remote"
     : > "$open_pr_file"
@@ -125,6 +159,8 @@ while IFS= read -r branch; do
   pr_link=""
   merge_status=""
   issue_close_status=""
+  remote_pr_status=""
+  remote_issue_status=""
   open_pr_info=""
   local_present="yes"
   remote_present="no"
@@ -145,6 +181,12 @@ while IFS= read -r branch; do
       pr_link="$(section_value "${workspace}/sync.md" "## Push / PR" "- PR link:")"
       merge_status="$(section_value "${workspace}/sync.md" "## Push / PR" "- merge status:")"
       issue_close_status="$(section_value "${workspace}/sync.md" "## Push / PR" "- issue close status:")"
+      if [[ "$remote_status_available" -eq 1 ]]; then
+        pr_number="$(pr_number_from_link "$pr_link")"
+        issue_number="$(issue_number_from_value "${issue:-}")"
+        remote_pr_status="$(remote_pr_state "$pr_number" || true)"
+        remote_issue_status="$(remote_issue_state "$issue_number" || true)"
+      fi
     fi
   fi
 
@@ -154,6 +196,15 @@ while IFS= read -r branch; do
   fi
   if [[ -n "$open_pr_info" ]]; then
     pr_cell="$open_pr_info"
+  elif [[ -n "$remote_pr_status" ]]; then
+    pr_cell="${pr_link:-missing} (${remote_pr_status})"
+  fi
+
+  if [[ -n "$remote_pr_status" && -n "$merge_status" && "$merge_status" != "$remote_pr_status" ]]; then
+    merge_status="${merge_status} (GitHub: ${remote_pr_status})"
+  fi
+  if [[ -n "$remote_issue_status" && -n "$issue_close_status" && "$issue_close_status" != "$remote_issue_status" ]]; then
+    issue_close_status="${issue_close_status} (GitHub: ${remote_issue_status})"
   fi
 
   category="active local branch"
@@ -165,6 +216,15 @@ while IFS= read -r branch; do
   elif [[ -n "$open_pr_info" ]]; then
     category="open PR branch"
     recommendation="check CI, review, merge/finalize when approved"
+  elif [[ "$remote_pr_status" == "MERGED" && "$remote_issue_status" == "CLOSED" ]]; then
+    category="merged cleanup candidate"
+    recommendation="GitHub says merged/closed; cleanup local branch after human approval"
+    merge_status="${merge_status:-stale}"
+    issue_close_status="${issue_close_status:-stale}"
+  elif [[ "$remote_pr_status" == "MERGED" ]]; then
+    category="merged cleanup candidate"
+    recommendation="GitHub says PR merged; check/finalize issue state before cleanup"
+    merge_status="${merge_status:-stale}"
   elif [[ "$merge_status" =~ ^merged && "$issue_close_status" =~ ^CLOSED ]]; then
     category="merged cleanup candidate"
     recommendation="cleanup only after human approval"

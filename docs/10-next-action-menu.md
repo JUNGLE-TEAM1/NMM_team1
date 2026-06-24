@@ -455,7 +455,7 @@ Waiting on you:
 - Recommended next action: ask the human to choose a `Pre-PR Human Checkpoint` option before any push, PR creation, merge, finalize, or cleanup.
 - Options:
   1. PR 진행
-     - Procedure: final validation -> `prepare-pr --approved-pr` -> CI check -> merge -> linked issue close check -> `prepare-pr --finalize` -> automatic merged branch cleanup -> finalization record commit/push.
+     - Procedure: final validation -> `prepare-pr --approved-pr` -> CI check -> merge -> linked issue close check -> `prepare-pr --finalize` -> automatic merged branch cleanup -> GitHub status and branch queue check.
      - Good fit: this branch should become the next main baseline.
      - Advantage: next Phase starts from main with this work included.
      - Caution: remote state changes and Git branch/ref cleanup happen automatically. If CI fails, conflicts appear, required review is missing, scope drift appears, or the human says "PR만", stop before merge and report back.
@@ -492,7 +492,7 @@ Waiting on you:
   3. Hold a remaining branch and record the reason.
   4. Start the next Phase from `main`.
   5. Review cleanup candidates.
-- Next AI action: report branch name, ahead count, local branch presence, remote branch presence, remote-tracking status, workspace, workspace state, linked issue, PR state, merge status, issue close status, and recommended next action.
+- Next AI action: report branch name, ahead count, local branch presence, remote branch presence, remote-tracking status, workspace, workspace state, linked issue, PR state, merge status, issue close status, and recommended next action. If `sync.md` says open but GitHub says merged/closed, treat GitHub as the current state and mark the local evidence as stale.
 - Ask: "남은 작업 브랜치가 있습니다. PR 진행, 보류, 다음 Phase, cleanup 검토 중 무엇을 할까요?"
 
 ### Semantic Validation Failed
