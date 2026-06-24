@@ -1,7 +1,7 @@
 const FRONTEND_ONLY_FLAG = "VITE_FRONTEND_ONLY";
 const STORAGE_KEY = "xflow.frontendOnly.mockState.commerceRevenueDemo.v2";
 const CLEANUP_MARKER_KEY = "xflow.frontendOnly.cleanupVersion";
-const CLEANUP_VERSION = "commerce-revenue-demo-v2";
+const CLEANUP_VERSION = "commerce-revenue-demo-v3-reset-generated-demo";
 
 const now = () => new Date().toISOString();
 
@@ -876,6 +876,9 @@ const cleanupDemoStorage = () => {
     ) {
       localStorage.removeItem(key);
     }
+  });
+  ["sqllab_current_query", "sqllab_last_results", "sqllab_query_engine"].forEach((key) => {
+    sessionStorage.removeItem(key);
   });
   localStorage.setItem(CLEANUP_MARKER_KEY, CLEANUP_VERSION);
 };

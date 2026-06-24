@@ -6,7 +6,10 @@ import {
   ChevronUp,
   Clipboard,
   Database,
+  FileText,
+  Layers3,
   LayoutDashboard,
+  Search,
   Trash2,
   X,
 } from "lucide-react";
@@ -37,6 +40,8 @@ export default function InsightDetailModal({
   const metricKeys = getInsightMetricKeys(insight);
   const metricLabels = getInsightMetricLabels(insight);
   const latestRow = insight.chartData[insight.chartData.length - 1];
+  const ragEvidence = insight.ragEvidence || [];
+  const chunkingItems = insight.chunkingStrategy?.items || [];
 
   const handleCopySql = async () => {
     try {
@@ -63,6 +68,16 @@ export default function InsightDetailModal({
                   {insight.title}
                 </h2>
                 <p className="text-sm text-gray-500">{insight.description}</p>
+                {ragEvidence.length > 0 && (
+                  <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                    <span className="rounded-full bg-orange-50 px-2 py-1 font-medium text-orange-700">
+                      SQL + RAG
+                    </span>
+                    <span className="rounded-full bg-blue-50 px-2 py-1 font-medium text-blue-700">
+                      근거 chunk {ragEvidence.length}개
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -88,7 +103,7 @@ export default function InsightDetailModal({
                 </button>
                 {isDashboardAdded && onViewDashboard && (
                   <button
-                    onClick={onViewDashboard}
+                    onClick={() => onViewDashboard?.(`/dashboard/insights/${insight.id}`)}
                     className="inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
                   >
                     대시보드에서 보기
@@ -189,15 +204,32 @@ export default function InsightDetailModal({
                 </span>
               </div>
               <DemoInsightChart data={insight.chartData} insight={insight} />
+              {insight.analysisImpact?.chartNote && (
+                <p className="mt-3 rounded-md bg-orange-50 px-3 py-2 text-xs leading-5 text-orange-800">
+                  {insight.analysisImpact.chartNote}
+                </p>
+              )}
             </section>
 
             <aside className="space-y-3">
               <div className="rounded-lg border border-blue-100 bg-blue-50 p-4">
-                <p className="text-sm font-semibold text-blue-950">LLM 분석 요약</p>
+                <p className="text-sm font-semibold text-blue-950">RAG 반영 분석 요약</p>
                 <p className="mt-2 text-sm leading-6 text-blue-900">
                   {insight.llmAnswer}
                 </p>
               </div>
+
+              {insight.analysisImpact?.whyBetter && (
+                <div className="rounded-lg border border-orange-100 bg-orange-50 p-4">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-orange-950">
+                    <Search className="h-4 w-4 text-orange-600" />
+                    품질 개선 포인트
+                  </div>
+                  <p className="mt-2 text-sm leading-6 text-orange-900">
+                    {insight.analysisImpact.whyBetter}
+                  </p>
+                </div>
+              )}
 
               <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
                 <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
@@ -225,6 +257,71 @@ export default function InsightDetailModal({
               </div>
             </aside>
           </div>
+
+          {ragEvidence.length > 0 && (
+            <section className="mt-4 rounded-lg border border-orange-200 bg-orange-50/60 p-4">
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-2 text-sm font-semibold text-orange-950">
+                  <FileText className="h-4 w-4 text-orange-600" />
+                  차트에 반영된 RAG 원본 근거
+                </div>
+                <span className="text-xs font-medium text-orange-700">
+                  월/고객군/이슈 메타데이터로 차트 구간에 연결
+                </span>
+              </div>
+              <div className="mt-3 grid gap-3 lg:grid-cols-2">
+                {ragEvidence.map((item) => (
+                  <article key={item.id} className="rounded-md border border-orange-200 bg-white p-4">
+                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                      <span className="rounded-full bg-gray-100 px-2 py-1 font-medium text-gray-700">
+                        {item.source}
+                      </span>
+                      <span className="rounded-full bg-blue-50 px-2 py-1 font-medium text-blue-700">
+                        {item.linkedMonth}
+                      </span>
+                      <span className="rounded-full bg-orange-50 px-2 py-1 font-medium text-orange-700">
+                        similarity {Math.round(item.similarity * 100)}%
+                      </span>
+                    </div>
+                    <h4 className="mt-3 text-sm font-semibold text-gray-900">{item.title}</h4>
+                    <p className="mt-2 text-sm leading-6 text-gray-700">
+                      "{item.chunkText}"
+                    </p>
+                    <p className="mt-3 rounded-md bg-orange-50 px-3 py-2 text-xs leading-5 text-orange-800">
+                      {item.chartImpact}
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2 text-xs text-gray-600">
+                      {Object.entries(item.metadata || {}).map(([key, value]) => (
+                        <span key={key} className="rounded bg-gray-100 px-2 py-1">
+                          {key}: {value}
+                        </span>
+                      ))}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {chunkingItems.length > 0 && (
+            <section className="mt-4 rounded-lg border border-gray-200 bg-white p-4">
+              <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+                <Layers3 className="h-4 w-4 text-blue-600" />
+                {insight.chunkingStrategy.title}
+              </div>
+              <p className="mt-2 text-sm leading-6 text-gray-600">
+                {insight.chunkingStrategy.description}
+              </p>
+              <div className="mt-3 grid gap-3 md:grid-cols-3">
+                {chunkingItems.map((item) => (
+                  <div key={item.label} className="rounded-md bg-gray-50 p-3">
+                    <p className="text-xs font-semibold text-gray-900">{item.label}</p>
+                    <p className="mt-1 text-xs leading-5 text-gray-600">{item.value}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
           <section className="mt-4 rounded-lg border border-gray-200 bg-white">
             <div className="border-b border-gray-200 px-4 py-3">
