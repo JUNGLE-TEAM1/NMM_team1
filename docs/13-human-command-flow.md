@@ -321,7 +321,59 @@ AI does:
 - If the human chooses additional work that exceeds current scope, resolves `Scope Change Confirm` first.
 - If the human chooses hold, records the hold reason and resume condition in `next-actions.md`.
 
-## 8) Recompare A Decision
+## 8) Decide Small Change PR
+
+Human says:
+
+```text
+작은 문서 변경인데 PR 열어야 해?
+```
+
+AI does:
+
+- Classifies whether the change is a team-shared artifact that should remain in `main`.
+- Reports local validation status and whether a branch workspace exists.
+- Presents the `Small Change Completion Decision` menu when PR need is ambiguous.
+- Recommends PR when the change updates Source of Truth, report index, workflow, quality, sync, collaboration rules, or completed workspace evidence.
+
+Human says:
+
+```text
+이건 로컬에만 둬
+```
+
+AI does:
+
+- Records the local hold reason and resume condition in `sync.md` and `next-actions.md`.
+- Does not push or create a PR.
+- Keeps the workspace complete or ready state clear in `report.md`.
+
+Human says:
+
+```text
+이건 다음 큰 PR에 합쳐
+```
+
+AI does:
+
+- Records the target branch or future Phase in `next-actions.md` and `decisions.md` when useful.
+- Does not create a standalone PR unless the human later approves it.
+- Warns if holding the change could cause drift from `main`.
+
+Human says:
+
+```text
+이 파일들은 제외하고 PR 열어
+```
+
+AI does:
+
+- Runs `git status --short` and separates tracked, staged, and untracked files.
+- Presents included files and excluded files before staging.
+- Excludes `.DS_Store`, personal drafts, unrelated untracked files, local editor artifacts, and files from another workstream.
+- Proceeds to push/PR only after `Pre-PR Human Checkpoint` approval.
+
+## 9) Recompare A Decision
 
 Human says:
 
@@ -347,7 +399,7 @@ AI does:
 - Adds rollback/revisit conditions to `notes.md`.
 - Proceeds through the relevant confirmation gate.
 
-## 9) Ask For Current Status
+## 10) Ask For Current Status
 
 Human says:
 
@@ -374,7 +426,7 @@ AI does:
 - Explains the report evidence directly instead of telling the human to open and read the report.
 - Presents the Report-Based Status Requested next-action menu when a follow-up choice is needed.
 
-## 10) Ask For CI Example
+## 11) Ask For CI Example
 
 Human says:
 
@@ -388,7 +440,7 @@ AI does:
 - Explains it is an example, not an active provider-specific requirement.
 - Helps adapt it to the target project's stack when requested.
 
-## 11) Ask For Lightweight Context
+## 12) Ask For Lightweight Context
 
 Human says:
 
@@ -410,7 +462,7 @@ AI does:
 - Escalates only if contract, data, security, sync, quality, integration, decision, or evidence conflict risk appears.
 - Records Context Budget mode and primary/escalated context in the report.
 
-## 12) Ask For Full Audit
+## 13) Ask For Full Audit
 
 Human says:
 
@@ -431,7 +483,7 @@ AI does:
 - Still avoids reading every historical report or archived workspace unless the audit target requires it.
 - Summarizes what was read, what was intentionally omitted, and where risk required deeper reading.
 
-## 13) Adopt An Existing Codebase
+## 14) Adopt An Existing Codebase
 
 Human says:
 
@@ -461,7 +513,7 @@ AI does:
 - Stops before overwriting existing docs, changing CI/PR/branch policy, declaring Source of Truth complete, or creating retroactive workspaces.
 - Guides future changes back to normal Phase Workflow.
 
-## 14) Assess Infrastructure Gaps
+## 15) Assess Infrastructure Gaps
 
 Human says:
 
@@ -496,7 +548,7 @@ AI does:
 - Proposes next Phase candidates.
 - Asks the human which Phase to run first.
 
-## 15) Add Recurrence-Prevention Harness Rule / 재발 방지 하네스 규칙 추가
+## 16) Add Recurrence-Prevention Harness Rule / 재발 방지 하네스 규칙 추가
 
 Human says:
 

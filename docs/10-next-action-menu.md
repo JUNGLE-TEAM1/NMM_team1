@@ -401,6 +401,19 @@ Waiting on you:
 - Next AI action: update `report.md`, `confirmations.md`, and next context.
 - Ask: "검증이 통과했습니다. 이 브랜치를 완료로 볼까요?"
 
+### Small Change Completion Decision
+
+- Current state: 작은 변경이 완료됐고 local validation이 통과했지만 PR 여부가 애매하다.
+- Recommended next action: 이 변경이 `main`에 남길 팀 공유 산출물인지 먼저 판단하고, PR 전 포함 파일과 제외 파일을 분리한다.
+- Options:
+  1. `PR 진행`: 팀 공유 산출물이므로 stage/commit/push/PR 절차로 진행한다.
+  2. `로컬 완료로 보류`: PR을 만들지 않고 보류 이유와 재개 조건을 기록한다.
+  3. `더 큰 branch에 흡수`: 후속 branch/Phase에 합칠 이유와 target을 기록한다.
+  4. `개인 초안으로 유지`: 개인 메모 또는 throwaway draft로 두고 stage하지 않는다.
+  5. `포함/제외 파일 먼저 정리`: staged, tracked, untracked 파일을 나눠 보고하고 PR 포함 범위를 확정한다.
+- Next AI action: 선택에 따라 `sync.md`, `next-actions.md`, `confirmations.md`, `quality.md`, 또는 `report.md`를 업데이트하고, `.DS_Store`, 개인 초안, unrelated untracked file은 stage하지 않는다.
+- Ask: "작은 변경입니다. 팀 공유 산출물로 PR을 열까요, 로컬 보류/큰 branch 흡수/개인 초안으로 둘까요?"
+
 ### Pre-Merge Sync Required
 
 - Current state: branch verification passed, but Pre-Merge Sync is missing or stale.
