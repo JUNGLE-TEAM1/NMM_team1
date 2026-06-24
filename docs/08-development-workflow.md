@@ -270,7 +270,7 @@ macOS와 Windows 개발 환경 동등성은 문서 기준, 실제 환경 evidenc
 | 후보 | 목표 | 포함 범위 | 제외 범위 |
 | --- | --- | --- | --- |
 | `docs/cross-platform-smoke-audit` | macOS, Windows WSL2, 가능하면 native Windows에서 Docker Compose와 smoke script 실행 evidence를 기록 | OS/shell별 readiness, `docker compose build/up`, `scripts/smoke-container-app.sh`, 실패/skip reason | PowerShell wrapper 구현, 대규모 script rewrite |
-| `chore/cross-platform-tooling` | smoke/helper가 필요한 경우 cross-platform 실행성을 개선 | PowerShell wrapper 또는 Python helper, `python3` launcher fallback, line ending/path separator 점검, version pinning 검토 | 제품 기능 변경, cloud resource 생성 |
+| `chore/cross-platform-tooling` | smoke/helper가 필요한 경우 cross-platform 실행성을 개선 | PowerShell wrapper 또는 Python helper, `python3` launcher fallback, `rg` fallback search backend, line ending/path separator 점검, worktree metadata portability, Docker credential/buildx fallback, version pinning 검토 | 제품 기능 변경, cloud resource 생성 |
 
 Windows native PowerShell/CMD 지원은 위 audit evidence 없이 완료로 선언하지 않는다.
 Windows 기본 지원 경로는 WSL2 + Docker Desktop integration + bash-compatible shell이다.

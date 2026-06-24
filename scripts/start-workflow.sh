@@ -203,6 +203,19 @@ fi
 
 if [[ "$checkout" -eq 1 ]] && ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   echo "Cannot create or switch branches outside a Git worktree." >&2
+  if [[ -f .git ]]; then
+    gitdir_hint="$(sed -n 's/^gitdir: //p' .git)"
+    case "$gitdir_hint" in
+      [A-Za-z]:/*)
+        echo "This worktree metadata points at a Windows-style Git path." >&2
+        echo "If you plan to run the workspace from WSL, recreate the worktree with WSL git so the metadata uses Linux paths." >&2
+        ;;
+      /mnt/*|/*)
+        echo "This worktree metadata points at a POSIX Git path." >&2
+        echo "If you plan to run the workspace from Windows Git, recreate the worktree with Windows Git so the metadata uses Windows paths." >&2
+        ;;
+    esac
+  fi
   echo "Use --no-checkout to generate workflow files without Git branch operations." >&2
   exit 1
 fi

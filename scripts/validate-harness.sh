@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/lib/portable-tools.sh
+source "${script_dir}/lib/portable-tools.sh"
+
 failures=0
 strict=0
 integration=0
@@ -311,6 +315,8 @@ require_file "scripts/status-workflow.sh"
 require_file "scripts/harness-flow-check.sh"
 require_file "scripts/list-active-branches.sh"
 require_file "scripts/test-harness.sh"
+require_file "scripts/lib/portable-tools.sh"
+require_file "scripts/lib/portable_rg.py"
 
 while IFS= read -r -d '' dir; do
   require_file "${dir}/plan.md"
