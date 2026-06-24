@@ -613,6 +613,28 @@ case_prepare_pr_documents_approved_pr() {
   )
 }
 
+case_start_workflow_checkpoint_excludes_untracked() {
+  local repo="${tmp_root}/checkpoint-excludes-untracked"
+  copy_repo "$repo"
+  (
+    cd "$repo"
+    local source_branch
+    source_branch="$(git branch --show-current)"
+    echo "tracked checkpoint change" >> README.md
+    echo "local artifact" > .DS_Store
+    echo "personal draft" > docs/reports/personal-draft.md
+    scripts/start-workflow.sh --no-issue docs checkpoint-target "Checkpoint target" > /tmp/harness-checkpoint.out
+
+    git show --name-only --pretty='' "$source_branch" > /tmp/harness-checkpoint-files.out
+    rg -q '^README.md$' /tmp/harness-checkpoint-files.out
+    ! rg -q '(^|/)\.DS_Store$' /tmp/harness-checkpoint-files.out
+    ! rg -q '^docs/reports/personal-draft\.md$' /tmp/harness-checkpoint-files.out
+    rg -q "Untracked files are not included" /tmp/harness-checkpoint.out
+    test -f .DS_Store
+    test -f docs/reports/personal-draft.md
+  )
+}
+
 case_product_context_guard_missing_trust_loop_fails() {
   local repo="${tmp_root}/product-context-missing-loop"
   copy_repo "$repo"
@@ -697,6 +719,7 @@ run_expect_success "complete PR-ready status requires Pre-PR checkpoint" case_co
 run_expect_success "status workflow prioritizes PR conflict resolution" case_status_reports_pr_conflict_priority
 run_expect_success "prepare-pr check stays local" case_prepare_pr_check_is_local
 run_expect_success "prepare-pr documents approved PR helper" case_prepare_pr_documents_approved_pr
+run_expect_success "start-workflow checkpoint excludes untracked files" case_start_workflow_checkpoint_excludes_untracked
 run_expect_failure "product context guard catches missing trust loop" case_product_context_guard_missing_trust_loop_fails
 run_expect_success "docs branch remote and tracking status is reported" case_docs_branch_remote_tracking_is_reported
 run_expect_failure "missing harness regression script fails validation" case_missing_harness_test_script_fails

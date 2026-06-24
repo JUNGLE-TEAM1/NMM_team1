@@ -60,6 +60,19 @@ worktree_dirty() {
   [[ -n "$(git status --porcelain --untracked-files=normal)" ]]
 }
 
+print_untracked_checkpoint_exclusions() {
+  local untracked
+
+  untracked="$(git ls-files --others --exclude-standard)"
+  if [[ -z "$untracked" ]]; then
+    return 0
+  fi
+
+  echo "Untracked files are not included in the automatic checkpoint commit."
+  echo "Review and commit them manually if they belong to the current branch:"
+  printf '%s\n' "$untracked" | sed 's/^/  - /'
+}
+
 auto_commit_before_branch_switch() {
   local target_branch="$1"
   local current_branch
@@ -90,10 +103,11 @@ auto_commit_before_branch_switch() {
   fi
 
   echo "Dirty worktree detected on ${current_branch}; creating checkpoint commit before switching to ${target_branch}."
-  git add -A
+  print_untracked_checkpoint_exclusions
+  git add -u
 
   if git diff --cached --quiet; then
-    echo "No staged changes after git add -A; continuing without checkpoint commit."
+    echo "No tracked changes to checkpoint; continuing without checkpoint commit."
     return 0
   fi
 

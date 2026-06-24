@@ -74,6 +74,8 @@ Local hold is acceptable when:
 Before PR handoff, AI must separate included files from excluded files.
 Do not stage `.DS_Store`, personal drafts, unrelated untracked files, local editor artifacts, or files from another workstream.
 If unrelated untracked files exist, AI reports them and keeps them out of the PR unless the human explicitly expands scope.
+When `Small Change Completion Decision` offers `PR 진행`, it means moving into `Pre-PR Human Checkpoint`.
+It does not bypass the human checkpoint or authorize push, PR creation, merge, finalize, or cleanup by itself.
 
 ## 4) Human Confirmation Gates
 
@@ -206,7 +208,9 @@ These can usually proceed inside the current branch workspace:
 ## 12) Automation Safety Agreement
 
 - `scripts/start-workflow.sh` must preserve existing workspace files.
-- Branch checkout is refused when the worktree has uncommitted or untracked changes unless `--allow-dirty` is explicitly used.
+- When switching branch workspaces, `scripts/start-workflow.sh` may create a checkpoint commit for tracked modifications/deletions on the current branch.
+- Automatic checkpoint commits do not include untracked files, `.DS_Store`, personal drafts, editor artifacts, or unrelated workstream files.
+- If untracked files exist, AI reports the excluded file list and continues only inside the approved branch-switch scope.
 - Use `--no-checkout` for documentation-only setup or when the current Git state should not change.
 - Use `--dry-run` before creating unfamiliar branch/workspace names.
 - Use `git pull --ff-only` as the default main update command only after human confirmation.

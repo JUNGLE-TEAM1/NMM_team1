@@ -150,6 +150,9 @@ branch 생성/전환 없이 workspace 파일만 만들려면 `--no-checkout`을 
 GitHub issue 생성은 팀 기본 규칙이라 `--no-checkout`에서도 실행된다. 로컬 workspace만 만들 예외 상황이면 `--no-issue`를 함께 사용하고 이유를 `sync.md`에 기록한다.
 branch 이름과 생성 파일만 미리 보려면 `--dry-run`을 사용한다.
 다른 branch workspace로 이동할 때 현재 worktree가 dirty이면 `scripts/start-workflow.sh`가 현재 branch에 checkpoint commit을 만든 뒤 이동한다.
+이 checkpoint는 이미 Git이 추적 중인 파일의 수정/삭제만 자동으로 포함한다.
+untracked file, `.DS_Store`, 개인 초안, editor artifact는 자동 checkpoint에 포함하지 않고 목록으로 보고한다.
+새 파일을 현재 branch checkpoint에 포함해야 하면 branch 전환 전에 사람이 명시적으로 stage/commit하거나 범위를 확정해야 한다.
 같은 branch workspace를 다시 여는 경우에는 checkpoint commit을 만들지 않는다.
 handoff, integration, PR readiness 전에 현재 workspace 상태를 요약하려면 `scripts/status-workflow.sh <workspace>`를 사용한다.
 여러 branch의 남은 작업 큐를 확인하려면 `scripts/list-active-branches.sh`를 사용한다.
@@ -184,6 +187,8 @@ Hotfix로 전환하면 현재 Phase 또는 Hotfix 항목에 표시하고, 원래
 PR 전에 AI는 포함 파일과 제외 파일을 분리해 보고한다.
 `.DS_Store`, 개인 초안, unrelated untracked file, 다른 workstream 파일은 stage하지 않는다.
 작은 변경 완료 뒤 PR 여부가 애매하면 `docs/10-next-action-menu.md`의 `Small Change Completion Decision`을 사용한다.
+여기서 `PR 진행`을 고르는 것은 `Pre-PR Human Checkpoint`로 들어가겠다는 선택이며, push, PR 생성, merge, finalize, cleanup 같은 remote/ref 변경을 즉시 실행한다는 뜻이 아니다.
+remote/ref 변경은 `Pre-PR Human Checkpoint`에서 사람이 `PR 진행`, `PR 생성`, 또는 동등한 명시 승인을 한 뒤에만 실행한다.
 
 ## 적용 모드
 
@@ -281,7 +286,7 @@ Workspace state 값:
 - PR Finalization: after PR merge, run `scripts/prepare-pr.sh --finalize <workspace>` and record final merge/issue close status in `sync.md`; finalize also runs automatic merged branch cleanup.
 - Branch Issue Default: `scripts/start-workflow.sh` creates a GitHub issue by default for every branch workspace; use `--no-issue` only as an explicit exception.
 - Linked Issue: when a branch maps to a GitHub issue, keep the existing branch/workspace name and record the issue plus PR closing keyword in `sync.md`.
-- Branch Switch Checkpoint: when moving from one branch workspace to another with dirty changes, checkpoint commit current branch before switching.
+- Branch Switch Checkpoint: when moving from one branch workspace to another with dirty changes, checkpoint tracked modifications/deletions on the current branch before switching; report excluded untracked files instead of auto-staging them.
 - Branch Switch Confirm: before switching branch workspaces, summarize current branch, target branch, worktree state, uncommitted changes, checkpoint commit expectation, target workspace, and switch reason, then get human confirmation unless the user already gave an explicit switch/phase-start command.
 - Remaining Branch Queue: after PR merge/finalize, run or summarize `scripts/list-active-branches.sh` and tell the human whether active local branches, open PR branches, or merged cleanup candidates remain.
 - Automatic Merged Branch Cleanup: after successful PR merge/finalize, cleanup local feature branches, remote feature branches, and stale remote-tracking refs that are merged/closed cleanup candidates.

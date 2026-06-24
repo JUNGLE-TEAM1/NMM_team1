@@ -14,6 +14,9 @@ push, PR 생성, merge 같은 추가 원격 변경은 사람이 명시한 명령
 - Branch workspace를 만들 때 GitHub issue도 생성한다. 예외가 필요하면 `--no-issue`를 명시하고 이유를 `sync.md`에 기록한다.
 - Prefer feature branch push and PR review over direct push to `main`.
 - 다른 branch workspace로 이동하기 전에 worktree가 dirty이면 `scripts/start-workflow.sh`가 현재 branch에 checkpoint commit을 만든 뒤 이동한다.
+- checkpoint commit은 tracked file의 수정/삭제만 자동으로 stage한다.
+- untracked file, `.DS_Store`, 개인 초안, editor artifact, unrelated workstream file은 자동 checkpoint에 포함하지 않고 제외 목록으로 보고한다.
+- 새 파일을 checkpoint에 포함해야 하면 branch 전환 전에 사람이 명시적으로 포함 범위를 확정하고 stage/commit한다.
 - 같은 branch workspace를 다시 여는 경우에는 자동 checkpoint commit을 만들지 않는다.
 - Branch switch confirmation: branch workspace를 전환하기 전 현재 branch, 대상 branch, worktree 상태, uncommitted 변경, checkpoint commit 예상, 대상 workspace, 전환 이유를 요약하고 사람 확인을 받는다.
 - "M2 시작해", "다음 Phase 진행", "브랜치 전환해", "main으로 돌아가", "남은 브랜치 진행해", "PR 끝났으니 다음 브랜치로 넘어가"처럼 전환 의도가 명확한 말은 전환 승인으로 볼 수 있다.
@@ -33,6 +36,8 @@ scripts/start-workflow.sh feature project-bootstrap "Project bootstrap"
 ```
 
 If the worktree has uncommitted or untracked changes while moving to another branch, `scripts/start-workflow.sh` creates a checkpoint commit on the current branch before switching.
+The automatic checkpoint stages tracked modifications/deletions only.
+Untracked files are reported but left unstaged, so personal drafts and local artifacts do not become team history by accident.
 If unresolved conflicts exist or the repository is detached, stop and ask the human to resolve the state manually.
 Before switching, AI reports whether the checkpoint commit will happen and asks for confirmation unless the user already gave an explicit branch-switch or phase-start command.
 After switching, AI reports the current branch and target workspace.
