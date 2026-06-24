@@ -34,6 +34,24 @@ Use this order when a decision affects implementation:
 5. Implement only the agreed scope.
 6. Verify and write evidence.
 
+## 3.1) Mid-Phase Steering Agreement
+
+The human can steer freely during a Phase with new instructions, corrections, alternatives, or deferred ideas.
+AI should preserve the current Phase boundary by classifying each new instruction before implementation.
+
+Mid-Phase Steering is classified as:
+
+- current Phase detail
+- `Scope Change Confirm` required
+- `Hotfix`
+- next Phase candidate
+- deferred idea
+- `Decision Option Brief` required
+
+Current Phase details can proceed after updating the relevant workspace file.
+Scope changes, Hotfixes, and high-impact decisions must pass their matching gate before implementation.
+Next Phase candidates and deferred ideas should be recorded in `next-actions.md` or `notes.md` so they are not lost.
+
 ## 4) Human Confirmation Gates
 
 AI should work autonomously between gates, then stop and ask the human for confirmation when a decision changes scope, contracts, verification, completion, or integration direction.

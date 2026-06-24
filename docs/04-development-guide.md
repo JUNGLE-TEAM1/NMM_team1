@@ -106,6 +106,54 @@ curl -fsS http://localhost:3000/
 scripts/smoke-container-app.sh
 ```
 
+### Local Tool/Runtime Readiness
+
+test/build/smoke/manual verification에 필요한 local tool 또는 runtime이 있으면, AI는 validation skip으로 바로 처리하지 않고 먼저 readiness를 확인한다.
+
+예시:
+
+```bash
+command -v docker
+docker --version
+docker compose version
+docker info
+```
+
+tool/runtime이 설치되어 있고 local-only safe start가 가능하면 AI가 먼저 실행을 시도한다.
+
+예시:
+
+```bash
+test -d /Applications/Docker.app && open -a Docker
+for i in $(seq 1 60); do docker info >/tmp/docker-info.log 2>&1 && break; sleep 2; done
+```
+
+safe start는 아래 조건을 모두 만족해야 한다.
+
+- local-only runtime 기동이다.
+- 비용, cloud resource, 외부 production resource를 만들지 않는다.
+- secret, credential, license 동의, 관리자 권한 상승, 시스템 설정 변경을 요구하지 않는다.
+- branch, remote, Git state를 바꾸지 않는다.
+
+repo-local dependency install은 기존 프로젝트 명령 범위 안에서 실행하고 `quality.md`에 기록할 수 있다.
+
+예시:
+
+```bash
+cd backend && pip install -r requirements.txt
+cd frontend && npm install
+```
+
+host-level install, GUI 권한/라이선스 동의, 관리자 권한 상승, system service 설치, 비용/외부 리소스 생성은 사람 확인 없이 실행하지 않는다.
+readiness 또는 safe start가 실패하면 실행한 명령, 오류, fallback 시도, 남은 사람 조치를 `quality.md`, Phase report, final response에 구분해서 기록한다.
+Docker BuildKit/Compose variant처럼 local-only fallback이 있으면 안전한 범위에서 재시도할 수 있다.
+
+예시:
+
+```bash
+DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 scripts/smoke-container-app.sh
+```
+
 M2 container 포트 기준:
 
 - 일반 개발용 Docker Compose는 backend `8000`, frontend `3000`을 기본 포트로 사용한다.

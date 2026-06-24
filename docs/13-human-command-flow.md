@@ -46,7 +46,63 @@ AI does:
 - Lists excluded options and exclusion reasons.
 - Recommends one option while leaving final choice to the human.
 
-## 3) Handle Main Changes During Work
+## 3) Handle Mid-Phase Steering
+
+Human says:
+
+```text
+방금 말한 건 현재 작업 안에서 반영해
+```
+
+AI does:
+
+- Classifies the instruction as Mid-Phase Steering before implementation.
+- Checks whether it stays inside the accepted `plan.md` scope.
+- Updates `notes.md` or `plan.md` when it is a current Phase detail.
+- Updates `confirmations.md` when the instruction confirms an existing gate.
+- Continues only inside accepted scope.
+
+Human says:
+
+```text
+이건 다음 Phase 후보로만 남겨
+```
+
+AI does:
+
+- Records the candidate in `next-actions.md`.
+- Notes why it is not part of the current Phase.
+- Keeps the current Phase scope unchanged.
+
+Human says:
+
+```text
+이건 hotfix로 처리해
+```
+
+AI does:
+
+- Marks the work as `Hotfix`.
+- Records the current Phase interruption and return condition in `notes.md` or `next-actions.md`.
+- Updates the relevant Phase or Hotfix item before implementation.
+- Returns to the original Phase order after the Hotfix is resolved.
+
+Human says:
+
+```text
+A안으로 바꾸고 기존 안은 보류
+```
+
+AI does:
+
+- Classifies whether the choice is a small reversible adjustment or a high-impact decision.
+- Uses `docs/14-decision-option-brief.md` when scope, contract, quality, sync, integration, or enhancement direction is affected.
+- Records the accepted option and deferred option in `decisions.md`.
+- Propagates the result to `confirmations.md`, `notes.md`, `shared-docs.md`, `quality.md`, or `sync.md` only when applicable.
+
+If the new instruction expands the current branch beyond `plan.md`, AI asks for `Scope Change Confirm` before implementation.
+
+## 4) Handle Main Changes During Work
 
 AI says:
 
@@ -79,7 +135,7 @@ AI does:
 - Records excluded/deferred options and revisit triggers.
 - Updates the relevant confirmation gate.
 
-## 4) Verify Work
+## 5) Verify Work
 
 Human says:
 
@@ -90,12 +146,23 @@ Human says:
 AI does:
 
 - Runs agreed tests/checks only.
+- Before skipping a required check because a local tool/runtime is missing or stopped, checks whether the tool is installed, tries safe local start when allowed, and records any fallback.
 - Records TDD, CI/check, skipped-check, and manual verification evidence in `quality.md`.
 - Updates `report.md`.
 - If checks fail, presents Verification Failed next-action menu.
 - If checks pass, asks for Pre-Merge Sync Required or Completion Confirm.
 
-## 5) Integrate Feature Branches
+When reporting local runtime readiness, AI separates:
+
+- installed and running
+- installed but stopped, safe start attempted
+- installed but fallback required
+- not installed or requires host-level install
+- blocked by GUI permission, license, admin elevation, secret, cost, or external resource approval
+
+AI may start installed local-only runtimes such as Docker Desktop when no elevated permission, license acceptance, secret, cost, cloud resource, deploy, or Git state change is involved. AI does not perform host-level install or system service setup without human confirmation.
+
+## 6) Integrate Feature Branches
 
 Human says:
 
@@ -113,7 +180,7 @@ AI does:
 - Runs `scripts/validate-harness.sh --integration`.
 - Asks for Integration Conflict Confirm when shared contracts disagree.
 
-## 6) Prepare PR And Issue Close / PR 준비와 이슈 닫힘
+## 7) Prepare PR And Issue Close / PR 준비와 이슈 닫힘
 
 Human says:
 
@@ -236,7 +303,7 @@ AI does:
 - If the human chooses additional work that exceeds current scope, resolves `Scope Change Confirm` first.
 - If the human chooses hold, records the hold reason and resume condition in `next-actions.md`.
 
-## 7) Recompare A Decision
+## 8) Recompare A Decision
 
 Human says:
 
@@ -262,7 +329,7 @@ AI does:
 - Adds rollback/revisit conditions to `notes.md`.
 - Proceeds through the relevant confirmation gate.
 
-## 8) Ask For Current Status
+## 9) Ask For Current Status
 
 Human says:
 
@@ -289,7 +356,7 @@ AI does:
 - Explains the report evidence directly instead of telling the human to open and read the report.
 - Presents the Report-Based Status Requested next-action menu when a follow-up choice is needed.
 
-## 9) Ask For CI Example
+## 10) Ask For CI Example
 
 Human says:
 
@@ -303,7 +370,7 @@ AI does:
 - Explains it is an example, not an active provider-specific requirement.
 - Helps adapt it to the target project's stack when requested.
 
-## 10) Ask For Lightweight Context
+## 11) Ask For Lightweight Context
 
 Human says:
 
@@ -325,7 +392,7 @@ AI does:
 - Escalates only if contract, data, security, sync, quality, integration, decision, or evidence conflict risk appears.
 - Records Context Budget mode and primary/escalated context in the report.
 
-## 11) Ask For Full Audit
+## 12) Ask For Full Audit
 
 Human says:
 
@@ -346,7 +413,7 @@ AI does:
 - Still avoids reading every historical report or archived workspace unless the audit target requires it.
 - Summarizes what was read, what was intentionally omitted, and where risk required deeper reading.
 
-## 12) Adopt An Existing Codebase
+## 13) Adopt An Existing Codebase
 
 Human says:
 
@@ -376,7 +443,7 @@ AI does:
 - Stops before overwriting existing docs, changing CI/PR/branch policy, declaring Source of Truth complete, or creating retroactive workspaces.
 - Guides future changes back to normal Phase Workflow.
 
-## 13) Assess Infrastructure Gaps
+## 14) Assess Infrastructure Gaps
 
 Human says:
 
@@ -411,7 +478,7 @@ AI does:
 - Proposes next Phase candidates.
 - Asks the human which Phase to run first.
 
-## 14) Add Recurrence-Prevention Harness Rule / 재발 방지 하네스 규칙 추가
+## 15) Add Recurrence-Prevention Harness Rule / 재발 방지 하네스 규칙 추가
 
 Human says:
 
