@@ -7,7 +7,7 @@
 - Changed: Windows WSL2 smoke 검증을 위한 실행 handoff와 현재 환경의 not-executed evidence를 기록했다.
 - Verified: `scripts/validate-harness.sh`, `scripts/validate-harness.sh --strict`, `git diff --check`
 - Remaining: 실제 Windows WSL2 + Docker Desktop integration 환경에서 smoke 명령을 실행해야 한다.
-- Next context: Windows machine에서 아래 명령을 실행하고 결과를 이 report 또는 follow-up report에 추가한다.
+- Next context: PR #69 handoff 뒤, 다음 Phase에서 Windows machine으로 아래 명령을 실행하고 결과를 follow-up report에 추가한다.
 - Risk: 이번 Phase는 Windows 지원을 증명하지 않는다. 현재 macOS 환경에서는 Windows WSL2 검증을 실행할 수 없었다.
 
 ## Phase

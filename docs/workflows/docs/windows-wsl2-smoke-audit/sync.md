@@ -6,11 +6,11 @@ main 동기화와 integration readiness를 기록한다.
 ## Start Sync / 시작 sync
 
 - main branch: main
-- current branch: docs/windows-wsl2-smoke-audit
-- base commit: 34586cc
+- current branch: docs/windows-wsl2-smoke-audit-pr
+- base commit: b927143
 - pulled at:
 - command:
-- result: Workspace created from docs/local-environment-requirements at 34586cc with `--no-checkout --no-issue`; branch switch, pull, merge, rebase는 실행하지 않음.
+- result: Workspace created from docs/local-environment-requirements at 34586cc with `--no-checkout --no-issue`; PR packaging branch was later created from `origin/main` at b927143 to avoid stale-branch diff.
 
 ## Mid-Phase Sync Checks / 진행 중 sync 확인
 
@@ -20,11 +20,11 @@ main 동기화와 integration readiness를 기록한다.
 
 ## Pre-Merge Sync
 
-- main commit: not checked by pull/merge/rebase
+- main commit: b927143
 - conflicts: none detected in edited files
 - validation: `scripts/validate-harness.sh`, `scripts/validate-harness.sh --strict`, `git diff --check`
 - result: local validation passed
-- deferral reason: remote sync/PR not requested
+- deferral reason: PR created; Windows WSL2 실기 검증은 다음 Phase로 분리
 
 ## PR Conflict Resolution
 
@@ -43,7 +43,10 @@ main 동기화와 integration readiness를 기록한다.
 - issue link:
 - issue creation result: not requested
 - PR closing keyword:
-- pushed branch:
-- PR link:
-- merge status:
+- pushed branch: docs/windows-wsl2-smoke-audit-pr
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/69
+- merge status: open
 - issue close status:
+- remote status source: GitHub
+- remote PR state: OPEN
+- remote issue state: not applicable, no linked issue

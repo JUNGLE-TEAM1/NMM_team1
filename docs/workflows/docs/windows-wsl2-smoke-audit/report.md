@@ -13,5 +13,5 @@
 - Changed: Windows WSL2 smoke handoff report and workspace evidence
 - Verified: current environment is macOS, `scripts/validate-harness.sh`, `scripts/validate-harness.sh --strict`, `git diff --check`
 - Remaining: actual Windows WSL2 smoke execution
-- Next context: run report commands on Windows WSL2 or start cleanup/tooling follow-up
+- Next context: PR #69 is open; after PR handoff, run report commands on Windows WSL2 in the next Phase or start cleanup/tooling follow-up
 - Risk: this Phase does not prove Windows support; it only records the handoff and evidence gap
