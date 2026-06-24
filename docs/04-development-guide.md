@@ -48,7 +48,9 @@ branch 최신성, 통합 안전성의 Source of Truth는 `docs/11-git-sync-polic
 - 각 Phase는 승인된 최신 `main` 상태에서 시작한다.
 - 사람이 pull을 승인하면 기본 main 갱신 명령은 `git pull --ff-only`를 사용한다.
 - dirty worktree에서는 sync하지 않는다.
+- branch workspace 전환용 checkpoint는 tracked file의 수정/삭제만 자동 포함하고, untracked file과 local artifact는 보고만 한다.
 - 시작, 중간, pre-merge, PR 상태를 workspace `sync.md`에 기록한다.
+- PR merge 이후 완료 여부는 가능하면 GitHub PR/issue 상태를 기준으로 확인하고, stale `sync.md` final field만으로 active branch로 판단하지 않는다.
 - Phase 중 main이 바뀌면 멈추고 rebase/merge, 위험 기록 후 계속 진행, follow-up 분리 중 무엇을 할지 확인한다.
 - direct main push보다 PR 기반 통합을 우선한다.
 - confirmation gate 없이 merge, rebase, push, PR 생성, PR merge를 자동 실행하지 않는다.

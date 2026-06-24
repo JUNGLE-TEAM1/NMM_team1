@@ -379,6 +379,52 @@ append_deferred_decision() {
   mv "${workspace}/decisions.md.tmp" "${workspace}/decisions.md"
 }
 
+install_fake_gh() {
+  local repo="$1"
+  local bin_dir="${repo}/fake-bin"
+  mkdir -p "$bin_dir"
+  cat > "${bin_dir}/gh" <<'EOF_GH'
+#!/usr/bin/env bash
+set -euo pipefail
+
+case "${1:-}" in
+  auth)
+    [[ "${2:-}" == "status" ]] && exit 0
+    ;;
+  pr)
+    case "${2:-}" in
+      list)
+        exit 0
+        ;;
+      view)
+        if [[ "${*: -2:1}" == "--jq" ]]; then
+          printf 'MERGED\n'
+        else
+          printf '{"state":"MERGED"}\n'
+        fi
+        exit 0
+        ;;
+    esac
+    ;;
+  issue)
+    if [[ "${2:-}" == "view" ]]; then
+      if [[ "${*: -2:1}" == "--jq" ]]; then
+        printf 'CLOSED\n'
+      else
+        printf '{"state":"CLOSED"}\n'
+      fi
+      exit 0
+    fi
+    ;;
+esac
+
+printf 'fake gh: unsupported command: %s\n' "$*" >&2
+exit 1
+EOF_GH
+  chmod +x "${bin_dir}/gh"
+  printf '%s\n' "$bin_dir"
+}
+
 run_expect_success() {
   local name="$1"
   shift
@@ -541,6 +587,72 @@ case_existing_pr_status_does_not_recommend_auto_pr() {
   )
 }
 
+case_status_uses_remote_pr_state_for_stale_sync() {
+  local repo="${tmp_root}/remote-pr-status"
+  copy_repo "$repo"
+  (
+    cd "$repo"
+    local fake_bin
+    fake_bin="$(install_fake_gh "$repo")"
+    PATH="${fake_bin}:$PATH"
+    local base
+    base="$(base_commit)"
+    local workspace="docs/workflows/test/harness-remote-pr-status"
+    write_common_workspace "$workspace" "complete" "passed" "accepted" "$base"
+    awk '
+      /^- pushed branch:/ { print "- pushed branch: test/harness-remote-pr-status"; next }
+      /^- PR link:/ { print "- PR link: https://example.invalid/pull/99"; next }
+      /^- merge status:/ { print "- merge status: open"; next }
+      /^- issue close status:/ { print "- issue close status: open"; next }
+      { print }
+    ' "${workspace}/sync.md" > "${workspace}/sync.md.tmp"
+    mv "${workspace}/sync.md.tmp" "${workspace}/sync.md"
+    git add "$workspace"
+    git commit -q -m "remote pr status fixture"
+    scripts/status-workflow.sh "$workspace" > /tmp/harness-remote-pr-status.out
+    rg -q "Remote PR state: MERGED" /tmp/harness-remote-pr-status.out
+    rg -q "Remote issue state: CLOSED" /tmp/harness-remote-pr-status.out
+    rg -q "Stale sync warning: sync.md merge status 'open' differs from GitHub PR state 'MERGED'" /tmp/harness-remote-pr-status.out
+    rg -q "Phase is merged and linked issue is closed according to GitHub" /tmp/harness-remote-pr-status.out
+    ! rg -q "PR이 이미 열려 있습니다" /tmp/harness-remote-pr-status.out
+  )
+}
+
+case_list_active_uses_remote_pr_state_for_stale_sync() {
+  local repo="${tmp_root}/remote-pr-queue"
+  copy_repo "$repo"
+  (
+    cd "$repo"
+    local fake_bin
+    fake_bin="$(install_fake_gh "$repo")"
+    PATH="${fake_bin}:$PATH"
+    local source_branch
+    source_branch="$(git branch --show-current)"
+    git checkout -q -b test/harness-remote-pr-queue
+    local base
+    base="$(base_commit)"
+    local workspace="docs/workflows/test/harness-remote-pr-queue"
+    write_common_workspace "$workspace" "complete" "passed" "accepted" "$base"
+    awk '
+      /^- current branch:/ { print "- current branch: test/harness-remote-pr-queue"; next }
+      /^- pushed branch:/ { print "- pushed branch: test/harness-remote-pr-queue"; next }
+      /^- PR link:/ { print "- PR link: https://example.invalid/pull/99"; next }
+      /^- merge status:/ { print "- merge status: open"; next }
+      /^- issue close status:/ { print "- issue close status: open"; next }
+      { print }
+    ' "${workspace}/sync.md" > "${workspace}/sync.md.tmp"
+    mv "${workspace}/sync.md.tmp" "${workspace}/sync.md"
+    git add "$workspace"
+    git commit -q -m "remote pr queue fixture"
+    git checkout -q "$source_branch"
+    scripts/list-active-branches.sh > /tmp/harness-remote-pr-queue.out
+    rg -q 'test/harness-remote-pr-queue.*MERGED' /tmp/harness-remote-pr-queue.out
+    rg -q 'merged cleanup candidate' /tmp/harness-remote-pr-queue.out
+    rg -q 'GitHub says merged/closed' /tmp/harness-remote-pr-queue.out
+    ! rg -q 'test/harness-remote-pr-queue.*prepare PR or hold with reason' /tmp/harness-remote-pr-queue.out
+  )
+}
+
 case_complete_pr_ready_status_requires_pre_pr_checkpoint() {
   local repo="${tmp_root}/pre-pr-checkpoint-status"
   copy_repo "$repo"
@@ -610,6 +722,28 @@ case_prepare_pr_documents_approved_pr() {
     rg -q -- "--approved-pr" /tmp/harness-prepare-pr-help.out
     rg -q "deprecated compatibility alias" /tmp/harness-prepare-pr-help.out
     rg -q -- "--approved-pr" docs/11-git-sync-policy.md
+  )
+}
+
+case_start_workflow_checkpoint_excludes_untracked() {
+  local repo="${tmp_root}/checkpoint-excludes-untracked"
+  copy_repo "$repo"
+  (
+    cd "$repo"
+    local source_branch
+    source_branch="$(git branch --show-current)"
+    echo "tracked checkpoint change" >> README.md
+    echo "local artifact" > .DS_Store
+    echo "personal draft" > docs/reports/personal-draft.md
+    scripts/start-workflow.sh --no-issue docs checkpoint-target "Checkpoint target" > /tmp/harness-checkpoint.out
+
+    git show --name-only --pretty='' "$source_branch" > /tmp/harness-checkpoint-files.out
+    rg -q '^README.md$' /tmp/harness-checkpoint-files.out
+    ! rg -q '(^|/)\.DS_Store$' /tmp/harness-checkpoint-files.out
+    ! rg -q '^docs/reports/personal-draft\.md$' /tmp/harness-checkpoint-files.out
+    rg -q "Untracked files are not included" /tmp/harness-checkpoint.out
+    test -f .DS_Store
+    test -f docs/reports/personal-draft.md
   )
 }
 
@@ -693,10 +827,13 @@ run_expect_failure "PR link exists but pushed branch missing fails" case_pr_link
 run_expect_failure "complete workspace with missing pre-merge sync fails" case_missing_premerge_fails
 run_expect_success "status workflow reports Source of Truth proposal status" case_status_reports_sot
 run_expect_success "existing PR status does not recommend auto PR" case_existing_pr_status_does_not_recommend_auto_pr
+run_expect_success "status workflow uses remote PR state for stale sync" case_status_uses_remote_pr_state_for_stale_sync
+run_expect_success "branch queue uses remote PR state for stale sync" case_list_active_uses_remote_pr_state_for_stale_sync
 run_expect_success "complete PR-ready status requires Pre-PR checkpoint" case_complete_pr_ready_status_requires_pre_pr_checkpoint
 run_expect_success "status workflow prioritizes PR conflict resolution" case_status_reports_pr_conflict_priority
 run_expect_success "prepare-pr check stays local" case_prepare_pr_check_is_local
 run_expect_success "prepare-pr documents approved PR helper" case_prepare_pr_documents_approved_pr
+run_expect_success "start-workflow checkpoint excludes untracked files" case_start_workflow_checkpoint_excludes_untracked
 run_expect_failure "product context guard catches missing trust loop" case_product_context_guard_missing_trust_loop_fails
 run_expect_success "docs branch remote and tracking status is reported" case_docs_branch_remote_tracking_is_reported
 run_expect_failure "missing harness regression script fails validation" case_missing_harness_test_script_fails

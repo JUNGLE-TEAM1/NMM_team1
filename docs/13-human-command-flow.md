@@ -172,7 +172,9 @@ feature-a랑 feature-b 통합 브랜치 만들어서 합칠 항목 점검해
 
 AI does:
 
-- If moving from a dirty current branch to another branch workspace, lets `scripts/start-workflow.sh` checkpoint commit the current branch first.
+- If moving from a dirty current branch to another branch workspace, lets `scripts/start-workflow.sh` checkpoint tracked modifications/deletions on the current branch first.
+- Reports untracked files that were excluded from the checkpoint, including `.DS_Store`, personal drafts, editor artifacts, and unrelated workstream files.
+- Does not stage excluded untracked files unless the human explicitly expands the branch-switch scope and stages/commits them first.
 - Creates or opens an integration workspace.
 - Reads source branch `plan.md`, `shared-docs.md`, `report.md`, `quality.md`, `decisions.md`, `confirmations.md`, and `sync.md`.
 - Records source branch/base commit information in `sources.md`.
@@ -258,10 +260,23 @@ AI does:
 - Treats this user command as explicit approval to push/create PR within the stated scope after final local checks pass.
 - Uses `scripts/prepare-pr.sh --approved-pr <workspace>` for approved push/PR creation; `--auto-pr` is only a deprecated compatibility alias.
 - If the human says `PR만`, `PR 생성만`, or `초안 PR`, stops after PR creation and asks again before merge/finalize/cleanup.
+
+Human says:
+
+```text
+작은 변경이니까 PR 진행으로 해
+```
+
+AI does:
+
+- Treats this as a request to enter `Pre-PR Human Checkpoint`, not as automatic approval to skip the checkpoint.
+- Reports included and excluded files before any stage/push/PR action.
+- Keeps `.DS_Store`, personal drafts, unrelated untracked files, editor artifacts, and other workstream files out of stage.
+- Continues to remote-changing commands only when the human has explicitly chosen `PR 진행`, `PR 생성`, or an equivalent approval at the checkpoint.
 - Uses `Closes #123` style closing keyword so GitHub closes the linked issue when the PR is merged.
 - After merge, runs `scripts/prepare-pr.sh --check-issue <workspace>` and records `issue close status` in `sync.md`.
 - If a stacked PR was merged into a non-default branch and the linked issue remains open, runs `scripts/prepare-pr.sh --close-issue <workspace>` to close it with the merged PR as evidence.
-- For final handoff after merge, runs `scripts/prepare-pr.sh --finalize <workspace>` to verify PR merged state, issue close state, final `sync.md` values, and automatic merged branch cleanup.
+- For final handoff after merge, runs `scripts/prepare-pr.sh --finalize <workspace>` to verify PR merged state, issue close state, and automatic merged branch cleanup. If local `sync.md` final fields differ from GitHub because finalization happened after merge, reports GitHub as current state and treats `sync.md` as stale evidence.
 - If unrelated or expanded work appears mid-flow, records same-scope work in the current workspace; for scope changes, resolves `Scope Change Confirm` and creates a separate workspace when needed.
 - After PR merge/finalize, runs automatic merged branch cleanup, then runs or summarizes `scripts/list-active-branches.sh` and reports remaining active branches, open PR branches, and cleanup candidates.
 
@@ -276,7 +291,7 @@ AI does:
 - Checks whether the current branch has unresolved Source of Truth proposals before switching.
 - Summarizes current branch, target branch, worktree state, uncommitted changes, checkpoint commit expectation, target workspace, and switch reason.
 - Treats the explicit switch request as branch switch approval unless the summary shows unresolved conflicts or surprising dirty worktree risk.
-- If dirty worktree exists, tells the human that `scripts/start-workflow.sh` will checkpoint commit before switching.
+- If dirty worktree exists, tells the human that `scripts/start-workflow.sh` will checkpoint tracked modifications/deletions before switching and will report excluded untracked files.
 - If unresolved conflicts exist, stops and lists conflict files instead of switching.
 - After switching, reports current branch and workspace.
 
@@ -290,6 +305,7 @@ AI does:
 
 - Runs or summarizes `scripts/list-active-branches.sh`.
 - Reports branch name, ahead count, local branch presence, remote branch presence, remote-tracking status, workspace path, workspace state, linked issue, PR link/open PR state, merge status, issue close status, and recommended next action.
+- If `sync.md` still says `open` but GitHub says the PR is `MERGED` and issue is `CLOSED`, reports the stale local value and recommends cleanup or next Phase instead of another PR attempt.
 - Separates merged/closed branches as cleanup candidates.
 - Notes that merged/closed branch cleanup is automatic after `PR 진행` merge/finalize; manual branch cleanup outside PR 진행 still needs explicit human approval.
 - If remaining work branches exist, offers: 1. 남은 브랜치 PR 진행, 2. 남은 브랜치 보류, 3. main에서 다음 Phase 시작, 4. cleanup 후보 정리 검토.
