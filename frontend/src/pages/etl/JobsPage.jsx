@@ -444,7 +444,7 @@ export default function JobsPage() {
         )
       );
       showToast(
-        newActiveState ? "프론트 데모: 스케줄을 활성화했습니다" : "프론트 데모: 스케줄을 중지했습니다",
+        newActiveState ? "스케줄을 활성화했습니다" : "스케줄을 중지했습니다",
         "success"
       );
       return;
@@ -562,21 +562,21 @@ export default function JobsPage() {
                 : run
             ),
           }));
-          showToast("프론트 데모: 스트리밍을 중지했습니다", "success");
+          showToast("스트리밍을 중지했습니다", "success");
         } else {
           prependDemoRun(jobId, createDemoRun(jobId, "running"));
-          showToast("프론트 데모: 스트리밍을 시작했습니다", "success");
+          showToast("스트리밍을 시작했습니다", "success");
         }
         return;
       }
 
       const runningRun = createDemoRun(jobId, "running");
       prependDemoRun(jobId, runningRun);
-      showToast("프론트 데모: 파이프라인 실행을 시작했습니다", "success");
+      showToast("파이프라인 실행을 시작했습니다", "success");
 
       window.setTimeout(() => {
         completeDemoRun(jobId, runningRun.id);
-        showToast("프론트 데모: 파이프라인 실행이 완료되었습니다", "success");
+        showToast("파이프라인 실행이 완료되었습니다", "success");
       }, 1600);
       return;
     }

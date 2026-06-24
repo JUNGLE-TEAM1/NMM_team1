@@ -542,7 +542,7 @@ export default function ETLJobPage() {
         ...prev,
         description:
           prev.description ||
-          "PostgreSQL 주문 거래와 MongoDB 상품 카탈로그를 조인해 월별 상품 매출을 집계하는 Gold Dataset 데모입니다.",
+          "PostgreSQL 주문 거래와 MongoDB 상품 카탈로그를 조인해 월별 상품 매출을 집계하는 Gold Dataset 파이프라인입니다.",
         jobType: "batch",
         datasetType: "target",
       }));
@@ -555,7 +555,7 @@ export default function ETLJobPage() {
                 name: "월별 상품 매출 집계 배치",
                 cron: "demo",
                 frequency: "manual",
-                description: "프론트 UIUX 검토용 수동 실행 시나리오",
+                description: "월별 상품 매출 집계를 위한 수동 실행 파이프라인",
                 uiParams: {},
               },
             ]
@@ -625,7 +625,7 @@ export default function ETLJobPage() {
     setJobName("월별_상품_매출_Gold_Dataset");
     setJobDetails((prev) => ({
       ...prev,
-      description: "PostgreSQL 주문 거래와 MongoDB 상품 카탈로그를 조인해 월별 상품 매출을 집계하는 Gold Dataset 데모입니다.",
+      description: "PostgreSQL 주문 거래와 MongoDB 상품 카탈로그를 조인해 월별 상품 매출을 집계하는 Gold Dataset 파이프라인입니다.",
       jobType: "batch",
       datasetType: "target",
     }));
@@ -635,7 +635,7 @@ export default function ETLJobPage() {
         name: "월별 상품 매출 집계 배치",
         cron: "demo",
         frequency: "manual",
-        description: "프론트 UIUX 검토용 수동 실행 시나리오",
+        description: "월별 상품 매출 집계를 위한 수동 실행 파이프라인",
         uiParams: {},
       },
     ]);
@@ -1147,7 +1147,7 @@ export default function ETLJobPage() {
       name: displayName,
       description:
         jobDetails.description ||
-        "데이터 구축 화면에서 만든 프론트 데모용 Gold Dataset입니다. PostgreSQL 주문 거래와 MongoDB 상품 카탈로그를 조인해 월별 상품 매출을 집계했습니다.",
+        "데이터 구축 화면에서 만든 Gold Dataset입니다. PostgreSQL 주문 거래와 MongoDB 상품 카탈로그를 조인해 월별 상품 매출을 집계했습니다.",
       owner: "데이터 엔지니어링 팀",
       dataset_type: "target",
       job_type: jobDetails.jobType || "batch",
@@ -1270,7 +1270,7 @@ export default function ETLJobPage() {
       try {
         const data = await persistFrontendDemoCatalog();
         console.log("Frontend demo pipeline saved:", data);
-        showToast("프론트 데모: 새 파이프라인과 Gold Dataset을 만들었습니다.", "success");
+        showToast("새 파이프라인과 Gold Dataset을 만들었습니다.", "success");
       } catch (error) {
         console.error("Frontend demo save failed:", error);
         showToast(`저장 실패: ${error.message}`, "error");
@@ -1352,7 +1352,7 @@ export default function ETLJobPage() {
       console.log("Job saved:", data);
       showToast(
         IS_FRONTEND_ONLY
-          ? "프론트 데모: 실제 데이터 없이 파이프라인을 연결했습니다."
+          ? "파이프라인을 연결했습니다."
           : "작업이 저장되었습니다.",
         "success"
       );
@@ -1369,7 +1369,7 @@ export default function ETLJobPage() {
     if (IS_FRONTEND_ONLY) {
       if (demoRunState === "running") return;
       setDemoRunState("running");
-      showToast("프론트 데모: 새 파이프라인을 가동합니다", "success");
+      showToast("새 파이프라인을 가동합니다", "success");
 
       window.setTimeout(async () => {
         try {
@@ -1377,7 +1377,7 @@ export default function ETLJobPage() {
             forceCreate: !jobId,
           });
           setDemoRunState("complete");
-          showToast("프론트 데모: 새 Gold Dataset이 카탈로그에 등록되었습니다", "success");
+          showToast("새 Gold Dataset이 카탈로그에 등록되었습니다", "success");
           navigate(`/catalog/${catalogDataset.id}`, {
             state: { catalogItem: catalogDataset },
           });
@@ -1408,11 +1408,11 @@ export default function ETLJobPage() {
         const demoJobId = `frontend-demo-${Date.now()}`;
         setJobId(demoJobId);
         setDemoRunState("running");
-        showToast("프론트 데모: 실제 데이터 없이 파이프라인을 가동합니다", "success");
+        showToast("파이프라인을 가동합니다", "success");
 
         window.setTimeout(() => {
           setDemoRunState("complete");
-          showToast("프론트 데모: Gold Dataset이 카탈로그에 등록되었습니다", "success");
+          showToast("Gold Dataset이 카탈로그에 등록되었습니다", "success");
           navigate(`/catalog/${ASKLAKE_DEMO_DATASET_ID}`);
         }, 1800);
         return;
@@ -2039,7 +2039,6 @@ export default function ETLJobPage() {
                         원본 데이터부터 직접 연결하세요
                       </h2>
                       <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-gray-600">
-                        실제 데이터가 없어도 프론트 데모에서는 연결된 것처럼 동작합니다.
                         아래 순서대로 추가하면 소스, 변환, 결과 Gold Dataset 흐름이 캔버스에 만들어집니다.
                       </p>
                     </div>

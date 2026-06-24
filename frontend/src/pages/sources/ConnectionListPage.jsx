@@ -233,7 +233,7 @@ export default function ConnectionListPage() {
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">데이터 소스</h1>
                     <p className="mt-1 text-sm text-gray-500">
-                        데모에 필요한 MongoDB, PostgreSQL, S3 연결만 간단히 확인합니다.
+                        MongoDB, PostgreSQL, S3 연결을 등록하고 상태를 확인합니다.
                     </p>
                 </div>
                 <button
@@ -373,7 +373,7 @@ export default function ConnectionListPage() {
                 )}
             </div>
 
-            <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_430px]">
+            <div className="mt-6">
                 <div className="rounded-lg bg-white shadow">
                     <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
                         <div className="flex items-center gap-2">
@@ -424,7 +424,7 @@ export default function ConnectionListPage() {
                                         정상
                                     </p>
                                     <p className="mt-1 text-xs text-gray-500">
-                                        {selectedTestState === 'success' ? '방금 전 재확인됨' : '프론트 목업 기준 연결 가능'}
+                                        {selectedTestState === 'success' ? '방금 전 재확인됨' : '연결 가능'}
                                     </p>
                                 </div>
                                 <div className="rounded-lg border border-gray-200 p-4">
@@ -522,21 +522,6 @@ export default function ConnectionListPage() {
                     )}
                 </div>
 
-                <div className="rounded-lg border border-gray-200 bg-white p-5 shadow">
-                    <h2 className="text-base font-semibold text-gray-900">이 화면에서 할 수 있는 일</h2>
-                    <div className="mt-4 space-y-3">
-                        {[
-                            ['연결 등록', 'MongoDB, PostgreSQL, S3 원본 시스템 접속 정보를 저장'],
-                            ['연결 확인', '저장된 연결이 정상인지 프론트 목업 상태로 확인'],
-                            ['스키마 확인', '테이블, 토픽, 경로와 대표 컬럼 구조를 미리 확인'],
-                        ].map(([title, description]) => (
-                            <div key={title} className="rounded-lg border border-gray-200 p-3">
-                                <p className="text-sm font-semibold text-gray-900">{title}</p>
-                                <p className="mt-1 text-sm leading-6 text-gray-500">{description}</p>
-                            </div>
-                        ))}
-                    </div>
-                </div>
             </div>
 
             {/* Delete Confirmation Modal */}

@@ -10,7 +10,6 @@ import {
   ArrowRight,
   Layers,
   RefreshCw,
-  ShieldCheck,
   CheckCircle,
   Lock,
   Sparkles,
@@ -72,7 +71,7 @@ export default function CatalogPage() {
     }
   };
 
-  // Demo filter chips stay focused on the data layer, not every technical tag.
+  // Keep filter chips focused on the data layer, not every technical tag.
   const allTags = ["bronze", "silver", "gold"].filter((tag) =>
     catalog.some((item) => item.tags?.includes(tag) || item.layer === tag)
   );
@@ -260,18 +259,6 @@ export default function CatalogPage() {
                     </p>
                   </div>
                 </div>
-
-                {isDemo && (
-                  <div className="flex items-start gap-2 rounded-lg bg-blue-50 px-3 py-2">
-                    <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-blue-800">검토용 UX 시나리오</p>
-                      <p className="mt-0.5 text-xs text-blue-700">
-                        원본 데이터와 타겟 데이터를 분리하고, Gold Dataset 등록 결과를 보여줍니다.
-                      </p>
-                    </div>
-                  </div>
-                )}
 
                 {/* Stats */}
                 <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100">

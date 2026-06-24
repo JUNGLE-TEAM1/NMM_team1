@@ -403,9 +403,6 @@ export default function SqlLabPage() {
                             자연어 질문을 분석하고 내부에서 SQL을 생성해 결과를 요약합니다.
                         </p>
                     </div>
-                    <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">
-                        Demo
-                    </span>
                 </div>
             </div>
 
@@ -422,7 +419,7 @@ export default function SqlLabPage() {
                                         데이터에 대해 질문해보세요
                                     </p>
                                     <p className="mt-1 text-sm text-gray-500">
-                                        추천 프롬프트를 선택한 뒤 전송하면 데모 분석이 실행됩니다.
+                                        추천 프롬프트를 선택한 뒤 전송하면 분석이 실행됩니다.
                                     </p>
                                     <div className="mt-4 flex flex-wrap gap-2">
                                         {recommendedPrompts.map((prompt) => (
@@ -690,7 +687,7 @@ export default function SqlLabPage() {
                                 <div className="flex flex-wrap items-center gap-2">
                                     <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700">
                                         <Sparkles className="h-3.5 w-3.5" />
-                                        Demo Prompt
+                                        추천 질문
                                     </span>
                                     <button
                                         onClick={applyDemoPrompt}
@@ -721,7 +718,7 @@ export default function SqlLabPage() {
                                 ) : (
                                     <Play className="h-4 w-4" />
                                 )}
-                                데모 실행
+                                분석 실행
                             </button>
                         </div>
 

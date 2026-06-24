@@ -28,7 +28,6 @@ function getSourceMeta(board) {
     rowCount: table === "customers" ? "32,480" : "1,248",
     status: "Connected",
     lastQueriedAt: board.updatedAt || board.createdAt,
-    mode: "Demo Data",
   };
 }
 
@@ -185,9 +184,6 @@ export default function DashboardInsightDetailPage() {
               </div>
             ))}
           </div>
-          <span className="mt-4 inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">
-            {sourceMeta.mode}
-          </span>
         </section>
 
         <section className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">

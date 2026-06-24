@@ -177,7 +177,7 @@ function buildLineageNodesForInsight(insight) {
         rowCount: insight.sourceTable === "customers" ? "32,480 rows" : "1,248 rows",
         status: "Connected",
         syncTime: "3분 전",
-        mode: "Demo Data",
+        mode: "Connected",
       },
     },
     {

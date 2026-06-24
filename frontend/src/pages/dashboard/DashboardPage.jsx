@@ -161,9 +161,6 @@ export default function DashboardPage() {
               AI Query에서 Dashboard에 추가한 최종 차트 결과물을 모아봅니다.
             </p>
           </div>
-          <span className="w-fit rounded-full bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700">
-            Demo Data
-          </span>
         </header>
 
         {boards.length === 0 ? (

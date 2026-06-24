@@ -162,14 +162,6 @@ function GoldDatasetShowcase({ catalogItem }) {
 
       <div className="px-4 py-5 sm:px-6">
         <div className="mx-auto max-w-6xl">
-          <div className="mb-5 rounded-lg border border-blue-100 bg-blue-50 p-4">
-            <p className="text-sm font-semibold text-blue-900">UIUX 검토 포인트</p>
-            <p className="mt-1 text-sm leading-6 text-blue-800">
-              문제점은 데이터 분리가 약해 사용자가 원본과 결과물을 혼동한다는 점이고,
-              개선방안은 소스 데이터, 변환 규칙, 타겟 Gold Dataset을 화면에서 명확히 나누는 것입니다.
-            </p>
-          </div>
-
           <div className="overflow-x-auto border-b border-gray-200">
             <div className="flex min-w-max gap-2">
               {tabs.map((tab) => {

@@ -164,7 +164,7 @@ const createAskLakeDemoItems = (createdAt = now()) => {
     id: "ds-customer-order-bronze",
     job_id: "ds-customer-order-bronze",
     name: "고객 주문 원본 Bronze Dataset",
-    description: "MongoDB 고객 프로필과 PostgreSQL 주문 거래 데이터를 원본 형태로 S3 Bronze 영역에 적재한 목업 데이터셋입니다.",
+    description: "MongoDB 고객 프로필과 PostgreSQL 주문 거래 데이터를 원본 형태로 S3 Bronze 영역에 적재한 데이터셋입니다.",
     owner: "데이터 엔지니어링 팀",
     dataset_type: "target",
     layer: "bronze",
