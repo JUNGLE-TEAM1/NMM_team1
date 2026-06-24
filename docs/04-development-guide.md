@@ -100,6 +100,7 @@ TDD 기본값:
 | Not yet guaranteed | native Windows PowerShell/CMD | Docker Compose 일부 명령은 가능할 수 있으나 `scripts/*.sh` 동일 실행은 미검증 | 후속 검증 필요 |
 
 Windows 개발자는 기본적으로 WSL2 shell에서 repository를 열고 Docker Desktop WSL integration을 켠 상태로 작업한다.
+새 Windows 개발 환경은 새 clone 또는 WSL git으로 만든 worktree에서 시작하는 것을 권장한다.
 WSL shell에서 사용할 worktree와 branch workspace는 WSL git으로 만들고, Windows shell에서 사용할 worktree는 Windows Git으로 만든다.
 한 shell에서 만든 worktree metadata를 다른 shell의 Git 구현으로 재사용하는 것은 보장하지 않는다.
 native PowerShell/CMD를 공식 지원하려면 별도 cross-platform smoke audit과 tooling Phase가 필요하다.
@@ -169,7 +170,9 @@ scripts/validate-harness.sh --integration
 `scripts/*.sh`는 bash-compatible shell을 전제로 한다.
 Windows에서는 WSL2 shell에서 실행하는 것을 기본 지원 경로로 둔다.
 .gitattributes는 `*.sh`를 LF로 checkout하도록 강제한다.
-기존 clone이 이미 CRLF로 checkout돼 있다면 affected script를 현재 shell 기준으로 다시 checkout하거나 새 worktree/clone에서 재검증한다.
+기존 clone이 이미 CRLF로 checkout돼 있다면 script 실행 오류의 첫 후보로 line ending을 확인한다.
+필요하면 affected script를 현재 shell 기준으로 다시 checkout하거나 새 worktree/clone에서 재검증한다.
+대량 renormalize diff는 별도 확인 없이 만들지 않는다.
 native PowerShell/CMD에서 동등하게 실행하려면 `python3`, `curl`, `rg`, `mktemp`, path separator, line ending, Docker Desktop WSL integration, port conflict를 별도로 확인한다.
 
 ### Local Tool/Runtime Readiness
