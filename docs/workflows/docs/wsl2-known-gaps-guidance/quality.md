@@ -26,8 +26,8 @@
 
 ## CI/CD Gate / CI-CD 게이트
 
-- CI required: local equivalent only until PR is requested
-- CI result: local harness validation passed
+- CI required: yes, PR #71 opened
+- CI result: local harness validation passed; GitHub Actions started on PR #71
 - Deploy/publish required: no
 - Deployment confirmation: not applicable
 - Rollback/smoke notes: docs-only guidance; revert documentation changes if needed

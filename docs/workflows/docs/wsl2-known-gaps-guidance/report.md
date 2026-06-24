@@ -13,5 +13,5 @@
 - Changed: WSL2 Tier 1 guidance for CRLF checkout, WSL/Windows Git metadata separation, manual verification readiness, follow-up report note
 - Verified: `scripts/validate-harness.sh`, `scripts/validate-harness.sh --strict`, `git diff --check`
 - Remaining: native Windows PowerShell/CMD support, host frontend direct run, automatic existing-clone repair remain out of scope
-- Next context: use WSL2 + Docker Desktop integration with a WSL git worktree/clone; only open native Windows support if a real requirement appears
+- Next context: PR #71 is open; after merge, use WSL2 + Docker Desktop integration with a WSL git worktree/clone and only open native Windows support if a real requirement appears
 - Risk: docs-only change; does not expand supported runtime behavior
