@@ -14,7 +14,6 @@ import {
 import "@xyflow/react/dist/style.css";
 import {
   ArrowLeft,
-  ArrowRight,
   Database,
   Save,
   Check,
@@ -325,7 +324,7 @@ function GoldDatasetShowcase({ catalogItem }) {
           </div>
           <div className="flex min-w-0 items-center gap-2">
             <Server className="h-4 w-4 shrink-0 text-gray-400" />
-            <span className="truncate">연결 소스 PostgreSQL, MongoDB</span>
+            <span className="truncate">연결 소스 PostgreSQL, MongoDB, S3</span>
           </div>
         </div>
       </div>
@@ -364,56 +363,85 @@ function GoldDatasetShowcase({ catalogItem }) {
                 </p>
               </div>
               <div className="overflow-x-auto">
-                <div className="grid min-w-[980px] grid-cols-[1fr_56px_1fr_56px_1fr] items-center gap-4">
-                  <div className="space-y-3">
-                    <div className="rounded-lg border border-blue-100 bg-blue-50 p-5 text-blue-900">
-                      <div className="flex items-center gap-3">
-                        <Database className="h-5 w-5 shrink-0 text-blue-700" />
-                        <h3 className="text-sm font-bold">PostgreSQL 주문 거래</h3>
+                <div className="relative h-[620px] min-w-[1690px] rounded-lg border border-slate-200 bg-slate-50">
+                  <div
+                    className="absolute inset-0 opacity-80"
+                    style={{
+                      backgroundImage:
+                        "radial-gradient(circle at 1px 1px, rgba(148, 163, 184, 0.28) 1px, transparent 0)",
+                      backgroundSize: "18px 18px",
+                    }}
+                  />
+
+                  {[
+                    { label: "Source", x: 20 },
+                    { label: "Bronze", x: 300 },
+                    { label: "Silver", x: 580 },
+                    { label: "Transform", x: 880 },
+                    { label: "Gold Ready", x: 1160 },
+                    { label: "Catalog", x: 1460 },
+                  ].map((lane) => (
+                    <span
+                      key={lane.label}
+                      className="absolute top-4 rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-slate-500 shadow-sm"
+                      style={{ left: lane.x }}
+                    >
+                      {lane.label}
+                    </span>
+                  ))}
+
+                  <svg
+                    className="pointer-events-none absolute inset-0 h-full w-full"
+                    viewBox="0 0 1690 620"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <defs>
+                      <marker
+                        id="gold-lineage-arrow"
+                        markerWidth="10"
+                        markerHeight="10"
+                        refX="8"
+                        refY="5"
+                        orient="auto"
+                        markerUnits="strokeWidth"
+                      >
+                        <path d="M0 0L10 5L0 10Z" fill="#64748b" />
+                      </marker>
+                    </defs>
+                    {lineagePaths.map((path) => (
+                      <path
+                        key={path}
+                        d={path}
+                        stroke="#64748b"
+                        strokeWidth="2.5"
+                        strokeDasharray="5 5"
+                        markerEnd="url(#gold-lineage-arrow)"
+                      />
+                    ))}
+                  </svg>
+
+                  {lineageCards.map((card) => {
+                    const Icon = card.icon;
+                    return (
+                      <div
+                        key={card.id}
+                        className={`absolute w-[220px] rounded-lg border p-3 shadow-sm ${toneClasses[card.tone]}`}
+                        style={{ left: card.x, top: card.y }}
+                      >
+                        <div className="flex items-start gap-2">
+                          <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${iconToneClasses[card.tone]}`}>
+                            <Icon className="h-4 w-4" />
+                          </span>
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-bold">{card.title}</p>
+                            <p className="truncate text-xs font-medium opacity-70">{card.subtitle}</p>
+                          </div>
+                        </div>
+                        <p className="mt-3 min-h-[42px] text-xs leading-5 opacity-80">{card.body}</p>
                       </div>
-                      <p className="mt-3 text-sm leading-6 text-blue-700">
-                        결제 완료 주문, 상품 ID, 주문 금액, 주문 시각 포함
-                      </p>
-                    </div>
-                    <div className="rounded-lg border border-green-100 bg-green-50 p-5 text-green-900">
-                      <div className="flex items-center gap-3">
-                        <Layers className="h-5 w-5 shrink-0 text-green-700" />
-                        <h3 className="text-sm font-bold">MongoDB 상품 카탈로그</h3>
-                      </div>
-                      <p className="mt-3 text-sm leading-6 text-green-700">
-                        상품명, 카테고리, 브랜드, 기준 가격 메타데이터 포함
-                      </p>
-                    </div>
-                  </div>
-
-                  <ArrowRight className="mx-auto h-7 w-7 text-gray-400" />
-
-                  <div className="rounded-lg border border-purple-100 bg-purple-50 p-5 text-purple-900">
-                    <div className="flex items-center gap-3">
-                      <GitBranch className="h-5 w-5 shrink-0 text-purple-700" />
-                      <h3 className="text-sm font-bold">조인 및 비식별 처리</h3>
-                    </div>
-                    <div className="mt-3 space-y-2 text-sm leading-6 text-purple-700">
-                      <p>product_id 기준으로 주문과 상품 카탈로그 조인</p>
-                      <p>결제 완료 주문만 분석 대상으로 필터링</p>
-                      <p>월별 매출, 주문 수, 평균 주문액 집계</p>
-                    </div>
-                  </div>
-
-                  <ArrowRight className="mx-auto h-7 w-7 text-gray-400" />
-
-                  <div className="rounded-lg border border-green-100 bg-green-50 p-5 text-green-900">
-                    <div className="flex items-center gap-3">
-                      <Table2 className="h-5 w-5 shrink-0 text-green-700" />
-                      <h3 className="text-sm font-bold">Gold Dataset</h3>
-                    </div>
-                    <p className="mt-3 text-sm leading-6 text-green-700">
-                      월별 상품 매출 테이블로 카탈로그에 등록되어 마케터와 분석가가 바로 탐색할 수 있습니다.
-                    </p>
-                    <p className="mt-4 overflow-hidden rounded-md bg-white px-3 py-2 font-mono text-xs text-green-900">
-                      s3://asklake/gold/monthly_product_sales
-                    </p>
-                  </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>

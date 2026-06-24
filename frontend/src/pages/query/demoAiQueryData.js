@@ -41,13 +41,13 @@ const ragPipeline = [
 
 export const revenueInsight = {
   id: "ai-rag-premium-revenue-drop",
-  title: "프리미엄 고객 매출 감소 원인 분석",
-  description: "SQL 매출 추이와 RAG 고객 원문 근거를 함께 반영한 분석",
-  userPrompt: "최근 프리미엄 고객군 매출 감소 원인과 근거 원문을 함께 분석해줘",
+  title: "최근 6개월 판매량 추이 분석",
+  description: "SQL 판매량 추이와 RAG 고객 원문 근거를 함께 반영한 분석",
+  userPrompt: "최근 6개월 월별 판매량 추이와 근거 원문을 함께 분석해줘",
   llmAnswer:
-    "SQL 집계상 프리미엄 고객군 매출은 1월 6,420만 원에서 6월 4,380만 원으로 31.8% 감소했습니다. 같은 기간 RAG로 검색된 배송 지연, 가격 인상, 재구매 보류 관련 원문 근거는 8건에서 38건으로 증가했습니다. 따라서 이번 감소는 단순 주문 감소보다 배송 SLA 이탈과 가격 민감도 상승이 함께 작용한 것으로 해석됩니다.",
+    "SQL 집계상 최근 6개월 월별 판매량은 1월 872건에서 6월 652건으로 감소 추세를 보였습니다. 같은 기간 RAG로 검색된 배송 지연, 가격 인상, 재구매 보류 관련 원문 근거는 8건에서 38건으로 증가했습니다. 따라서 대시보드에서는 월별 판매량 추이와 함께 판매 둔화 구간의 고객 원문 근거를 함께 확인할 수 있습니다.",
   ragSummary:
-    "RAG 검색은 4~6월 구간에서 배송 지연 불만과 가격 인상 언급이 집중된 chunk를 반환했고, 이 근거 수가 차트의 보조 지표로 반영되었습니다.",
+    "RAG 검색은 4~6월 판매량 둔화 구간에서 배송 지연 불만과 가격 인상 언급이 집중된 chunk를 반환했고, 이 근거 수가 차트의 보조 지표로 반영되었습니다.",
   sql: `WITH monthly_orders AS (
   SELECT
     DATE_TRUNC('month', o.created_at)::date AS month,
@@ -96,17 +96,17 @@ ORDER BY o.month;`,
   sourceTable: "orders",
   chartType: "rag_revenue_root_cause",
   metricKeys: {
-    primary: "premium_revenue",
+    primary: "order_count",
     secondary: "rag_complaint_mentions",
   },
   metricLabels: {
-    primary: "프리미엄 매출",
+    primary: "월별 판매량",
     secondary: "RAG 불만 근거",
   },
   analysisImpact: {
-    chartNote: "막대는 SQL 매출, 주황색 선은 같은 월에 검색된 RAG 불만 근거 수입니다.",
+    chartNote: "막대는 SQL 판매량, 주황색 선은 같은 월에 검색된 RAG 불만 근거 수입니다.",
     whyBetter:
-      "SQL만 보면 매출 감소만 보이지만, RAG를 함께 보면 배송 지연과 가격 인상 불만이 같은 시점에 증가한 원인 근거가 드러납니다.",
+      "SQL만 보면 판매량 감소 추이만 보이지만, RAG를 함께 보면 배송 지연과 가격 인상 불만이 같은 시점에 증가한 원인 근거가 드러납니다.",
   },
   chunkingStrategy: ragChunkingStrategy,
   pipeline: ragPipeline,

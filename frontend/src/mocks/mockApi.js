@@ -393,6 +393,7 @@ const createAskLakeDemoItems = (createdAt = now()) => {
     sources: [
       { nodeId: "asklake-source-postgres", type: "postgres", table: "orders", name: "주문 거래 PostgreSQL" },
       { nodeId: "asklake-source-mongodb", type: "mongodb", table: "product_catalog", name: "커머스 MongoDB" },
+      { nodeId: "asklake-source-s3", type: "s3", table: "order_events_raw", name: "AskLake S3 Lake" },
     ],
     transforms: [
       {
