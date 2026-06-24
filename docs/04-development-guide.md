@@ -83,7 +83,73 @@ TDD 기본값:
 - 문서 전용 작업이나 낮은 위험의 기계적 변경에는 선택 사항이다.
 - failing-first 증거 또는 skip reason을 workspace `quality.md`에 기록한다.
 
-## 6) 로컬 실행 명령
+## 6) 로컬 개발 환경 요구사항
+
+로컬 개발 환경의 Source of Truth는 이 섹션이다.
+`README.md`는 빠른 실행 요약만 제공하고, OS별 지원 범위와 검증 기준은 이 문서를 따른다.
+
+### 지원 등급
+
+| 등급 | 환경 | 지원 범위 | 상태 |
+| --- | --- | --- | --- |
+| Tier 1 | macOS + Docker Desktop + bash-compatible shell | Docker Compose 실행, 하네스 shell script, smoke 검증 | 권장 |
+| Tier 1 | Windows + WSL2 + Docker Desktop integration + bash-compatible shell | Docker Compose 실행, WSL2 안에서 하네스 shell script, smoke 검증 | 권장 |
+| Tier 2 | native macOS host runtime | backend/frontend 직접 실행 | 보조 경로 |
+| Not yet guaranteed | native Windows PowerShell/CMD | Docker Compose 일부 명령은 가능할 수 있으나 `scripts/*.sh` 동일 실행은 미검증 | 후속 검증 필요 |
+
+Windows 개발자는 기본적으로 WSL2 shell에서 repository를 열고 Docker Desktop WSL integration을 켠 상태로 작업한다.
+native PowerShell/CMD를 공식 지원하려면 별도 cross-platform smoke audit과 tooling Phase가 필요하다.
+
+### 최소 도구
+
+| 도구 | 필수 여부 | 용도 | 확인 명령 |
+| --- | --- | --- | --- |
+| Git | 필수 | branch/workspace 관리 | `git --version` |
+| Docker Desktop 또는 Docker Engine | 필수 | 권장 local/container 실행 | `docker --version` |
+| Docker Compose | 필수 | backend/frontend container 실행 | `docker compose version` |
+| bash-compatible shell | 필수 | `scripts/*.sh` 하네스 실행 | `bash --version` |
+| ripgrep | 필수 | 문서/하네스 정적 검증 | `rg --version` |
+| curl | 필수 | health/smoke HTTP 확인 | `curl --version` |
+| Python / `python3` | 필수 | backend test와 smoke JSON parsing | `python3 --version` |
+| Node/npm | 필수 | frontend build/dev 직접 실행 | `node --version`, `npm --version` |
+| GitHub CLI | 선택 | 승인된 issue/PR helper | `gh --version` |
+| AWS CLI | 선택 | 승인된 AWS readiness/bootstrap | `aws --version` |
+
+host Python/Node 최소 버전은 아직 별도 pinning하지 않는다.
+container 기준은 `infra/docker/backend.Dockerfile`의 Python image, `infra/docker/frontend.Dockerfile`의 Node image, `backend/requirements.txt`, `frontend/package.json`을 따른다.
+host native 실행을 Tier 1로 올리려면 Python/Node version pinning을 별도 Phase에서 확정한다.
+
+### 권장 local/container 실행
+
+```bash
+docker compose build
+docker compose up
+curl -fsS http://localhost:8000/health
+curl -fsS http://localhost:3000/
+```
+
+권장 경로는 Docker Compose다.
+이 경로는 host OS 차이를 줄이고 backend Python/runtime, frontend Node/build 환경을 container image에 고정한다.
+
+기본 포트:
+
+- Backend health: `http://localhost:8000/health`
+- Frontend: `http://localhost:3000`
+
+자동 smoke 검증은 로컬의 다른 프로젝트와 충돌하지 않도록 backend `18000`, frontend `13000`을 기본 포트로 사용한다.
+
+```bash
+scripts/smoke-container-app.sh
+BACKEND_PORT=18001 FRONTEND_PORT=13001 scripts/smoke-container-app.sh
+```
+
+필요한 경우 Docker Compose 포트도 override한다.
+
+```bash
+BACKEND_PORT=8001 FRONTEND_PORT=3001 docker compose up
+```
+
+### 하네스 검증 명령
 
 ```bash
 rg -n "\\[[A-Z0-9_]+\\]" .
@@ -96,15 +162,9 @@ scripts/validate-harness.sh --strict
 scripts/validate-harness.sh --integration
 ```
 
-제품 앱 local/container 실행:
-
-```bash
-docker compose build
-docker compose up
-curl -fsS http://localhost:8000/health
-curl -fsS http://localhost:3000/
-scripts/smoke-container-app.sh
-```
+`scripts/*.sh`는 bash-compatible shell을 전제로 한다.
+Windows에서는 WSL2 shell에서 실행하는 것을 기본 지원 경로로 둔다.
+native PowerShell/CMD에서 동등하게 실행하려면 `python3`, `curl`, `rg`, `mktemp`, path separator, line ending, Docker Desktop WSL integration, port conflict를 별도로 확인한다.
 
 ### Local Tool/Runtime Readiness
 
@@ -119,21 +179,22 @@ docker compose version
 docker info
 ```
 
-tool/runtime이 설치되어 있고 local-only safe start가 가능하면 AI가 먼저 실행을 시도한다.
-
-예시:
-
-```bash
-test -d /Applications/Docker.app && open -a Docker
-for i in $(seq 1 60); do docker info >/tmp/docker-info.log 2>&1 && break; sleep 2; done
-```
-
 safe start는 아래 조건을 모두 만족해야 한다.
 
 - local-only runtime 기동이다.
 - 비용, cloud resource, 외부 production resource를 만들지 않는다.
 - secret, credential, license 동의, 관리자 권한 상승, 시스템 설정 변경을 요구하지 않는다.
 - branch, remote, Git state를 바꾸지 않는다.
+
+macOS 전용 Docker Desktop safe start 예시:
+
+```bash
+test -d /Applications/Docker.app && open -a Docker
+for i in $(seq 1 60); do docker info >/tmp/docker-info.log 2>&1 && break; sleep 2; done
+```
+
+Windows safe start는 WSL2 + Docker Desktop integration 상태에서 `docker info`로 readiness를 확인한다.
+Docker Desktop 설치, WSL2 활성화, license/권한 동의, system service 변경이 필요하면 사람 조치로 기록하고 자동 실행하지 않는다.
 
 repo-local dependency install은 기존 프로젝트 명령 범위 안에서 실행하고 `quality.md`에 기록할 수 있다.
 
@@ -154,19 +215,6 @@ Docker BuildKit/Compose variant처럼 local-only fallback이 있으면 안전한
 DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 scripts/smoke-container-app.sh
 ```
 
-M2 container 포트 기준:
-
-- 일반 개발용 Docker Compose는 backend `8000`, frontend `3000`을 기본 포트로 사용한다.
-- 자동 smoke 검증은 로컬의 다른 프로젝트와 충돌하지 않도록 backend `18000`, frontend `13000`을 기본 포트로 사용한다.
-- 필요한 경우 `BACKEND_PORT`, `FRONTEND_PORT` 환경 변수로 override한다.
-
-예시:
-
-```bash
-BACKEND_PORT=18001 FRONTEND_PORT=13001 scripts/smoke-container-app.sh
-BACKEND_PORT=8001 FRONTEND_PORT=3001 docker compose up
-```
-
 M3 source/catalog API 확인:
 
 ```bash
@@ -176,7 +224,7 @@ curl -fsS -H "Content-Type: application/json" \
 curl -fsS http://localhost:8000/api/catalog/datasets
 ```
 
-개별 runtime 실행:
+### 보조 host native 실행
 
 ```bash
 cd backend
@@ -187,6 +235,9 @@ cd frontend
 npm install
 npm run dev
 ```
+
+host native 실행은 빠른 개발 보조 경로다.
+OS별 shell, Python launcher 이름, Node/npm 설치 방식 차이가 있으므로 cross-platform 보장은 Docker Compose 경로를 우선한다.
 
 ## 7) PR 체크리스트
 

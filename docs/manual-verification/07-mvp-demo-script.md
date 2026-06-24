@@ -7,6 +7,7 @@ AskLake MVP를 3분 안에 재현 가능한 흐름으로 시연한다.
 ## 사전 조건
 
 - Docker Desktop 또는 Docker Compose가 실행 가능하다.
+- macOS 또는 Windows WSL2 + Docker Desktop integration은 권장 경로다. native Windows PowerShell/CMD 동일 실행은 아직 공식 검증 경로가 아니다.
 - repository root에서 명령을 실행한다.
 - 기본 포트 `3000`, `8000`이 비어 있다. 충돌이 있으면 `scripts/smoke-container-app.sh`의 smoke 전용 포트 `13000`, `18000` 경로로 먼저 검증한다.
 

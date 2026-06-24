@@ -43,6 +43,7 @@ report가 늘어나면 영역별 최신 report index를 작게 유지한다. 이
 | Modular Contract Baseline 적용 점검 | [`modular-contract-baseline-application-audit.md`](modular-contract-baseline-application-audit.md) | R0.5 변경사항이 하네스, validation, 병렬 실행 계약과 충돌 없이 적용됐는지 사후 확인 |
 | Thin Runtime Core | [`thin-runtime-core.md`](thin-runtime-core.md) | R0.5 shared contract가 backend/frontend thin runtime skeleton과 fake provider로 연결됐는지 확인 |
 | Local Tool Runtime Readiness | [`local-tool-runtime-readiness.md`](local-tool-runtime-readiness.md) | Docker 같은 local runtime이 설치되어 있으나 꺼져 있을 때 agent가 safe start/readiness/fallback을 먼저 시도하는 규칙 확인 |
+| Local Environment Requirements | [`local-environment-requirements.md`](local-environment-requirements.md) | macOS/Windows 로컬 개발 지원 등급, Docker Compose 권장 경로, WSL2/native Windows 검증 경계 확인 |
 | Small Change PR Decision | [`small-change-pr-decision.md`](small-change-pr-decision.md) | 작은 변경 완료 후 PR 진행, 로컬 보류, 큰 branch 흡수, 개인 초안 유지, 포함/제외 파일 정리 기준 확인 |
 | PR Conflict Resolution Protocol | [`pr-conflict-resolution-protocol.md`](pr-conflict-resolution-protocol.md) | PR conflict 감지, 분류, 사람 확인, 해결 후 재검증과 evidence 기록 규칙 확인 |
 | Harness 변경사항 병합 후 점검 | [`harness-post-merge-change-audit.md`](harness-post-merge-change-audit.md) | PR #45~#47 병합 뒤 Pre-PR checkpoint, Product Rebaseline, validation/script 충돌 여부 확인 |

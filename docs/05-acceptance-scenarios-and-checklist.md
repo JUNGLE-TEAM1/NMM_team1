@@ -88,6 +88,7 @@ AskLake의 Target MVP 대표 성공 시나리오는 `Trusted Dataset -> Query/As
 ## 5) 배포와 운영 기준
 
 - [ ] local/container health/smoke check가 통과한다.
+- [ ] local development support tier와 미검증 OS/shell 범위가 `docs/04`에 기록되어 있다.
 - [ ] 필요한 env 값이 실제 secret 없이 문서화되어 있다.
 - [ ] Docker image build/run 경로가 기록되어 있다.
 - [ ] Kubernetes manifest 또는 Helm 후보가 secret 없이 검증 가능하다.

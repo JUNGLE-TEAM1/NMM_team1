@@ -46,6 +46,9 @@ AskLake의 Target MVP는 `Trusted Dataset -> Query/Ask -> Evidence -> Recovery` 
 
 ## 로컬 앱 실행
 
+자세한 OS별 지원 범위와 필수 도구는 `docs/04-development-guide.md`의 로컬 개발 환경 요구사항을 따른다.
+권장 경로는 Docker Compose이며, Windows는 WSL2 + Docker Desktop integration을 기본 검증 경로로 둔다.
+
 ```bash
 docker compose build
 docker compose up
