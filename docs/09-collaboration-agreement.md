@@ -52,6 +52,29 @@ Current Phase details can proceed after updating the relevant workspace file.
 Scope changes, Hotfixes, and high-impact decisions must pass their matching gate before implementation.
 Next Phase candidates and deferred ideas should be recorded in `next-actions.md` or `notes.md` so they are not lost.
 
+## 3.2) Small Change PR Agreement
+
+Small changes are not automatically exempt from PR handoff.
+If a small change should become part of `main` and be used by the team, opening a PR is the default completion path after local validation.
+
+Open a PR for a small change when:
+
+- it is a team-shared artifact that should remain in `main`
+- it updates Source of Truth, report index, workflow, quality, sync, or collaboration rules
+- a branch workspace was created and validation completed
+- the next teammate should treat the change as current project context
+
+Local hold is acceptable when:
+
+- the file is a personal note or throwaway draft
+- the change will intentionally be absorbed into a larger branch soon
+- the human wants to review wording or direction before sharing
+- validation is not complete
+
+Before PR handoff, AI must separate included files from excluded files.
+Do not stage `.DS_Store`, personal drafts, unrelated untracked files, local editor artifacts, or files from another workstream.
+If unrelated untracked files exist, AI reports them and keeps them out of the PR unless the human explicitly expands scope.
+
 ## 4) Human Confirmation Gates
 
 AI should work autonomously between gates, then stop and ask the human for confirmation when a decision changes scope, contracts, verification, completion, or integration direction.
