@@ -23,6 +23,7 @@
 2. 결과는 `docs/reports/_template.md` 형식의 Phase report에 기록한다.
 3. demo/UX 품질은 manual verification concern으로 다룬다.
 4. 실패는 `docs/06` Failure Scenario와 report TODO에 연결한다.
+5. manual verification에 필요한 local tool/runtime이 있으면 AI는 먼저 readiness check와 safe start를 시도하고, 설치/권한/라이선스/비용/외부 resource가 필요한 사람 조치만 분리해 기록한다.
 
 ## 세부 검증 문서
 
@@ -47,7 +48,8 @@
 
 ## Current Baseline 수동 점검
 
-1. `scripts/smoke-container-app.sh`를 실행한다.
+0. Docker가 필요한 경우 `command -v docker`, `docker --version`, `docker info`를 확인한다. macOS에서 `/Applications/Docker.app`이 설치되어 있고 꺼져 있으면 `open -a Docker`로 safe start를 시도한 뒤 readiness loop를 돈다.
+1. `scripts/smoke-container-app.sh`를 실행한다. Docker BuildKit/Compose local variant 오류가 있으면 `DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 scripts/smoke-container-app.sh` 같은 local-only fallback을 시도하고 결과를 기록한다.
 2. 필요하면 `BACKEND_PORT=18000 FRONTEND_PORT=13000 COMPOSE_PROJECT_NAME=asklake_m2_visual docker compose -p asklake_m2_visual up -d`로 앱을 띄운다.
 3. `curl -fsS http://localhost:18000/health`가 `status: ok` contract를 반환하는지 확인한다.
 4. `curl -fsS http://localhost:13000/`가 AskLake frontend HTML을 반환하는지 확인한다.

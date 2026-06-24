@@ -307,6 +307,19 @@ Waiting on you:
 - Next AI action: continue or ask for scope change confirmation.
 - Ask: "이 항목은 현재 범위를 넘을 수 있습니다. 확장할까요, 분리할까요?"
 
+### Mid-Phase Steering Received
+
+- Current state: 진행 중인 Phase에 새 사람 지시, 방향 전환, 추가 아이디어, 또는 수정 요청이 들어왔다.
+- Recommended next action: 바로 구현하지 말고 새 지시를 현재 Phase scope, `Scope Change Confirm`, `Hotfix`, 다음 Phase 후보, 보류 아이디어, 또는 `Decision Option Brief` 필요 항목으로 분류한다.
+- Options:
+  1. 현재 Phase scope 안의 세부 조정으로 반영한다.
+  2. `Scope Change Confirm`을 열고 현재 branch 확장, 별도 Phase 분리, 또는 보류를 선택한다.
+  3. `Hotfix`로 표시하고 원래 Phase 복귀 조건을 남긴다.
+  4. 다음 Phase 후보 또는 보류 아이디어로 `next-actions.md`에 기록한다.
+  5. 고영향 선택으로 보고 `Decision Option Brief`를 작성한다.
+- Next AI action: 선택 결과에 따라 `plan.md`, `notes.md`, `confirmations.md`, `decisions.md`, 또는 `next-actions.md` 중 필요한 파일만 업데이트하고, 현재 Phase 범위를 넘는 구현은 확인 전 시작하지 않는다.
+- Ask: "방금 지시는 현재 Phase 안에서 반영할까요, 범위 변경/Hotfix/다음 Phase 후보로 분류할까요?"
+
 ### Mid-Phase Upstream Change Detected
 
 - Current state: main or shared Source of Truth changed while this workspace is in progress.

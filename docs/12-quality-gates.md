@@ -32,6 +32,7 @@ Before a branch is considered complete:
 - TDD status is recorded in `quality.md`.
 - Unit or focused checks are run when applicable.
 - Integration or contract checks are run when the branch touches shared behavior.
+- Local tool/runtime readiness evidence is recorded before marking required test/build/smoke/manual verification as skipped.
 - Source of Truth Impact Gate evidence is recorded when implementation or documentation changes can alter shared project truth.
 - Harness Test Update Gate evidence is recorded when harness rules, scripts, or CI harness jobs change.
 - `scripts/validate-harness.sh` passes.
@@ -89,6 +90,7 @@ Each workspace uses `quality.md` to record:
 - TDD approach
 - failing test first evidence
 - implementation pass evidence
+- local tool/runtime readiness checks, safe start attempts, fallback attempts, and remaining manual action when validation depends on local runtime
 - CI/check commands
 - CI/check result
 - Source of Truth impact: `none`, `required`, `applied`, or `deferred`
@@ -97,6 +99,8 @@ Each workspace uses `quality.md` to record:
 - Harness regression command/result, usually `scripts/test-harness.sh`, when harness behavior changes
 - skipped checks and reasons
 - deployment or publish gate when relevant
+
+Skipped checks must not be used as the first response to a missing local runtime. AI first records readiness checks such as `command -v <tool>`, version checks, runtime health checks, and safe local start attempts. Host-level install, license acceptance, admin elevation, system setting changes, paid cloud/resource creation, deployment, publish, or destructive operations remain behind human confirmation.
 
 ## 7) Harness Regression Tests
 
