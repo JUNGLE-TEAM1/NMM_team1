@@ -45,7 +45,7 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 - issue creation result: created
 - issue project result: failed: error: your authentication token is missing required scopes [read:project] To request it, run:  gh auth refresh -s read:project
 - PR closing keyword: Closes #100
-- pushed branch:
+- pushed branch: feature/m6-ai-query-skeleton
 - PR link:
 - merge status:
 - issue close status:
