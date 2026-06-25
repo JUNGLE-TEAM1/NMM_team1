@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
+  ArrowLeft,
   ArrowRight,
+  BarChart3,
   Boxes,
   ChevronRight,
   ChevronsLeft,
@@ -15,11 +17,14 @@ import {
   Loader2,
   LogOut,
   MessageSquareText,
+  Play,
   Plus,
   RefreshCw,
+  Save,
   Search,
   ShieldCheck,
   Sparkles,
+  Table2,
   Trash2,
   Wrench,
   X,
@@ -150,6 +155,13 @@ const startSteps = [
   ["파이프라인 구성", "선택한 원본으로 캔버스 시작", GitBranch],
 ];
 
+const connections = [
+  ["PostgreSQL 주문 DB", "postgres_order_transactions", "연결 대기", "M2 Batch"],
+  ["MongoDB 고객 프로필", "mongo_customer_profiles", "연결 대기", "M3 JSON/Schema"],
+  ["Kafka 주문 이벤트", "commerce.order.events", "연결 대기", "M4 Kafka"],
+  ["AskLake S3 Lake", "s3://asklake/bronze/order_events", "연결 대기", "M5 Catalog"],
+];
+
 const pipelineRows = [
   {
     name: "고객 주문 통합 Silver Dataset",
@@ -191,8 +203,10 @@ const pipelineRows = [
 
 function normalizePath(pathname) {
   if (pathname === "/" || pathname === "" || pathname === "/dataset") return "/sources";
+  if (pathname === "/etl/visual" || pathname === "/etl-visual") return "/etl-visual";
   if (pathname === "/etl") return "/runs";
   if (pathname === "/query") return "/ask";
+  if (pathname.startsWith("/catalog/")) return "/catalog-detail";
   return navItems.some((item) => item.path === pathname) ? pathname : "/sources";
 }
 
@@ -201,6 +215,7 @@ export function App() {
   const [activePath, setActivePath] = useState(() => normalizePath(window.location.pathname));
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isCopilotOpen, setIsCopilotOpen] = useState(true);
+  const [notice, setNotice] = useState("");
 
   useEffect(() => {
     refreshHealth();
@@ -224,13 +239,17 @@ export function App() {
 
   function navigate(path) {
     const nextPath = normalizePath(path);
-    const displayPath = nextPath === "/sources" ? "/dataset" : nextPath;
+    const displayPath = routeToUrl(nextPath);
     window.history.pushState({}, "", displayPath);
     setActivePath(nextPath);
   }
 
   const activeItem = useMemo(
-    () => navItems.find((item) => item.path === activePath) || navItems[0],
+    () => {
+      if (activePath === "/etl-visual") return navItems.find((item) => item.path === "/sources");
+      if (activePath === "/catalog-detail") return navItems.find((item) => item.path === "/catalog");
+      return navItems.find((item) => item.path === activePath) || navItems[0];
+    },
     [activePath],
   );
 
@@ -312,11 +331,14 @@ export function App() {
         </header>
 
         <section className="page-surface">
-          {activePath === "/sources" ? <SourcesPage /> : null}
+          {notice ? <ToastNotice message={notice} onClose={() => setNotice("")} /> : null}
+          {activePath === "/sources" ? <SourcesPage navigate={navigate} setNotice={setNotice} /> : null}
           {activePath === "/schema-preview" ? <SchemaPreviewPage /> : null}
-          {activePath === "/runs" ? <RunStatusPage /> : null}
-          {activePath === "/catalog" ? <CatalogPage /> : null}
-          {activePath === "/ask" ? <AiQueryPage /> : null}
+          {activePath === "/etl-visual" ? <VisualEditorPage navigate={navigate} setNotice={setNotice} /> : null}
+          {activePath === "/runs" ? <RunStatusPage navigate={navigate} /> : null}
+          {activePath === "/catalog" ? <CatalogPage navigate={navigate} /> : null}
+          {activePath === "/catalog-detail" ? <CatalogDetailShell navigate={navigate} /> : null}
+          {activePath === "/ask" ? <AiQueryPage setNotice={setNotice} /> : null}
           {activePath === "/dashboard" ? <DashboardPlaceholder /> : null}
           {activePath === "/admin" ? <AdminPlaceholder /> : null}
         </section>
@@ -324,6 +346,15 @@ export function App() {
       </section>
     </main>
   );
+}
+
+function routeToUrl(path) {
+  if (path === "/sources") return "/dataset";
+  if (path === "/etl-visual") return "/etl/visual";
+  if (path === "/runs") return "/etl";
+  if (path === "/ask") return "/query";
+  if (path === "/catalog-detail") return "/catalog/dataset_reviews_gold";
+  return path;
 }
 
 function PageIntro({ icon: Icon, title, body, status }) {
@@ -341,14 +372,34 @@ function PageIntro({ icon: Icon, title, body, status }) {
   );
 }
 
-function SourcesPage() {
+function SourcesPage({ navigate, setNotice }) {
+  const [isStartOpen, setIsStartOpen] = useState(false);
+  const [isManagingConnections, setIsManagingConnections] = useState(() =>
+    new URLSearchParams(window.location.search).get("manage") === "connections",
+  );
+
+  function openConnectionManager() {
+    window.history.pushState({}, "", "/dataset?manage=connections");
+    setIsManagingConnections(true);
+  }
+
+  function closeConnectionManager() {
+    window.history.pushState({}, "", "/dataset");
+    setIsManagingConnections(false);
+  }
+
   return (
     <div className="page-stack">
       <PageHeader
         title="데이터 통합"
         body="파이프라인을 만들고, 필요한 경우 연결을 보조 관리합니다."
-        actionLabel="연결 대기"
+        actionLabel={isManagingConnections ? "파이프라인 목록" : "연결 관리"}
+        onAction={isManagingConnections ? closeConnectionManager : openConnectionManager}
       />
+      {isManagingConnections ? (
+        <ConnectionManagerShell onBack={closeConnectionManager} setNotice={setNotice} />
+      ) : (
+        <>
       <section className="start-panel">
         <div className="start-panel-copy">
           <span className="section-icon">
@@ -373,8 +424,18 @@ function SourcesPage() {
             </article>
           ))}
         </div>
+        <div className="start-actions">
+          <button type="button" className="primary-action" onClick={() => setIsStartOpen(true)}>
+            소스 선택하고 시작
+            <ArrowRight size={16} />
+          </button>
+          <button type="button" className="ghost-action" onClick={openConnectionManager} aria-label="새 파이프라인 영역에서 연결 관리 열기">
+            <Database size={16} />
+            연결 관리
+          </button>
+        </div>
       </section>
-      <PipelineTable />
+      <PipelineTable navigate={navigate} setNotice={setNotice} />
       <div className="grid two">
         <InfoCard title="Contract" value={sourceConfig.contract} detail="Producer: M1 / Consumers: M2, M3, M4, M5" />
         <InfoCard title="Demo Tenant" value={sourceConfig.tenant_id} detail="실제 로그인/RBAC 없이 tenant_id 구조만 유지" />
@@ -386,11 +447,32 @@ function SourcesPage() {
         title="아직 등록된 실제 source가 없습니다"
         body="M3 JSON sample reader 또는 M2/M4 connector가 붙으면 이 영역이 source 목록과 connection test 결과로 바뀝니다."
       />
+        </>
+      )}
+      {isStartOpen ? (
+        <SourceStartModal
+          onClose={() => setIsStartOpen(false)}
+          onManageConnections={() => {
+            setIsStartOpen(false);
+            openConnectionManager();
+          }}
+          onProceed={() => {
+            setIsStartOpen(false);
+            navigate("/etl-visual");
+          }}
+        />
+      ) : null}
     </div>
   );
 }
 
-function PipelineTable() {
+function PipelineTable({ navigate, setNotice }) {
+  const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const filteredRows = pipelineRows.filter((row) =>
+    `${row.name} ${row.owner} ${row.purpose}`.toLowerCase().includes(query.toLowerCase()),
+  );
+
   return (
     <section className="pipeline-table-card">
       <div className="table-card-header">
@@ -406,7 +488,7 @@ function PipelineTable() {
         </div>
         <label className="table-search">
           <Search size={16} />
-          <input value="" readOnly placeholder="파이프라인 검색..." />
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="파이프라인 검색..." />
         </label>
       </div>
       <div className="wide-table-wrap">
@@ -424,9 +506,9 @@ function PipelineTable() {
             </tr>
           </thead>
           <tbody>
-            {pipelineRows.map((row) => (
+            {filteredRows.map((row) => (
               <tr key={row.name}>
-                <td className="table-link">{row.name}</td>
+                <td className="table-link" onClick={() => navigate("/catalog-detail")}>{row.name}</td>
                 <td>{row.owner}</td>
                 <td>
                   <span className={`badge ${row.type === "결과 데이터셋" ? "orange" : "gray"}`}>{row.type}</span>
@@ -440,7 +522,12 @@ function PipelineTable() {
                 <td className="purpose-cell">{row.purpose}</td>
                 <td>{row.updated}</td>
                 <td>
-                  <button type="button" className="icon-danger" aria-label="삭제 비활성">
+                  <button
+                    type="button"
+                    className="icon-danger"
+                    aria-label="삭제 비활성"
+                    onClick={() => setNotice("M1에서는 삭제 API를 호출하지 않습니다. M5 연결 후 실제 권한/삭제 정책을 붙입니다.")}
+                  >
                     <Trash2 size={16} />
                   </button>
                 </td>
@@ -450,14 +537,84 @@ function PipelineTable() {
         </table>
       </div>
       <footer className="table-footer">
-        <span>전체 4개 중 1-4 표시</span>
+        <span>전체 {filteredRows.length}개 중 {filteredRows.length ? "1-" + filteredRows.length : "0"} 표시</span>
         <div>
-          <button type="button">이전</button>
+          <button type="button" onClick={() => setPage(1)}>이전</button>
           <button type="button" className="active-page">1</button>
-          <button type="button">다음</button>
+          <button type="button" onClick={() => setPage(page + 1)}>다음</button>
         </div>
       </footer>
     </section>
+  );
+}
+
+function ConnectionManagerShell({ onBack, setNotice }) {
+  return (
+    <section className="management-shell">
+      <div className="management-header">
+        <button type="button" className="ghost-action" onClick={onBack} aria-label="연결 관리에서 파이프라인 목록으로 돌아가기">
+          <ArrowLeft size={16} />
+          파이프라인 목록
+        </button>
+        <button
+          type="button"
+          className="primary-action"
+          onClick={() => setNotice("새 연결 생성은 M2/M3/M4 connector 구현 후 연결됩니다.")}
+        >
+          <Plus size={16} />
+          새 연결
+        </button>
+      </div>
+      <DataTable
+        columns={["connection", "resource", "status", "owner module"]}
+        rows={connections}
+      />
+    </section>
+  );
+}
+
+function SourceStartModal({ onClose, onManageConnections, onProceed }) {
+  const [selected, setSelected] = useState(connections[0][0]);
+
+  return (
+    <div className="modal-backdrop" role="presentation">
+      <section className="source-modal" role="dialog" aria-modal="true" aria-labelledby="source-modal-title">
+        <header>
+          <div>
+            <h2 id="source-modal-title">소스 선택하고 시작</h2>
+            <p>실제 connection test 없이 M1에서는 선택 flow만 확인합니다.</p>
+          </div>
+          <button type="button" onClick={onClose} aria-label="닫기">
+            <X size={18} />
+          </button>
+        </header>
+        <div className="source-options">
+          {connections.map(([name, resource, status]) => (
+            <button
+              key={name}
+              type="button"
+              className={selected === name ? "selected" : ""}
+              onClick={() => setSelected(name)}
+            >
+              <Database size={18} />
+              <span>
+                <strong>{name}</strong>
+                <small>{resource} · {status}</small>
+              </span>
+            </button>
+          ))}
+        </div>
+        <footer>
+          <button type="button" className="ghost-action" onClick={onManageConnections}>
+            연결 관리
+          </button>
+          <button type="button" className="primary-action" onClick={onProceed}>
+            파이프라인 캔버스 열기
+            <ArrowRight size={16} />
+          </button>
+        </footer>
+      </section>
+    </div>
   );
 }
 
@@ -482,7 +639,79 @@ function SchemaPreviewPage() {
   );
 }
 
-function RunStatusPage() {
+function VisualEditorPage({ navigate, setNotice }) {
+  const [selectedNode, setSelectedNode] = useState("Source");
+  const canvasNodes = [
+    ["Source", "Amazon Reviews JSON", "left"],
+    ["Select", "필드 선택", "center"],
+    ["Cast", "rating, review_time", "center"],
+    ["Aggregate", "product_id별 metric", "center"],
+    ["Load", "dataset_reviews_gold", "right"],
+  ];
+
+  return (
+    <div className="visual-editor-shell">
+      <header className="visual-toolbar">
+        <button type="button" className="ghost-action" onClick={() => navigate("/sources")}>
+          <ArrowLeft size={16} />
+          데이터 통합
+        </button>
+        <div>
+          <h2>파이프라인 시각 편집</h2>
+          <p>demo3의 canvas flow를 M1 static shell로 보존합니다.</p>
+        </div>
+        <div className="toolbar-actions">
+          <button type="button" className="ghost-action" onClick={() => setNotice("M1에서는 저장 API를 호출하지 않습니다.")}>
+            <Save size={16} />
+            저장 대기
+          </button>
+          <button type="button" className="primary-action" onClick={() => setNotice("M5 ExecutionResult 연결 전에는 실행하지 않습니다.")}>
+            <Play size={16} />
+            실행 대기
+          </button>
+        </div>
+      </header>
+      <section className="visual-body">
+        <aside className="node-palette">
+          <strong>노드 팔레트</strong>
+          {["Source", "Select Fields", "Filter", "Cast", "Aggregate", "Load"].map((item) => (
+            <button key={item} type="button" onClick={() => setSelectedNode(item)}>
+              <Plus size={14} />
+              {item}
+            </button>
+          ))}
+        </aside>
+        <div className="canvas-board">
+          {canvasNodes.map(([type, label, lane], index) => (
+            <button
+              type="button"
+              className={`canvas-node ${selectedNode === type ? "active" : ""} ${lane}`}
+              key={type}
+              onClick={() => setSelectedNode(type)}
+            >
+              <span>{index + 1}</span>
+              <strong>{type}</strong>
+              <small>{label}</small>
+            </button>
+          ))}
+          <div className="canvas-line one" />
+          <div className="canvas-line two" />
+          <div className="canvas-line three" />
+        </div>
+        <aside className="properties-panel">
+          <strong>Properties</strong>
+          <p>{selectedNode} 설정은 후속 모듈 연결 후 실제 form으로 교체됩니다.</p>
+          <InfoCard title="Contract" value="WorkflowDefinition" detail="M5 owner" />
+        </aside>
+      </section>
+    </div>
+  );
+}
+
+function RunStatusPage({ navigate }) {
+  const [query, setQuery] = useState("");
+  const rows = pipelineRows.filter((row) => row.name.toLowerCase().includes(query.toLowerCase()));
+
   return (
     <div className="page-stack">
       <PageHeader
@@ -490,6 +719,45 @@ function RunStatusPage() {
         body="M5가 WorkflowDefinition, ExecutionResult, 로그, retry 상태를 연결할 화면입니다."
         actionLabel="실행 결과 없음"
       />
+      <section className="pipeline-table-card">
+        <div className="table-card-header">
+          <div className="table-title-line">
+            <ListChecks size={20} />
+            <div>
+              <strong>Job Runs</strong>
+              <p>demo3 실행/모니터링 목록 shell입니다.</p>
+            </div>
+          </div>
+          <label className="table-search">
+            <Search size={16} />
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="job 검색..." />
+          </label>
+        </div>
+        <div className="wide-table-wrap">
+          <table className="demo-table">
+            <thead>
+              <tr>
+                <th>job</th>
+                <th>status</th>
+                <th>mode</th>
+                <th>last updated</th>
+                <th>detail</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row.name}>
+                  <td className="table-link" onClick={() => navigate("/etl-visual")}>{row.name}</td>
+                  <td><span className="badge slate">연결 대기</span></td>
+                  <td><span className="badge blue">{row.mode}</span></td>
+                  <td>{row.updated}</td>
+                  <td>{row.purpose}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
       <div className="pipeline-strip">
         {workflowDefinition.nodes.map(([type, label, detail], index) => (
           <div className="pipeline-node" key={type}>
@@ -510,7 +778,10 @@ function RunStatusPage() {
   );
 }
 
-function CatalogPage() {
+function CatalogPage({ navigate }) {
+  const [selectedTag, setSelectedTag] = useState("전체");
+  const tags = ["전체", "bronze", "silver", "gold"];
+
   return (
     <div className="page-stack">
       <PageHeader
@@ -518,6 +789,18 @@ function CatalogPage() {
         body="M5가 생성한 dataset metadata와 lineage를 M6가 소비할 수 있게 보여주는 화면입니다."
         actionLabel="CatalogMetadata 연결 대기"
       />
+      <div className="filter-row">
+        {tags.map((tag) => (
+          <button
+            key={tag}
+            type="button"
+            className={selectedTag === tag ? "selected" : ""}
+            onClick={() => setSelectedTag(tag)}
+          >
+            {tag}
+          </button>
+        ))}
+      </div>
       <section className="catalog-feature">
         <div className="dataset-icon">
           <Sparkles size={22} />
@@ -530,7 +813,9 @@ function CatalogPage() {
           </div>
           <p>타겟 데이터셋을 찾고 구조를 확인하는 demo3 카탈로그 카드 스타일을 M1 shell에 맞춰 보존했습니다.</p>
         </div>
-        <ArrowRight size={18} />
+        <button type="button" className="icon-link" onClick={() => navigate("/catalog-detail")} aria-label="catalog detail">
+          <ArrowRight size={18} />
+        </button>
       </section>
       <div className="grid three">
         <InfoCard title="Dataset" value={catalogMetadata.dataset_id} detail={catalogMetadata.name} />
@@ -548,7 +833,70 @@ function CatalogPage() {
   );
 }
 
-function AiQueryPage() {
+function CatalogDetailShell({ navigate }) {
+  const [tab, setTab] = useState("lineage");
+  const tabs = [
+    ["lineage", "리니지(데이터 계보)", GitBranch],
+    ["quality", "품질 검사 리포트", ShieldCheck],
+    ["governance", "거버넌스 설정", Wrench],
+  ];
+
+  return (
+    <div className="page-stack">
+      <PageHeader
+        title="Amazon Reviews Gold"
+        body="Catalog detail과 lineage/quality/governance tab shell입니다."
+        actionLabel="목록으로"
+        onAction={() => navigate("/catalog")}
+      />
+      <section className="detail-tabs">
+        {tabs.map(([id, label, Icon]) => (
+          <button key={id} type="button" className={tab === id ? "active" : ""} onClick={() => setTab(id)}>
+            <Icon size={16} />
+            {label}
+          </button>
+        ))}
+      </section>
+      {tab === "lineage" ? <LineageShell /> : null}
+      {tab === "quality" ? (
+        <div className="grid three">
+          <InfoCard title="missing rate" value="연결 대기" detail="M5 quality output 필요" />
+          <InfoCard title="duplicate count" value="연결 대기" detail="ExecutionResult quality metric" />
+          <InfoCard title="schema status" value="연결 대기" detail="SchemaDefinition 비교" />
+        </div>
+      ) : null}
+      {tab === "governance" ? (
+        <DataTable
+          columns={["policy", "state", "owner"]}
+          rows={[
+            ["mask customer identifiers", "연결 대기", "M6/RBAC"],
+            ["monthly aggregate only", "연결 대기", "M5/M6"],
+            ["allow preview export", "disabled", "security"],
+          ]}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function LineageShell() {
+  return (
+    <section className="lineage-shell">
+      {["Source", "Bronze", "Silver", "Quality Gate", "Gold Dataset"].map((item, index) => (
+        <article key={item}>
+          <span>{index + 1}</span>
+          <strong>{item}</strong>
+          <p>{item === "Gold Dataset" ? "dataset_reviews_gold" : "M5 연결 대기"}</p>
+        </article>
+      ))}
+    </section>
+  );
+}
+
+function AiQueryPage({ setNotice }) {
+  const [queryText, setQueryText] = useState("");
+  const [viewMode, setViewMode] = useState("table");
+
   return (
     <div className="page-stack">
       <PageHeader
@@ -557,14 +905,39 @@ function AiQueryPage() {
         actionLabel="M6 연결 대기"
       />
       <section className="ask-layout">
-        <div className="question-box">
+        <div className="question-box query-editor">
           <Search size={18} />
-          <span>{aiQueryResult.question}</span>
+          <textarea
+            value={queryText}
+            onChange={(event) => setQueryText(event.target.value)}
+            placeholder={aiQueryResult.question}
+          />
+          <button
+            type="button"
+            className="primary-action"
+            onClick={() => setNotice("M6 AI Query 연결 전에는 SQL 실행 결과를 생성하지 않습니다.")}
+          >
+            <Play size={16} />
+            실행 대기
+          </button>
         </div>
         <div className="contract-panel">
           <p className="eyebrow">{aiQueryResult.contract}</p>
           <h3>{aiQueryResult.status}</h3>
           <code>{aiQueryResult.sql}</code>
+          <div className="segmented-control">
+            {["table", "chart"].map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                className={viewMode === mode ? "active" : ""}
+                onClick={() => setViewMode(mode)}
+              >
+                {mode === "table" ? <Table2 size={14} /> : <BarChart3 size={14} />}
+                {mode}
+              </button>
+            ))}
+          </div>
           <p>Chart spec: {aiQueryResult.chart_spec}</p>
         </div>
       </section>
@@ -639,17 +1012,28 @@ function AiCopilotDock({ isOpen, onClose }) {
   );
 }
 
-function PageHeader({ title, body, actionLabel }) {
+function PageHeader({ title, body, actionLabel, onAction }) {
   return (
     <header className="page-header">
       <div>
         <h2>{title}</h2>
         <p>{body}</p>
       </div>
-      <button type="button" className="ghost-action">
+      <button type="button" className="ghost-action" onClick={onAction}>
         {actionLabel}
       </button>
     </header>
+  );
+}
+
+function ToastNotice({ message, onClose }) {
+  return (
+    <div className="toast-notice" role="status">
+      <span>{message}</span>
+      <button type="button" onClick={onClose} aria-label="알림 닫기">
+        <X size={16} />
+      </button>
+    </div>
   );
 }
 

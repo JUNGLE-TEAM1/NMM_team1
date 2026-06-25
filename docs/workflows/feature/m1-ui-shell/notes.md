@@ -9,6 +9,8 @@
 - 후속 확인에서 demo3의 시각 디자인이 충분히 보존되지 않은 문제가 확인되어, 2026-06-25에 demo3의 흰 sidebar/topbar/card 중심 디자인 언어를 M1 shell에 다시 반영했다.
 - 추가 확인에서 여전히 실제 demo page 구조가 부족해, demo3 `/dataset` 화면 기준의 `데이터셋/파이프라인` 테이블, 전체 sidebar nav, 상단 사용자 영역, AI 도우미 패널, AskLake logo asset을 M1 shell에 반영했다.
 - demo3에서 기대되는 기본 UI interaction으로 sidebar collapse/expand와 AI 도우미 close/reopen toggle을 M1 shell에 연결했다.
+- 통합 보완으로 `/dataset?manage=connections`, `/etl/visual`, `/etl`, `/catalog`, `/catalog/dataset_reviews_gold`, `/query`, `/dashboard`, `/admin` route shell을 추가했다.
+- `소스 선택하고 시작`, `연결 관리`, table row detail, catalog tab, query view mode, search/filter/pagination 계열은 local UI state로만 반응한다.
 
 ## 결정
 
@@ -17,6 +19,7 @@
 - M1 범위 밖 기능은 버튼/자동 진행으로 시연하지 않고, 후속 모듈 연결 지점으로 남긴다.
 - 디자인 복구는 CSS/정적 shell 구조만 수정하고 fake API, fake auth, fake run success는 추가하지 않는다.
 - interaction 보강은 local UI state만 사용한다. backend/API 호출이나 fake success state는 추가하지 않는다.
+- M1 static shell에서 `연결 대기`, `실행 대기`, `disabled`, `placeholder` 표현을 유지한다.
 
 ## 열린 질문
 

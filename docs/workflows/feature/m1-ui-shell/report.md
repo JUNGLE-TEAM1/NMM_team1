@@ -47,6 +47,7 @@
 - `/sources`, `/schema-preview`, `/runs`, `/catalog`, `/ask` route shell을 구성했다.
 - demo3의 `/dataset` 화면 구조를 기준으로 sidebar/topbar/card/table/AI 도우미 디자인을 M1 shell에 다시 반영했다.
 - sidebar collapse/expand와 AI 도우미 close/reopen interaction을 local UI state로 연결했다.
+- demo3 주요 이어지는 route와 modal flow를 static shell로 보강하고, 버튼마다 최소 frontend 반응을 붙였다.
 - `SourceConfig`, `SchemaDefinition`, `WorkflowDefinition`, `CatalogMetadata`, `AIQueryResult` preview surface를 배치했다.
 - 실제 기능이 없는 영역은 pending/empty/error 상태로 표시하고, 자동 성공/완료 연출은 넣지 않았다.
 - 기존 `getHealth()`와 `StatusPill`만 유지해 backend health 실패를 실제 error state로 보여준다.
@@ -140,7 +141,7 @@ npm run dev -- --host 127.0.0.1
 
 ## Failed / Incomplete / Follow-Up TODO
 
-- M2/M3/M4/M5/M6 실제 기능 연결은 후속 Phase 범위다.
+- M2/M3/M4/M5/M6 실제 기능 연결은 후속 Phase 범위다. M1은 static route shell과 local UI interaction까지만 제공한다.
 - PR #86 CI 확인과 merge/finalize/cleanup은 사람 확인이 필요하다.
 
 ## Context For Next Phase / 다음 Phase 문맥

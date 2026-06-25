@@ -18,6 +18,8 @@
 - `docs/03-interface-reference.md`와 `contracts/*.sample.json`의 Week 2 contract 이름과 흐름을 화면에 반영한다.
 - backend/API 미연결 상태는 loading/error/empty/connection pending 상태로 표시한다.
 - M2~M6 연결 지점을 branch workspace 문서에 남긴다.
+- demo3 주요 이어지는 route와 modal flow를 M1 static shell로 보강한다.
+- 버튼/검색/탭/모달/back/close 등 프론트엔드 최소 interaction을 local UI state로 제공한다.
 
 ## 범위 제외
 
@@ -25,6 +27,7 @@
 - `window.fetch` 전역 mock, `localStorage` fake auth/session, 자동 로그인, 자동 성공/완료 처리.
 - 실제 source 등록, schema inference, workflow 실행, catalog 저장, AI query backend 구현.
 - 공유 API/schema 계약 변경. 계약 변경이 필요하면 후속 Phase에서 별도 Source of Truth 변경으로 다룬다.
+- 클릭만으로 `succeeded`, `trusted`, `complete`가 되는 fake business result.
 
 ## Source of Truth 문맥
 
