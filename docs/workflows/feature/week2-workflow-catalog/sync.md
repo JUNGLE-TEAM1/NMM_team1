@@ -39,9 +39,9 @@ main 동기화와 integration readiness를 기록한다.
 
 ## Push / PR
 
-- linked GitHub issue: none
-- issue link: none
-- issue creation result: not requested
+- linked GitHub issue: #101
+- issue link: https://github.com/JUNGLE-TEAM1/NMM_team1/issues/101
+- issue creation result: created for Day 3 Catalog persistence handoff
 - PR closing keyword: none
 - pushed branch: not pushed
 - PR link: none

@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from app.services.week2_airflow_adapter import Week2AirflowAdapter, Week2AirflowError
+from app.services.week2_catalog_store import Week2CatalogStore
 from app.services.week2_local_runner import Week2LocalRunner, Week2RunnerResult
 
 SUCCESSFUL_RUN_STATUSES = {"succeeded", "fallback_succeeded"}
@@ -23,22 +24,25 @@ class Week2WorkflowService:
         airflow_adapter: Week2AirflowAdapter | None = None,
         local_runner: Week2LocalRunner | None = None,
         output_root: Path | None = None,
+        catalog_store: Week2CatalogStore | None = None,
     ) -> None:
         self.contracts_dir = contracts_dir or default_contracts_dir()
+        self.output_root = output_root or default_week2_output_root()
         self.source_config = self._load_contract("source_config.sample.json")
         self.schema_definition = self._load_contract("schema_definition.sample.json")
         self.workflow_definition = self._load_contract("workflow_definition.sample.json")
         self.execution_template = self._load_contract("execution_result.sample.json")
         self.catalog_template = self._load_contract("catalog_metadata.sample.json")
+        self.catalog_store = catalog_store or Week2CatalogStore(self.output_root / "_metadata")
         self.airflow_adapter = airflow_adapter or Week2AirflowAdapter()
         self.local_runner = local_runner or Week2LocalRunner(
             source_config=self.source_config,
             schema_definition=self.schema_definition,
-            output_root=output_root,
+            output_root=self.output_root,
         )
-        self.runs: dict[str, dict[str, Any]] = {}
-        self.catalog: dict[str, dict[str, Any]] = {}
-        self.sequence = 0
+        self.runs = self.catalog_store.load_runs()
+        self.catalog = self.catalog_store.load_catalog()
+        self.sequence = self.catalog_store.sequence_start(self.runs)
 
     def trigger_run(self, pipeline_id: str, executor: str, triggered_by: str) -> dict[str, Any]:
         if pipeline_id != self.workflow_definition["pipeline_id"]:
@@ -68,9 +72,11 @@ class Week2WorkflowService:
         run["logs"] = self._logs_for_executor(executor, status, runner_result.logs)
 
         self.runs[run_id] = run
+        self.catalog_store.save_run(run)
         if status in SUCCESSFUL_RUN_STATUSES:
             catalog = self._catalog_for_run(run_id, timestamp, runner_result)
             self.catalog[catalog["dataset_id"]] = catalog
+            self.catalog_store.save_catalog(catalog)
         return run
 
     def get_run(self, run_id: str) -> dict[str, Any]:
@@ -159,6 +165,10 @@ class Week2WorkflowService:
 
 def default_contracts_dir() -> Path:
     return Path(__file__).resolve().parents[3] / "contracts"
+
+
+def default_week2_output_root() -> Path:
+    return Path(__file__).resolve().parents[3] / "data" / "week2"
 
 
 def now_iso() -> str:

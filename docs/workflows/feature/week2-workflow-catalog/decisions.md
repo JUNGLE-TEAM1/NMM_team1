@@ -20,19 +20,20 @@
 | Catalog update guard | `succeeded`와 `fallback_succeeded` run만 catalog를 갱신 | 실패 run이 최신 성공 `CatalogMetadata`를 오염시키지 않도록 보호하기 위해 | #93 slice, 2026-06-25 |
 | Airflow fallback threshold | Airflow adapter status가 `succeeded`일 때만 primary success로 보고, adapter unavailable/error 또는 그 외 status는 `local_runner` fallback | M1/M6가 같은 `ExecutionResult` shape를 유지하면서 실제 Airflow 미설정/실패를 안전하게 통과하도록 하기 위해 | #94 slice, 2026-06-25 |
 | Execution metric semantics | `ExecutionResult.row_count/bytes`는 primary input 기준, `CatalogMetadata.metrics.row_count/bytes`는 output dataset 기준 | M2 Taxi bootstrap PR #98의 input metric 가정과 M5 Catalog output metric을 충돌 없이 함께 쓰기 위해 | metric contract lock slice, 2026-06-25 |
+| Catalog persistence handoff | `output_root/_metadata` 아래 JSON 파일로 run history와 latest catalog를 저장 | actual DB migration 전에도 API service restart 이후 M1/M6가 같은 run/catalog contract를 조회할 수 있게 하기 위해 | Day 3 persistence handoff slice, 2026-06-25 |
 
 ## Deferred Decisions / 보류한 결정
 
 | Decision | Deferred Reason | Revisit Trigger | Target Branch / Phase |
 | --- | --- | --- | --- |
 | External Airflow deployment connection | 이번 slice는 adapter boundary와 fallback threshold만 구현했고 실제 Airflow webserver/scheduler/API는 연결하지 않음 | 실제 Airflow 환경 URL/auth/DAG trigger contract가 준비될 때 | M5/Airflow integration follow-up |
-| Catalog persistence strategy | 지금은 in-memory fixture catalog로 M1/M6 boundary만 검증 | M3 output과 Catalog 자동 등록을 연결할 때 | M5 Workflow/Catalog follow-up |
+| Actual Catalog DB persistence strategy | 지금은 local JSON handoff store로 M1/M6 boundary와 restart 조회만 검증 | M3 output과 Catalog 자동 등록을 SQLite/Postgres metadata store에 연결할 때 | M5 Workflow/Catalog integration follow-up |
 | Parquet/MinIO output | #92는 local JSONL fallback output까지만 만든다 | Day 2 smoke에서 Parquet 또는 MinIO가 필요하다고 결정될 때 | M5/M3 integration slice |
-| Persistent latest catalog | #93은 in-memory latest successful catalog만 보장한다 | process restart 이후 catalog 조회가 필요할 때 | M5 persistence slice |
+| External catalog serving layer | process-local API는 JSON handoff를 읽지만 별도 catalog service/API ownership은 정하지 않음 | M1/M6가 공유 catalog serving layer를 요구할 때 | M5/M6 integration slice |
 
 ## Revisit / Rollback Conditions / 재검토 또는 롤백 조건
 
 | Decision | Condition | Action |
 | --- | --- | --- |
 | `/api/week2` draft route | M1이 baseline API adapter를 선택하거나 route contract를 바꾸는 경우 | `docs/03` Week 2 route section과 tests를 함께 갱신 |
-| in-memory catalog | M5가 actual run persistence를 붙이는 경우 | SQLite metadata store 또는 별도 Week 2 store로 이동 |
+| local JSON catalog handoff | M5가 actual DB persistence를 붙이는 경우 | SQLite metadata store 또는 별도 Week 2 store로 이동 |

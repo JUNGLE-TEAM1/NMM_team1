@@ -20,6 +20,7 @@
 - local runner fallback compatible status와 node-level `task_results[]` 생성
 - Airflow adapter boundary와 fallback threshold 적용
 - Week 2 execution metric semantics lock
+- local JSON handoff store로 run/catalog metadata process restart 조회 보장
 - focused backend contract tests
 
 ## 범위 제외
@@ -27,7 +28,7 @@
 - 실제 Airflow DAG 구현
 - 실제 외부 Airflow webserver/scheduler/API 연결
 - 실제 Parquet 생성 또는 MinIO 업로드
-- 실제 Catalog DB persistence
+- 실제 SQLite/Postgres Catalog DB persistence
 - M1 UI route 구현
 - M3 JSON schema inference/normalize 구현
 - M6 SQL/RAG/AI query 구현

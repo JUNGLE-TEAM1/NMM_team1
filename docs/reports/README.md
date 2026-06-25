@@ -43,6 +43,7 @@ report가 늘어나면 영역별 최신 report index를 작게 유지한다. 이
 | Modular Contract Baseline | [`modular-contract-baseline.md`](modular-contract-baseline.md) | R0.5 shared contract, workstream pool, integration spine, target MVP manifest 적용 결과 확인 |
 | Modular Contract Baseline 적용 점검 | [`modular-contract-baseline-application-audit.md`](modular-contract-baseline-application-audit.md) | R0.5 변경사항이 하네스, validation, 병렬 실행 계약과 충돌 없이 적용됐는지 사후 확인 |
 | Thin Runtime Core | [`thin-runtime-core.md`](thin-runtime-core.md) | R0.5 shared contract가 backend/frontend thin runtime skeleton과 fake provider로 연결됐는지 확인 |
+| M5 Day 3 Catalog Persistence Handoff | [`m5-day3-catalog-persistence-handoff.md`](m5-day3-catalog-persistence-handoff.md) | Week 2 M5 run/catalog metadata가 service restart 이후에도 조회되는 local JSON handoff persistence 확인 |
 | M5 Day 2 Smoke Evidence | [`m5-day2-smoke-evidence.md`](m5-day2-smoke-evidence.md) | Week 2 M5 Workflow/Catalog local runner 실행 증거와 `ExecutionResult`/`CatalogMetadata` metric 의미 확인 |
 | Local Tool Runtime Readiness | [`local-tool-runtime-readiness.md`](local-tool-runtime-readiness.md) | Docker 같은 local runtime이 설치되어 있으나 꺼져 있을 때 agent가 safe start/readiness/fallback을 먼저 시도하는 규칙 확인 |
 | Local Environment Requirements | [`local-environment-requirements.md`](local-environment-requirements.md) | macOS/Windows 로컬 개발 지원 등급, Docker Compose 권장 경로, WSL2/native Windows 검증 경계 확인 |

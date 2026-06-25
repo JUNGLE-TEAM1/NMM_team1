@@ -131,6 +131,45 @@ def test_week2_catalog_metadata_ignores_failed_run_after_success(tmp_path: Path)
     assert catalog_after_failure["s3_uri"] == first_catalog["s3_uri"]
 
 
+def test_week2_run_and_catalog_survive_service_restart(tmp_path: Path) -> None:
+    output_root = tmp_path / "out"
+    service = Week2WorkflowService(output_root=output_root)
+
+    first_run = service.trigger_run("pipeline_reviews_json_e2e", executor="local_runner", triggered_by="m5_owner")
+    restarted_service = Week2WorkflowService(output_root=output_root)
+    stored_run = restarted_service.get_run(first_run["run_id"])
+    stored_catalog = restarted_service.get_catalog_metadata("dataset_reviews_gold")
+    second_run = restarted_service.trigger_run(
+        "pipeline_reviews_json_e2e",
+        executor="local_runner",
+        triggered_by="m5_owner",
+    )
+
+    assert stored_run["run_id"] == "run_reviews_demo_001"
+    assert stored_run["status"] == "fallback_succeeded"
+    assert stored_catalog["lineage"]["run_id"] == "run_reviews_demo_001"
+    assert stored_catalog["storage"]["local_fallback_path"].endswith(
+        "reviews/gold/run_id=run_reviews_demo_001/dataset_reviews_gold.jsonl"
+    )
+    assert second_run["run_id"] == "run_reviews_demo_002"
+
+
+def test_week2_failed_run_survives_restart_without_overwriting_catalog(tmp_path: Path) -> None:
+    output_root = tmp_path / "out"
+    service = Week2WorkflowService(output_root=output_root)
+    service.trigger_run("pipeline_reviews_json_e2e", executor="local_runner", triggered_by="m5_owner")
+    service.local_runner = FailingRunner()
+
+    failed_run = service.trigger_run("pipeline_reviews_json_e2e", executor="local_runner", triggered_by="m5_owner")
+    restarted_service = Week2WorkflowService(output_root=output_root)
+    stored_failed_run = restarted_service.get_run(failed_run["run_id"])
+    stored_catalog = restarted_service.get_catalog_metadata("dataset_reviews_gold")
+
+    assert stored_failed_run["run_id"] == "run_reviews_demo_002"
+    assert stored_failed_run["status"] == "fallback_failed"
+    assert stored_catalog["lineage"]["run_id"] == "run_reviews_demo_001"
+
+
 def test_week2_airflow_executor_falls_back_when_adapter_unavailable() -> None:
     client = make_client()
 
