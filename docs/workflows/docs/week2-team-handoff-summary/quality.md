@@ -27,7 +27,7 @@
 ## CI/CD Gate / CI-CD 게이트
 
 - CI required: no local docs-only phase; PR CI may still run after push/PR
-- CI result: pending PR
+- CI result: PR #126 `harness`, `container-smoke`, `manifest-smoke` passed
 - Deploy/publish required: no
 - Deployment confirmation: 
 - Rollback/smoke notes: 
