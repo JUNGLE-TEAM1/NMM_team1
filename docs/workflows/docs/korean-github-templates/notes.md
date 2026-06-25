@@ -16,3 +16,4 @@
 ## 링크 / 증거
 
 - Linked issue: https://github.com/JUNGLE-TEAM1/NMM_team1/issues/88
+- PR: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/89

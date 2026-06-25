@@ -13,7 +13,7 @@
 - Changed: 한국어 Issue 템플릿 4종과 PR 템플릿을 추가/확장하고, branch workspace 증거 문서를 작성했다.
 - Verified: `git diff --check`, Issue template YAML front matter 파싱, `scripts/validate-harness.sh`, `scripts/validate-harness.sh --strict` in in-progress mode, `scripts/prepare-pr.sh --check-pr-sync`
 - Remaining: PR 생성 후 CI/check 결과 확인 필요. strict ready-state 검증은 Source of Truth 변경 없음 작업과 validation guard 요구가 맞지 않아 in-progress mode로 통과시켰다.
-- Next context: PR #TODO에서 `Closes #88`로 linked issue를 닫도록 연결
+- Next context: PR #89에서 `Closes #88`로 linked issue를 닫도록 연결
 - Risk: GitHub label `feature`, `bug`, `documentation`, `ops`, `hotfix`가 없으면 템플릿 선택 시 label 적용이 실패하거나 무시될 수 있다.
 
 ## Changed Files / 변경 파일
