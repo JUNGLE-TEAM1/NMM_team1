@@ -10,6 +10,7 @@ export function useCatalog() {
   const [selectedDatasetId, setSelectedDatasetId] = useState(null);
   const [sourceForm, setSourceForm] = useState(() => ({
     name: makeDemoSourceName(),
+    type: "csv",
     path: "samples/orders.csv",
   }));
   const [notice, setNotice] = useState("");

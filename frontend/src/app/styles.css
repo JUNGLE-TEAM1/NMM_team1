@@ -94,7 +94,7 @@ h1 {
 .source-form {
   flex: 1;
   display: grid;
-  grid-template-columns: minmax(180px, 260px) minmax(240px, 1fr) auto;
+  grid-template-columns: minmax(170px, 240px) 120px minmax(240px, 1fr) auto;
   gap: 12px;
   align-items: end;
 }

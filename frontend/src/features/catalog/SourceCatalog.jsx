@@ -32,7 +32,7 @@ export function SourceCatalog() {
           {catalog.selectedDataset ? (
             <CatalogDetail dataset={catalog.selectedDataset} />
           ) : (
-            <p className="empty">Sample CSV를 등록하면 schema와 sample rows가 표시됩니다.</p>
+            <p className="empty">CSV 또는 JSON source를 등록하면 schema와 sample rows가 표시됩니다.</p>
           )}
         </div>
       </section>

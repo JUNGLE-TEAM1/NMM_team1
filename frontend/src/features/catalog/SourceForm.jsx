@@ -1,6 +1,14 @@
 import { FilePlus2, RefreshCw } from "lucide-react";
 
 export function SourceForm({ form, onChange, onRefresh, onSubmit, submitting }) {
+  function updateType(type) {
+    onChange({
+      ...form,
+      type,
+      path: type === "json" ? "" : "samples/orders.csv",
+    });
+  }
+
   return (
     <section className="toolbar">
       <form className="source-form" onSubmit={onSubmit}>
@@ -12,7 +20,14 @@ export function SourceForm({ form, onChange, onRefresh, onSubmit, submitting }) 
           />
         </label>
         <label>
-          <span>CSV 경로</span>
+          <span>Type</span>
+          <select value={form.type} onChange={(event) => updateType(event.target.value)}>
+            <option value="csv">CSV</option>
+            <option value="json">JSON</option>
+          </select>
+        </label>
+        <label>
+          <span>File 경로</span>
           <input
             value={form.path}
             onChange={(event) => onChange({ ...form, path: event.target.value })}
