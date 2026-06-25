@@ -400,9 +400,9 @@ case "${1:-}" in
         ;;
       view)
         if [[ "${*: -2:1}" == "--jq" ]]; then
-          printf 'MERGED\n'
+          printf '%s\n' "${FAKE_GH_PR_STATE:-MERGED}"
         else
-          printf '{"state":"MERGED"}\n'
+          printf '{"state":"%s"}\n' "${FAKE_GH_PR_STATE:-MERGED}"
         fi
         exit 0
         ;;
@@ -416,9 +416,9 @@ case "${1:-}" in
         ;;
       view)
         if [[ "${*: -2:1}" == "--jq" ]]; then
-          printf 'CLOSED\n'
+          printf '%s\n' "${FAKE_GH_ISSUE_STATE:-CLOSED}"
         else
-          printf '{"state":"CLOSED"}\n'
+          printf '{"state":"%s"}\n' "${FAKE_GH_ISSUE_STATE:-CLOSED}"
         fi
         exit 0
         ;;
@@ -667,6 +667,36 @@ case_status_uses_remote_pr_state_for_stale_sync() {
     rg -q "Stale sync warning: sync.md merge status 'open' differs from GitHub PR state 'MERGED'" /tmp/harness-remote-pr-status.out
     rg -q "Phase is merged and linked issue is closed according to GitHub" /tmp/harness-remote-pr-status.out
     ! rg -q "PR이 이미 열려 있습니다" /tmp/harness-remote-pr-status.out
+  )
+}
+
+case_status_does_not_warn_on_state_case_only_difference() {
+  local repo="${tmp_root}/remote-pr-status-case"
+  copy_repo "$repo"
+  (
+    cd "$repo"
+    local fake_bin
+    fake_bin="$(install_fake_gh "$repo")"
+    PATH="${fake_bin}:$PATH"
+    FAKE_GH_PR_STATE="OPEN"
+    FAKE_GH_ISSUE_STATE="OPEN"
+    export FAKE_GH_PR_STATE FAKE_GH_ISSUE_STATE
+    local base
+    base="$(base_commit)"
+    local workspace="docs/workflows/test/harness-remote-pr-status-case"
+    write_common_workspace "$workspace" "complete" "passed" "accepted" "$base"
+    awk '
+      /^- pushed branch:/ { print "- pushed branch: test/harness-remote-pr-status-case"; next }
+      /^- PR link:/ { print "- PR link: https://example.invalid/pull/99"; next }
+      /^- merge status:/ { print "- merge status: open"; next }
+      /^- issue close status:/ { print "- issue close status: open"; next }
+      { print }
+    ' "${workspace}/sync.md" > "${workspace}/sync.md.tmp"
+    mv "${workspace}/sync.md.tmp" "${workspace}/sync.md"
+    git add "$workspace"
+    git commit -q -m "remote pr status case fixture"
+    scripts/status-workflow.sh "$workspace" > /tmp/harness-remote-pr-status-case.out
+    ! rg -q "Stale sync warning" /tmp/harness-remote-pr-status-case.out
   )
 }
 
@@ -966,6 +996,7 @@ run_expect_failure "complete workspace with missing pre-merge sync fails" case_m
 run_expect_success "status workflow reports Source of Truth proposal status" case_status_reports_sot
 run_expect_success "existing PR status does not recommend auto PR" case_existing_pr_status_does_not_recommend_auto_pr
 run_expect_success "status workflow uses remote PR state for stale sync" case_status_uses_remote_pr_state_for_stale_sync
+run_expect_success "status workflow ignores state case-only differences" case_status_does_not_warn_on_state_case_only_difference
 run_expect_success "branch queue uses remote PR state for stale sync" case_list_active_uses_remote_pr_state_for_stale_sync
 run_expect_success "complete PR-ready status recommends auto PR then checkpoint" case_complete_pr_ready_status_recommends_auto_pr_then_checkpoint
 run_expect_success "remote reconciliation status recommends auto PR" case_remote_reconciliation_status_recommends_auto_pr

@@ -85,7 +85,11 @@ remote_issue_state() {
 stale_note() {
   local local_value="$1"
   local remote_value="$2"
-  [[ -n "$local_value" && -n "$remote_value" && "$local_value" != "$remote_value" ]]
+  local local_normalized
+  local remote_normalized
+  local_normalized="$(printf '%s' "$local_value" | tr '[:lower:]' '[:upper:]')"
+  remote_normalized="$(printf '%s' "$remote_value" | tr '[:lower:]' '[:upper:]')"
+  [[ -n "$local_normalized" && -n "$remote_normalized" && "$local_normalized" != "$remote_normalized" ]]
 }
 
 emptyish() {
