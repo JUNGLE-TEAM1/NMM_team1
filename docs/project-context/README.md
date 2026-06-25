@@ -26,3 +26,4 @@
 | 경로 | 설명 | 우선 확인 문서 |
 | --- | --- | --- |
 | `docs/project-context/asklake-week2-module-plan/` | AskLake 2주차 모듈 분업, 대용량/복합 데이터셋 조작 E2E, 결정 옵션, 확정 결정 로그, 공통 계약/병렬 실행 프롬프트, 회의 공유 문서 | `README.md`, `decisions.md`, `contract-setup-prompt.md`, `query-result-contract-prompt.md`, `query-result-contract-execution-prompt.md`, `lite-parallel-manifest-prompt.md` |
+| `docs/project-context/ad-hoc-main-backup-tag-prompt.md` | 사용자가 명시적으로 요청했을 때만 `origin/main`을 날짜별 backup tag로 남기는 보조 프롬프트 | 해당 파일 |
