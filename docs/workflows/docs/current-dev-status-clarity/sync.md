@@ -43,7 +43,7 @@ main 동기화와 integration readiness를 기록한다.
 - issue link: 
 - issue creation result: not requested
 - PR closing keyword: 
-- pushed branch:
-- PR link:
-- merge status:
+- pushed branch: `origin/codex/current-dev-status-clarity`
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/77
+- merge status: PR open; CI pending
 - issue close status:
