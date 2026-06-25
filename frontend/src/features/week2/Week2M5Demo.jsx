@@ -1,4 +1,4 @@
-import { ArrowRight, CircleDashed, Database, FileJson, Play, RefreshCw, ServerCog, Workflow } from "lucide-react";
+import { Database, FileJson, Play, RefreshCw, ServerCog, Workflow } from "lucide-react";
 import { useState } from "react";
 
 import { getWeek2Catalog, runWeek2Workflow } from "../../api/week2Api";
@@ -6,14 +6,6 @@ import { getWeek2Catalog, runWeek2Workflow } from "../../api/week2Api";
 const EXECUTOR_OPTIONS = [
   { value: "local_runner", label: "Local" },
   { value: "airflow", label: "Airflow" },
-];
-
-const WORKFLOW_NODES = [
-  { id: "node_source_reviews", type: "Source", label: "원본 읽기", output: "artifact_reviews_raw" },
-  { id: "node_filter_reviews", type: "Select/Filter", label: "컬럼 고르기", output: "artifact_reviews_selected" },
-  { id: "node_normalize_reviews", type: "Cast/Normalize", label: "값 정리", output: "artifact_reviews_silver" },
-  { id: "node_aggregate_reviews", type: "Aggregate", label: "상품별 집계", output: "artifact_reviews_gold" },
-  { id: "node_load_reviews", type: "Load", label: "결과 저장", output: "dataset_reviews_gold" },
 ];
 
 export function Week2M5Demo() {
@@ -84,8 +76,6 @@ export function Week2M5Demo() {
         </button>
       </div>
 
-      <NodeBoard run={run} />
-
       <div className="week2-grid">
         <MetricPanel
           icon={<FileJson size={18} aria-hidden="true" />}
@@ -123,96 +113,6 @@ export function Week2M5Demo() {
   );
 }
 
-function NodeBoard({ run }) {
-  const taskResults = new Map((run?.task_results || []).map((task) => [task.node_id, task]));
-  const nodeOutputs = new Map((run?.node_outputs || []).map((output) => [output.node_id, output]));
-  const nodes = WORKFLOW_NODES.map((node) => ({
-    ...node,
-    task: taskResults.get(node.id),
-    outputPreview: nodeOutputs.get(node.id),
-  }));
-
-  return (
-    <div className="node-board">
-      <div className="node-board-title">
-        <CircleDashed size={18} aria-hidden="true" />
-        <h3>Node Board</h3>
-      </div>
-      <div className="node-flow" aria-label="Week 2 workflow nodes">
-        {nodes.map((node, index) => (
-          <div className="node-step" key={node.id}>
-            <NodeCard index={index} node={node} />
-            {index < nodes.length - 1 ? <ArrowRight className="node-arrow" size={22} aria-hidden="true" /> : null}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function NodeCard({ index, node }) {
-  const status = node.task?.status || "waiting";
-  const previewRows = node.outputPreview?.preview_rows || [];
-  return (
-    <article className={`workflow-node ${status}`}>
-      <div className="node-topline">
-        <span>{String(index + 1).padStart(2, "0")}</span>
-        <strong>{status}</strong>
-      </div>
-      <div className="node-heading">
-        <h4>{node.label}</h4>
-        <span>{node.type}</span>
-      </div>
-      <dl className="node-stats">
-        <div>
-          <dt>rows</dt>
-          <dd>{valueOrDash(node.task?.row_count ?? node.outputPreview?.row_count)}</dd>
-        </div>
-        <div>
-          <dt>bytes</dt>
-          <dd>{valueOrDash(node.task?.bytes ?? node.outputPreview?.bytes)}</dd>
-        </div>
-      </dl>
-      <div className="node-output">
-        <span>output</span>
-        <strong>{node.outputPreview?.output || node.output}</strong>
-      </div>
-      <PreviewRows rows={previewRows} />
-    </article>
-  );
-}
-
-function PreviewRows({ rows }) {
-  if (!rows.length) {
-    return <div className="node-preview empty-preview">-</div>;
-  }
-
-  const columns = [...new Set(rows.flatMap((row) => Object.keys(row)))];
-
-  return (
-    <div className="node-preview node-preview-table">
-      <table>
-        <thead>
-          <tr>
-            {columns.map((column) => (
-              <th key={column}>{column}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row, rowIndex) => (
-            <tr key={`${rowIndex}-${Object.values(row).join("-")}`}>
-              {columns.map((column) => (
-                <td key={column}>{formatCellValue(row[column])}</td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
 function MetricPanel({ icon, title, rows }) {
   return (
     <div className="week2-card">
@@ -236,12 +136,3 @@ function valueOrDash(value) {
   return value === null || value === undefined ? "-" : value;
 }
 
-function formatCellValue(value) {
-  if (value === null || value === undefined) {
-    return "-";
-  }
-  if (typeof value === "boolean") {
-    return value ? "true" : "false";
-  }
-  return String(value);
-}

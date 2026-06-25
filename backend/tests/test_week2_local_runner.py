@@ -43,11 +43,6 @@ def test_week2_local_runner_executes_supported_nodes_in_order(tmp_path: Path) ->
     assert result.output_bytes and result.output_bytes > 0
     assert result.task_results[0]["bytes"] == result.bytes
     assert result.task_results[-1]["bytes"] == result.output_bytes
-    assert result.node_outputs is not None
-    assert [output["node_id"] for output in result.node_outputs] == ["node_source", "node_load"]
-    assert result.node_outputs[0]["label"] == "원본 읽기"
-    assert result.node_outputs[0]["preview_rows"][0]["review_id"] == "R1"
-    assert result.node_outputs[-1]["path"] == result.output_path
     assert result.output_path
     assert Path(result.output_path).exists()
     assert result.logs[-1]["message"] == "fallback_succeeded"

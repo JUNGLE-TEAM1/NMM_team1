@@ -1,10 +1,4 @@
-{"review_id":"R001","product_id":"B001","rating":"5.0","review_text":"Great battery life","review_time":"2026/06/20 10:00:00","verified_purchase":true,"marketplace":"US","helpful_votes":12,"debug_trace_id":"raw-001"}
-{"review_id":"R002","product_id":"B001","rating":"4.0","review_text":"Good value, packaging was dented","review_time":"2026/06/21 11:30:00","verified_purchase":true,"marketplace":"US","helpful_votes":3,"debug_trace_id":"raw-002"}
-{"review_id":"R003","product_id":"B001","rating":"3.0","review_text":"Average after a week","review_time":"2026/06/22 08:10:00","verified_purchase":false,"marketplace":"US","helpful_votes":1,"debug_trace_id":"raw-003"}
-{"review_id":"R004","product_id":"B002","rating":"2.0","review_text":"Arrived late","review_time":"2026/06/22 09:15:00","verified_purchase":false,"marketplace":"CA","helpful_votes":5,"debug_trace_id":"raw-004"}
-{"review_id":"R005","product_id":"B002","rating":"3.0","review_text":"Works but feels cheap","review_time":"2026/06/22 16:40:00","verified_purchase":true,"marketplace":"CA","helpful_votes":2,"debug_trace_id":"raw-005"}
-{"review_id":"R006","product_id":"B003","rating":"5.0","review_text":"Would buy again","review_time":"2026/06/23 14:45:00","verified_purchase":true,"marketplace":"UK","helpful_votes":9,"debug_trace_id":"raw-006"}
-{"review_id":"R007","product_id":"B003","rating":"5.0","review_text":"Perfect for travel","review_time":"2026/06/23 18:20:00","verified_purchase":true,"marketplace":"UK","helpful_votes":7,"debug_trace_id":"raw-007"}
-{"review_id":"R008","product_id":"B003","rating":"4.0","review_text":"Solid quality","review_time":"2026/06/24 07:05:00","verified_purchase":true,"marketplace":"UK","helpful_votes":4,"debug_trace_id":"raw-008"}
-{"review_id":"R009","product_id":"B004","rating":"1.0","review_text":"Stopped working quickly","review_time":"2026/06/24 12:00:00","verified_purchase":false,"marketplace":"US","helpful_votes":14,"debug_trace_id":"raw-009"}
-{"review_id":"R010","product_id":"B004","rating":"2.0","review_text":"Support was slow","review_time":"2026/06/24 20:35:00","verified_purchase":true,"marketplace":"US","helpful_votes":6,"debug_trace_id":"raw-010"}
+{"review_id":"R001","product_id":"B001","rating":5,"review_text":"Great battery life","review_time":"2026-06-20T10:00:00Z","verified_purchase":true}
+{"review_id":"R002","product_id":"B001","rating":4,"review_text":"Good value","review_time":"2026-06-21T11:30:00Z","verified_purchase":true}
+{"review_id":"R003","product_id":"B002","rating":2,"review_text":"Arrived late","review_time":"2026-06-22T09:15:00Z","verified_purchase":false}
+{"review_id":"R004","product_id":"B003","rating":5,"review_text":"Would buy again","review_time":"2026-06-23T14:45:00Z","verified_purchase":true}

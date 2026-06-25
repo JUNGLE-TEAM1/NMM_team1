@@ -1,7 +1,6 @@
 import json
 from collections import defaultdict
 from dataclasses import dataclass
-from datetime import UTC, datetime
 from pathlib import Path
 from time import perf_counter
 from typing import Any
@@ -27,7 +26,6 @@ class Week2RunnerResult:
     output_path: str | None = None
     output_row_count: int | None = None
     output_bytes: int | None = None
-    node_outputs: list[dict[str, Any]] | None = None
 
 
 class Week2LocalRunner:
@@ -60,7 +58,6 @@ class Week2LocalRunner:
             )
 
         task_results = []
-        node_outputs = []
         logs = [
             {"level": "info", "message": "queued"},
             {"level": "info", "message": "running"},
@@ -97,7 +94,6 @@ class Week2LocalRunner:
             task_results.append(
                 succeeded_task_result(node_id, row_count=len(rows), bytes=self._task_bytes(node_type, output_path))
             )
-            node_outputs.append(node_output_preview(node, rows, output_path))
             logs.append({"level": "info", "message": f"{node_id} succeeded as {node_type}"})
 
         input_row_count = first_task_row_count(task_results)
@@ -113,7 +109,6 @@ class Week2LocalRunner:
             output_path=str(output_path) if output_path else None,
             output_row_count=len(rows),
             output_bytes=output_bytes,
-            node_outputs=node_outputs,
         )
 
     def _missing_edge_refs(self, workflow_definition: dict[str, Any]) -> list[str]:
@@ -237,28 +232,9 @@ def cast_value(value: Any, field_type: str | None) -> Any:
         return value
     if field_type == "number":
         return float(value)
-    if field_type == "timestamp":
-        return normalize_timestamp(value)
     if field_type == "boolean":
         return bool(value)
     return value
-
-
-def normalize_timestamp(value: Any) -> Any:
-    if not isinstance(value, str):
-        return value
-
-    normalized = value.replace("/", "-").replace(" ", "T")
-    if normalized.endswith("Z"):
-        normalized = normalized[:-1] + "+00:00"
-    try:
-        parsed = datetime.fromisoformat(normalized)
-    except ValueError:
-        return value
-
-    if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=UTC)
-    return parsed.astimezone(UTC).isoformat().replace("+00:00", "Z")
 
 
 def succeeded_task_result(node_id: str, row_count: int | None = None, bytes: int | None = None) -> dict[str, Any]:
@@ -281,60 +257,6 @@ def failed_task_result(node_id: str, error: str) -> dict[str, Any]:
         "bytes": None,
         "error": error,
     }
-
-
-def node_output_preview(node: dict[str, Any], rows: list[dict[str, Any]], output_path: Path | None) -> dict[str, Any]:
-    node_type = node["type"]
-    return {
-        "node_id": node["id"],
-        "type": node_type,
-        "label": node_label(node),
-        "output": node_output_name(node),
-        "row_count": len(rows),
-        "bytes": path_size(output_path) if node_type == "Load" else None,
-        "preview_rows": preview_rows(rows),
-        "path": str(output_path) if output_path else None,
-    }
-
-
-def node_label(node: dict[str, Any]) -> str:
-    node_type = node["type"]
-    if node_type == "Source":
-        return "원본 읽기"
-    if node_type == "Select/Filter":
-        return "컬럼 고르기"
-    if node_type == "Cast/Normalize":
-        return "값 정리"
-    if node_type == "Aggregate":
-        return "상품별 집계"
-    if node_type == "Load":
-        return "결과 저장"
-    return node_type
-
-
-def node_output_name(node: dict[str, Any]) -> str:
-    outputs = node.get("outputs") or []
-    return outputs[0] if outputs else node.get("target_dataset", "output")
-
-
-def preview_rows(rows: list[dict[str, Any]], limit: int = 4, field_limit: int = 10) -> list[dict[str, Any]]:
-    return [preview_row(row, field_limit) for row in rows[:limit]]
-
-
-def preview_row(row: dict[str, Any], field_limit: int) -> dict[str, Any]:
-    preview = {}
-    for index, (key, value) in enumerate(row.items()):
-        if index >= field_limit:
-            preview["..."] = f"+{len(row) - field_limit} fields"
-            break
-        preview[key] = truncate_preview_value(value)
-    return preview
-
-
-def truncate_preview_value(value: Any) -> Any:
-    if isinstance(value, str) and len(value) > 44:
-        return f"{value[:41]}..."
-    return value
 
 
 def repo_root() -> Path:

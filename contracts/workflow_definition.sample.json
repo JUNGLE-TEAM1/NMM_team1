@@ -16,7 +16,7 @@
       "id": "node_filter_reviews",
       "type": "Select/Filter",
       "config": {
-        "columns": ["review_id", "product_id", "rating", "review_time"]
+        "columns": ["review_id", "product_id", "rating", "review_text", "review_time", "verified_purchase"]
       },
       "inputs": ["artifact_reviews_raw"],
       "outputs": ["artifact_reviews_selected"]
