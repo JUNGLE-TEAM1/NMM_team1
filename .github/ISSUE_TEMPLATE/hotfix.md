@@ -1,7 +1,7 @@
 ---
-name: Hotfix
+name: 긴급 수정
 about: 현재 Phase 흐름을 잠시 멈추고 긴급 수정이 필요한 문제를 기록합니다.
-title: "[Hotfix] "
+title: "[긴급수정] "
 labels: ["hotfix"]
 assignees: ""
 ---

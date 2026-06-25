@@ -1,7 +1,7 @@
 ---
 name: 문서 / 운영 개선
 about: 문서, 하네스 운영, 검증 절차, 템플릿 개선을 제안합니다.
-title: "[Docs/Ops] "
+title: "[문서/운영] "
 labels: ["documentation", "ops"]
 assignees: ""
 ---
