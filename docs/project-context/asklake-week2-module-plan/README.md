@@ -12,12 +12,13 @@
 
 1. `decisions.md`
 2. `plan.md`
-3. `contract-setup-prompt.md`
-4. `query-result-contract-prompt.md`
-5. `query-result-contract-execution-prompt.md`
-6. `lite-parallel-manifest-prompt.md`
-7. `decision-options.md`
-8. 필요 시 `meeting-summary.md`, `meeting-decision-options.md`
+3. `m1-ui-shell-plan.md`
+4. `contract-setup-prompt.md`
+5. `query-result-contract-prompt.md`
+6. `query-result-contract-execution-prompt.md`
+7. `lite-parallel-manifest-prompt.md`
+8. `decision-options.md`
+9. 필요 시 `meeting-summary.md`, `meeting-decision-options.md`
 
 자동 또는 반자동 데이터 활용에서도 위 순서를 기본값으로 사용한다.
 
@@ -27,6 +28,7 @@
 | --- | --- | --- |
 | `decisions.md` | canonical 최종 결정 로그 | 작업자가 가장 먼저 확인할 기준 문서 |
 | `plan.md` | 이번 주 실행 계획과 모듈별 목표 | 모듈별 산출물과 실행 순서 확인 |
+| `m1-ui-shell-plan.md` | M1 UI Shell 계획 | demo3 UI를 AskLake M1 통합 shell로 정제할 때 포함/제외 범위와 Phase 분해 확인 |
 | `contract-setup-prompt.md` | 공통 계약 설정 Phase 시작 프롬프트 | 2주차 구현 전 계약 fixture와 producer/consumer 경계를 고정할 때 사용 |
 | `query-result-contract-prompt.md` | `QueryResult` 계약 보완 프롬프트 | `SqlEngineAdapter.execute()` 반환 shape와 `AIQueryResult` fixture를 정렬할 때 사용 |
 | `query-result-contract-execution-prompt.md` | `QueryResult` 계약 보완 실행 프롬프트 | `docs/03`, `AIQueryResult` fixture, workspace/report를 실제로 보완할 때 사용 |
