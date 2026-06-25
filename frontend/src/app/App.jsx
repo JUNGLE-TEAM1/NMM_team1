@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
+  ArrowRight,
   Boxes,
   ChevronRight,
+  CircleUserRound,
   Database,
   FileJson,
   GitBranch,
@@ -10,9 +12,11 @@ import {
   ListChecks,
   Loader2,
   MessageSquareText,
+  Plus,
   RefreshCw,
   Search,
   ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 
 import { getHealth } from "../api/asklakeClient";
@@ -22,26 +26,26 @@ import "./styles.css";
 const navItems = [
   {
     path: "/sources",
-    label: "Source",
-    description: "M2/M3/M4 입력 연결",
+    label: "데이터 통합",
+    description: "소스 연결",
     icon: Database,
   },
   {
     path: "/schema-preview",
-    label: "Schema Preview",
-    description: "M3 스키마 추론/보정",
+    label: "스키마 미리보기",
+    description: "추론/보정",
     icon: FileJson,
   },
   {
     path: "/runs",
-    label: "Run Status",
-    description: "M5 실행 상태와 증거",
+    label: "실행/모니터링",
+    description: "Run 상태",
     icon: ListChecks,
   },
   {
     path: "/catalog",
-    label: "Catalog",
-    description: "M5 CatalogMetadata",
+    label: "데이터 카탈로그",
+    description: "Metadata",
     icon: LayoutDashboard,
   },
   {
@@ -121,6 +125,12 @@ const integrationRows = [
   ["M6 RAG/AI Query", "question, evidence, SQL result, chart", "AIQueryResult, QueryResult"],
 ];
 
+const startSteps = [
+  ["소스 연결", "기존 연결 선택 또는 새 연결 생성", Database],
+  ["원본 데이터", "테이블, 컬렉션, 경로, 토픽 선택", FileJson],
+  ["파이프라인 구성", "선택한 원본으로 캔버스 시작", GitBranch],
+];
+
 function normalizePath(pathname) {
   if (pathname === "/" || pathname === "") return "/sources";
   return navItems.some((item) => item.path === pathname) ? pathname : "/sources";
@@ -165,10 +175,13 @@ export function App() {
     <main className="m1-shell">
       <aside className="shell-sidebar" aria-label="AskLake M1 navigation">
         <div className="brand-block">
-          <div className="brand-mark">AL</div>
+          <div className="brand-logo">
+            <span>Ask</span>
+            <strong>Lake</strong>
+          </div>
           <div>
-            <p className="brand-kicker">AskLake</p>
-            <h1>M1 UI Shell</h1>
+            <p className="brand-kicker">Week 2</p>
+            <h1>Platform Core</h1>
           </div>
         </div>
 
@@ -198,17 +211,17 @@ export function App() {
         <section className="sidebar-note">
           <ShieldCheck size={18} />
           <div>
-            <strong>Demo effects removed</strong>
-            <span>전역 mock, 자동 로그인, 자동 완료 없이 연결 대기 상태만 표시합니다.</span>
+            <strong>M1 UI Shell</strong>
+            <span>데모 디자인은 유지하고, fake 실행/성공 동작은 제거했습니다.</span>
           </div>
         </section>
       </aside>
 
       <section className="shell-main">
         <header className="topbar">
-          <div>
-            <p className="eyebrow">Week 2 Platform Core</p>
-            <h2>{activeItem.label}</h2>
+          <div className="topbar-search">
+            <Search size={18} />
+            <span>데이터셋, source, pipeline 검색...</span>
           </div>
           <div className="topbar-actions">
             <button type="button" className="refresh-button" onClick={refreshHealth}>
@@ -216,6 +229,10 @@ export function App() {
               Health
             </button>
             <StatusPill health={health} />
+            <div className="user-chip" aria-label="Current demo user">
+              <CircleUserRound size={18} />
+              <span>M1</span>
+            </div>
           </div>
         </header>
 
@@ -249,12 +266,36 @@ function PageIntro({ icon: Icon, title, body, status }) {
 function SourcesPage() {
   return (
     <div className="page-stack">
-      <PageIntro
-        icon={Database}
-        status="API 연결 대기"
-        title="Source 등록 Shell"
-        body="M2, M3, M4가 각 source connector를 붙일 수 있도록 SourceConfig 계약을 먼저 보여줍니다."
+      <PageHeader
+        title="데이터 통합"
+        body="파이프라인을 만들고, 필요한 경우 연결을 보조 관리합니다."
+        actionLabel="연결 대기"
       />
+      <section className="start-panel">
+        <div className="start-panel-copy">
+          <span className="section-icon">
+            <Plus size={16} />
+          </span>
+          <div>
+            <h3>새 파이프라인 시작</h3>
+            <p>M2~M5 구현이 붙으면 이 흐름에서 source 선택, schema preview, workflow 실행으로 이어집니다.</p>
+          </div>
+        </div>
+        <div className="start-steps">
+          {startSteps.map(([title, description, Icon], index) => (
+            <article className="start-step" key={title}>
+              <span>{index + 1}</span>
+              <div>
+                <strong>
+                  <Icon size={15} />
+                  {title}
+                </strong>
+                <p>{description}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
       <div className="grid two">
         <InfoCard title="Contract" value={sourceConfig.contract} detail="Producer: M1 / Consumers: M2, M3, M4, M5" />
         <InfoCard title="Demo Tenant" value={sourceConfig.tenant_id} detail="실제 로그인/RBAC 없이 tenant_id 구조만 유지" />
@@ -273,11 +314,10 @@ function SourcesPage() {
 function SchemaPreviewPage() {
   return (
     <div className="page-stack">
-      <PageIntro
-        icon={FileJson}
-        status="M3 연결 예정"
-        title="Schema Preview / Override Shell"
+      <PageHeader
+        title="스키마 미리보기"
         body="Amazon Reviews JSON의 추론 스키마와 사용자 보정 결과를 렌더링할 위치입니다."
+        actionLabel="M3 연결 예정"
       />
       <DataTable
         columns={["field path", "type", "nullable", "override"]}
@@ -295,11 +335,10 @@ function SchemaPreviewPage() {
 function RunStatusPage() {
   return (
     <div className="page-stack">
-      <PageIntro
-        icon={GitBranch}
-        status="실행 결과 없음"
-        title="Workflow / Run Status Shell"
+      <PageHeader
+        title="실행/모니터링"
         body="M5가 WorkflowDefinition, ExecutionResult, 로그, retry 상태를 연결할 화면입니다."
+        actionLabel="실행 결과 없음"
       />
       <div className="pipeline-strip">
         {workflowDefinition.nodes.map(([type, label, detail], index) => (
@@ -324,12 +363,25 @@ function RunStatusPage() {
 function CatalogPage() {
   return (
     <div className="page-stack">
-      <PageIntro
-        icon={LayoutDashboard}
-        status="CatalogMetadata 연결 대기"
-        title="Catalog Shell"
+      <PageHeader
+        title="데이터 카탈로그"
         body="M5가 생성한 dataset metadata와 lineage를 M6가 소비할 수 있게 보여주는 화면입니다."
+        actionLabel="CatalogMetadata 연결 대기"
       />
+      <section className="catalog-feature">
+        <div className="dataset-icon">
+          <Sparkles size={22} />
+        </div>
+        <div>
+          <div className="catalog-title-row">
+            <h3>{catalogMetadata.name}</h3>
+            <span>Gold</span>
+            <span>품질 확인 대기</span>
+          </div>
+          <p>타겟 데이터셋을 찾고 구조를 확인하는 demo3 카탈로그 카드 스타일을 M1 shell에 맞춰 보존했습니다.</p>
+        </div>
+        <ArrowRight size={18} />
+      </section>
       <div className="grid three">
         <InfoCard title="Dataset" value={catalogMetadata.dataset_id} detail={catalogMetadata.name} />
         <InfoCard title="Layer" value={catalogMetadata.layer} detail="Trusted 전 gate 상태 표시 예정" />
@@ -349,11 +401,10 @@ function CatalogPage() {
 function AiQueryPage() {
   return (
     <div className="page-stack">
-      <PageIntro
-        icon={MessageSquareText}
-        status="M6 연결 대기"
-        title="AI Query Shell"
+      <PageHeader
+        title="AI Query"
         body="검증 질문, selected dataset, evidence, SQL, chart spec을 표시할 위치입니다."
+        actionLabel="M6 연결 대기"
       />
       <section className="ask-layout">
         <div className="question-box">
@@ -372,6 +423,20 @@ function AiQueryPage() {
         rows={integrationRows}
       />
     </div>
+  );
+}
+
+function PageHeader({ title, body, actionLabel }) {
+  return (
+    <header className="page-header">
+      <div>
+        <h2>{title}</h2>
+        <p>{body}</p>
+      </div>
+      <button type="button" className="ghost-action">
+        {actionLabel}
+      </button>
+    </header>
   );
 }
 

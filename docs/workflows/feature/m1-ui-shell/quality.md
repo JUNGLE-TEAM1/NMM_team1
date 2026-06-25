@@ -23,6 +23,7 @@
 | integration/contract test | `rg -n "XFlow\|xflow\|xflows\|xflow-demo" frontend/src frontend/index.html frontend/package.json` | passed | frontend에 XFlow branding/storage marker 없음 |
 | build/typecheck | `cd frontend && npm run build` | passed | Vite production build 성공 |
 | browser smoke | in-app browser, `http://127.0.0.1:5173/{sources,schema-preview,runs,catalog,ask}` | passed | 각 route expected text 확인, console error 없음 |
+| visual smoke | in-app browser, demo3-style shell | passed | 흰 sidebar, 상단 검색바, 파란 active nav, data integration start panel 확인 |
 | responsive smoke | in-app browser viewport `390x844`, `/runs` | passed | expected text 표시, horizontal overflow 없음 |
 | harness validation | `scripts/validate-harness.sh` | passed | `Harness validation passed.` |
 | strict harness validation | `scripts/validate-harness.sh --strict` | passed | `Harness validation passed.` |
