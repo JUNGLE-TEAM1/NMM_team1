@@ -176,3 +176,8 @@ class JsonRecommendationBundle(BaseModel):
     silver_catalog_metadata: CatalogMetadataDraft
     gold_recommendation: GoldRecommendation
     gold_catalog_metadata: CatalogMetadataDraft
+
+
+class Week2WorkflowRunRequest(BaseModel):
+    executor: Literal["airflow", "local_runner"] = "local_runner"
+    triggered_by: str = Field(default="demo_user", min_length=1, max_length=80)
