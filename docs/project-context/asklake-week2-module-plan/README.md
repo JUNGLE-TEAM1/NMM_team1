@@ -6,7 +6,7 @@
 
 아직 모든 세부 계약이 Source of Truth에 반영된 것은 아니므로, 구현 계약으로 확정할 내용은 공통 계약 설계 때 별도로 확인한다.
 
-현재 Source of Truth 기준에서 AskLake는 B2B SaaS Trusted Data & AI Platform을 목표로 하며, 2주차 계획은 `local/container` 단일 Demo Tenant에서 대용량/복합 데이터셋 조작과 신뢰 증거를 얇게 증명하는 실행 맥락이다. 이 묶음의 MinIO, DuckDB, Airflow, Amazon Reviews 같은 선택은 MVP 검증을 위한 local-friendly 구현 후보이며, 제품 정체성을 self-hosted로 바꾸거나 Trino/Athena/AWS 같은 후속 후보를 즉시 도입한다는 뜻이 아니다.
+현재 Source of Truth 기준에서 AskLake는 B2B SaaS Trusted Data & AI Platform을 목표로 하며, 2주차 계획은 `local/container` 단일 Demo Tenant에서 대용량/복합 데이터셋을 신뢰 가능한 분석 자산으로 만드는 흐름을 얇게 증명하는 실행 맥락이다. 이 묶음의 MinIO, DuckDB, Airflow, Amazon Reviews 같은 선택은 수집·스키마화·변환·검산·게시와 처리 증거를 local-friendly 방식으로 검증하기 위한 후보이며, 제품 정체성을 self-hosted로 바꾸거나 Trino/Athena/AWS 같은 후속 후보를 즉시 도입한다는 뜻이 아니다.
 
 ## 읽는 순서
 
