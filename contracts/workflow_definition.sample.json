@@ -1,0 +1,67 @@
+{
+  "contract": "WorkflowDefinition",
+  "producer": "M1/M5",
+  "consumers": ["M5"],
+  "tenant_id": "tenant_demo",
+  "pipeline_id": "pipeline_reviews_json_e2e",
+  "name": "Amazon Reviews JSON E2E",
+  "nodes": [
+    {
+      "id": "node_source_reviews",
+      "type": "Source",
+      "source_id": "source_amazon_reviews_demo",
+      "outputs": ["artifact_reviews_raw"]
+    },
+    {
+      "id": "node_filter_reviews",
+      "type": "Select/Filter",
+      "config": {
+        "columns": ["review_id", "product_id", "rating", "review_text", "review_time", "verified_purchase"]
+      },
+      "inputs": ["artifact_reviews_raw"],
+      "outputs": ["artifact_reviews_selected"]
+    },
+    {
+      "id": "node_normalize_reviews",
+      "type": "Cast/Normalize",
+      "schema_version": "schema_reviews_v1",
+      "inputs": ["artifact_reviews_selected"],
+      "outputs": ["artifact_reviews_silver"]
+    },
+    {
+      "id": "node_aggregate_reviews",
+      "type": "Aggregate",
+      "config": {
+        "group_by": ["product_id"],
+        "metrics": [{"name": "review_count", "operation": "count"}]
+      },
+      "inputs": ["artifact_reviews_silver"],
+      "outputs": ["artifact_reviews_gold"]
+    },
+    {
+      "id": "node_load_reviews",
+      "type": "Load",
+      "target_dataset": "dataset_reviews_gold",
+      "inputs": ["artifact_reviews_gold"],
+      "outputs": ["dataset_reviews_gold"]
+    }
+  ],
+  "edges": [
+    ["node_source_reviews", "node_filter_reviews"],
+    ["node_filter_reviews", "node_normalize_reviews"],
+    ["node_normalize_reviews", "node_aggregate_reviews"],
+    ["node_aggregate_reviews", "node_load_reviews"]
+  ],
+  "retry": {
+    "max_attempts": 2,
+    "backoff_seconds": 30
+  },
+  "target_dataset": "dataset_reviews_gold",
+  "schedule": null,
+  "status_model": ["queued", "running", "succeeded", "failed", "fallback_succeeded", "fallback_failed"],
+  "runner": {
+    "primary": "airflow",
+    "fallback": "local_runner",
+    "fallback_condition": "TODO: define concrete Airflow failure threshold before M5 adapter implementation"
+  }
+}

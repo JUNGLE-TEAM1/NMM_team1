@@ -1,0 +1,29 @@
+{
+  "contract": "SourceConfig",
+  "producer": "M1",
+  "consumers": ["M2", "M3", "M4", "M5"],
+  "tenant_id": "tenant_demo",
+  "source_id": "source_amazon_reviews_demo",
+  "source_type": "amazon_reviews_json",
+  "name": "Amazon Reviews JSON demo source",
+  "idempotency_key": "tenant_demo:source_amazon_reviews_demo:v1",
+  "connection_ref": {
+    "kind": "local_file_or_minio_object",
+    "secret_ref": null,
+    "path": "TODO: confirm Amazon Reviews demo/fixed/extended sample path during contract setup",
+    "path_status": "pending_data_location_decision"
+  },
+  "options": {
+    "sample_profile": "demo",
+    "encoding": "utf-8",
+    "format": "jsonl",
+    "sample_rows": null,
+    "sample_rows_decision": "TODO: confirm row count before M3 sample reader implementation"
+  },
+  "connection_test": {
+    "status": "pending",
+    "checked_at": null,
+    "error": null
+  },
+  "created_at": "2026-06-25T09:00:00+09:00"
+}
