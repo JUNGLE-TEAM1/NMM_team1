@@ -435,6 +435,16 @@ case "${1:-}" in
       close)
         exit 0
         ;;
+      reopen)
+        if [[ -n "${FAKE_GH_LOG:-}" ]]; then
+          printf '%s\n' "$*" >> "$FAKE_GH_LOG"
+        fi
+        if [[ "${FAKE_GH_REOPEN_FAIL:-0}" == "1" ]]; then
+          printf 'fake reopen failure\n' >&2
+          exit 1
+        fi
+        exit 0
+        ;;
     esac
     ;;
   project)
@@ -932,7 +942,8 @@ case_prepare_pr_create_sets_project_review() {
     fake_bin="$(install_fake_gh "$repo")"
     PATH="${fake_bin}:$PATH"
     FAKE_GH_LOG="/tmp/harness-prepare-pr-project-review-gh.log"
-    export FAKE_GH_LOG
+    FAKE_GH_ISSUE_STATE="OPEN"
+    export FAKE_GH_LOG FAKE_GH_ISSUE_STATE
     rm -f "$FAKE_GH_LOG"
     local base
     base="$(base_commit)"
@@ -944,9 +955,72 @@ case_prepare_pr_create_sets_project_review() {
     scripts/prepare-pr.sh --create-pr "$workspace" > /tmp/harness-prepare-pr-project-review.out
 
     test -f "$FAKE_GH_LOG"
+    ! rg -q -- "issue reopen 1" "$FAKE_GH_LOG"
     rg -q -- "project item-add 3 --owner JUNGLE-TEAM1 --url https://github.com/JUNGLE-TEAM1/NMM_team1/issues/1 --format json --jq .id" "$FAKE_GH_LOG"
     rg -q -- "project item-edit --id PVTI_fake --project-id PVT_fake --field-id PVTSSF_fake --single-select-option-id 209b4527" "$FAKE_GH_LOG"
     rg -q -- "- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/99" "$workspace/sync.md"
+    rg -q -- "- issue close status: open" "$workspace/sync.md"
+    rg -q -- "- issue reopen result: already open" "$workspace/sync.md"
+    rg -q -- "- issue project result: set to Review in JUNGLE-TEAM1 project 3" "$workspace/sync.md"
+  )
+}
+
+case_prepare_pr_reopens_closed_issue_before_project_review() {
+  local repo="${tmp_root}/prepare-pr-reopen-closed-issue"
+  copy_repo "$repo"
+  (
+    cd "$repo"
+    local fake_bin
+    fake_bin="$(install_fake_gh "$repo")"
+    PATH="${fake_bin}:$PATH"
+    FAKE_GH_LOG="/tmp/harness-prepare-pr-reopen-closed-gh.log"
+    FAKE_GH_ISSUE_STATE="CLOSED"
+    export FAKE_GH_LOG FAKE_GH_ISSUE_STATE
+    rm -f "$FAKE_GH_LOG"
+    local base
+    base="$(base_commit)"
+    local workspace="docs/workflows/test/harness-reopen-closed"
+    write_common_workspace "$workspace" "complete" "passed" "accepted" "$base"
+    git add "$workspace"
+    git commit -q -m "reopen closed issue fixture"
+
+    scripts/prepare-pr.sh --create-pr "$workspace" > /tmp/harness-prepare-pr-reopen-closed.out
+
+    test -f "$FAKE_GH_LOG"
+    rg -q -- "issue reopen 1 --comment" "$FAKE_GH_LOG"
+    rg -q -- "project item-edit --id PVTI_fake --project-id PVT_fake --field-id PVTSSF_fake --single-select-option-id 209b4527" "$FAKE_GH_LOG"
+    rg -q -- "- issue reopen result: reopened closed issue before PR open" "$workspace/sync.md"
+    rg -q -- "- issue close status: open" "$workspace/sync.md"
+    rg -q -- "- issue project result: set to Review in JUNGLE-TEAM1 project 3" "$workspace/sync.md"
+  )
+}
+
+case_prepare_pr_records_reopen_failure_before_project_review() {
+  local repo="${tmp_root}/prepare-pr-reopen-failure"
+  copy_repo "$repo"
+  (
+    cd "$repo"
+    local fake_bin
+    fake_bin="$(install_fake_gh "$repo")"
+    PATH="${fake_bin}:$PATH"
+    FAKE_GH_LOG="/tmp/harness-prepare-pr-reopen-failure-gh.log"
+    FAKE_GH_ISSUE_STATE="CLOSED"
+    FAKE_GH_REOPEN_FAIL="1"
+    export FAKE_GH_LOG FAKE_GH_ISSUE_STATE FAKE_GH_REOPEN_FAIL
+    rm -f "$FAKE_GH_LOG"
+    local base
+    base="$(base_commit)"
+    local workspace="docs/workflows/test/harness-reopen-failure"
+    write_common_workspace "$workspace" "complete" "passed" "accepted" "$base"
+    git add "$workspace"
+    git commit -q -m "reopen failure fixture"
+
+    scripts/prepare-pr.sh --create-pr "$workspace" > /tmp/harness-prepare-pr-reopen-failure.out
+
+    test -f "$FAKE_GH_LOG"
+    rg -q -- "issue reopen 1 --comment" "$FAKE_GH_LOG"
+    rg -q -- "- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/99" "$workspace/sync.md"
+    rg -q -- "- issue reopen result: reopen failed: fake reopen failure" "$workspace/sync.md"
     rg -q -- "- issue close status: open" "$workspace/sync.md"
     rg -q -- "- issue project result: set to Review in JUNGLE-TEAM1 project 3" "$workspace/sync.md"
   )
@@ -1080,6 +1154,8 @@ run_expect_success "prepare-pr documents auto PR helper" case_prepare_pr_documen
 run_expect_success "start-workflow checkpoint excludes untracked files" case_start_workflow_checkpoint_excludes_untracked
 run_expect_success "start-workflow adds created issue to project" case_start_workflow_adds_created_issue_to_project
 run_expect_success "prepare-pr create PR sets project Review" case_prepare_pr_create_sets_project_review
+run_expect_success "prepare-pr reopens closed issue before project Review" case_prepare_pr_reopens_closed_issue_before_project_review
+run_expect_success "prepare-pr records reopen failure before project Review" case_prepare_pr_records_reopen_failure_before_project_review
 run_expect_success "prepare-pr close issue sets project Done" case_prepare_pr_close_issue_sets_project_done
 run_expect_failure "product context guard catches missing trust loop" case_product_context_guard_missing_trust_loop_fails
 run_expect_success "docs branch remote and tracking status is reported" case_docs_branch_remote_tracking_is_reported

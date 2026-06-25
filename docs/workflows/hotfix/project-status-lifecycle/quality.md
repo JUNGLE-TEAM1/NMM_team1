@@ -8,9 +8,9 @@
 
 - Applies: yes
 - Reason: harness lifecycle behavior changes scripts and workflow policy; regression coverage is required.
-- Failing test first: `scripts/test-harness.sh` would not prove PR open -> Project `Review` or open PR + closed issue mismatch before this change.
+- Failing test first: `scripts/test-harness.sh` would not prove PR open -> Project `Review`, pre-PR closed issue reopen, reopen failure evidence, or open PR + closed issue mismatch before this change.
 - Expected failure command/result: not separately run; implementation and focused regression were added in the same hotfix pass.
-- Pass command/result: `scripts/test-harness.sh` -> passed, 24 tests.
+- Pass command/result: `scripts/test-harness.sh` -> passed, 26 tests.
 - Refactor notes: lifecycle detail is centralized in `docs/11-git-sync-policy.md`; other docs keep thin references.
 
 ## Branch Checks / 브랜치 검증
@@ -18,8 +18,8 @@
 | Check | Command | Result | Evidence |
 | --- | --- | --- | --- |
 | lint | `bash -n scripts/start-workflow.sh scripts/prepare-pr.sh scripts/status-workflow.sh scripts/test-harness.sh` | passed | no syntax output |
-| unit/focused test | `scripts/test-harness.sh` | passed | Harness regression tests passed: 24 |
-| integration/contract test | `scripts/status-workflow.sh docs/workflows/hotfix/project-status-lifecycle` | passed | status summary shows complete workspace; pre-merge recorded after update |
+| unit/focused test | `scripts/test-harness.sh` | passed | Harness regression tests passed: 26 |
+| integration/contract test | `scripts/status-workflow.sh docs/workflows/hotfix/project-status-lifecycle` | passed | status summary shows PR checklist ready and no open PR / closed issue mismatch |
 | build/typecheck | n/a | n/a | Markdown/shell hotfix only |
 | harness validation | `scripts/validate-harness.sh` | passed | Harness validation passed. |
 | strict harness validation | `scripts/validate-harness.sh --strict` | passed | Harness validation passed. |

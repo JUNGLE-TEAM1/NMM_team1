@@ -10,9 +10,9 @@
 - Primary context read: `AGENTS.md`, `docs/00-layer-map.md`, `docs/04-development-guide.md`, `docs/08-development-workflow.md`, `docs/10-next-action-menu.md`, `docs/11-git-sync-policy.md`, `scripts/prepare-pr.sh`, `scripts/status-workflow.sh`, `scripts/test-harness.sh`
 - Escalated context read: none
 - Context omitted intentionally: Product/Architecture/Interface docs; Git sync policy hotfix did not change product or runtime interface.
-- Changed: PR open/create path now sets linked issue Project Status to `Review`; status summary reports open PR + closed issue mismatch; Git sync lifecycle is centralized in `docs/11` with thin references elsewhere.
-- Verified: `bash -n scripts/start-workflow.sh scripts/prepare-pr.sh scripts/status-workflow.sh scripts/test-harness.sh`; `scripts/test-harness.sh` passed 24 tests; `scripts/validate-harness.sh`; `scripts/validate-harness.sh --strict`; `scripts/status-workflow.sh docs/workflows/hotfix/project-status-lifecycle`.
-- Remaining: commit, push, PR creation.
+- Changed: PR open/create path now reopens a closed linked issue before PR open when possible, sets linked issue Project Status to `Review`, and records reopen failure as sync evidence; status summary reports open PR + closed issue mismatch as a post-PR safety guard; Git sync lifecycle is centralized in `docs/11` with thin references elsewhere.
+- Verified: `bash -n scripts/start-workflow.sh scripts/prepare-pr.sh scripts/status-workflow.sh scripts/test-harness.sh`; `git diff --check`; `scripts/test-harness.sh` passed 26 tests; `scripts/validate-harness.sh`; `scripts/validate-harness.sh --strict`; `scripts/status-workflow.sh docs/workflows/hotfix/project-status-lifecycle`.
+- Remaining: commit and push to PR #96.
 - Next context: PR review should check lifecycle layering and shell harness regressions.
 - Risk: GitHub Project field option names must remain `In Progress`, `Review`, `Done`; if Project schema changes, helper will record lookup failure in `sync.md`.
 

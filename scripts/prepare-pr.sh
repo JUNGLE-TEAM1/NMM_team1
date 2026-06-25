@@ -222,6 +222,50 @@ set_issue_project_status() {
   fi
 }
 
+ensure_issue_open_for_pr() {
+  local issue_number="$1"
+  local issue_state
+  local issue_state_status
+  local reopen_output
+  local reopen_status
+
+  if ! command -v gh >/dev/null 2>&1; then
+    printf 'skipped: GitHub CLI is not available'
+    return 0
+  fi
+
+  if ! gh auth status >/dev/null 2>&1; then
+    printf 'skipped: GitHub CLI is not authenticated'
+    return 0
+  fi
+
+  set +e
+  issue_state="$(gh issue view "$issue_number" --json state --jq .state 2>&1)"
+  issue_state_status=$?
+  set -e
+
+  if [[ "$issue_state_status" -ne 0 ]]; then
+    printf 'state lookup failed: %s' "${issue_state//$'\n'/ }"
+    return 0
+  fi
+
+  if [[ "$issue_state" != "CLOSED" ]]; then
+    printf 'already open'
+    return 0
+  fi
+
+  set +e
+  reopen_output="$(gh issue reopen "$issue_number" --comment "Reopened for active PR lifecycle. PR open requires the linked issue to remain open; merge/finalize will close it and move Project status to Done." 2>&1)"
+  reopen_status=$?
+  set -e
+
+  if [[ "$reopen_status" -eq 0 ]]; then
+    printf 'reopened closed issue before PR open'
+  else
+    printf 'reopen failed: %s' "${reopen_output//$'\n'/ }"
+  fi
+}
+
 workspace_branch() {
   case "$workspace" in
     docs/workflows/*/*)
@@ -397,6 +441,12 @@ if [[ "$create_pr" -eq 1 ]]; then
     echo "Cannot create PR: GitHub CLI is not authenticated." >&2
     rm -f "$pr_body_file"
     exit 1
+  fi
+
+  if [[ -n "$issue_number" ]]; then
+    issue_reopen_result="$(ensure_issue_open_for_pr "$issue_number")"
+    set_field "$sync_file" "- issue reopen result:" "$issue_reopen_result"
+    echo "Issue #${issue_number} reopen check: ${issue_reopen_result}"
   fi
 
   if gh pr view "$branch" --json url --jq .url >/dev/null 2>&1; then
