@@ -11,6 +11,7 @@ from app.services.ai_query import Week2AIQueryService
 from app.services.catalog_trust import CatalogTrustService
 from app.services.pipeline import PipelineService
 from app.services.source_catalog import SourceCatalogService
+from app.services.week2_workflow import Week2WorkflowService
 
 
 class AppContainer:
@@ -23,6 +24,7 @@ class AppContainer:
         self.catalog_trust_service = self.create_catalog_trust_service()
         self.source_catalog_service = self.create_source_catalog_service()
         self.pipeline_service = self.create_pipeline_service()
+        self.week2_workflow_service = self.create_week2_workflow_service()
         self.ai_query_service = self.create_ai_query_service()
 
     def create_metadata_store(self) -> MetadataStore:
@@ -45,6 +47,9 @@ class AppContainer:
 
     def create_pipeline_service(self) -> PipelineService:
         return PipelineService(self.metadata_store, self.source_connectors, self.result_store)
+
+    def create_week2_workflow_service(self) -> Week2WorkflowService:
+        return Week2WorkflowService(output_root=self.result_store.base_path / "week2")
 
     def create_ai_query_service(self) -> Week2AIQueryService:
         return Week2AIQueryService(self.sql_engine)

@@ -62,6 +62,6 @@
   "runner": {
     "primary": "airflow",
     "fallback": "local_runner",
-    "fallback_condition": "TODO: define concrete Airflow failure threshold before M5 adapter implementation"
+    "fallback_condition": "Use local_runner when the Airflow adapter is unavailable or returns any status other than succeeded"
   }
 }
