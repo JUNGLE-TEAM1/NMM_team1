@@ -22,7 +22,8 @@
 | integration/contract test | manual mapping review | passed | `contracts/source_config.sample.json`, `contracts/workflow_definition.sample.json`, `contracts/execution_result.sample.json`, `contracts/catalog_metadata.sample.json` 기준으로 Taxi mapping 초안 작성 |
 | build/typecheck |  |  |  |
 | harness validation | `scripts/validate-harness.sh` | passed | 2026-06-25 실행 결과 `Harness validation passed.` |
-| strict harness validation | `scripts/validate-harness.sh --strict` | passed | workspace state가 `draft`라 completion-only semantic checks는 skip되고 `Harness validation passed.` |
+| strict harness validation | `scripts/validate-harness.sh --strict` | passed | 2026-06-25 실행 결과 `Harness validation passed.` |
+| whitespace | `git diff --check` | passed | 출력 없음 |
 
 ## CI/CD Gate / CI-CD 게이트
 

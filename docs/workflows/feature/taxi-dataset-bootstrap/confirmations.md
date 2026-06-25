@@ -21,6 +21,7 @@ AI가 멈추고 사람 확인을 받아야 하는 지점을 기록한다.
   - external dependency
   - 공유 Source of Truth 변경
 - Human response: M5 확인 질문은 현재 PR의 blocking gate로 두지 않는다. `ExecutionResult.row_count=input trip rows`, `ExecutionResult.bytes=input bytes`, Gold URI/prefix/local fallback은 M2 기본 가정으로 문서화하고 후속 통합에서 조정한다.
+- Human response: M2는 로컬 dev용 Parquet -> PostgreSQL loader를 소유한다. 첫 batch 입력은 `public.taxi_trips`로 고정하고, File source는 후속 확장으로 남긴다. Gold output은 local Parquet path를 우선 사용하며, MinIO/S3 전환을 위해 `CatalogMetadata.s3_uri`, `storage.bucket`, `storage.prefix`, `storage.local_fallback_path` 필드를 유지한다. 오늘~내일 구현 검증은 `fixed=pickup_date 2024-01-01` 필수, `local-full-month` manual/benchmark evidence로 둔다. M5 공통 계약 구조는 따르되 Taxi 전용 공식 예시는 다음 M2 구현 branch에서 코드와 함께 승격한다.
 
 ## Scope Change Confirm / 범위 변경 확인
 

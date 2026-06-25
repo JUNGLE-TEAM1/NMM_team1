@@ -76,6 +76,24 @@ NYC TLC Yellow Taxi monthly Parquet
 이 파일은 로컬 기준 dataset이며, 전체 Taxi dataset 적재 목표를 대체하지 않는다.
 정확한 `demo`/`fixed` date range와 row 수는 이 파일 안에서 잘라 정하고, multi-month/year 단위 확장은 후속 `scale-target` branch에서 다룬다.
 
+### 로컬 dev용 loader의 의미
+
+M2는 다음 구현 branch에서 `yellow_tripdata_2024-01.parquet`를 PostgreSQL `public.taxi_trips` table로 넣는 로컬 dev용 loader를 소유한다.
+이 loader는 운영용 ingest 시스템이 아니라, M2 batch를 로컬에서 반복 검증하기 위한 준비 스크립트다.
+
+쉽게 말하면 다음 일을 한다.
+
+1. 원본 Parquet 파일은 repository에 commit하지 않고, `data/raw/taxi/yellow_tripdata_2024-01.parquet` 같은 gitignore된 경로에 둔다.
+2. loader는 Parquet path와 `ASKLAKE_DEMO_POSTGRES_DSN`을 입력으로 받아 PostgreSQL에 접속한다.
+3. `public.taxi_trips` table을 만들거나 비우고, Parquet row를 다시 적재한다.
+4. 같은 명령을 여러 번 실행해도 중복 row가 계속 쌓이지 않게 한다. 이 의미가 idempotent다.
+5. 적재 후 row count와 input bytes를 출력해 M2 batch 검증 증거로 쓴다.
+
+첫 구현에서는 `replace/load` 전략을 기본으로 둔다.
+즉, 개발 중에는 table을 새로 맞춘 뒤 다시 넣어서 항상 같은 입력 상태를 만든다.
+파일 업로드 UI, 다중 tenant ingest, 증분 적재, 운영 retry/monitoring은 이 loader 범위가 아니다.
+File source는 후속 확장으로 남기되, M2 batch 내부 경계는 `SourceConfig.connection_ref.kind`를 통해 `postgres_table`과 future `local_file_or_minio_object`가 분리될 수 있게 둔다.
+
 ## M2 Taxi 계약 mapping 초안
 
 기존 `contracts/*.sample.json`은 Amazon Reviews 예시이므로 덮어쓰지 않는다.
@@ -93,6 +111,7 @@ M2는 같은 계약 구조를 따라 아래 Taxi 전용 값을 채운다.
 | `connection_ref.secret_ref` | `ASKLAKE_DEMO_POSTGRES_DSN` 또는 M1/M5가 정한 local secret ref | 실제 credential 값은 commit하지 않는다. |
 | `connection_ref.path` | `public.taxi_trips` | PostgreSQL schema/table 후보 |
 | `options.source_file_name` | `yellow_tripdata_2024-01.parquet` | local bootstrap 원본 파일명 |
+| `options.future_file_source_supported` | `true` | 첫 구현은 PostgreSQL 우선이지만 File source 확장을 막지 않는다. |
 | `options.event_time_column` | `tpep_pickup_datetime` | daily aggregation과 freshness 기준 |
 | `options.sample_profile` | `demo`, `fixed`, `local-full-month` | 실행 범위 선택값 |
 
@@ -150,7 +169,7 @@ M5 확인은 현재 PR의 blocking gate로 두지 않는다.
 | 항목 | M2 기본 가정 | 후속 조정 조건 |
 | --- | --- | --- |
 | `ExecutionResult.row_count` | input trip row 수 | M5가 workflow 전체 row count 의미를 별도로 표준화할 때 |
-| `ExecutionResult.bytes` | input bytes read | M5가 top-level bytes를 output bytes로 표준화할 때 |
+| `ExecutionResult.bytes` | input bytes read | M5 확인 기준과 일치. |
 | task-level `bytes` | node별 input/output bytes 중 구현 가능한 값 | local runner와 Airflow adapter metric schema가 정해질 때 |
 | Gold output URI | `s3://asklake-demo/taxi/gold/daily_metrics/run_id=<run_id>/` | M5 Catalog/MinIO prefix 표준이 정해질 때 |
 | local fallback path | `data/processed/taxi/gold/daily_metrics/run_id=<run_id>/` | M1/M5 local dev setup이 다른 data root를 정할 때 |
@@ -231,17 +250,20 @@ Gold schema 후보:
 - `fixed`는 `pickup_date = 2024-01-01`로 둔다.
 - PostgreSQL table 후보는 `taxi_trips`로 둔다.
 - 첫 Gold dataset은 `gold_taxi_daily_metrics`로 둔다.
-- M5 확인 질문은 현재 PR의 blocking gate로 두지 않고, M2 기본 가정을 문서화한 뒤 후속 통합에서 조정한다.
+- M5의 공통 계약 구조는 `docs/03-interface-reference.md`와 `contracts/*.sample.json`을 따른다. Taxi 전용 공식 예시는 다음 구현 branch에서 코드와 함께 승격한다.
 - 첫 구현은 Spark를 필수로 요구하지 않고, Spark 전환이 가능한 runner 경계를 유지한다.
 - Airflow DAG 구현은 M5 책임으로 두고, M2는 Airflow/local runner가 호출 가능한 Batch 처리 단위를 제공한다.
+- M2는 로컬 dev용 Parquet -> PostgreSQL loader를 소유하고, M2 batch의 우선 입력은 `public.taxi_trips`로 둔다.
+- File source는 후속 확장으로 남기되, 첫 구현 구조에서 막지 않는다.
+- 첫 Gold output은 local Parquet path를 우선 사용하고, `s3_uri`와 MinIO/S3 prefix는 같은 계약 필드로 전환 가능하게 유지한다.
+- 오늘~내일 구현 검증은 `fixed=pickup_date 2024-01-01`을 필수 기준으로 두고, `local-full-month`는 manual/benchmark evidence로 남긴다.
 
 ## 열린 질문
 
-- PostgreSQL 적재 스크립트를 M2가 소유할지, M1/M5의 local dev setup과 분리할지.
-- Bronze/Gold Parquet의 MinIO bucket/prefix 규칙을 M5와 어떻게 맞출지.
-- `local-full-month` 실행을 PR 필수 검증으로 둘지, manual/benchmark evidence로만 둘지.
+- Bronze/Gold Parquet의 최종 MinIO bucket/prefix 규칙을 M5와 어떻게 맞출지.
 - `scale-target`에서 Spark를 언제 도입할지, 또는 local runner 성능 한계 확인 후 도입할지.
-- M5가 후속 구현에서 다른 `row_count`/`bytes` 표준을 정하면 M2 adapter mapping을 어떻게 바꿀지.
+- 일주일 안에 multi-month/year 또는 전체 Taxi dataset 적재 목표를 어느 수준의 증거로 보여줄지.
+- Taxi 전용 `SourceConfig`, `WorkflowDefinition`, `ExecutionResult`, `CatalogMetadata` 예시를 `docs/03-interface-reference.md`와 `contracts/`에 어느 branch에서 공식 반영할지.
 
 ## 링크 / 증거
 
