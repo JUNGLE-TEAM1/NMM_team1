@@ -328,6 +328,7 @@ queued, running, succeeded, failed, fallback_succeeded, fallback_failed
 ```
 
 `ExecutionResult.task_results[]` records node-level status, attempt, row count, bytes, and error. M5 owns the canonical run state; M1 displays it; M6 may use successful `CatalogMetadata` only.
+For big/complex dataset manipulation, these fields are processing evidence: they prove that transform/normalize/load produced a bounded output dataset instead of only displaying a successful UI state.
 
 Week 2 daily smoke evidence must include:
 

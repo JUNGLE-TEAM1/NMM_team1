@@ -212,6 +212,9 @@ Product Rebaseline 이후 Target MVP는 아래 신뢰 루프를 증명한다.
 Trusted Dataset -> Query/Ask -> Evidence -> Recovery
 ```
 
+이 신뢰 루프의 입력은 단순 조회용 샘플이 아니라 대용량/복합 데이터셋 조작 흐름이다.
+Target MVP는 local/container 환경에서 schema inference/user override, transform 또는 normalize, Parquet/S3-compatible output, row count/bytes/duration, SQL 검산 evidence를 남기는 경로를 우선 확인한다.
+
 R0 이후 Target MVP 실행은 R0.5 `Modular Contract Baseline`을 먼저 둔 뒤, 병렬 workstream과 integration spine으로 운영한다.
 기존 R1~R7 이름은 historical planning alias로 보존하되, 실행 순서를 강제하는 선형 queue가 아니라 workstream mapping으로 해석한다.
 

@@ -6,6 +6,8 @@
 
 아직 모든 세부 계약이 Source of Truth에 반영된 것은 아니므로, 구현 계약으로 확정할 내용은 공통 계약 설계 때 별도로 확인한다.
 
+현재 Source of Truth 기준에서 AskLake는 B2B SaaS Trusted Data & AI Platform을 목표로 하며, 2주차 계획은 `local/container` 단일 Demo Tenant에서 대용량/복합 데이터셋 조작과 신뢰 증거를 얇게 증명하는 실행 맥락이다. 이 묶음의 MinIO, DuckDB, Airflow, Amazon Reviews 같은 선택은 MVP 검증을 위한 local-friendly 구현 후보이며, 제품 정체성을 self-hosted로 바꾸거나 Trino/Athena/AWS 같은 후속 후보를 즉시 도입한다는 뜻이 아니다.
+
 ## 읽는 순서
 
 1. `decisions.md`
@@ -50,6 +52,7 @@
 ## 작업자가 따라야 할 핵심 원칙
 
 - 공통 계약 설계 전에는 세부 path, row count, sample contract 값을 임의로 확정하지 않는다.
+- 2주차 작업은 `schema inference -> transform/normalize/load -> output path/row count/bytes/duration -> SQL 검산 -> catalog/trust/evidence` 흐름의 증거를 우선한다.
 - M6는 DuckDB를 직접 import하지 않고 `SqlEngineAdapter`를 통해 호출한다.
 - 검증 질문은 Day 4 전까지 고정하지 않는다.
 - Airflow 실패 시 같은 `WorkflowDefinition`을 local runner로 실행할 수 있게 유지한다.
