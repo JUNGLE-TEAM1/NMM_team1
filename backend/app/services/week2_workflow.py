@@ -164,11 +164,18 @@ class Week2WorkflowService:
 
 
 def default_contracts_dir() -> Path:
-    return Path(__file__).resolve().parents[3] / "contracts"
+    return repo_root() / "contracts"
 
 
 def default_week2_output_root() -> Path:
-    return Path(__file__).resolve().parents[3] / "data" / "week2"
+    return repo_root() / "data" / "week2"
+
+
+def repo_root() -> Path:
+    for parent in Path(__file__).resolve().parents:
+        if (parent / "contracts").is_dir():
+            return parent
+    return Path(__file__).resolve().parents[3]
 
 
 def now_iso() -> str:

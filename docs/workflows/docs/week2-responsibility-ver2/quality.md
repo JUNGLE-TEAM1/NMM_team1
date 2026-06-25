@@ -22,6 +22,8 @@
 | diff whitespace | `git diff --check` | passed | markdown 공백 오류 없음 |
 | harness validation | `scripts/validate-harness.sh` | passed | Harness validation passed. |
 | strict harness validation | `scripts/validate-harness.sh --strict` | passed | initial failure from invalid `pending` quality status was fixed; rerun passed |
+| backend focused tests | `PYTHONPATH=backend python3 -m pytest backend/tests/test_week2_workflow_catalog.py backend/tests/test_week2_local_runner.py backend/tests/test_health.py -q` | passed | 16 passed after Docker contract/sample path fix |
+| backend container smoke focused tests | `docker build -f infra/docker/backend.Dockerfile -t asklake-backend:week2-contract-path . && docker run --rm asklake-backend:week2-contract-path python -m pytest tests/test_health.py tests/test_week2_workflow_catalog.py tests/test_week2_local_runner.py -q` | passed | 16 passed; fixes PR #118 `container-smoke` path failure |
 
 ## CI/CD Gate / CI-CD 게이트
 

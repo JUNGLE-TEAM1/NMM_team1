@@ -163,7 +163,21 @@ class Week2LocalRunner:
     def _source_path(self) -> Path:
         if self.source_config is None:
             raise Week2LocalRunnerError("SourceConfig is required for local runner execution")
-        return repo_root() / self.source_config["connection_ref"]["path"]
+        requested = Path(self.source_config["connection_ref"]["path"])
+        if requested.is_absolute():
+            candidates = [requested]
+        else:
+            root = repo_root()
+            candidates = [
+                root / requested,
+                root / requested.name,
+                root / "samples" / requested.name,
+            ]
+
+        for candidate in candidates:
+            if candidate.exists():
+                return candidate
+        return candidates[0]
 
     def _source_bytes(self) -> int | None:
         if self.source_config is None:
@@ -260,6 +274,9 @@ def failed_task_result(node_id: str, error: str) -> dict[str, Any]:
 
 
 def repo_root() -> Path:
+    for parent in Path(__file__).resolve().parents:
+        if (parent / "contracts").is_dir():
+            return parent
     return Path(__file__).resolve().parents[3]
 
 
