@@ -66,7 +66,12 @@ class Week2AIQueryService:
         )
 
     def _default_catalog_path(self) -> Path:
-        return Path(__file__).resolve().parents[3] / "contracts" / "catalog_metadata.sample.json"
+        filename = Path("contracts") / "catalog_metadata.sample.json"
+        for parent in Path(__file__).resolve().parents:
+            candidate = parent / filename
+            if candidate.exists():
+                return candidate
+        return Path.cwd() / filename
 
     def _load_catalog(self) -> dict[str, Any]:
         return json.loads(self.catalog_path.read_text(encoding="utf-8"))

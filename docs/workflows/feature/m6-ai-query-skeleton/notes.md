@@ -7,6 +7,8 @@
 - M6 skeleton은 `contracts/catalog_metadata.sample.json`을 읽어 fixture 기반 retrieval/template SQL을 수행한다.
 - `POST /api/week2/ai/query` route를 추가해 M1이 `AIQueryResult` shape를 바로 소비할 수 있게 했다.
 - 실제 DuckDB/LLM/vector RAG는 이번 Phase 범위에서 제외했다.
+- PR #102 `container-smoke` 실패 원인은 Docker image 안에 `contracts/catalog_metadata.sample.json`이 없어 M6 route test가 fixture를 읽지 못한 것이었다.
+- `Week2AIQueryService`의 fixture path lookup을 상위 경로 탐색으로 바꾸고 backend Docker image에 `contracts/`를 복사하도록 수정했다.
 
 ## 결정
 
@@ -23,3 +25,4 @@
 - GitHub issue: https://github.com/JUNGLE-TEAM1/NMM_team1/issues/100
 - Focused test: `PYTHONPATH=backend /private/tmp/nmm_team1_m6_venv/bin/python -m pytest backend/tests/test_week2_ai_query.py -q` -> 4 passed
 - Backend tests: `PYTHONPATH=backend /private/tmp/nmm_team1_m6_venv/bin/python -m pytest backend/tests -q` -> 22 passed
+- Local Docker build: blocked because Docker daemon was unavailable at `unix:///Users/jungilyou/.docker/run/docker.sock`

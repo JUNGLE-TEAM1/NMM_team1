@@ -22,6 +22,7 @@
 | integration/contract test | `PYTHONPATH=backend /private/tmp/nmm_team1_m6_venv/bin/python -m pytest backend/tests -q` | pass | 22 passed |
 | build/typecheck | `python3 -m compileall backend/app` | pass | backend app compiled |
 | JSON contract validation | `jq -e . contracts/*.sample.json >/dev/null` | pass | all fixture JSON valid |
+| container backend pytest | `docker build -f infra/docker/backend.Dockerfile -t asklake-backend:m6-fix .` | blocked locally | Docker daemon unavailable: `connect: no such file or directory`; CI `container-smoke` previously failed because contracts fixture was not copied into image, fixed by copying `contracts/` and robust fixture path lookup |
 | harness validation | `scripts/validate-harness.sh` | not run separately | covered by strict command |
 | strict harness validation | `scripts/validate-harness.sh --strict` | pass | Harness validation passed |
 
