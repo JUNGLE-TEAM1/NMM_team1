@@ -20,30 +20,30 @@ main 동기화와 integration readiness를 기록한다.
 
 ## Pre-Merge Sync
 
-- main commit: 304c41b
-- conflicts: not checked after branch creation
-- validation: local backend/harness validation passed
-- result: deferred
-- deferral reason: 사람 확인 전 pull/merge/rebase/push/PR action을 실행하지 않는 규칙에 따라 pre-merge sync는 보류
+- main commit: a49fcdb
+- conflicts: resolved
+- validation: backend/frontend/contract validation passed; strict harness passed after sync metadata refresh
+- result: completed
+- deferral reason: not applicable; 사람 요청에 따라 PR merge 준비를 위해 `origin/main` 병합
 
 ## PR Conflict Resolution
 
-- conflict detected at: not applicable
-- conflict detection command: not run
-- conflict type: none known
-- affected files: not applicable
-- resolution path: not applicable
-- resolved files: not applicable
-- revalidation: local validation passed
-- remaining risk: remote PR conflict는 PR 생성 전까지 알 수 없음
+- conflict detected at: 2026-06-25
+- conflict detection command: `git merge origin/main --no-edit`
+- conflict type: M5 workflow router/container wiring overlapped with M6 AI query router/container wiring
+- affected files: `backend/app/core/app_factory.py`, `backend/app/core/container.py`
+- resolution path: keep both `create_week2_workflow_router` and `create_week2_ai_query_router`; keep both `week2_workflow_service` and `ai_query_service`
+- resolved files: `backend/app/core/app_factory.py`, `backend/app/core/container.py`
+- revalidation: `PYTHONPATH=backend ./.venv/bin/pytest backend/tests -q` -> 36 passed; `npm run build` in `frontend/` -> passed
+- remaining risk: actual external Airflow/MinIO/Catalog DB integration remains follow-up scope
 
 ## Push / PR
 
 - linked GitHub issue: #101
 - issue link: https://github.com/JUNGLE-TEAM1/NMM_team1/issues/101
 - issue creation result: created for Day 3 Catalog persistence handoff
-- PR closing keyword: none
-- pushed branch: not pushed
-- PR link: none
-- merge status: not requested
-- issue close status: not applicable
+- PR closing keyword: Closes #101
+- pushed branch: origin/codex/week2-workflow-catalog
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/116
+- merge status: open
+- issue close status: open
