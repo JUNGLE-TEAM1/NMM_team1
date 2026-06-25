@@ -4,31 +4,41 @@ import {
   ArrowRight,
   Boxes,
   ChevronRight,
-  CircleUserRound,
   Database,
   FileJson,
   GitBranch,
+  GitMerge,
   LayoutDashboard,
   ListChecks,
   Loader2,
+  LogOut,
   MessageSquareText,
   Plus,
   RefreshCw,
   Search,
   ShieldCheck,
   Sparkles,
+  Trash2,
+  Wrench,
 } from "lucide-react";
 
 import { getHealth } from "../api/asklakeClient";
+import asklakeLogo from "../assets/asklake-logo.png";
 import { StatusPill } from "../components/StatusPill";
 import "./styles.css";
 
 const navItems = [
   {
+    path: "/catalog",
+    label: "데이터 카탈로그",
+    description: "Metadata",
+    icon: LayoutDashboard,
+  },
+  {
     path: "/sources",
     label: "데이터 통합",
     description: "소스 연결",
-    icon: Database,
+    icon: GitMerge,
   },
   {
     path: "/schema-preview",
@@ -43,16 +53,22 @@ const navItems = [
     icon: ListChecks,
   },
   {
-    path: "/catalog",
-    label: "데이터 카탈로그",
-    description: "Metadata",
-    icon: LayoutDashboard,
-  },
-  {
     path: "/ask",
     label: "AI Query",
     description: "M6 AIQueryResult",
     icon: MessageSquareText,
+  },
+  {
+    path: "/dashboard",
+    label: "Dashboard",
+    description: "M6 chart",
+    icon: LayoutDashboard,
+  },
+  {
+    path: "/admin",
+    label: "사용자/권한",
+    description: "RBAC",
+    icon: Wrench,
   },
 ];
 
@@ -131,8 +147,49 @@ const startSteps = [
   ["파이프라인 구성", "선택한 원본으로 캔버스 시작", GitBranch],
 ];
 
+const pipelineRows = [
+  {
+    name: "고객 주문 통합 Silver Dataset",
+    owner: "데이터 엔지니어링 팀",
+    type: "결과 데이터셋",
+    status: "활성",
+    mode: "배치",
+    purpose: "MongoDB 고객 프로필 컬럼과 PostgreSQL 주문 컬럼을 user_id 기준으로 조인해 분석 가능한 형태로 정제한 Silver Dataset입니다.",
+    updated: "2026. 6. 25. 오후 4:59:27",
+  },
+  {
+    name: "고객 주문 원본 Bronze Dataset",
+    owner: "데이터 엔지니어링 팀",
+    type: "결과 데이터셋",
+    status: "활성",
+    mode: "배치",
+    purpose: "MongoDB 고객 프로필과 주문 거래 PostgreSQL 데이터를 원본 형태로 S3 Bronze 영역에 적재한 데이터셋입니다.",
+    updated: "2026. 6. 25. 오후 4:59:27",
+  },
+  {
+    name: "mongo_customer_profiles",
+    owner: "고객 플랫폼 팀",
+    type: "수집 대상",
+    status: "비활성",
+    mode: "배치",
+    purpose: "MongoDB 고객 프로필 컬렉션에서 고객 등급과 지역 정보를 가져옵니다.",
+    updated: "2026. 6. 25. 오후 4:59:27",
+  },
+  {
+    name: "postgres_order_transactions",
+    owner: "주문 플랫폼 팀",
+    type: "수집 대상",
+    status: "비활성",
+    mode: "배치",
+    purpose: "PostgreSQL 주문 테이블에서 주문 금액과 상태 컬럼을 가져옵니다.",
+    updated: "2026. 6. 25. 오후 4:59:27",
+  },
+];
+
 function normalizePath(pathname) {
-  if (pathname === "/" || pathname === "") return "/sources";
+  if (pathname === "/" || pathname === "" || pathname === "/dataset") return "/sources";
+  if (pathname === "/etl") return "/runs";
+  if (pathname === "/query") return "/ask";
   return navItems.some((item) => item.path === pathname) ? pathname : "/sources";
 }
 
@@ -162,7 +219,8 @@ export function App() {
 
   function navigate(path) {
     const nextPath = normalizePath(path);
-    window.history.pushState({}, "", nextPath);
+    const displayPath = nextPath === "/sources" ? "/dataset" : nextPath;
+    window.history.pushState({}, "", displayPath);
     setActivePath(nextPath);
   }
 
@@ -175,14 +233,7 @@ export function App() {
     <main className="m1-shell">
       <aside className="shell-sidebar" aria-label="AskLake M1 navigation">
         <div className="brand-block">
-          <div className="brand-logo">
-            <span>Ask</span>
-            <strong>Lake</strong>
-          </div>
-          <div>
-            <p className="brand-kicker">Week 2</p>
-            <h1>Platform Core</h1>
-          </div>
+          <img className="brand-logo" src={asklakeLogo} alt="AskLake" />
         </div>
 
         <nav className="nav-list">
@@ -208,20 +259,21 @@ export function App() {
           })}
         </nav>
 
-        <section className="sidebar-note">
-          <ShieldCheck size={18} />
-          <div>
-            <strong>M1 UI Shell</strong>
-            <span>데모 디자인은 유지하고, fake 실행/성공 동작은 제거했습니다.</span>
-          </div>
-        </section>
+        <button type="button" className="logout-button">
+          <LogOut size={16} />
+          로그아웃
+        </button>
       </aside>
 
       <section className="shell-main">
+        <button type="button" className="collapse-button" aria-label="Collapse sidebar">
+          <ChevronRight size={14} />
+        </button>
         <header className="topbar">
           <div className="topbar-search">
             <Search size={18} />
             <span>데이터셋, source, pipeline 검색...</span>
+            <kbd>/</kbd>
           </div>
           <div className="topbar-actions">
             <button type="button" className="refresh-button" onClick={refreshHealth}>
@@ -230,8 +282,11 @@ export function App() {
             </button>
             <StatusPill health={health} />
             <div className="user-chip" aria-label="Current demo user">
-              <CircleUserRound size={18} />
-              <span>M1</span>
+              <span>S</span>
+            </div>
+            <div className="user-meta">
+              <strong>study</strong>
+              <span>관리자</span>
             </div>
           </div>
         </header>
@@ -242,7 +297,10 @@ export function App() {
           {activePath === "/runs" ? <RunStatusPage /> : null}
           {activePath === "/catalog" ? <CatalogPage /> : null}
           {activePath === "/ask" ? <AiQueryPage /> : null}
+          {activePath === "/dashboard" ? <DashboardPlaceholder /> : null}
+          {activePath === "/admin" ? <AdminPlaceholder /> : null}
         </section>
+        <AiCopilotDock />
       </section>
     </main>
   );
@@ -296,6 +354,7 @@ function SourcesPage() {
           ))}
         </div>
       </section>
+      <PipelineTable />
       <div className="grid two">
         <InfoCard title="Contract" value={sourceConfig.contract} detail="Producer: M1 / Consumers: M2, M3, M4, M5" />
         <InfoCard title="Demo Tenant" value={sourceConfig.tenant_id} detail="실제 로그인/RBAC 없이 tenant_id 구조만 유지" />
@@ -308,6 +367,77 @@ function SourcesPage() {
         body="M3 JSON sample reader 또는 M2/M4 connector가 붙으면 이 영역이 source 목록과 connection test 결과로 바뀝니다."
       />
     </div>
+  );
+}
+
+function PipelineTable() {
+  return (
+    <section className="pipeline-table-card">
+      <div className="table-card-header">
+        <div>
+          <h2>데이터셋/파이프라인</h2>
+          <div className="table-title-line">
+            <ListChecks size={20} />
+            <div>
+              <strong>구축 중인 파이프라인</strong>
+              <p>소스, 변환, 결과 데이터셋이 연결된 작업을 확인합니다.</p>
+            </div>
+          </div>
+        </div>
+        <label className="table-search">
+          <Search size={16} />
+          <input value="" readOnly placeholder="파이프라인 검색..." />
+        </label>
+      </div>
+      <div className="wide-table-wrap">
+        <table className="demo-table">
+          <thead>
+            <tr>
+              <th>파이프라인 이름</th>
+              <th>담당자</th>
+              <th>결과 유형</th>
+              <th>구축 상태</th>
+              <th>실행 방식</th>
+              <th>목적</th>
+              <th>최근 수정일</th>
+              <th>작업</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pipelineRows.map((row) => (
+              <tr key={row.name}>
+                <td className="table-link">{row.name}</td>
+                <td>{row.owner}</td>
+                <td>
+                  <span className={`badge ${row.type === "결과 데이터셋" ? "orange" : "gray"}`}>{row.type}</span>
+                </td>
+                <td>
+                  <span className={`badge ${row.status === "활성" ? "green" : "slate"}`}>{row.status}</span>
+                </td>
+                <td>
+                  <span className="badge blue">{row.mode}</span>
+                </td>
+                <td className="purpose-cell">{row.purpose}</td>
+                <td>{row.updated}</td>
+                <td>
+                  <button type="button" className="icon-danger" aria-label="삭제 비활성">
+                    <Trash2 size={16} />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <footer className="table-footer">
+        <span>전체 4개 중 1-4 표시</span>
+        <div>
+          <button type="button">이전</button>
+          <button type="button" className="active-page">1</button>
+          <button type="button">다음</button>
+        </div>
+      </footer>
+    </section>
   );
 }
 
@@ -423,6 +553,66 @@ function AiQueryPage() {
         rows={integrationRows}
       />
     </div>
+  );
+}
+
+function DashboardPlaceholder() {
+  return (
+    <div className="page-stack">
+      <PageHeader
+        title="Dashboard"
+        body="M6 chart와 insight detail이 붙을 자리입니다."
+        actionLabel="연결 대기"
+      />
+      <EmptyState
+        icon={Sparkles}
+        title="Dashboard demo surface"
+        body="현재 M1에서는 navigation shell만 보존하고 실제 dashboard query는 M6에서 연결합니다."
+      />
+    </div>
+  );
+}
+
+function AdminPlaceholder() {
+  return (
+    <div className="page-stack">
+      <PageHeader
+        title="사용자/권한"
+        body="demo3의 admin navigation 자리를 보존하되, 실제 권한 관리는 M1 범위 밖입니다."
+        actionLabel="RBAC 연결 대기"
+      />
+      <EmptyState
+        icon={ShieldCheck}
+        title="권한 관리 기능은 연결 전입니다"
+        body="fake admin 생성이나 mock login 없이 shell route만 유지합니다."
+      />
+    </div>
+  );
+}
+
+function AiCopilotDock() {
+  return (
+    <aside className="ai-copilot-dock">
+      <header>
+        <div className="copilot-icon">
+          <Sparkles size={16} />
+        </div>
+        <div>
+          <strong>AI 도우미</strong>
+          <span>자연어 SQL 변환</span>
+        </div>
+      </header>
+      <div className="copilot-empty">
+        <div className="copilot-large-icon">
+          <Sparkles size={26} />
+        </div>
+        <h3>AI SQL 도우미</h3>
+        <p>자연어로 데이터에 대해 질문하면 SQL 쿼리를 생성합니다.</p>
+        <button type="button">"매출 기준 상위 고객 10명을 보여줘"</button>
+        <button type="button">"지난달 주문 수는 몇 건이야?"</button>
+        <button type="button">"gmail.com 이메일 도메인을 가진 사용자를 보여줘"</button>
+      </div>
+    </aside>
   );
 }
 

@@ -7,6 +7,7 @@
 - M1은 “전체 UI를 먼저 가져와서 자리 잡고, 각 담당자가 만든 기능을 이후 Phase에서 하나씩 연결한다”는 사용자 판단을 따른다.
 - backend health는 기존 `getHealth()`만 사용한다. backend 미실행 시 error pill을 보여주며, 성공처럼 보이는 fake 상태로 대체하지 않는다.
 - 후속 확인에서 demo3의 시각 디자인이 충분히 보존되지 않은 문제가 확인되어, 2026-06-25에 demo3의 흰 sidebar/topbar/card 중심 디자인 언어를 M1 shell에 다시 반영했다.
+- 추가 확인에서 여전히 실제 demo page 구조가 부족해, demo3 `/dataset` 화면 기준의 `데이터셋/파이프라인` 테이블, 전체 sidebar nav, 상단 사용자 영역, AI 도우미 패널, AskLake logo asset을 M1 shell에 반영했다.
 
 ## 결정
 

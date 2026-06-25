@@ -45,7 +45,7 @@
 ## Implementation Summary / 구현 요약
 
 - `/sources`, `/schema-preview`, `/runs`, `/catalog`, `/ask` route shell을 구성했다.
-- demo3의 흰 sidebar/topbar/card 중심 운영 UI 톤을 M1 shell에 다시 반영했다.
+- demo3의 `/dataset` 화면 구조를 기준으로 sidebar/topbar/card/table/AI 도우미 디자인을 M1 shell에 다시 반영했다.
 - `SourceConfig`, `SchemaDefinition`, `WorkflowDefinition`, `CatalogMetadata`, `AIQueryResult` preview surface를 배치했다.
 - 실제 기능이 없는 영역은 pending/empty/error 상태로 표시하고, 자동 성공/완료 연출은 넣지 않았다.
 - 기존 `getHealth()`와 `StatusPill`만 유지해 backend health 실패를 실제 error state로 보여준다.
