@@ -56,6 +56,127 @@ set_field() {
   mv "$tmp" "$file"
 }
 
+issue_title_prefix() {
+  case "$1" in
+    feature) printf '[기능]' ;;
+    fix) printf '[버그]' ;;
+    docs) printf '[문서/운영]' ;;
+    hotfix) printf '[긴급수정]' ;;
+    chore) printf '[문서/운영]' ;;
+    test) printf '[검증]' ;;
+    *) printf '[작업]' ;;
+  esac
+}
+
+issue_labels_for_type() {
+  case "$1" in
+    feature) printf '%s\n' feature ;;
+    fix) printf '%s\n' bug ;;
+    docs) printf '%s\n%s\n' documentation ops ;;
+    hotfix) printf '%s\n' hotfix ;;
+    chore) printf '%s\n' ops ;;
+    test) ;;
+  esac
+}
+
+prefixed_issue_title() {
+  local type="$1"
+  local raw_title="$2"
+  local prefix
+
+  prefix="$(issue_title_prefix "$type")"
+  case "$raw_title" in
+    \[*\]*) printf '%s\n' "$raw_title" ;;
+    *) printf '%s %s\n' "$prefix" "$raw_title" ;;
+  esac
+}
+
+write_issue_body() {
+  local file="$1"
+  local type="$2"
+  local branch="$3"
+  local workspace="$4"
+  local raw_title="$5"
+  local closing_keyword="$6"
+  local type_label
+
+  case "$type" in
+    feature) type_label="기능 Phase" ;;
+    fix) type_label="버그 수정" ;;
+    docs) type_label="문서/운영 개선" ;;
+    test) type_label="검증 보강" ;;
+    chore) type_label="운영 정리" ;;
+    hotfix) type_label="긴급수정" ;;
+    *) type_label="작업" ;;
+  esac
+
+  cat > "$file" <<EOF_ISSUE
+## 1. 이슈 요약
+
+- 요약: ${raw_title}
+- 작업 유형: ${type_label}
+- Branch: \`${branch}\`
+- Branch workspace: \`${workspace}\`
+- PR closing keyword: ${closing_keyword:-PR 생성 전 issue 번호 확정 후 기록}
+
+## 2. 목표
+
+- branch workspace와 PR closing keyword를 연결하고, 구체 범위와 검증 결과는 workspace 문서에서 계속 업데이트한다.
+
+## 3. 작업 범위
+
+- [ ] \`${workspace}/plan.md\` 기준 범위를 확정한다.
+- [ ] \`${workspace}/quality.md\`에 검증 결과를 기록한다.
+- [ ] \`${workspace}/report.md\`에 완료 증거를 기록한다.
+
+## 4. 제외 범위
+
+- 이번 이슈 생성 시점에는 제품/API/schema 요구사항을 새로 확정하지 않는다.
+- remote issue/PR 상태 보정은 별도 명시 지시 없이는 진행하지 않는다.
+
+## 5. 관련 문서 / Source of Truth
+
+- Development Operations: \`docs/04-development-guide.md\`
+- Workflow: \`docs/08-development-workflow.md\`
+- Git Sync Policy: \`docs/11-git-sync-policy.md\`
+- Quality Gates: \`docs/12-quality-gates.md\`
+- Branch workspace: \`${workspace}\`
+
+## 6. Acceptance Criteria
+
+- [ ] 작업 범위가 workspace 문서와 일치한다.
+- [ ] 필요한 validation 또는 skip reason이 \`quality.md\`에 기록된다.
+- [ ] PR을 만들 경우 PR body에 closing keyword가 포함된다.
+
+## 7. Regression / Failure Scenario
+
+- 깨지면 안 되는 것: branch/workspace/issue/PR 연결과 closing keyword 추적.
+- 확인해야 할 실패 시나리오: issue body 줄바꿈이 깨지거나, PR closing keyword가 누락되는 경우.
+
+## 8. Manual Verification
+
+1. 이 issue 제목과 본문이 한국어 협업 산출물 규칙을 따르는지 확인한다.
+2. Branch와 workspace 경로가 맞는지 확인한다.
+3. PR 생성 전 \`sync.md\`의 linked issue와 closing keyword가 맞는지 확인한다.
+
+## 9. 영향도
+
+- [ ] 팀 협업 흐름
+- [ ] PR readiness
+- [ ] Issue / Project 운영
+- [ ] 문서 일관성
+- [ ] 영향도 낮음
+
+상세:
+
+- \`scripts/start-workflow.sh\` 자동 생성 issue.
+
+## 10. 참고 링크 / 로그
+
+- Workspace: \`${workspace}\`
+EOF_ISSUE
+}
+
 worktree_dirty() {
   [[ -n "$(git status --porcelain --untracked-files=normal)" ]]
 }
@@ -253,6 +374,7 @@ issue_creation_result="not requested"
 issue_project_result="not requested"
 pr_closing_keyword=""
 sync_file="${workspace_dir}/sync.md"
+issue_title="$(prefixed_issue_title "$branch_type" "$title")"
 
 if [[ "$create_issue" -eq 1 ]]; then
   issue_creation_result="skipped: GitHub CLI is not available"
@@ -271,21 +393,14 @@ if [[ "$create_issue" -eq 1 ]]; then
   elif command -v gh >/dev/null 2>&1; then
     if gh auth status >/dev/null 2>&1; then
       issue_body_file="$(mktemp)"
-      cat > "$issue_body_file" <<EOF_ISSUE
-## AskLake branch workspace
-
-- Branch: \`${branch_name}\`
-- Workspace: \`${workspace_dir}\`
-- Title: ${title}
-
-## Scope
-
-이슈는 branch workspace와 PR closing keyword를 연결하기 위해 팀 규칙에 따라 \`scripts/start-workflow.sh\`가 생성했다.
-구체 범위와 검증 결과는 workspace 문서를 기준으로 업데이트한다.
-EOF_ISSUE
+      write_issue_body "$issue_body_file" "$branch_type" "$branch_name" "$workspace_dir" "$title" "$pr_closing_keyword"
+      issue_create_args=(issue create --title "$issue_title" --body-file "$issue_body_file")
+      while IFS= read -r issue_label; do
+        [[ -n "$issue_label" ]] && issue_create_args+=(--label "$issue_label")
+      done < <(issue_labels_for_type "$branch_type")
 
       set +e
-      issue_output="$(gh issue create --title "$title" --body-file "$issue_body_file" 2>&1)"
+      issue_output="$(gh "${issue_create_args[@]}" 2>&1)"
       issue_status=$?
       set -e
       rm -f "$issue_body_file"

@@ -348,6 +348,22 @@ fi
 emptyish "$quality_status" && quality_status="PR review 전 기록 필요"
 emptyish "$tdd_status" && tdd_status="PR review 전 기록 필요"
 
+changed_summary=""
+verified_summary=""
+remaining_summary=""
+risk_summary=""
+if [[ -f "$report_file" ]]; then
+  changed_summary="$(first_value "$report_file" "- Changed:")"
+  verified_summary="$(first_value "$report_file" "- Verified:")"
+  remaining_summary="$(first_value "$report_file" "- Remaining:")"
+  risk_summary="$(first_value "$report_file" "- Risk:")"
+fi
+emptyish "$changed_summary" && changed_summary="workspace report의 Changed 항목을 확인해야 한다."
+emptyish "$verified_summary" && verified_summary="workspace quality/report의 검증 결과를 확인해야 한다."
+emptyish "$remaining_summary" && remaining_summary="남은 작업 없음 또는 report.md 확인 필요."
+emptyish "$risk_summary" && risk_summary="특이 위험 없음 또는 report.md 확인 필요."
+review_focus="요약, 이 PR에서 한 일, 검증 요약, 남은 일/위험을 먼저 확인한 뒤 diff를 본다."
+
 start_sync_result="$(section_value "$sync_file" "## Start Sync / 시작 sync" "- result:")"
 pre_merge_result="$(section_value "$sync_file" "## Pre-Merge Sync" "- result:")"
 pre_merge_deferral="$(section_value "$sync_file" "## Pre-Merge Sync" "- deferral reason:")"
@@ -364,6 +380,11 @@ if [[ -f "$pr_template_file" ]]; then
     -v phase="$phase_or_hotfix" \
     -v branch="$branch" \
     -v workspace="$workspace" \
+    -v changed="$changed_summary" \
+    -v verified="$verified_summary" \
+    -v remaining="$remaining_summary" \
+    -v risk="$risk_summary" \
+    -v review_focus="$review_focus" \
     -v quality_status="$quality_status" \
     -v tdd_status="$tdd_status" \
     -v start_sync="${start_sync_result:-PR review 전 기록 필요}" \
@@ -371,6 +392,11 @@ if [[ -f "$pr_template_file" ]]; then
     -v pre_sync="$pre_pr_sync" \
     -v readiness="$pr_readiness" '
       /^- 요약:/ { print "- 요약: " title; next }
+      /^- 이 PR에서 한 일:/ { print "- 이 PR에서 한 일: " changed; next }
+      /^- 리뷰어가 먼저 볼 것:/ { print "- 리뷰어가 먼저 볼 것: " review_focus; next }
+      /^- 검증 요약:/ { print "- 검증 요약: " verified; next }
+      /^- 남은 일:/ { print "- 남은 일: " remaining; next }
+      /^- 위험\/주의:/ { print "- 위험/주의: " risk; next }
       /^- 연결된 Issue:/ { print "- 연결된 Issue: " issue; next }
       /^- Phase 또는 Hotfix:/ { print "- Phase 또는 Hotfix: " phase; next }
       /^- Branch:/ { print "- Branch: `" branch "`"; next }

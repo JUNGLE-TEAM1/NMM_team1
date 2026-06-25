@@ -99,6 +99,8 @@ After merge, GitHub PR/issue state is the authoritative status source because lo
 GitHub issue는 branch 생성 시 기본으로 만든다. 이 동작은 팀 규칙이며, `scripts/start-workflow.sh` 실행이 issue 생성까지 포함하는 시작 절차다.
 기본 생성된 issue는 `JUNGLE-TEAM1` organization Project `3`에도 추가하고 Status를 `In Progress`로 설정한다.
 Project 추가와 Status 설정의 성공 또는 실패 이유는 workspace `sync.md`의 `issue project result`에 기록한다.
+`scripts/start-workflow.sh`가 만든 issue는 GitHub UI issue template을 자동으로 타지 않으므로, 스크립트가 직접 한국어 title prefix, body sections, 작업 type별 label을 생성한다.
+Issue body는 literal newline escape가 남지 않도록 `--body-file` 경로로 전달한다.
 
 Linked issue와 Project Status lifecycle은 아래 순서가 기준이다.
 
@@ -220,7 +222,7 @@ If the human says `PR만`, `PR 생성만`, `초안 PR`, or `머지는 보류`, s
 Stop and report back if CI fails, merge conflicts exist, required review is missing, scope drift appears, deployment/AWS resource creation is involved, or the human limited the command to PR creation/draft/hold merge.
 Deploy and AWS resource creation still require separate explicit human approval.
 
-Use `.github/pull_request_template.md` as the checklist when the project uses PRs.
+Use `.github/pull_request_template.md` as the checklist when the project uses PRs. `scripts/prepare-pr.sh` also fills reviewer-facing PR context from workspace `report.md` fields such as `Changed`, `Verified`, `Remaining`, and `Risk`, so the PR body should explain the concrete work, validation evidence, and review risks before reviewers read the diff.
 
 ## 6) PR Conflict Resolution Protocol
 

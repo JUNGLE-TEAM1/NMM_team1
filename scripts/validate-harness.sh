@@ -908,6 +908,22 @@ if ! rg -q "## 목표|## 범위|## 구현 프롬프트|## 검증 프롬프트|##
   fail "scripts/start-workflow.sh does not generate Korean-centered workspace templates"
 fi
 
+if ! rg -q "## 1\\. 이슈 요약|## 5\\. 관련 문서 / Source of Truth|## 6\\. Acceptance Criteria|## 7\\. Regression / Failure Scenario|## 8\\. Manual Verification" scripts/start-workflow.sh; then
+  fail "scripts/start-workflow.sh does not generate Korean-centered GitHub issue bodies"
+fi
+
+if ! rg -q "prefixed_issue_title|issue_labels_for_type|--body-file" scripts/start-workflow.sh; then
+  fail "scripts/start-workflow.sh does not use Korean issue title prefixes, labels, and body files"
+fi
+
+if rg -q "## AskLake branch workspace|^## Scope$|--body[ =]" scripts/start-workflow.sh; then
+  fail "scripts/start-workflow.sh still contains stale English issue body headings or unsafe inline issue body usage"
+fi
+
+if ! rg -q "FAKE_GH_BODY_LOG|연결된 Issue: 연결된 issue 없음|이슈 요약" scripts/test-harness.sh; then
+  fail "scripts/test-harness.sh does not guard generated issue/PR template bodies"
+fi
+
 if ! rg -q "내부 단계별 프롬프트" docs/08-development-workflow.md; then
   fail "docs/08-development-workflow.md does not document internal step prompts"
 fi
@@ -920,8 +936,12 @@ if ! rg -q "짧은 보고|검증 명령|수동 검증|최종 판단" docs/report
   fail "docs/reports/_template.md is not Korean-centered"
 fi
 
-if ! rg -q "공유 문서|품질 게이트|사람 확인|요약" .github/pull_request_template.md; then
+if ! rg -q "공유 문서|품질 게이트|사람 확인|요약|이 PR에서 한 일|리뷰어가 먼저 볼 것|검증 요약|위험/주의" .github/pull_request_template.md; then
   fail ".github/pull_request_template.md is not Korean-centered"
+fi
+
+if ! rg -q "changed_summary|verified_summary|remaining_summary|risk_summary|리뷰어가 먼저 볼 것" scripts/prepare-pr.sh scripts/test-harness.sh; then
+  fail "prepare-pr PR body does not surface concrete reviewer context from workspace reports"
 fi
 
 if ! rg -q "목적|절차|기대 결과|실패 시|증거" docs/manual-verification/01-golden-path.md; then
