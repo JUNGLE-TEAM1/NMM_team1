@@ -666,7 +666,7 @@ AI가 멈추고 사람 확인을 받아야 하는 지점을 기록한다.
 - Ask human when:
   - Phase 중 main이 바뀐 경우
   - 공유 Source of Truth 문서가 이 branch와 충돌하는 경우
-  - merge/rebase/pull/push/PR action이 필요한 경우
+  - merge/rebase/pull/PR merge/finalize/cleanup action이 필요한 경우
 - Human response: 
 
 ## PR Conflict Confirm / PR 충돌 확인
@@ -752,7 +752,8 @@ if [[ ! -f "${workspace_dir}/sync.md" ]]; then
 # ${title} Git Sync
 
 main 동기화와 integration readiness를 기록한다.
-사람 확인 없이 pull, merge, rebase, push, PR action을 실행하지 않는다.
+PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행할 수 있다.
+사람 확인 없이 pull, merge, rebase, PR merge, finalize, issue close, branch cleanup action을 실행하지 않는다.
 
 ## Start Sync / 시작 sync
 

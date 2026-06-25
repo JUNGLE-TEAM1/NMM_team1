@@ -406,12 +406,12 @@ Waiting on you:
 - Current state: 작은 변경이 완료됐고 local validation이 통과했지만 PR 여부가 애매하다.
 - Recommended next action: 이 변경이 `main`에 남길 팀 공유 산출물인지 먼저 판단하고, PR 전 포함 파일과 제외 파일을 분리한다.
 - Options:
-  1. `PR 진행`: 팀 공유 산출물이므로 `Pre-PR Human Checkpoint`로 이동한다. 이 선택만으로 push, PR 생성, merge, finalize, cleanup을 실행하지 않는다.
+  1. `PR 진행`: 팀 공유 산출물이므로 PR-ready 자동 생성 흐름으로 이동한다. 이 선택만으로 merge, finalize, cleanup을 실행하지 않는다.
   2. `로컬 완료로 보류`: PR을 만들지 않고 보류 이유와 재개 조건을 기록한다.
   3. `더 큰 branch에 흡수`: 후속 branch/Phase에 합칠 이유와 target을 기록한다.
   4. `개인 초안으로 유지`: 개인 메모 또는 throwaway draft로 두고 stage하지 않는다.
   5. `포함/제외 파일 먼저 정리`: staged, tracked, untracked 파일을 나눠 보고하고 PR 포함 범위를 확정한다.
-- Next AI action: 선택에 따라 `sync.md`, `next-actions.md`, `confirmations.md`, `quality.md`, 또는 `report.md`를 업데이트하고, `.DS_Store`, 개인 초안, unrelated untracked file은 stage하지 않는다. `PR 진행`이 선택되면 `PR Ready` 또는 `Complete And PR Ready` 메뉴로 이어가고, 그 checkpoint에서 명시 승인이 있어야 remote/ref 변경을 실행한다.
+- Next AI action: 선택에 따라 `sync.md`, `next-actions.md`, `confirmations.md`, `quality.md`, 또는 `report.md`를 업데이트하고, `.DS_Store`, 개인 초안, unrelated untracked file은 stage하지 않는다. `PR 진행`이 선택되면 `PR Ready` 또는 `Complete And PR Ready` 메뉴로 이어가고, PR-ready 조건이 clear이면 자동 PR 생성까지 진행한다. merge/finalize/cleanup은 그 뒤 checkpoint에서 명시 승인이 있어야 실행한다.
 - Ask: "작은 변경입니다. 팀 공유 산출물로 PR을 열까요, 로컬 보류/큰 branch 흡수/개인 초안으로 둘까요?"
 
 ### Pre-Merge Sync Required
@@ -428,9 +428,9 @@ Waiting on you:
 ### PR Ready
 
 - Current state: scope, verification, confirmations, and pre-merge sync are complete.
-- Recommended next action: run `Pre-PR Human Checkpoint` before PR-based integration.
+- Recommended next action: auto-create the PR with final validation and `scripts/prepare-pr.sh --auto-pr <workspace>` unless an opt-out or stop condition exists.
 - Options:
-  1. `PR 진행`: run final validation, then use `scripts/prepare-pr.sh --approved-pr <workspace>` only after this explicit approval.
+  1. `자동 PR 생성`: run final validation, PR sync check, feature branch push, and PR creation.
   2. `로컬 완료로 보류`: do not push or create PR; record deferral reason and resume condition.
   3. `추가 수정`: strengthen docs/tests/evidence, then rerun validation.
   4. `다음 Phase`: first decide whether this branch is held or should be PR'd.
@@ -452,10 +452,10 @@ Waiting on you:
 ### Complete And PR Ready
 
 - Current state: workspace is `complete`, pending confirmations are clear, and PR checklist is ready.
-- Recommended next action: ask the human to choose a `Pre-PR Human Checkpoint` option before any push, PR creation, merge, finalize, or cleanup.
+- Recommended next action: auto-create the PR first, then ask the human to choose a `Pre-PR Human Checkpoint` option before merge, finalize, issue close, or cleanup.
 - Options:
   1. PR 진행
-     - Procedure: final validation -> `prepare-pr --approved-pr` -> CI check -> merge -> linked issue close check -> `prepare-pr --finalize` -> automatic merged branch cleanup -> GitHub status and branch queue check.
+     - Procedure: if PR is not yet created, final validation -> `prepare-pr --auto-pr`; then CI check -> merge -> linked issue close check -> `prepare-pr --finalize` -> automatic merged branch cleanup -> GitHub status and branch queue check.
      - Good fit: this branch should become the next main baseline.
      - Advantage: next Phase starts from main with this work included.
      - Caution: remote state changes and Git branch/ref cleanup happen automatically. If CI fails, conflicts appear, required review is missing, scope drift appears, or the human says "PR만", stop before merge and report back.
@@ -470,7 +470,7 @@ Waiting on you:
      - Advantage: keeps momentum.
      - Caution: starting the next Phase before merging can cause duplicate work or conflicts because main does not contain this branch.
   4. 보류
-     - Procedure: stop without push/PR/merge and record hold reason plus resume condition in `next-actions.md`.
+     - Procedure: before PR creation, stop without push/PR; after PR creation, keep the PR open without merge. Record hold reason plus resume condition in `next-actions.md`.
      - Good fit: waiting on reviewer, cost/security approval, account permission, or schedule decision.
      - Advantage: avoids publishing risky or incomplete work.
      - Caution: branch can drift from main if left too long.
@@ -479,7 +479,7 @@ Waiting on you:
      - Good fit: AWS resource creation, deploy, migration, or other outside-repo state change is next.
      - Advantage: enables real environment verification.
      - Caution: creates cost, permission, and operations risk; explicit human approval required.
-- Next AI action: ask the human to choose an option. If the human chooses `PR 진행`, continue through the approved push/PR/merge/finalize scope unless a stop condition appears. If the human chooses hold or does not answer, do not push or create a PR and record the deferral.
+- Next AI action: if PR is not yet created and no opt-out/stop condition exists, auto-create it and record the link. Then ask the human to choose an option. If the human chooses `PR 진행`, continue through the approved merge/finalize scope unless a stop condition appears. If the human chooses hold or does not answer after PR creation, keep the PR open and record the deferral.
 - Ask: "완료된 branch입니다. 선택지별 절차와 장단점은 위와 같고, 어떤 방향으로 진행할까요?"
 
 ### Remaining Branch Queue

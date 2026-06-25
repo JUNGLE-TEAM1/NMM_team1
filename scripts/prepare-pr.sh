@@ -4,14 +4,14 @@ set -euo pipefail
 usage() {
   cat <<'USAGE'
 Usage:
-  scripts/prepare-pr.sh [--dry-run] [--push] [--create-pr] [--approved-pr] [--auto-pr] [--check-issue] [--check-pr-sync] [--close-issue] [--finalize] docs/workflows/<type>/<short-kebab-name>
+  scripts/prepare-pr.sh [--dry-run] [--push] [--create-pr] [--auto-pr] [--approved-pr] [--check-issue] [--check-pr-sync] [--close-issue] [--finalize] docs/workflows/<type>/<short-kebab-name>
 
 Default behavior updates the workspace sync.md with the PR closing keyword and prints a PR body draft.
 Remote actions require explicit flags:
-  --push        push the current branch to origin after human approval
-  --create-pr   create a GitHub PR with gh after human approval
-  --approved-pr run PR sync check, push the branch, and create a PR after Pre-PR Human Checkpoint approval
-  --auto-pr     deprecated compatibility alias for --approved-pr; do not use without human approval
+  --push        push the current branch to origin after PR-ready policy checks
+  --create-pr   create a GitHub PR with gh after PR-ready policy checks
+  --auto-pr     run PR sync check, push the branch, and create a PR for a PR-ready workspace
+  --approved-pr compatibility alias for --auto-pr when a human explicitly requested PR creation
   --check-issue query linked GitHub issue state with gh
   --check-pr-sync check local sync.md PR handoff fields before creating or merging a PR
   --close-issue close linked issue after the recorded PR is merged
@@ -54,7 +54,6 @@ while [[ $# -gt 0 ]]; do
       check_pr_sync=1
       push_branch=1
       create_pr=1
-      echo "Warning: --auto-pr is deprecated; use --approved-pr after Pre-PR Human Checkpoint approval." >&2
       shift
       ;;
     --check-issue)
@@ -153,9 +152,32 @@ set_field() {
   mv "$tmp" "$file"
 }
 
+emptyish() {
+  case "$1" in
+    ""|none|None|NONE|n/a|N/A|"not requested") return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+workspace_branch() {
+  case "$workspace" in
+    docs/workflows/*/*)
+      local rest="${workspace#docs/workflows/}"
+      printf '%s\n' "$rest"
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
 current_branch="$(git branch --show-current 2>/dev/null || true)"
 recorded_branch="$(first_value "$sync_file" "- current branch:")"
-branch="${recorded_branch:-$current_branch}"
+if emptyish "$recorded_branch"; then
+  recorded_branch=""
+fi
+expected_branch="$(workspace_branch || true)"
+branch="${recorded_branch:-${expected_branch:-$current_branch}}"
 
 if [[ -z "$branch" || "$branch" == "not a git worktree" ]]; then
   echo "Cannot determine branch for PR handoff." >&2
@@ -167,6 +189,11 @@ pr_link="$(section_value "$sync_file" "## Push / PR" "- PR link:")"
 pushed_branch="$(section_value "$sync_file" "## Push / PR" "- pushed branch:")"
 merge_status="$(section_value "$sync_file" "## Push / PR" "- merge status:")"
 issue_close_status="$(section_value "$sync_file" "## Push / PR" "- issue close status:")"
+for field_name in linked_issue pr_link pushed_branch merge_status issue_close_status; do
+  if emptyish "${!field_name}"; then
+    printf -v "$field_name" '%s' ""
+  fi
+done
 issue_number=""
 if [[ "$linked_issue" =~ ^#([0-9]+)$ ]]; then
   issue_number="${BASH_REMATCH[1]}"
@@ -272,8 +299,13 @@ if [[ "$check_pr_sync" -eq 1 ]]; then
       rm -f "$pr_body_file"
       exit 1
     fi
-    if [[ -z "$linked_issue" || -z "$closing_keyword" ]]; then
-      echo "Approved PR failed: linked issue and closing keyword are required." >&2
+    if [[ -n "$expected_branch" && "$branch" != "$expected_branch" ]]; then
+      echo "Approved PR failed: workspace '${workspace}' maps to branch '${expected_branch}', but sync.md/current branch resolved to '${branch}'." >&2
+      rm -f "$pr_body_file"
+      exit 1
+    fi
+    if [[ -n "$current_branch" && "$current_branch" != "$branch" ]]; then
+      echo "Approved PR failed: current checkout branch is '${current_branch}', expected '${branch}'." >&2
       rm -f "$pr_body_file"
       exit 1
     fi
@@ -314,7 +346,11 @@ if [[ "$create_pr" -eq 1 ]]; then
   fi
   set_field "$sync_file" "- PR link:" "$pr_link"
   set_field "$sync_file" "- merge status:" "open"
-  set_field "$sync_file" "- issue close status:" "open"
+  if [[ -n "$issue_number" ]]; then
+    set_field "$sync_file" "- issue close status:" "open"
+  else
+    set_field "$sync_file" "- issue close status:" "n/a"
+  fi
 fi
 
 if [[ "$check_issue" -eq 1 || "$close_issue" -eq 1 || "$finalize" -eq 1 ]]; then

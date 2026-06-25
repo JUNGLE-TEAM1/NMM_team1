@@ -68,9 +68,9 @@ Target repository: `JUNGLE-TEAM1/NMM_team1`.
 12. 완료 전 관련 `docs/06` regression/failure 기준과 `docs/07` manual verification을 확인한다.
 13. 완료 후 `docs/reports/_template.md`를 사용해 report를 만든다.
 14. `docs/reports/`는 증거 계층이지 Source of Truth가 아니다. 충돌하면 Change Propagation Rule에 따라 Source of Truth를 고친다.
-15. Phase 시작 전, upstream 변경 중, merge/PR 전에는 `docs/11-git-sync-policy.md`를 따른다.
-16. branch 상태나 remote 상태를 바꾸는 pull, merge, rebase, push, PR 생성, PR merge는 사람 확인 없이 실행하지 않는다.
-17. Phase가 local validation을 통과하고 PR/push/handoff가 다음 자연스러운 행동이면 `Pre-PR Human Checkpoint`를 제시하고, 사람이 선택하기 전에는 push/PR/merge를 실행하지 않는다.
+15. Phase 시작 전, upstream 변경 중, PR 생성 전 준비, merge 전에는 `docs/11-git-sync-policy.md`를 따른다.
+16. branch 상태나 remote 상태를 바꾸는 pull, merge, rebase, PR merge는 사람 확인 없이 실행하지 않는다. 단, PR-ready 조건과 stop condition을 통과한 feature branch push와 PR 생성은 하네스 자동화 범위에 포함한다.
+17. Phase가 local validation과 PR readiness를 통과하면 AI는 feature branch push와 PR 생성까지 자동 진행할 수 있다. PR 생성 뒤 merge/finalize/cleanup/handoff가 다음 자연스러운 행동이면 `Pre-PR Human Checkpoint`를 제시하고, 사람이 선택하기 전에는 merge/finalize/cleanup을 실행하지 않는다.
 18. branch sync 상태는 workspace `sync.md`에 기록한다.
 19. TDD, branch check, CI, CD/deploy gate는 `docs/12-quality-gates.md`를 따른다.
 20. TDD와 CI/CD 증거는 workspace `quality.md`에 기록한다.

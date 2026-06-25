@@ -53,7 +53,8 @@ branch 최신성, 통합 안전성의 Source of Truth는 `docs/11-git-sync-polic
 - PR merge 이후 완료 여부는 가능하면 GitHub PR/issue 상태를 기준으로 확인하고, stale `sync.md` final field만으로 active branch로 판단하지 않는다.
 - Phase 중 main이 바뀌면 멈추고 rebase/merge, 위험 기록 후 계속 진행, follow-up 분리 중 무엇을 할지 확인한다.
 - direct main push보다 PR 기반 통합을 우선한다.
-- confirmation gate 없이 merge, rebase, push, PR 생성, PR merge를 자동 실행하지 않는다.
+- PR-ready 조건과 stop condition을 통과한 feature branch push/PR 생성은 자동 실행할 수 있다.
+- confirmation gate 없이 merge, rebase, PR merge, finalize, issue close, branch cleanup을 자동 실행하지 않는다.
 
 ## 4) Commit 규칙
 
