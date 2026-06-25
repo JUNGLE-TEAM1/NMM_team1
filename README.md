@@ -6,11 +6,11 @@ AskLake는 여러 데이터 소스를 연결해 대용량/복합 데이터셋을
 
 ## 제품 방향
 
-AskLake의 Target MVP는 `Trusted Dataset -> Query/Ask -> Evidence -> Recovery` 신뢰 루프를 증명한다.
+AskLake의 Target MVP는 대용량/복합 데이터셋을 신뢰 가능한 분석 자산으로 만드는 `Trusted Dataset -> Query/Ask -> Evidence -> Recovery` 신뢰 루프를 증명한다.
 Target MVP는 `local/container` 환경의 단일 Demo Tenant로 핵심 신뢰 루프를 검증하며, 상용 멀티테넌트 SaaS 운영은 후속 범위로 둔다.
 
-핵심 질문은 “데이터를 가져올 수 있는가”가 아니라 “이 데이터와 답변을 왜 믿을 수 있는가”다.
-따라서 Target MVP는 하나의 데이터셋이 source onboarding, schema inference, 변환/정규화, Parquet 또는 S3-compatible 저장, 품질/PII/권한 검토, `Trusted` 게시, Query 또는 Ask 사용, Evidence 확인, 장애 영향 분석과 복구까지 이어지는 흐름을 우선한다.
+핵심 질문은 “데이터를 가져올 수 있는가”가 아니라 “대용량/복합 데이터셋을 어떻게 수집·스키마화·변환·검산·게시했고, 그 데이터와 답변을 왜 믿을 수 있는가”다.
+따라서 Target MVP는 하나의 대표 데이터셋이 source onboarding, schema inference, 사용자 보정, 변환/정규화/load, Parquet 또는 S3-compatible 저장, row count/bytes/duration/output path 같은 처리 증거, 품질/PII/권한 검토, `Trusted` 게시, Query 또는 Ask 사용, Evidence 확인, 장애 영향 분석과 복구까지 이어지는 흐름을 우선한다.
 
 ## Current Implementation Baseline
 

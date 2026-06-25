@@ -37,7 +37,7 @@ report가 늘어나면 영역별 최신 report index를 작게 유지한다. 이
 | 전체 진행 요약 | [`asklake-phase-summary.md`](asklake-phase-summary.md) | 팀원이 지금까지 진행된 Phase와 현재 남은 선택지를 빠르게 파악 |
 | 팀원 온보딩 요약 | [`project-onboarding-summary.md`](project-onboarding-summary.md) | 새 팀원이 AskLake의 출발점, 현재 준비 상태, 다음 개발 방식의 큰 흐름을 문단 중심으로 파악 |
 | B2B SaaS 포지셔닝 | [`b2b-saas-positioning.md`](b2b-saas-positioning.md) | 제품 방향은 B2B SaaS이고 Target MVP는 local/container 단일 Demo Tenant 검증이라는 분리 확인 |
-| 대용량 데이터셋 조작 맥락 | [`big-dataset-context.md`](big-dataset-context.md) | Target MVP가 대용량/복합 데이터셋 수집·변환·검산·게시와 처리 증거를 포함하는지 확인 |
+| 대용량 데이터셋 조작 맥락 | [`big-dataset-context.md`](big-dataset-context.md) | Target MVP가 대용량/복합 데이터셋을 신뢰 가능한 분석 자산으로 만들고 처리 증거를 남기는 흐름을 포함하는지 확인 |
 | 마일스톤 완료 요약 | [`milestone-completion-summary.md`](milestone-completion-summary.md) | M0~M5와 이후 보강 작업에서 무엇을 했는지 팀원이 빠르게 파악 |
 | Product Rebaseline 리스크 분석 | [`asklake-product-rebaseline-risk-analysis.md`](asklake-product-rebaseline-risk-analysis.md) | 기획서 적용 전 현재 하네스와의 충돌, 결정 필요 항목, 첫 rebaseline Phase 후보 파악 |
 | Product Context Coherence Audit | [`product-context-coherence-audit.md`](product-context-coherence-audit.md) | MVP v1/current baseline과 Target MVP 문맥 분리, CI-safe strict guard 적용 여부 확인 |
