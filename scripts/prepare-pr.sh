@@ -346,7 +346,11 @@ if [[ "$create_pr" -eq 1 ]]; then
   fi
   set_field "$sync_file" "- PR link:" "$pr_link"
   set_field "$sync_file" "- merge status:" "open"
-  set_field "$sync_file" "- issue close status:" "open"
+  if [[ -n "$issue_number" ]]; then
+    set_field "$sync_file" "- issue close status:" "open"
+  else
+    set_field "$sync_file" "- issue close status:" "n/a"
+  fi
 fi
 
 if [[ "$check_issue" -eq 1 || "$close_issue" -eq 1 || "$finalize" -eq 1 ]]; then
