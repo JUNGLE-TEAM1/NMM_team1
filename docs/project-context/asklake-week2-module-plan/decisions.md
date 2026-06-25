@@ -74,15 +74,52 @@
 
 ## 7. 관련 문서
 
-프로젝트 workspace:
+프로젝트 문서 저장 위치:
 
-- `docs/workflows/docs/asklake-week2-module-plan/plan.md`
-- `docs/workflows/docs/asklake-week2-module-plan/decision-options.md`
-- `docs/workflows/docs/asklake-week2-module-plan/decisions.md`
-- `docs/workflows/docs/asklake-week2-module-plan/meeting-summary.md`
-- `docs/workflows/docs/asklake-week2-module-plan/meeting-decision-options.md`
+- `docs/project-context/asklake-week2-module-plan/plan.md`
+- `docs/project-context/asklake-week2-module-plan/decision-options.md`
+- `docs/project-context/asklake-week2-module-plan/decisions.md`
+- `docs/project-context/asklake-week2-module-plan/meeting-summary.md`
+- `docs/project-context/asklake-week2-module-plan/meeting-decision-options.md`
 
 회의용 원본 다운로드 문서:
 
 - `/Users/tail1/Downloads/2주차 목표 설정 및 분업 계획/AskLake_미팅용_이번주_목표_6인_분업_요약.md`
 - `/Users/tail1/Downloads/2주차 목표 설정 및 분업 계획/AskLake_미팅용_결정옵션_장단점_분석.md`
+
+## Decision Option Briefs / 결정 옵션 브리프
+
+- `decision-options.md`와 `meeting-decision-options.md`에 옵션 비교와 선택 이유를 기록했다.
+
+## Accepted Decisions / 확정된 결정
+
+| Decision | Selected Option | Reason | Confirmed By / At |
+| --- | --- | --- | --- |
+| 메인 데이터 | Amazon Reviews JSON | 메인 E2E와 AskLake 차별점이 가장 잘 드러남 | 사용자 미팅 결정 |
+| 보조 데이터 | Taxi Batch + Kafka Event | 정형/실시간 확장성과 처리 규모 증거 확보 | 사용자 미팅 결정 |
+| SQL Engine | Adapter 구조 + `DuckDBSqlEngine` | MVP 속도와 후속 교체 가능성을 함께 확보 | 사용자 미팅 결정 |
+| Storage | MinIO | S3-compatible 흐름을 로컬에서 안정적으로 재현 | 사용자 미팅 결정 |
+| Airflow | 실패 시 local runner 전환 | Airflow 목표를 유지하되 E2E 차단을 방지 | 사용자 미팅 결정 |
+| Tenant/Auth | Demo Tenant 고정 + `tenant_id` 포함 | 구현 부담을 줄이고 B2B SaaS 확장 구조 유지 | 사용자 미팅 결정 |
+| Workflow Node | Source, Select/Filter, Cast/Normalize, Aggregate, Load | 메인 E2E에 필요한 최소 DAG 표현 | 사용자 미팅 결정 |
+| 품질 검사 | Schema 일치 + Row Count | Catalog, SQL 검산, 처리 증거에 직접 필요 | 사용자 미팅 결정 |
+| 검증 질문 | Day 4에 통합 코드와 실제 데이터 기준으로 확정 | 질문을 미리 고정하지 않고 구현 결과에 맞춤 | 사용자 미팅 결정 |
+| 데이터 범위 | Demo/fixed/extended sample 단계 | 작은 E2E부터 붙이고 규모 증거를 단계적으로 추가 | 사용자 미팅 결정 |
+
+## Deferred Decisions / 보류한 결정
+
+| Decision | Deferred Reason | Revisit Trigger | Target Branch / Phase |
+| --- | --- | --- | --- |
+| MinIO bucket/path 규칙 | 세부 계약 값은 공통 계약 설계가 필요함 | `contracts/*.sample.json` 작성 시작 | AskLake 공통 계약 설계 |
+| sample 실제 파일 경로와 row 수 | 실제 데이터 위치와 처리 범위 확인 필요 | M3 JSON sample reader 구현 전 | AskLake 공통 계약 설계 |
+| `SqlEngineAdapter` Python 위치 | 실제 backend 패키지 구조 확인 필요 | M6 구현 시작 전 | AskLake 공통 계약 설계 |
+| local runner 전환 조건 | Airflow 실행 환경 확인 필요 | M5 Airflow adapter 구현 전 | AskLake 공통 계약 설계 |
+
+## Revisit / Rollback Conditions / 재검토 또는 롤백 조건
+
+| Decision | Condition | Action |
+| --- | --- | --- |
+| MinIO | MinIO 실행이 E2E를 반복적으로 막음 | local path fallback 또는 AWS S3 선택 연결 검토 |
+| DuckDB adapter | DuckDB가 검증 SQL을 처리하지 못함 | Adapter 유지 후 Trino/Athena 후보 재검토 |
+| Day 4 질문 확정 | Day 4에 Schema/Catalog가 준비되지 않음 | 질문 수를 줄이거나 fallback Dataset 기준으로 확정 |
+| Airflow fallback | Airflow 실행이 메인 E2E를 차단함 | 같은 `WorkflowDefinition`으로 local runner 전환 |
