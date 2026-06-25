@@ -197,8 +197,21 @@ AI does:
 - Checks `.github/pull_request_template.md`.
 - Reports missing `sync.md`, `quality.md`, confirmation, or validation items.
 - Runs validation only when approved or already within the agreed verification scope.
-- Linked GitHub issue가 있으면 `scripts/prepare-pr.sh <workspace>`로 `PR closing keyword`를 `sync.md`에 기록하고 PR body 초안을 만든다.
-- Does not create extra issues during PR preparation, push, create PRs, merge PRs, or close issues without human confirmation. Branch workspace issue creation remains the team default in `scripts/start-workflow.sh`.
+- Linked GitHub issue가 있으면 `scripts/prepare-pr.sh <workspace>`로 `PR closing keyword`를 `sync.md`에 기록하고 PR body 초안을 만든다. PR body 초안은 workspace `report.md`의 `Changed`, `Verified`, `Remaining`, `Risk`를 바탕으로 summary, 변경 내용, 검증, 영향 범위, 리뷰어 요청, 남은 일, merge 전 확인을 문단형 인계 문서처럼 설명해야 한다.
+- Does not create extra issues during PR preparation. PR-ready feature branch push and PR creation may run automatically; merge PRs, finalize, close issues, or cleanup still require human confirmation. Branch workspace issue creation remains the team default in `scripts/start-workflow.sh`.
+
+Human says:
+
+```text
+이 이슈/PR 템플릿 뚫린 거야?
+```
+
+AI does:
+
+- Runs read-only checks first: `scripts/audit-github-records.sh --issue <number>` and/or `scripts/audit-github-records.sh --pr <number>`.
+- Reports drift reasons, current title/body shape, suggested Korean title prefix, missing label, missing PR handoff sections, and closing keyword risk.
+- Does not edit existing GitHub issue/PR records until the human explicitly asks for correction.
+- If the drift came from a harness gap, adds or updates fixture regression coverage before correcting the existing records.
 
 Human says:
 
@@ -243,6 +256,7 @@ AI does:
 
 - Runs `scripts/start-workflow.sh <type> <short-kebab-name> "<title>"`; GitHub issue creation is the team default.
 - Records `linked GitHub issue`, `issue link`, `issue creation result`, and `PR closing keyword` in `sync.md`.
+- Creates the issue with Korean title prefix/body sections, type labels, and `--body-file`; the human-provided title content is not force-translated.
 - If GitHub CLI is unavailable or unauthenticated, creates the local workspace and records the failure reason instead of blocking all work.
 - Uses `--no-issue` only for an intentional exception and records the reason in the workspace.
 
@@ -257,8 +271,8 @@ AI does:
 - Resolves Source of Truth Impact Gate first; if required shared document changes exceed the current branch scope, asks for `Scope Change Confirm`.
 - Runs `scripts/prepare-pr.sh <workspace>` first to update local PR closing keyword.
 - Runs `scripts/prepare-pr.sh --check-pr-sync <workspace>` before creating or handing off the PR.
-- Treats this user command as explicit approval to push/create PR within the stated scope after final local checks pass.
-- Uses `scripts/prepare-pr.sh --approved-pr <workspace>` for approved push/PR creation; `--auto-pr` is only a deprecated compatibility alias.
+- Treats this user command as explicit approval to continue through merge/finalize after final local checks pass. If the PR is not yet created, AI may create it first as part of automatic PR creation.
+- Uses `scripts/prepare-pr.sh --auto-pr <workspace>` for automatic push/PR creation; `--approved-pr` is a compatibility alias for the same helper.
 - If the human says `PR만`, `PR 생성만`, or `초안 PR`, stops after PR creation and asks again before merge/finalize/cleanup.
 
 Human says:
@@ -269,10 +283,10 @@ Human says:
 
 AI does:
 
-- Treats this as a request to enter `Pre-PR Human Checkpoint`, not as automatic approval to skip the checkpoint.
+- Treats this as a request to complete the PR-ready path. If no opt-out or stop condition exists, AI may auto-create the PR before the merge/finalize checkpoint.
 - Reports included and excluded files before any stage/push/PR action.
 - Keeps `.DS_Store`, personal drafts, unrelated untracked files, editor artifacts, and other workstream files out of stage.
-- Continues to remote-changing commands only when the human has explicitly chosen `PR 진행`, `PR 생성`, or an equivalent approval at the checkpoint.
+- Continues to merge/finalize/cleanup only when the human has explicitly chosen `PR 진행`, `merge 진행`, or an equivalent approval at the checkpoint.
 - Uses `Closes #123` style closing keyword so GitHub closes the linked issue when the PR is merged.
 - After merge, runs `scripts/prepare-pr.sh --check-issue <workspace>` and records `issue close status` in `sync.md`.
 - If a stacked PR was merged into a non-default branch and the linked issue remains open, runs `scripts/prepare-pr.sh --close-issue <workspace>` to close it with the merged PR as evidence.
@@ -321,16 +335,17 @@ AI does:
 - Runs `scripts/status-workflow.sh <workspace>`.
 - If workspace is `complete`, pending confirmations are clear, and PR checklist is ready, reports branch, linked issue, PR closing keyword, local validation result, remaining remote work, and any external approval need.
 - If `scripts/status-workflow.sh` reports unresolved PR conflict evidence, presents `PR Conflict Detected` before PR-ready or merge/finalize choices.
-- For complete PR-ready workspaces, does not push or create a PR from a status question alone.
-- Runs `Pre-PR Human Checkpoint` and asks the human to choose the next handoff action.
+- For complete PR-ready workspaces, may auto-create the PR from a status question only if local validation, PR readiness, included/excluded file review, and stop-condition checks are already clear.
+- After PR creation, runs `Pre-PR Human Checkpoint` and asks the human to choose the next handoff action.
 - Presents the completion handoff choice menu with a short explanation for each choice:
-  - 1. PR 진행: final validation, push, PR creation, CI check, merge, issue close check, finalize, and automatic merged branch cleanup. If the human says "PR만 올려줘", stop after PR creation and do not merge.
+  - 1. PR 진행: if needed, automatic PR creation first; then CI check, merge, issue close check, finalize, and automatic merged branch cleanup. If the human says "PR만 올려줘", stop after PR creation and do not merge.
   - 2. 추가 보강: name 1-5 concrete hardening candidates such as weak tests, unclear docs, cost risk, missing manual verification, or unclear next-phase contract. Explain the benefit and delay tradeoff.
   - 3. 다음 Phase: do not silently skip the current PR-ready branch. Ask whether to merge it first or intentionally hold it, then create the next workspace.
-  - 4. 보류: do not push or create a PR. Record the hold reason and resume condition in `next-actions.md`.
+  - 4. 보류: before PR creation, do not push or create a PR; after PR creation, keep the PR open and do not merge. Record the hold reason and resume condition in `next-actions.md`.
   - 5. 외부 실행 승인 단계: check approval checklist, expected cost, rollback, smoke test, secrets, and permissions before AWS/deploy/migration work.
-- Treats a human `PR 진행` selection as approval for that branch's push, PR creation, CI check, merge, PR finalize, linked issue close verification, and automatic merged branch cleanup.
+- Treats a human `PR 진행` selection after PR creation as approval for CI check, merge, PR finalize, linked issue close verification, and automatic merged branch cleanup.
 - Treats `머지해`, `진행해`, and `이 PR 마무리해` as approval for merge/finalize/issue close/automatic branch cleanup when an open PR already exists.
+- Locks merge approval to one PR target: the current workspace PR or the PR number/branch explicitly named by the human. If the status check finds multiple open PRs, broad wording such as `상태보고 머지까지해`, `남은 PR 머지해`, or `merge 가능한 것 처리해` is not enough to merge more than one PR; report the other PRs and ask for a separate explicit PR number before merging them.
 - Stops and reports back instead of merging if CI fails, merge conflicts exist, required review is missing, scope drift appears, deployment/AWS resource creation is involved, or the human limited the command to PR creation/draft/hold merge.
 - Automatic merged branch cleanup only deletes Git branch refs with `git push origin --delete`, `git branch -d`, and `git fetch --prune`; it never deletes AWS, cloud, deploy, database, or external resources.
 - If `git branch -d` fails, does not run `git branch -D` without separate human confirmation.
@@ -387,7 +402,7 @@ AI does:
 - Runs `git status --short` and separates tracked, staged, and untracked files.
 - Presents included files and excluded files before staging.
 - Excludes `.DS_Store`, personal drafts, unrelated untracked files, local editor artifacts, and files from another workstream.
-- Proceeds to push/PR only after `Pre-PR Human Checkpoint` approval.
+- Proceeds to automatic PR creation when PR-ready conditions pass; proceeds to merge/finalize/cleanup only after `Pre-PR Human Checkpoint` approval.
 
 ## 9) Recompare A Decision
 

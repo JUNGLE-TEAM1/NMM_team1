@@ -88,7 +88,7 @@ flowchart TB
         INGEST["Connector Workers"]
         TASK["Pipeline Tasks"]
         OBJ["S3-compatible Object Storage"]
-        ENGINE["Trino or local query engine"]
+        ENGINE["Query Engine Adapter"]
         SERVE["Cache / Serving Store"]
     end
 
@@ -145,14 +145,14 @@ Control Plane은 AskLake 제품 고유 영역이다.
 ## 5) Data Plane
 
 Data Plane은 실제 데이터 이동과 계산을 수행한다.
-Control Plane이 명령, 정책, 상태, evidence를 관리하고 Data Plane은 adapter로 교체 가능해야 한다.
+대용량/복합 데이터셋을 수집, 변환, 정규화, 저장, 검산하는 실행 경로이며, Control Plane이 명령, 정책, 상태, evidence를 관리하고 Data Plane은 adapter로 교체 가능해야 한다.
 
 | 영역 | Target | Current baseline |
 | --- | --- | --- |
 | Source connectors | RDB, REST API, CSV/JSON/Parquet, S3-compatible storage, documents, event replay 후보 | CSV/local file |
-| Pipeline tasks | Source, Transform, Quality, Sink, Retry, Rerun, Backfill | `select_fields` transform |
-| Object storage | S3-compatible Raw/Curated zone, Parquet partitions | local CSV output |
-| Query engine | Trino target, local query engine 후보 | 없음 |
+| Pipeline tasks | Source, Transform/Normalize/Aggregate, Quality, Load/Sink, Retry, Rerun, Backfill, row count/bytes/duration evidence | `select_fields` transform |
+| Object storage | S3-compatible Raw/Curated zone, Parquet partitions, output path evidence | local CSV output |
+| Query engine | 검산과 분석용 adapter 경계, Trino/Athena/local engine 후보 | 없음 |
 | Serving | Result cache, serving store, dashboard/API output | 없음 |
 | Vector/RAG | metadata/document/metric 중심 index | 없음 |
 
@@ -205,11 +205,14 @@ Target MVP 구현 시에는 dataset trust status로 확장하거나 migration pa
 
 ```text
 1. User -> Source API: source 연결과 schema discovery 요청
-2. Control Plane -> Catalog: dataset draft 생성
-3. Trust Gate -> Quality/PII/Policy: 필수 gate 평가
-4. Steward -> Approval: 변경 diff와 영향 자산 검토
-5. Control Plane -> Dataset: 조건 통과 시 Trusted 게시
-6. Audit Event: 변경, 승인, 정책 결과 기록
+2. Data Plane -> Pipeline Task: schema inference/user override, transform/normalize/load 실행
+3. Data Plane -> Object Storage: Parquet 또는 S3-compatible output 저장
+4. Query Adapter -> Dataset Evidence: row count, bytes, duration, SQL 검산 기록
+5. Control Plane -> Catalog: dataset draft 생성
+6. Trust Gate -> Quality/PII/Policy: 필수 gate 평가
+7. Steward -> Approval: 변경 diff와 영향 자산 검토
+8. Control Plane -> Dataset: 조건 통과 시 Trusted 게시
+9. Audit Event: 변경, 승인, 정책 결과 기록
 ```
 
 ### 흐름 C. Query/Ask와 Evidence

@@ -319,7 +319,7 @@ Minimum SQL guardrail failure shape:
 | --- | --- |
 | `status` | `succeeded`, `blocked`, `failed` |
 | `guardrail.validation_status` | `passed`, `blocked`, `failed` |
-| `guardrail.failure_code` | `non_select_sql`, `table_not_allowed`, `timeout`, `limit_required`, `engine_unavailable`, or `null` |
+| `guardrail.failure_code` | `non_select_sql`, `table_not_allowed`, `column_not_allowed`, `timeout`, `limit_required`, `engine_unavailable`, or `null` |
 | `guardrail.failure_message` | human-readable reason or `null` |
 
 Week 2 workflow/run status values:
@@ -340,6 +340,7 @@ Week 2 execution metric semantics:
 | `CatalogMetadata.metrics.bytes` | Output dataset bytes |
 
 `ExecutionResult.task_results[]` records node-level status, attempt, row count, bytes, and error. M5 owns the canonical run state; M1 displays it; M6 may use successful `CatalogMetadata` only.
+For big/complex dataset manipulation, these fields are processing evidence: they prove that transform/normalize/load produced a bounded output dataset instead of only displaying a successful UI state.
 
 Week 2 daily smoke evidence must include:
 

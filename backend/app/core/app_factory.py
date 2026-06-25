@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.health import router as health_router
 from app.api.pipelines import create_pipeline_router
 from app.api.source_catalog import create_source_catalog_router
+from app.api.week2_ai_query import create_week2_ai_query_router
 from app.api.week2_workflow import create_week2_workflow_router
 from app.core.container import AppContainer
 from app.core.settings import Settings, get_settings
@@ -39,5 +40,6 @@ def create_app(store: MetadataStore | None = None, settings: Settings | None = N
         )
     )
     app.include_router(create_week2_workflow_router(container.week2_workflow_service))
+    app.include_router(create_week2_ai_query_router(container.ai_query_service))
 
     return app

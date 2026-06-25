@@ -138,6 +138,16 @@
 | Verification method | 실패하는 sample source/transform으로 run을 실행하고 UI/API 상태를 확인한다. |
 | Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07` |
 
+### 처리 증거 없이 대용량/복합 Dataset 조작이 완료된 것처럼 보이는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | 대용량/복합 dataset 조작은 schema 확인, transform/normalize/load 결과, output path, row count, bytes, duration, SQL 검산 evidence 없이 완료 또는 `Trusted`처럼 표시되지 않는다. |
+| Failure condition | UI 또는 catalog가 처리 규모와 검산 결과 없이 dataset을 성공/ready로 표시하거나, transform이 실제 output dataset을 남기지 않았는데 완료로 보인다. |
+| Expected behavior | 처리 증거가 없으면 run 또는 dataset을 보류/failed/not ready로 표시하고, 필요한 output path/row count/bytes/duration/SQL 검산 누락을 보여준다. |
+| Verification method | schema inference/transform/load 후 `ExecutionResult`, `CatalogMetadata`, `QueryResult` evidence를 확인한다. |
+| Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07`, Week 2 M2~M6 |
+
 ### Container App Health
 
 | 항목 | 내용 |

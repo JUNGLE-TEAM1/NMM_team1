@@ -111,24 +111,24 @@ rg() {
   python_bin="$(portable_python_bin)" || return $?
 
   if [[ "$quiet" -eq 1 ]]; then
-    "$python_bin" "$(portable_rg_helper)" quiet "$pattern" "${files[@]}"
+    "$python_bin" "$(portable_rg_helper)" quiet "$pattern" ${files[@]+"${files[@]}"}
     return $?
   fi
 
   if [[ "$count" -eq 1 ]]; then
-    "$python_bin" "$(portable_rg_helper)" count "$pattern" "${files[@]}"
+    "$python_bin" "$(portable_rg_helper)" count "$pattern" ${files[@]+"${files[@]}"}
     return $?
   fi
 
   if [[ "$only_matching" -eq 1 ]]; then
-    "$python_bin" "$(portable_rg_helper)" extract "$pattern" "${files[@]}"
+    "$python_bin" "$(portable_rg_helper)" extract "$pattern" ${files[@]+"${files[@]}"}
     return $?
   fi
 
   if [[ "$line_number" -eq 1 ]]; then
-    "$python_bin" "$(portable_rg_helper)" lines "$pattern" "${files[@]}"
+    "$python_bin" "$(portable_rg_helper)" lines "$pattern" ${files[@]+"${files[@]}"}
     return $?
   fi
 
-  "$python_bin" "$(portable_rg_helper)" lines "$pattern" "${files[@]}"
+  "$python_bin" "$(portable_rg_helper)" lines "$pattern" ${files[@]+"${files[@]}"}
 }

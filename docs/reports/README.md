@@ -36,6 +36,8 @@ report가 늘어나면 영역별 최신 report index를 작게 유지한다. 이
 | --- | --- | --- |
 | 전체 진행 요약 | [`asklake-phase-summary.md`](asklake-phase-summary.md) | 팀원이 지금까지 진행된 Phase와 현재 남은 선택지를 빠르게 파악 |
 | 팀원 온보딩 요약 | [`project-onboarding-summary.md`](project-onboarding-summary.md) | 새 팀원이 AskLake의 출발점, 현재 준비 상태, 다음 개발 방식의 큰 흐름을 문단 중심으로 파악 |
+| B2B SaaS 포지셔닝 | [`b2b-saas-positioning.md`](b2b-saas-positioning.md) | 제품 방향은 B2B SaaS이고 Target MVP는 local/container 단일 Demo Tenant 검증이라는 분리 확인 |
+| 대용량 데이터셋 조작 맥락 | [`big-dataset-context.md`](big-dataset-context.md) | Target MVP가 대용량/복합 데이터셋을 신뢰 가능한 분석 자산으로 만들고 처리 증거를 남기는 흐름을 포함하는지 확인 |
 | 마일스톤 완료 요약 | [`milestone-completion-summary.md`](milestone-completion-summary.md) | M0~M5와 이후 보강 작업에서 무엇을 했는지 팀원이 빠르게 파악 |
 | Product Rebaseline 리스크 분석 | [`asklake-product-rebaseline-risk-analysis.md`](asklake-product-rebaseline-risk-analysis.md) | 기획서 적용 전 현재 하네스와의 충돌, 결정 필요 항목, 첫 rebaseline Phase 후보 파악 |
 | Product Context Coherence Audit | [`product-context-coherence-audit.md`](product-context-coherence-audit.md) | MVP v1/current baseline과 Target MVP 문맥 분리, CI-safe strict guard 적용 여부 확인 |
@@ -53,7 +55,13 @@ report가 늘어나면 영역별 최신 report index를 작게 유지한다. 이
 | WSL2 Known Gaps Guidance | [`wsl2-known-gaps-guidance.md`](wsl2-known-gaps-guidance.md) | WSL2 Tier 1 경로를 유지하면서 CRLF, Git metadata 혼용, native Windows 보류 기준을 확인 |
 | Small Change PR Decision | [`small-change-pr-decision.md`](small-change-pr-decision.md) | 작은 변경 완료 후 PR 진행, 로컬 보류, 큰 branch 흡수, 개인 초안 유지, 포함/제외 파일 정리 기준 확인 |
 | PR Checkpoint Hardening | [`pr-checkpoint-hardening.md`](pr-checkpoint-hardening.md) | 작은 변경의 PR 진행이 Pre-PR checkpoint를 우회하지 않는지, dirty checkpoint가 untracked 파일을 자동 추적하지 않는지 확인 |
+| Auto PR Creation Policy | [`auto-pr-creation-policy.md`](auto-pr-creation-policy.md) | PR-ready branch의 feature branch push/PR 생성을 자동화하고 merge/finalize/cleanup은 사람 확인 gate로 유지한 최신 정책 확인 |
 | PR Finalization State Source | [`pr-finalization-state-source.md`](pr-finalization-state-source.md) | PR merge 뒤 stale `sync.md` final field가 남아도 GitHub PR/issue 상태로 완료 여부를 올바르게 해석하는지 확인 |
+| Project Status mismatch guard | [`project-status-mismatch-guard.md`](project-status-mismatch-guard.md) | merged PR + closed issue인데 GitHub Project Status가 `Done`이 아닌 stale/mismatch 상태를 자동보정 없이 감지하는지 확인 |
+| PR 템플릿 자동 body 정렬 | [`pr-template-auto-body-alignment.md`](pr-template-auto-body-alignment.md) | 자동 PR 생성 body가 한국어 PR 템플릿, linked issue closing keyword, quality/sync/human checkpoint 항목과 정렬되는지 확인 |
+| 이슈 템플릿 생성 경로 보강 | [`issue-template-generation-guard.md`](issue-template-generation-guard.md) | `start-workflow.sh` 자동 생성 issue가 한국어 title/body/label과 body-file 경로를 쓰는지 확인 |
+| PR 템플릿 문단형 설명 보강 | [`pr-template-readable-narrative.md`](pr-template-readable-narrative.md) | PR body가 7섹션 문단형 review handoff로 생성되는지 확인 |
+| GitHub record drift audit | [`github-record-drift-audit.md`](github-record-drift-audit.md) | GitHub issue/PR이 템플릿 생성 경로를 우회했는지 읽기 전용으로 감지하고 PR-ready 전에 막는지 확인 |
 | PR Conflict Resolution Protocol | [`pr-conflict-resolution-protocol.md`](pr-conflict-resolution-protocol.md) | PR conflict 감지, 분류, 사람 확인, 해결 후 재검증과 evidence 기록 규칙 확인 |
 | Harness 변경사항 병합 후 점검 | [`harness-post-merge-change-audit.md`](harness-post-merge-change-audit.md) | PR #45~#47 병합 뒤 Pre-PR checkpoint, Product Rebaseline, validation/script 충돌 여부 확인 |
 | Mid-Phase Steering 하네스 보강 | [`mid-phase-steering-harness.md`](mid-phase-steering-harness.md) | 작업 중 사람의 잦은 조향을 현재 Phase detail, scope change, Hotfix, 다음 Phase 후보, 보류 아이디어, 고영향 결정으로 분류하는 규칙 확인 |

@@ -4,6 +4,7 @@ __pycache__/
 .venv/
 data/
 backend/data/
+demo-output/
 
 node_modules/
 frontend/node_modules/
