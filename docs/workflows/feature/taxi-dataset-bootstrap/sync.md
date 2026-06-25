@@ -42,9 +42,10 @@ main 동기화와 integration readiness를 기록한다.
 - linked GitHub issue: #78
 - issue link: https://github.com/JUNGLE-TEAM1/NMM_team1/issues/78
 - issue creation result: created
-- issue project result: issue는 사람이 reopen했고 PR merge 전 기대 상태는 issue `Open`, GitHub Project `In Progress`
+- issue project result: failed: error: your authentication token is missing required scopes [read:project] To request it, run:  gh auth refresh -s read:project
 - PR closing keyword: Closes #78
-- pushed branch:
-- PR link:
-- merge status:
-- issue close status:
+- pushed branch: feature/taxi-dataset-bootstrap
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/98
+- merge status: open
+- issue close status: open
+- issue reopen result: already open
