@@ -19,6 +19,7 @@
 | Demo metrics fixture | `backend/samples/amazon_reviews_demo.jsonl` 4-row JSONL을 사용해 aggregate output 3 rows를 계산 | M3 fixed/extended sample 전에도 #92 `ExecutionResult` metrics wiring을 검증하기 위해 | #92 slice, 2026-06-25 |
 | Catalog update guard | `succeeded`와 `fallback_succeeded` run만 catalog를 갱신 | 실패 run이 최신 성공 `CatalogMetadata`를 오염시키지 않도록 보호하기 위해 | #93 slice, 2026-06-25 |
 | Airflow fallback threshold | Airflow adapter status가 `succeeded`일 때만 primary success로 보고, adapter unavailable/error 또는 그 외 status는 `local_runner` fallback | M1/M6가 같은 `ExecutionResult` shape를 유지하면서 실제 Airflow 미설정/실패를 안전하게 통과하도록 하기 위해 | #94 slice, 2026-06-25 |
+| Execution metric semantics | `ExecutionResult.row_count/bytes`는 primary input 기준, `CatalogMetadata.metrics.row_count/bytes`는 output dataset 기준 | M2 Taxi bootstrap PR #98의 input metric 가정과 M5 Catalog output metric을 충돌 없이 함께 쓰기 위해 | metric contract lock slice, 2026-06-25 |
 
 ## Deferred Decisions / 보류한 결정
 

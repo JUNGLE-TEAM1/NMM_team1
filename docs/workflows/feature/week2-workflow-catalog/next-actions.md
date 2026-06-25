@@ -4,8 +4,8 @@
 
 ## Current State / 현재 상태
 
-- State: #94 local validation passed
-- Summary: M5 Week 2 workflow/run/catalog runtime slice, local runner boundary, local JSONL demo metrics wiring, latest successful catalog guard, Airflow adapter fallback boundary가 구현됐고 backend/harness 검증이 통과했다.
+- State: metric contract lock local validation passed
+- Summary: M5 Week 2 workflow/run/catalog runtime slice, local runner boundary, local JSONL demo metrics wiring, latest successful catalog guard, Airflow adapter fallback boundary, execution metric semantics lock이 구현됐고 backend/harness 검증이 통과했다.
 
 ## Recommended Next Action / 권장 다음 행동
 
@@ -25,7 +25,7 @@
 
 ## Last User Choice / 마지막 사용자 선택
 
-- 2026-06-25: "좋아요. 갑시다."로 #94 Airflow adapter fallback threshold 진행을 승인했다.
+- 2026-06-25: M2 PR #98 검토 후 `ExecutionResult.row_count/bytes` input 기준, `CatalogMetadata.metrics.row_count/bytes` output 기준으로 계약 잠금을 요청했다.
 
 ## Next AI Action / 다음 AI 행동
 

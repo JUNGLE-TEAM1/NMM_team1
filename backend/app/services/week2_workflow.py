@@ -133,10 +133,10 @@ class Week2WorkflowService:
         catalog["s3_uri"] = replace_run_id(catalog["s3_uri"], run_id)
         catalog["storage"]["prefix"] = replace_run_id(catalog["storage"]["prefix"], run_id)
         catalog["storage"]["local_fallback_path"] = runner_result.output_path
-        catalog["metrics"]["row_count"] = runner_result.row_count
-        catalog["metrics"]["bytes"] = runner_result.bytes
+        catalog["metrics"]["row_count"] = output_row_count(runner_result)
+        catalog["metrics"]["bytes"] = output_bytes(runner_result)
         catalog["metrics"]["quality"]["schema_match"] = "passed"
-        catalog["metrics"]["quality"]["row_count_checked"] = runner_result.row_count is not None
+        catalog["metrics"]["quality"]["row_count_checked"] = output_row_count(runner_result) is not None
         catalog["lineage"]["run_id"] = run_id
         catalog["updated_at"] = timestamp
         return catalog
@@ -182,4 +182,14 @@ def result_with_logs(result: Week2RunnerResult, leading_logs: list[dict[str, str
         bytes=result.bytes,
         duration_ms=result.duration_ms,
         output_path=result.output_path,
+        output_row_count=result.output_row_count,
+        output_bytes=result.output_bytes,
     )
+
+
+def output_row_count(result: Week2RunnerResult) -> int | None:
+    return result.output_row_count if result.output_row_count is not None else result.row_count
+
+
+def output_bytes(result: Week2RunnerResult) -> int | None:
+    return result.output_bytes if result.output_bytes is not None else result.bytes

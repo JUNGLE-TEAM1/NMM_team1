@@ -11,15 +11,17 @@
 - 2026-06-25: #92 slice에서 `backend/samples/amazon_reviews_demo.jsonl` demo fixture를 추가하고 local runner가 실제 JSONL을 읽어 `row_count`, `bytes`, `duration_ms`, local fallback output path를 계산하게 했다.
 - 2026-06-25: #93 slice에서 catalog가 최신 성공 run(`run_reviews_demo_002`)을 가리키는지, 실패 run 이후에도 직전 성공 catalog를 유지하는지 테스트로 고정했다.
 - 2026-06-25: #94 slice에서 `Week2AirflowAdapter` boundary를 추가했다. `executor=airflow`는 Airflow adapter를 먼저 시도하고, adapter 미설정 또는 `succeeded` 외 status가 나오면 `Week2LocalRunner`로 fallback한다.
+- 2026-06-25: M2 Taxi bootstrap PR #98 검토 후 Week 2 execution metric semantics를 잠갔다. `ExecutionResult.row_count/bytes`는 primary input 기준, `CatalogMetadata.metrics.row_count/bytes`는 output dataset 기준이다.
 
 ## 결정
 
 - Week 2 draft route를 `/api/week2/*`로 추가한다. 기존 `/api/pipelines` baseline은 그대로 둔다.
 - 실제 Airflow/MinIO 구현 전까지는 `contracts/*.sample.json`을 로드한 in-memory run/catalog slice로 M1/M6 boundary를 검증한다.
 - local runner는 `Source`, `Select/Filter`, `Cast/Normalize`, `Aggregate`, `Load` node만 지원하고, 그 외 node type 또는 깨진 edge reference는 `fallback_failed`로 둔다.
-- M3 fixed/extended sample이 준비되기 전에는 `backend/samples/amazon_reviews_demo.jsonl` 4-row demo fixture를 사용하고, aggregate 결과 3 rows를 `ExecutionResult.row_count`로 기록한다.
+- M3 fixed/extended sample이 준비되기 전에는 `backend/samples/amazon_reviews_demo.jsonl` 4-row demo fixture를 사용한다. `ExecutionResult.row_count=4`, `ExecutionResult.bytes=580`은 input 기준이고, aggregate 결과 3 rows와 195 bytes는 `CatalogMetadata.metrics`와 `Load` task 기준으로 기록한다.
 - catalog는 `succeeded` 또는 `fallback_succeeded` run에서만 갱신한다. `fallback_failed` run은 run history에는 남지만 catalog 최신 성공 metadata를 덮어쓰지 않는다.
 - Airflow fallback threshold는 `succeeded`만 primary success로 보고, adapter unavailable/error 또는 그 외 status는 local runner fallback으로 처리한다.
+- Week 2 output path는 `s3://<bucket>/<domain>/<layer>/[dataset_path/]run_id=<run_id>/`를 따른다. `dataset_path`는 Taxi의 `daily_metrics`처럼 domain-specific Gold output을 담을 때만 사용한다.
 
 ## 열린 질문
 
@@ -42,6 +44,7 @@
 - `contracts/execution_result.sample.json`
 - `contracts/catalog_metadata.sample.json`
 - `contracts/source_config.sample.json`
+- M2 PR #98 contract comment: `https://github.com/JUNGLE-TEAM1/NMM_team1/pull/98#issuecomment-4798361794`
 - `PYTHONPATH=backend ./.venv/bin/pytest backend/tests -q` -> 30 passed
 - `PYTHONPATH=backend ./.venv/bin/pytest backend/tests/test_week2_workflow_catalog.py backend/tests/test_week2_local_runner.py -q` -> 12 passed
 - `scripts/validate-harness.sh --strict` -> passed
@@ -56,8 +59,10 @@ Run ID: run_reviews_demo_001
 Executed command or screen: POST /api/week2/workflows/pipeline_reviews_json_e2e/runs
 Input source or file: contracts/workflow_definition.sample.json
 Output S3/local path: s3://asklake-demo/reviews/gold/run_id=run_reviews_demo_001/
-row_count: 3
-bytes: 195
+ExecutionResult.row_count: 4
+ExecutionResult.bytes: 580
+CatalogMetadata.metrics.row_count: 3
+CatalogMetadata.metrics.bytes: 195
 duration: 2 ms
 Produced JSON: ExecutionResult, CatalogMetadata
 Consumer module: M1, M6
@@ -81,5 +86,17 @@ airflow success behavior: adapter status=succeeded keeps ExecutionResult.status=
 airflow unavailable behavior: default adapter falls back to local runner and returns fallback_succeeded
 airflow failed behavior: adapter status=failed falls back to local runner; if local runner also fails, catalog is not updated
 fallback threshold: Airflow primary success requires status=succeeded
+focused verification: PYTHONPATH=backend ./.venv/bin/pytest backend/tests/test_week2_workflow_catalog.py backend/tests/test_week2_local_runner.py -q -> 12 passed
+```
+
+## Metric Semantics Lock Evidence
+
+```text
+contract source: docs/03-interface-reference.md Week 2 execution metric semantics
+ExecutionResult.row_count: primary input rows processed
+ExecutionResult.bytes: primary input bytes read
+CatalogMetadata.metrics.row_count: output dataset rows
+CatalogMetadata.metrics.bytes: output dataset bytes
+local demo evidence: input rows=4, input bytes=580, output rows=3, output bytes=195
 focused verification: PYTHONPATH=backend ./.venv/bin/pytest backend/tests/test_week2_workflow_catalog.py backend/tests/test_week2_local_runner.py -q -> 12 passed
 ```

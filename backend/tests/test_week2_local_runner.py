@@ -38,7 +38,11 @@ def test_week2_local_runner_executes_supported_nodes_in_order(tmp_path: Path) ->
     assert [task["node_id"] for task in result.task_results] == ["node_source", "node_load"]
     assert [task["status"] for task in result.task_results] == ["succeeded", "succeeded"]
     assert result.row_count == 2
+    assert result.output_row_count == 2
     assert result.bytes and result.bytes > 0
+    assert result.output_bytes and result.output_bytes > 0
+    assert result.task_results[0]["bytes"] == result.bytes
+    assert result.task_results[-1]["bytes"] == result.output_bytes
     assert result.output_path
     assert Path(result.output_path).exists()
     assert result.logs[-1]["message"] == "fallback_succeeded"

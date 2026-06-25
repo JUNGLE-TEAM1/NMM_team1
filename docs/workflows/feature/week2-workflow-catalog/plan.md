@@ -19,6 +19,7 @@
 - `contracts/workflow_definition.sample.json`, `contracts/execution_result.sample.json`, `contracts/catalog_metadata.sample.json` 로드
 - local runner fallback compatible status와 node-level `task_results[]` 생성
 - Airflow adapter boundary와 fallback threshold 적용
+- Week 2 execution metric semantics lock
 - focused backend contract tests
 
 ## 범위 제외

@@ -24,6 +24,8 @@ class Week2RunnerResult:
     bytes: int | None = None
     duration_ms: int | None = None
     output_path: str | None = None
+    output_row_count: int | None = None
+    output_bytes: int | None = None
 
 
 class Week2LocalRunner:
@@ -89,18 +91,24 @@ class Week2LocalRunner:
                     output_path=str(output_path) if output_path else None,
                 )
 
-            task_results.append(succeeded_task_result(node_id, row_count=len(rows), bytes=path_size(output_path)))
+            task_results.append(
+                succeeded_task_result(node_id, row_count=len(rows), bytes=self._task_bytes(node_type, output_path))
+            )
             logs.append({"level": "info", "message": f"{node_id} succeeded as {node_type}"})
 
+        input_row_count = first_task_row_count(task_results)
+        output_bytes = path_size(output_path)
         logs.append({"level": "info", "message": "fallback_succeeded"})
         return Week2RunnerResult(
             status="fallback_succeeded",
             task_results=task_results,
             logs=logs,
-            row_count=len(rows),
-            bytes=path_size(output_path),
+            row_count=input_row_count,
+            bytes=self._source_bytes(),
             duration_ms=elapsed_ms(started),
             output_path=str(output_path) if output_path else None,
+            output_row_count=len(rows),
+            output_bytes=output_bytes,
         )
 
     def _missing_edge_refs(self, workflow_definition: dict[str, Any]) -> list[str]:
@@ -137,7 +145,7 @@ class Week2LocalRunner:
         if self.source_config is None:
             raise Week2LocalRunnerError("SourceConfig is required for local runner execution")
 
-        source_path = repo_root() / self.source_config["connection_ref"]["path"]
+        source_path = self._source_path()
         if not source_path.exists():
             raise Week2LocalRunnerError(f"Source file not found: {source_path}")
 
@@ -151,6 +159,21 @@ class Week2LocalRunner:
                 except json.JSONDecodeError as error:
                     raise Week2LocalRunnerError(f"Invalid JSONL at line {line_number}: {error}") from error
         return rows
+
+    def _source_path(self) -> Path:
+        if self.source_config is None:
+            raise Week2LocalRunnerError("SourceConfig is required for local runner execution")
+        return repo_root() / self.source_config["connection_ref"]["path"]
+
+    def _source_bytes(self) -> int | None:
+        if self.source_config is None:
+            return None
+        return path_size(self._source_path())
+
+    def _task_bytes(self, node_type: str, output_path: Path | None) -> int | None:
+        if node_type == "Source":
+            return self._source_bytes()
+        return path_size(output_path)
 
     def _write_output_rows(self, rows: list[dict[str, Any]], target_dataset: str, run_id: str) -> Path:
         output_dir = self.output_root / "reviews" / "gold" / f"run_id={run_id}"
@@ -246,3 +269,10 @@ def path_size(path: Path | None) -> int | None:
 
 def elapsed_ms(started: float) -> int:
     return max(1, round((perf_counter() - started) * 1000))
+
+
+def first_task_row_count(task_results: list[dict[str, Any]]) -> int | None:
+    if not task_results:
+        return None
+    row_count = task_results[0].get("row_count")
+    return row_count if isinstance(row_count, int) else None

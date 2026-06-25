@@ -39,9 +39,11 @@ def test_week2_workflow_run_returns_execution_result_contract() -> None:
     assert run["executor"] == "local_runner"
     assert run["status"] == "fallback_succeeded"
     assert run["triggered_by"] == "m5_owner"
-    assert run["row_count"] == 3
+    assert run["row_count"] == 4
     assert run["bytes"] > 0
     assert run["duration_ms"] >= 1
+    assert run["metric_semantics"]["row_count"] == "primary_input_rows_processed"
+    assert run["metric_semantics"]["bytes"] == "primary_input_bytes_read"
     assert run["outputs"][0]["uri"] == "s3://asklake-demo/reviews/gold/run_id=run_reviews_demo_001/"
     assert [task["node_id"] for task in run["task_results"]] == [
         "node_source_reviews",
@@ -51,6 +53,7 @@ def test_week2_workflow_run_returns_execution_result_contract() -> None:
         "node_load_reviews",
     ]
     assert [task["row_count"] for task in run["task_results"]] == [4, 4, 4, 3, 3]
+    assert run["task_results"][0]["bytes"] == run["bytes"]
     assert run["task_results"][-1]["bytes"] > 0
 
     get_response = client.get("/api/week2/runs/run_reviews_demo_001")
@@ -76,6 +79,10 @@ def test_week2_catalog_metadata_tracks_successful_run_lineage() -> None:
     assert catalog["lineage"]["pipeline_id"] == "pipeline_reviews_json_e2e"
     assert catalog["lineage"]["run_id"] == "run_reviews_demo_001"
     assert catalog["query"]["allow_readonly_sql"] is True
+    assert catalog["metrics"]["semantics"] == {
+        "row_count": "output_dataset_rows",
+        "bytes": "output_dataset_bytes",
+    }
     assert catalog["metrics"]["row_count"] == 3
     assert catalog["metrics"]["bytes"] > 0
     assert catalog["metrics"]["quality"] == {
@@ -136,7 +143,7 @@ def test_week2_airflow_executor_falls_back_when_adapter_unavailable() -> None:
     run = response.json()
     assert run["executor"] == "airflow"
     assert run["status"] == "fallback_succeeded"
-    assert run["row_count"] == 3
+    assert run["row_count"] == 4
     assert any("Airflow unavailable; falling back to local runner" in log["message"] for log in run["logs"])
     assert run["logs"][-1]["message"] == "airflow adapter fell back to local runner"
 
@@ -153,13 +160,14 @@ def test_week2_airflow_success_updates_catalog_without_local_fallback(tmp_path: 
 
     assert run["executor"] == "airflow"
     assert run["status"] == "succeeded"
-    assert run["row_count"] == 7
-    assert run["bytes"] > 0
+    assert run["row_count"] == 10
+    assert run["bytes"] == 1000
     assert run["task_results"][0]["node_id"] == "airflow_dag_reviews"
     assert not any("falling back" in log["message"] for log in run["logs"])
     assert run["logs"][-1]["message"] == "airflow adapter executed Week 2 workflow boundary"
     assert catalog["lineage"]["run_id"] == "run_reviews_demo_001"
     assert catalog["metrics"]["row_count"] == 7
+    assert catalog["metrics"]["bytes"] > 0
     assert catalog["storage"]["local_fallback_path"].endswith("dataset_reviews_gold.jsonl")
 
 
@@ -173,7 +181,7 @@ def test_week2_airflow_failed_result_uses_local_fallback(tmp_path: Path) -> None
     catalog = service.get_catalog_metadata("dataset_reviews_gold")
 
     assert run["status"] == "fallback_succeeded"
-    assert run["row_count"] == 3
+    assert run["row_count"] == 4
     assert any("Airflow returned failed; falling back to local runner" in log["message"] for log in run["logs"])
     assert catalog["lineage"]["run_id"] == "run_reviews_demo_001"
 
@@ -244,10 +252,12 @@ class SuccessfulAirflowAdapter:
                 }
             ],
             logs=[{"level": "info", "message": f"Airflow DAG completed for {run_id}"}],
-            row_count=7,
-            bytes=self.output_path.stat().st_size,
+            row_count=10,
+            bytes=1000,
             duration_ms=2,
             output_path=str(self.output_path),
+            output_row_count=7,
+            output_bytes=self.output_path.stat().st_size,
         )
 
 
