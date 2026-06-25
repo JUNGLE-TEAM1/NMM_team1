@@ -22,10 +22,26 @@ Default inputs:
 - `AGENTS.md`
 - `docs/00-layer-map.md`
 - `scripts/status-workflow.sh <workspace>` output when a workspace exists or can be inferred
+- Related `docs/project-context/<name>/README.md` when the request, workspace, branch, or PR topic clearly matches a project context bundle
 - 1-3 Source of Truth files directly connected to the request
 - Latest report index plus the latest related report only when evidence is needed
 
 AI should state the selected mode briefly and name the primary files it read.
+
+### Project Context Read
+
+`docs/project-context/` stores project-specific reference context such as meeting decisions, option analysis, and pre-Source-of-Truth decision logs.
+
+Project context is not Source of Truth. Use it to load relevant background, then verify contract, API, schema, validation, and operations decisions against the Source of Truth layers in `docs/00-layer-map.md`.
+
+When a request, branch workspace, or PR topic clearly matches a project context bundle:
+
+- read that bundle's `README.md` first;
+- if the bundle has `decisions.md`, treat it as the first project-context document to read after the README;
+- read `plan.md` or option-analysis documents only when they are needed for the task;
+- if the project context affects contract, API, schema, acceptance, regression, manual verification, or operations behavior, escalate to the directly impacted Source of Truth documents;
+- include referenced project context documents in PR/report related-document links when they materially informed the work;
+- if project context conflicts with Source of Truth, prefer Source of Truth and propose Change Propagation only when the project context should become binding.
 
 ### Escalate Read
 
