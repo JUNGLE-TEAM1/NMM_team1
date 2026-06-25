@@ -45,7 +45,7 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 - issue creation result: not requested
 - issue project result: not requested
 - PR closing keyword: 
-- pushed branch:
-- PR link:
-- merge status:
-- issue close status:
+- pushed branch: docs/week2-main-e2e-path
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/120
+- merge status: open
+- issue close status: n/a
