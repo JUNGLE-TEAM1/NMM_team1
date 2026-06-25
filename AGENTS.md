@@ -123,6 +123,7 @@ Target repository: `JUNGLE-TEAM1/NMM_team1`.
 - report는 Latest Report Index, 직전 Phase report, 관련 영역 최신 report, 필요 시 관련 report 1개만 읽는다.
 - 문서 일관성 확인에는 먼저 `rg`를 사용하고 관련 섹션만 읽는다.
 - `docs/15-context-budget-rule.md`를 적용한다. 기본은 Lite Read, contract/data/security/sync/quality/integration 위험에는 Escalate Read, 전체 점검이나 명시적 audit에는 Audit Read를 쓴다.
+- 요청, branch workspace, 또는 PR 주제가 `docs/project-context/`의 하위 묶음과 명확히 관련 있으면 해당 묶음의 `README.md`와 canonical 결정 로그를 작업 컨텍스트에 포함한다.
 - workspace가 있으면 상세 파일을 열기 전에 `scripts/status-workflow.sh <workspace>`를 summary entry point로 사용한다.
 - Context Budget mode와 읽은 주요 문서를 Phase report에 기록한다.
 

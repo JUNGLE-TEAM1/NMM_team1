@@ -26,6 +26,7 @@ Project-specific files may change, but the layer roles should stay stable.
 | Existing Codebase Adoption | baseline + next-change adoption mode for repos that already have codebase or operational inertia | `docs/16-existing-codebase-adoption.md` |
 | Parallel Milestone Protocol | optional execution contract for parallel workstreams, milestone ownership, dependencies, shared contracts, and integration order | `docs/17-parallel-milestone-protocol.md` |
 | Harness Regression Policy | fixture regression tests and Harness Test Update Gate rules for harness changes | `docs/18-harness-regression-policy.md` |
+| Project Context | non-authoritative project-specific reference context, meeting decisions, option analysis, and pre-Source-of-Truth decision logs | `docs/project-context/` |
 | Branch Workspaces | branch-specific working plans, notes, and reports | `docs/workflows/` |
 | Evidence | Phase reports, Hotfix reports, screenshots, logs, and latest-report index | `docs/reports/` |
 | External Summary | concise public or stakeholder-facing summary | `README.md` |
@@ -67,6 +68,7 @@ Load context by layer, not by reading every document.
 | UI/UX or user-flow change | Acceptance, Manual Verification, current Workflow Phase, and 1-2 relevant Evidence reports |
 | Core feature or integration change | Architecture, Interface, Acceptance, Regression, Manual Verification, current Workflow Phase, and 1-2 relevant Evidence reports |
 | Hotfix | Current Workflow Phase, related Regression scenario, related Manual Verification playbook, and previous/relevant Evidence report |
+| Project-context-backed task or PR | Related `docs/project-context/<name>/README.md`, its canonical decision log when present, then the Source of Truth layers directly impacted by the requested work |
 | Whole-project audit or retrospective | Layer Map, Source of Truth layers, Evidence index, and selected reports as needed |
 
 Context Budget modes from `docs/15-context-budget-rule.md` refine these paths:
@@ -139,6 +141,9 @@ layers:
   harness_regression_policy:
     files:
       - "docs/18-harness-regression-policy.md"
+  project_context:
+    files:
+      - "docs/project-context/"
   branch_workspaces:
     files:
       - "docs/workflows/"
