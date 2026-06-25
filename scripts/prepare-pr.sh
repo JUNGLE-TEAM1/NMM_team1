@@ -411,6 +411,9 @@ if [[ "$create_pr" -eq 1 ]]; then
   set_field "$sync_file" "- merge status:" "open"
   if [[ -n "$issue_number" ]]; then
     set_field "$sync_file" "- issue close status:" "open"
+    issue_project_result="$(set_issue_project_status "https://github.com/JUNGLE-TEAM1/NMM_team1/issues/${issue_number}" "Review")"
+    set_field "$sync_file" "- issue project result:" "$issue_project_result"
+    echo "Issue #${issue_number} project status: ${issue_project_result}"
   else
     set_field "$sync_file" "- issue close status:" "n/a"
   fi

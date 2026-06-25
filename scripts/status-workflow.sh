@@ -337,6 +337,10 @@ if [[ -f "$sync_file" ]]; then
   else
     remote_status_source="unavailable: GitHub CLI unavailable or unauthenticated"
   fi
+  open_pr_closed_issue_mismatch="no"
+  if [[ -n "${pr_link:-}" && "${remote_pr_status:-}" == "OPEN" && "${remote_issue_status:-}" == "CLOSED" ]]; then
+    open_pr_closed_issue_mismatch="yes"
+  fi
   pr_conflict_detected_at="$(section_value "$sync_file" "## PR Conflict Resolution" "- conflict detected at:")"
   pr_conflict_command="$(section_value "$sync_file" "## PR Conflict Resolution" "- conflict detection command:")"
   pr_conflict_type="$(section_value "$sync_file" "## PR Conflict Resolution" "- conflict type:")"
@@ -362,6 +366,7 @@ if [[ -f "$sync_file" ]]; then
   echo "  - Remote status source: ${remote_status_source}"
   echo "  - Remote PR state: ${remote_pr_status:-not checked}"
   echo "  - Remote issue state: ${remote_issue_status:-not checked}"
+  echo "  - Open PR / closed issue mismatch: ${open_pr_closed_issue_mismatch}"
   if stale_note "${merge_status:-}" "${remote_pr_status:-}"; then
     echo "  - Stale sync warning: sync.md merge status '${merge_status}' differs from GitHub PR state '${remote_pr_status}'"
   fi
@@ -614,6 +619,8 @@ elif [[ "${merge_status:-}" =~ ^merged ]] && [[ "${issue_close_status:-}" =~ ^CL
   recommendation="Phase is merged and linked issue is closed; choose the next phase or archive/cleanup follow-up."
 elif [[ -n "${pr_link:-}" ]] && [[ "${remote_pr_status:-}" == "MERGED" ]]; then
   recommendation="PR is merged according to GitHub. Run or review finalize/cleanup evidence; do not treat stale sync.md open fields as an active PR."
+elif [[ "${open_pr_closed_issue_mismatch:-no}" == "yes" ]]; then
+  recommendation="Open PR but linked issue is CLOSED. PR merge 전 Done/close가 선행된 이상 상태입니다. issue를 다시 열어 Project Review로 맞추거나, 이미 merge/finalize된 PR인지 확인한 뒤 finalize evidence를 정리합니다."
 elif [[ -n "${pr_link:-}" ]] && [[ ! "${merge_status:-}" =~ ^merged ]]; then
   recommendation="PR이 이미 열려 있습니다. CI/check 상태를 확인한 뒤 선택지: 1 PR 진행(merge, finalize, issue close 확인, automatic branch cleanup), 2 추가 보강(현재 PR에 추가 커밋), 3 보류(PR 유지 + 재개 조건 기록), 4 다음 Phase(현재 PR merge 또는 명시 보류 후 진행), 5 외부 실행 승인(deploy/AWS 등 별도 승인)."
 elif [[ "$pr_ready" == "yes" && "${#auto_pr_blockers[@]}" -gt 0 ]]; then
