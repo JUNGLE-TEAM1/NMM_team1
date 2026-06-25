@@ -76,7 +76,7 @@ Before PR handoff, AI must separate included files from excluded files.
 Do not stage `.DS_Store`, personal drafts, unrelated untracked files, local editor artifacts, or files from another workstream.
 If unrelated untracked files exist, AI reports them and keeps them out of the PR unless the human explicitly expands scope.
 When `Small Change Completion Decision` offers `PR 진행`, it means moving into `Pre-PR Human Checkpoint`.
-It does not bypass the human checkpoint or authorize push, PR creation, merge, finalize, or cleanup by itself.
+It does not authorize merge, finalize, issue close, or cleanup by itself. PR-ready small changes may still auto-create a PR before the merge/finalize checkpoint when no opt-out or stop condition exists.
 
 ## 4) Human Confirmation Gates
 
@@ -91,8 +91,8 @@ Each branch workspace records confirmation status in `confirmations.md`.
 | Scope Change Confirm | work expands beyond `plan.md` | whether to expand current branch, split another branch, or defer |
 | Verification Confirm | final verification starts | test/build/smoke commands, manual verification path, completion criteria |
 | Quality Gate Confirm | TDD or CI/CD expectations are unclear, skipped, or changed | failing-first evidence, branch check commands, CI requirements, skipped checks, CD/deploy gate |
-| Git Sync Confirm | pull, merge, rebase, push, PR creation, or PR merge could change branch or remote state | command to run, expected branch, dirty-worktree status, base/main commit, rollback plan if relevant |
-| Pre-PR Human Checkpoint | local validation passed and push, PR creation, PR handoff, integration handoff, or next Phase handoff is the natural next action | `PR 진행`, `로컬 완료로 보류`, `추가 수정`, `다음 Phase`, or another explicit next action |
+| Git Sync Confirm | pull, merge, rebase, PR merge, finalize, or cleanup could change branch or remote state outside automatic PR creation | command to run, expected branch, dirty-worktree status, base/main commit, rollback plan if relevant |
+| Pre-PR Human Checkpoint | PR was created and merge, finalize, issue close, cleanup, integration handoff, or next Phase handoff is the natural next action | `PR 진행`, `보류`, `추가 수정`, `다음 Phase`, or another explicit next action |
 | Sync Conflict Confirm | main changed during the Phase or shared Source of Truth conflicts with the branch | whether to rebase/merge now, continue with recorded risk, split a follow-up branch, or pause |
 | Completion Confirm | branch is considered done | changed summary, verification result, remaining risk, next task context |
 | Integration Conflict Confirm | integration branch resolves conflicting source branch assumptions | final model/interface/acceptance/regression/manual verification direction |
@@ -216,8 +216,8 @@ These can usually proceed inside the current branch workspace:
 - Use `--dry-run` before creating unfamiliar branch/workspace names.
 - Use `git pull --ff-only` as the default main update command only after human confirmation.
 - Prefer PR-based integration over direct main push.
-- Do not automate pull, merge, rebase, push, PR creation, or PR merge without a confirmation gate.
-- When local validation is complete, ask the human for the next handoff choice instead of silently omitting PR/push or automatically creating one.
+- Do not automate pull, merge, rebase, PR merge, finalize, issue close, branch cleanup, deploy, or external execution without a confirmation gate.
+- When local validation and PR readiness are complete, auto-create the PR unless the human opted out or a stop condition exists, then ask the human for the next handoff choice before merge/finalize/cleanup.
 - Use `.github/pull_request_template.md` for PR handoff when the project uses PRs.
 - Treat `.github/workflows/harness-validation.example.yml` as an optional CI example, not an active requirement.
 

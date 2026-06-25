@@ -655,21 +655,22 @@ case_list_active_uses_remote_pr_state_for_stale_sync() {
   )
 }
 
-case_complete_pr_ready_status_requires_pre_pr_checkpoint() {
-  local repo="${tmp_root}/pre-pr-checkpoint-status"
+case_complete_pr_ready_status_recommends_auto_pr_then_checkpoint() {
+  local repo="${tmp_root}/auto-pr-checkpoint-status"
   copy_repo "$repo"
   (
     cd "$repo"
+    git checkout -q -b test/harness-fixture
     local base
     base="$(base_commit)"
-    local workspace="docs/workflows/test/harness-pre-pr-checkpoint"
+    local workspace="docs/workflows/test/harness-fixture"
     write_common_workspace "$workspace" "complete" "passed" "accepted" "$base"
     git add "$workspace"
-    git commit -q -m "pre pr checkpoint status fixture"
-    scripts/status-workflow.sh "$workspace" > /tmp/harness-pre-pr-checkpoint-status.out
-    rg -q "Pre-PR Human Checkpoint" /tmp/harness-pre-pr-checkpoint-status.out
-    rg -q "로컬 완료로 보류" /tmp/harness-pre-pr-checkpoint-status.out
-    ! rg -q "자동 PR 생성 대상입니다" /tmp/harness-pre-pr-checkpoint-status.out
+    git commit -q -m "auto pr checkpoint status fixture"
+    scripts/status-workflow.sh "$workspace" > /tmp/harness-auto-pr-checkpoint-status.out
+    rg -q "자동 PR 생성 대상입니다" /tmp/harness-auto-pr-checkpoint-status.out
+    rg -q -- "--auto-pr" /tmp/harness-auto-pr-checkpoint-status.out
+    rg -q "Pre-PR Human Checkpoint" /tmp/harness-auto-pr-checkpoint-status.out
   )
 }
 
@@ -715,15 +716,16 @@ case_prepare_pr_check_is_local() {
   )
 }
 
-case_prepare_pr_documents_approved_pr() {
+case_prepare_pr_documents_auto_pr() {
   local repo="${tmp_root}/prepare-pr-approved"
   copy_repo "$repo"
   (
     cd "$repo"
     scripts/prepare-pr.sh --help > /tmp/harness-prepare-pr-help.out
+    rg -q -- "--auto-pr" /tmp/harness-prepare-pr-help.out
     rg -q -- "--approved-pr" /tmp/harness-prepare-pr-help.out
-    rg -q "deprecated compatibility alias" /tmp/harness-prepare-pr-help.out
-    rg -q -- "--approved-pr" docs/11-git-sync-policy.md
+    rg -q "compatibility alias for --auto-pr" /tmp/harness-prepare-pr-help.out
+    rg -q -- "--auto-pr" docs/11-git-sync-policy.md
   )
 }
 
@@ -831,10 +833,10 @@ run_expect_success "status workflow reports Source of Truth proposal status" cas
 run_expect_success "existing PR status does not recommend auto PR" case_existing_pr_status_does_not_recommend_auto_pr
 run_expect_success "status workflow uses remote PR state for stale sync" case_status_uses_remote_pr_state_for_stale_sync
 run_expect_success "branch queue uses remote PR state for stale sync" case_list_active_uses_remote_pr_state_for_stale_sync
-run_expect_success "complete PR-ready status requires Pre-PR checkpoint" case_complete_pr_ready_status_requires_pre_pr_checkpoint
+run_expect_success "complete PR-ready status recommends auto PR then checkpoint" case_complete_pr_ready_status_recommends_auto_pr_then_checkpoint
 run_expect_success "status workflow prioritizes PR conflict resolution" case_status_reports_pr_conflict_priority
 run_expect_success "prepare-pr check stays local" case_prepare_pr_check_is_local
-run_expect_success "prepare-pr documents approved PR helper" case_prepare_pr_documents_approved_pr
+run_expect_success "prepare-pr documents auto PR helper" case_prepare_pr_documents_auto_pr
 run_expect_success "start-workflow checkpoint excludes untracked files" case_start_workflow_checkpoint_excludes_untracked
 run_expect_failure "product context guard catches missing trust loop" case_product_context_guard_missing_trust_loop_fails
 run_expect_success "docs branch remote and tracking status is reported" case_docs_branch_remote_tracking_is_reported
