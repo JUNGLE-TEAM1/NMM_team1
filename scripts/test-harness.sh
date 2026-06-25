@@ -399,7 +399,11 @@ case "${1:-}" in
         exit 0
         ;;
       view)
-        if [[ "$*" == *"--json url"* ]]; then
+        if [[ "$*" == *"--json number,title,state,body,url"* ]]; then
+          cat <<'EOF_PR'
+{"number":99,"title":"하네스 fixture PR","state":"MERGED","url":"https://github.com/JUNGLE-TEAM1/NMM_team1/pull/99","body":"## 1. PR 요약\n\n하네스 fixture PR입니다. Closes #1.\n\n## 2. 변경 내용\n\n하네스 검증 fixture를 정리했습니다.\n\n## 3. 검증\n\nscripts/test-harness.sh\n\n## 4. 영향 범위\n\n하네스 테스트 fixture에 한정됩니다.\n\n## 5. 리뷰어에게 부탁할 부분\n\n상태 요약이 의도대로 보이는지 확인해주세요.\n\n## 6. 남은 일 / 제외한 일\n\n없습니다.\n\n## 7. Merge 전 확인\n\nCI 통과 후 merge합니다."}
+EOF_PR
+        elif [[ "$*" == *"--json url"* ]]; then
           if [[ "${*: -2:1}" == "--jq" ]]; then
             printf 'https://github.com/JUNGLE-TEAM1/NMM_team1/pull/99\n'
           else
@@ -445,7 +449,11 @@ case "${1:-}" in
         exit 0
         ;;
       view)
-        if [[ "${*: -2:1}" == "--jq" ]]; then
+        if [[ "$*" == *"--json number,title,state,labels,body,url"* ]]; then
+          cat <<'EOF_ISSUE'
+{"number":1,"title":"[기능] 하네스 fixture 이슈","state":"CLOSED","labels":[{"name":"feature"}],"url":"https://github.com/JUNGLE-TEAM1/NMM_team1/issues/1","body":"## 1. 이슈 요약\n\n하네스 fixture 이슈입니다.\n\n## 2. 목표\n\n상태 요약 fixture를 검증합니다.\n\n## 3. 작업 범위\n\n테스트 fixture만 다룹니다.\n\n## 7. Acceptance Criteria\n\n- [x] fixture 통과\n\n## 9. Manual Verification\n\n- scripts/test-harness.sh"}
+EOF_ISSUE
+        elif [[ "${*: -2:1}" == "--jq" ]]; then
           printf '%s\n' "${FAKE_GH_ISSUE_STATE:-CLOSED}"
         else
           printf '{"state":"%s"}\n' "${FAKE_GH_ISSUE_STATE:-CLOSED}"
@@ -856,6 +864,9 @@ case_complete_pr_ready_status_recommends_auto_pr_then_checkpoint() {
   copy_repo "$repo"
   (
     cd "$repo"
+    local fake_bin
+    fake_bin="$(install_fake_gh "${tmp_root}/auto-pr-checkpoint-gh")"
+    PATH="${fake_bin}:$PATH"
     git checkout -q -b test/harness-fixture
     local base
     base="$(base_commit)"
@@ -1056,6 +1067,74 @@ case_start_workflow_docs_issue_uses_korean_labels() {
     rg -q "작업 유형: 문서/운영 개선" "$FAKE_GH_BODY_LOG"
     ! rg -q '## AskLake branch workspace|## Scope' "$FAKE_GH_BODY_LOG"
     ! rg -q '\\n' "$FAKE_GH_BODY_LOG"
+  )
+}
+
+case_github_record_drift_audit_detects_bypass() {
+  local repo="${tmp_root}/github-record-drift-audit"
+  copy_repo "$repo"
+  (
+    cd "$repo"
+    cat > /tmp/harness-github-record-drift-bad.json <<'EOF_JSON'
+{
+  "issues": [
+    {
+      "number": 112,
+      "title": "feat: M5 local UI demo panel",
+      "state": "OPEN",
+      "labels": [],
+      "url": "https://github.com/JUNGLE-TEAM1/NMM_team1/issues/112",
+      "body": "## 목표\\nPR 전 사람이 M5 Workflow/Catalog 동작을 로컬 브라우저에서 직접 확인한다.\\n\\n## 범위\\n- frontend panel\\n\\n## 완료 기준\\n- npm run build 통과"
+    }
+  ],
+  "prs": [
+    {
+      "number": 105,
+      "title": "feat: add M3 JSON source recommendations",
+      "state": "OPEN",
+      "url": "https://github.com/JUNGLE-TEAM1/NMM_team1/pull/105",
+      "body": "## Summary\\n- add JSON recommendations\\n\\n## Issue\\n#104\\n\\n## Checklist\\n- tests passed"
+    }
+  ]
+}
+EOF_JSON
+    ! scripts/audit-github-records.sh --fixture /tmp/harness-github-record-drift-bad.json > /tmp/harness-github-record-drift-bad.out
+    rg -q "issue #112: title-prefix-missing, body-template-missing, literal-newline-escape, label-missing:feature" /tmp/harness-github-record-drift-bad.out
+    rg -q "suggested title: \\[기능\\] M5 local UI demo panel" /tmp/harness-github-record-drift-bad.out
+    rg -q "pr #105: title-prefix-or-korean-title-missing, readable-pr-handoff-missing, stale-pr-summary-checklist, closing-keyword-missing" /tmp/harness-github-record-drift-bad.out
+  )
+}
+
+case_github_record_drift_audit_passes_clean_records() {
+  local repo="${tmp_root}/github-record-drift-audit-clean"
+  copy_repo "$repo"
+  (
+    cd "$repo"
+    cat > /tmp/harness-github-record-drift-clean.json <<'EOF_JSON'
+{
+  "issues": [
+    {
+      "number": 111,
+      "title": "[문서/운영] PR 템플릿 문단형 설명 보강",
+      "state": "OPEN",
+      "labels": [{"name": "documentation"}, {"name": "ops"}],
+      "url": "https://github.com/JUNGLE-TEAM1/NMM_team1/issues/111",
+      "body": "## 1. 이슈 요약\n\n## 2. 목표\n\n## 3. 작업 범위\n\n## 7. Acceptance Criteria\n\n## 9. Manual Verification"
+    }
+  ],
+  "prs": [
+    {
+      "number": 114,
+      "title": "PR 템플릿 문단형 설명 보강 보고서",
+      "state": "OPEN",
+      "url": "https://github.com/JUNGLE-TEAM1/NMM_team1/pull/114",
+      "body": "## 1. PR 요약\n\n## 2. 변경 내용\n\n## 3. 검증\n\n## 4. 영향 범위\n\n## 5. 리뷰어에게 부탁할 부분\n\n## 6. 남은 일 / 제외한 일\n\n## 7. Merge 전 확인\n\nCloses #111"
+    }
+  ]
+}
+EOF_JSON
+    scripts/audit-github-records.sh --fixture /tmp/harness-github-record-drift-clean.json > /tmp/harness-github-record-drift-clean.out
+    rg -q "GitHub record drift audit passed" /tmp/harness-github-record-drift-clean.out
   )
 }
 
@@ -1278,6 +1357,8 @@ run_expect_success "remote reconciliation status recommends auto PR" case_remote
 run_expect_success "status workflow prioritizes PR conflict resolution" case_status_reports_pr_conflict_priority
 run_expect_success "prepare-pr check stays local" case_prepare_pr_check_is_local
 run_expect_success "prepare-pr documents auto PR helper" case_prepare_pr_documents_auto_pr
+run_expect_success "GitHub record drift audit detects bypass" case_github_record_drift_audit_detects_bypass
+run_expect_success "GitHub record drift audit passes clean records" case_github_record_drift_audit_passes_clean_records
 run_expect_success "start-workflow checkpoint excludes untracked files" case_start_workflow_checkpoint_excludes_untracked
 run_expect_success "start-workflow adds created issue to project" case_start_workflow_adds_created_issue_to_project
 run_expect_success "start-workflow docs issue uses Korean template labels" case_start_workflow_docs_issue_uses_korean_labels

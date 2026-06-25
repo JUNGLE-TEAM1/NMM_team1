@@ -363,6 +363,26 @@ if [[ -f "$sync_file" ]]; then
   if [[ "${remote_pr_status:-}" == "MERGED" && "${remote_issue_status:-}" == "CLOSED" && -n "${remote_issue_project_status:-}" && "${remote_issue_project_status:-}" != "Done" ]]; then
     closed_merged_project_mismatch="yes"
   fi
+  record_drift_status="not checked"
+  record_drift_output=""
+  if [[ -x "scripts/audit-github-records.sh" && "$remote_status_source" == "GitHub" ]]; then
+    audit_args=()
+    [[ -n "${issue_number:-}" ]] && audit_args+=(--issue "$issue_number")
+    [[ -n "${pr_number:-}" ]] && audit_args+=(--pr "$pr_number")
+    if [[ "${#audit_args[@]}" -gt 0 ]]; then
+      set +e
+      record_drift_output="$(scripts/audit-github-records.sh "${audit_args[@]}" 2>&1)"
+      record_drift_exit=$?
+      set -e
+      if [[ "$record_drift_exit" -eq 0 ]]; then
+        record_drift_status="passed"
+      else
+        record_drift_status="drift detected"
+      fi
+    fi
+  elif [[ ! -x "scripts/audit-github-records.sh" ]]; then
+    record_drift_status="unavailable: audit script missing"
+  fi
   pr_conflict_detected_at="$(section_value "$sync_file" "## PR Conflict Resolution" "- conflict detected at:")"
   pr_conflict_command="$(section_value "$sync_file" "## PR Conflict Resolution" "- conflict detection command:")"
   pr_conflict_type="$(section_value "$sync_file" "## PR Conflict Resolution" "- conflict type:")"
@@ -391,6 +411,10 @@ if [[ -f "$sync_file" ]]; then
   echo "  - Remote issue Project Status: ${remote_issue_project_status:-not checked}"
   echo "  - Open PR / closed issue mismatch: ${open_pr_closed_issue_mismatch}"
   echo "  - Closed merged Project status mismatch: ${closed_merged_project_mismatch}"
+  echo "  - GitHub record drift audit: ${record_drift_status}"
+  if [[ "${record_drift_status:-}" == "drift detected" ]]; then
+    printf '%s\n' "$record_drift_output" | sed 's/^/    /'
+  fi
   if stale_note "${merge_status:-}" "${remote_pr_status:-}"; then
     echo "  - Stale sync warning: sync.md merge status '${merge_status}' differs from GitHub PR state '${remote_pr_status}'"
   fi
@@ -592,6 +616,9 @@ if [[ "$pr_ready" == "yes" ]] && git rev-parse --is-inside-work-tree >/dev/null 
     auto_pr_blockers+=("worktree has uncommitted or non-artifact untracked changes")
   fi
 fi
+if [[ "$pr_ready" == "yes" && "${record_drift_status:-}" == "drift detected" ]]; then
+  auto_pr_blockers+=("GitHub issue/PR record drift detected")
+fi
 
 echo "  - missing required files: ${missing_files}"
 echo "  - pending confirmations: ${pending_count}"
@@ -602,6 +629,7 @@ echo "  - PR closing keyword recorded: ${closing_keyword_recorded}"
 echo "  - quality ready: ${quality_ready}"
 echo "  - decisions ready: ${decisions_ready}"
 echo "  - remote operations reconciliation recorded: ${remote_reconciliation_recorded}"
+echo "  - GitHub record drift audit: ${record_drift_status:-not checked}"
 echo "  - PR checklist ready: ${pr_ready}"
 echo
 

@@ -461,7 +461,7 @@ Waiting on you:
      - Procedure: if PR is not yet created, final validation -> `prepare-pr --auto-pr`; then CI check -> merge -> linked issue close check -> `prepare-pr --finalize` -> automatic merged branch cleanup -> GitHub status and branch queue check.
      - Good fit: this branch should become the next main baseline.
      - Advantage: next Phase starts from main with this work included.
-     - Caution: remote state changes and Git branch/ref cleanup happen automatically. If CI fails, conflicts appear, required review is missing, scope drift appears, or the human says "PR만", stop before merge and report back.
+     - Caution: remote state changes and Git branch/ref cleanup happen automatically. Merge/finalize approval is single-target only: the current workspace PR or an explicitly named PR number/branch. If CI fails, conflicts appear, required review is missing, scope drift appears, multiple mergeable PRs are found without an explicit next PR number, or the human says "PR만", stop before merge and report back.
   2. 추가 보강
      - Procedure: list 1-5 concrete hardening candidates, update selected docs/tests/code/evidence, rerun validation.
      - Good fit: docs, tests, cost notes, manual verification, or next-phase contract are still a little ambiguous.
@@ -482,7 +482,7 @@ Waiting on you:
      - Good fit: AWS resource creation, deploy, migration, or other outside-repo state change is next.
      - Advantage: enables real environment verification.
      - Caution: creates cost, permission, and operations risk; explicit human approval required.
-- Next AI action: if PR is not yet created and no opt-out/stop condition exists, auto-create it and record the link. Then ask the human to choose an option. If the human chooses `PR 진행`, continue through the approved merge/finalize scope unless a stop condition appears. If the human chooses hold or does not answer after PR creation, keep the PR open and record the deferral.
+- Next AI action: if PR is not yet created and no opt-out/stop condition exists, auto-create it and record the link. Then ask the human to choose an option. If the human chooses `PR 진행`, continue through the approved merge/finalize scope for that one PR unless a stop condition appears. Other open PRs may be reported but require a separate explicit PR number/branch before merge. If the human chooses hold or does not answer after PR creation, keep the PR open and record the deferral.
 - Ask: "완료된 branch입니다. 선택지별 절차와 장단점은 위와 같고, 어떤 방향으로 진행할까요?"
 
 ### Remaining Branch Queue

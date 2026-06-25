@@ -203,6 +203,19 @@ AI does:
 Human says:
 
 ```text
+이 이슈/PR 템플릿 뚫린 거야?
+```
+
+AI does:
+
+- Runs read-only checks first: `scripts/audit-github-records.sh --issue <number>` and/or `scripts/audit-github-records.sh --pr <number>`.
+- Reports drift reasons, current title/body shape, suggested Korean title prefix, missing label, missing PR handoff sections, and closing keyword risk.
+- Does not edit existing GitHub issue/PR records until the human explicitly asks for correction.
+- If the drift came from a harness gap, adds or updates fixture regression coverage before correcting the existing records.
+
+Human says:
+
+```text
 PR 충돌 해결해
 ```
 
@@ -332,6 +345,7 @@ AI does:
   - 5. 외부 실행 승인 단계: check approval checklist, expected cost, rollback, smoke test, secrets, and permissions before AWS/deploy/migration work.
 - Treats a human `PR 진행` selection after PR creation as approval for CI check, merge, PR finalize, linked issue close verification, and automatic merged branch cleanup.
 - Treats `머지해`, `진행해`, and `이 PR 마무리해` as approval for merge/finalize/issue close/automatic branch cleanup when an open PR already exists.
+- Locks merge approval to one PR target: the current workspace PR or the PR number/branch explicitly named by the human. If the status check finds multiple open PRs, broad wording such as `상태보고 머지까지해`, `남은 PR 머지해`, or `merge 가능한 것 처리해` is not enough to merge more than one PR; report the other PRs and ask for a separate explicit PR number before merging them.
 - Stops and reports back instead of merging if CI fails, merge conflicts exist, required review is missing, scope drift appears, deployment/AWS resource creation is involved, or the human limited the command to PR creation/draft/hold merge.
 - Automatic merged branch cleanup only deletes Git branch refs with `git push origin --delete`, `git branch -d`, and `git fetch --prune`; it never deletes AWS, cloud, deploy, database, or external resources.
 - If `git branch -d` fails, does not run `git branch -D` without separate human confirmation.
