@@ -14,8 +14,14 @@
     "finished_at": "2026-06-25T10:02:30+09:00"
   },
   "row_count": null,
-  "row_count_decision": "TODO: fill with actual demo/fixed/extended sample result",
+  "row_count_decision": "Primary input rows processed by the workflow run; fill with actual demo/fixed/extended sample result",
   "bytes": null,
+  "metric_semantics": {
+    "row_count": "primary_input_rows_processed",
+    "bytes": "primary_input_bytes_read",
+    "task_results.row_count": "node_level_rows; load nodes record output dataset rows",
+    "task_results.bytes": "node_level_bytes; source nodes record input bytes and load nodes record output bytes"
+  },
   "outputs": [
     {
       "dataset_id": "dataset_reviews_gold",
