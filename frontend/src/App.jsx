@@ -8,9 +8,8 @@ import DomainDetailPage from "./pages/domain/DomainDetailPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import MainLayout from "./components/layout/MainLayout";
 import ETLJobPage from "./pages/etl/etl_job";
-import ETLPage from "./pages/etl/etl_main";
+import DataIntegrationPage from "./pages/data-integration/DataIntegrationPage";
 import JobsPage from "./pages/etl/JobsPage";
-import ConnectionListPage from "./pages/sources/ConnectionListPage";
 import ConnectionCreatePage from "./pages/sources/ConnectionCreatePage";
 import QueryPage from "./pages/query/QueryPage";
 import SqlLabPage from "./pages/query/SqlLabPage";
@@ -68,7 +67,7 @@ function App() {
             element={
               <ProtectedRoute requireEtlAccess>
                 <MainLayout>
-                  <ETLPage />
+                  <DataIntegrationPage />
                 </MainLayout>
               </ProtectedRoute>
             }
@@ -258,9 +257,7 @@ function App() {
             path="/sources"
             element={
               <ProtectedRoute requireEtlAccess>
-                <MainLayout>
-                  <ConnectionListPage />
-                </MainLayout>
+                <Navigate to="/dataset?manage=connections" replace />
               </ProtectedRoute>
             }
           />

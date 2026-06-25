@@ -8,11 +8,11 @@ export default function ConnectionCreatePage() {
 
     const handleSuccess = () => {
         openToast({ message: '연결을 생성했습니다', type: 'success' });
-        navigate('/sources');
+        navigate('/dataset?manage=connections');
     };
 
     const handleCancel = () => {
-        navigate('/sources');
+        navigate('/dataset?manage=connections');
     };
 
     return (

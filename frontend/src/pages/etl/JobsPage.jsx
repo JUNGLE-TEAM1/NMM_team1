@@ -1056,7 +1056,7 @@ export default function JobsPage() {
                 {featuredJob?.name || "월별 상품 매출 Gold Dataset"}
               </h2>
               <p className="mt-2 text-sm leading-6 text-gray-600">
-                데이터 구축에서 만든 파이프라인의 마지막 실행 상태를 확인하고 바로 조치합니다.
+                데이터 통합에서 만든 파이프라인의 마지막 실행 상태를 확인하고 바로 조치합니다.
               </p>
             </div>
             <span className={`inline-flex shrink-0 items-center rounded-full px-3 py-1 text-xs font-semibold ${getRunStatusClass(featuredRunTone)}`}>

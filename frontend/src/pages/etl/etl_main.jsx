@@ -22,7 +22,7 @@ const isGoldDataset = (job) =>
   job?.layer === "gold" ||
   job?.name === "월별 상품 매출 Gold Dataset";
 
-export default function ETLMain() {
+export default function ETLMain({ embedded = false, hideCreateButton = false, onCreatePipeline }) {
   const [jobs, setJobs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -37,8 +37,14 @@ export default function ETLMain() {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { showToast } = useToast();
-  const openFreshPipeline = () =>
+  const openFreshPipeline = () => {
+    if (onCreatePipeline) {
+      onCreatePipeline();
+      return;
+    }
+
     navigate("/etl/visual", { state: { startFromScratch: true } });
+  };
 
   // Filter jobs by search query
   const filteredJobs = jobs.filter(
@@ -151,21 +157,23 @@ export default function ETLMain() {
   };
 
   return (
-    <div className="min-h-screen max-w-full overflow-hidden bg-gray-50 px-4 pt-2 pb-6 sm:px-6">
+    <div className={`max-w-full overflow-hidden bg-gray-50 px-4 pb-6 sm:px-6 ${embedded ? "pt-6" : "min-h-screen pt-2"}`}>
       {/* Header with Create Button */}
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <h1 className="min-w-0 text-xl font-bold text-gray-900 sm:text-2xl">
-            데이터 구축
+            데이터셋/파이프라인
           </h1>
         </div>
-        <button
-          onClick={openFreshPipeline}
-          className="inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-        >
-          <Plus className="w-4 h-4" />
-          새 파이프라인 만들기
-        </button>
+        {!hideCreateButton && (
+          <button
+            onClick={openFreshPipeline}
+            className="inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+          >
+            <Plus className="w-4 h-4" />
+            새 파이프라인 만들기
+          </button>
+        )}
       </div>
 
       {/* Datasets Table */}

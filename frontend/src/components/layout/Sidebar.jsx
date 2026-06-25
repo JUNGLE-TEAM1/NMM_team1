@@ -6,7 +6,6 @@ import {
   List,
   Activity,
   Wrench,
-  Server,
   LayoutDashboard,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
@@ -21,8 +20,7 @@ export function Sidebar({ isCollapsed, onToggle }) {
 
   const allNavItems = [
     { name: "데이터 카탈로그", path: "/catalog", icon: Activity },
-    { name: "데이터 소스", path: "/sources", icon: Server, requiresDatasetEtlAccess: true },
-    { name: "데이터 구축", path: "/dataset", icon: GitMerge, requiresDatasetEtlAccess: true },
+    { name: "데이터 통합", path: "/dataset", icon: GitMerge, requiresDatasetEtlAccess: true },
     { name: "실행/모니터링", path: "/etl", icon: List, requiresDatasetEtlAccess: true },
     { name: "AI Query", path: "/query", icon: Search, requiresQueryAiAccess: true },
     { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard, requiresQueryAiAccess: true },
@@ -89,15 +87,17 @@ export function Sidebar({ isCollapsed, onToggle }) {
           {navItems.map((item) => {
             const activePathGroups = {
               "/catalog": ["/catalog"],
-              "/sources": ["/sources"],
-              "/dataset": ["/dataset", "/source", "/target", "/etl/visual"],
-              "/etl": ["/etl"],
+              "/dataset": ["/dataset", "/sources", "/source", "/target", "/etl/visual"],
+              "/etl": ["/etl", "/etl/job"],
               "/query": ["/query"],
               "/dashboard": ["/dashboard"],
               "/admin": ["/admin"],
             };
             const isActive = (activePathGroups[item.path] || [item.path]).some(
-              (path) => location.pathname === path || location.pathname.startsWith(`${path}/`)
+              (path) =>
+                path === "/etl"
+                  ? location.pathname === path
+                  : location.pathname === path || location.pathname.startsWith(`${path}/`)
             );
             return (
               <button

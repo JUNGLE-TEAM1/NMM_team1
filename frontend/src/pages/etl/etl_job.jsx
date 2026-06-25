@@ -400,6 +400,7 @@ export default function ETLJobPage() {
   // Check for target import from navigation state
   const fromTargetImport = location.state?.fromTargetImport || false;
   const startFromScratch = location.state?.startFromScratch === true;
+  const pipelineStart = location.state?.pipelineStart || null;
   const isAskLakeDemo = nodes.some((node) => node.id === "asklake-source-postgres");
   const builderSections = [
     {
@@ -948,20 +949,80 @@ export default function ETLJobPage() {
   useEffect(() => {
     if (!startFromScratch || urlJobId || fromTargetImport) return;
 
-    setJobName("새_파이프라인");
+    const sourceType = normalizeSourceType(pipelineStart?.sourceType || pipelineStart?.connection?.type);
+    const sourceDefaults = getDemoSourceDefaults(sourceType);
+    const sourceName = pipelineStart?.connection?.name || sourceDefaults.sourceName;
+    const assetName = pipelineStart?.asset?.name || sourceDefaults.tableName;
+    const assetKind = pipelineStart?.asset?.kind || "Table";
+    const initialSourceNodeId = `pipeline-source-${Date.now()}`;
+    const initialSourceNode = pipelineStart
+      ? {
+          id: initialSourceNodeId,
+          type: "datasetNode",
+          position: { x: 250, y: 100 },
+          data: {
+            label: sourceName,
+            icon:
+              sourceType === "mongodb"
+                ? SiMongodb
+                : sourceType === "kafka"
+                  ? SiApachekafka
+                  : sourceType === "postgres"
+                    ? SiPostgresql
+                    : Archive,
+            color:
+              sourceType === "mongodb"
+                ? "#47A248"
+                : sourceType === "kafka"
+                  ? "#f59e0b"
+                  : sourceType === "postgres"
+                    ? "#4169E1"
+                    : "#FF9900",
+            nodeCategory: "source",
+            sourceType: sourceType || "postgres",
+            sourceId: pipelineStart.connection?.id || sourceDefaults.sourceId,
+            sourceName,
+            subtitle: assetName,
+            tableName: assetName,
+            collectionName: sourceType === "mongodb" ? assetName : "",
+            schema: sourceDefaults.schema,
+            config: {
+              ...(pipelineStart.connection?.config || sourceDefaults.config),
+              selectedAsset: assetName,
+              assetKind,
+            },
+            nodeId: initialSourceNodeId,
+            onDelete: (nodeId) => {
+              setNodes((nds) => nds.filter((n) => n.id !== nodeId));
+              setSelectedNode((current) => (current?.id === nodeId ? null : current));
+              setSelectedMetadataItem(null);
+            },
+            onMetadataSelect: (item) => {
+              isMetadataClickRef.current = true;
+              setSelectedMetadataItem(item);
+            },
+          },
+        }
+      : null;
+
+    const safeAssetName = assetName.replace(/[^\w가-힣]+/g, "_").replace(/^_+|_+$/g, "");
+    setJobName(safeAssetName ? `${safeAssetName}_파이프라인` : "새_파이프라인");
     setJobDetails((prev) => ({
       ...prev,
-      description: "",
+      description: pipelineStart
+        ? `${sourceName}의 ${assetName} 원본에서 시작하는 파이프라인입니다.`
+        : "",
       jobType: "batch",
       datasetType: "target",
     }));
     setSchedules([]);
-    setNodes([]);
+    setNodes(initialSourceNode ? [initialSourceNode] : []);
     setEdges([]);
-    setSelectedNode(null);
+    setSelectedNode(initialSourceNode);
     setSelectedMetadataItem(null);
     setDemoRunState("idle");
-  }, [fromTargetImport, setEdges, setNodes, startFromScratch, urlJobId]);
+    setActiveTab("transform");
+  }, [fromTargetImport, pipelineStart, setEdges, setNodes, startFromScratch, urlJobId]);
 
   useEffect(() => {
     if (startFromScratch || urlJobId || nodes.length > 0 || fromTargetImport) return;

@@ -5,7 +5,7 @@ import { connectionApi } from '../../services/connectionApi';
 import { useToast } from '../../components/common/Toast/ToastContext';
 import ConfirmationModal from '../../components/common/ConfirmationModal';
 
-export default function ConnectionListPage() {
+export default function ConnectionListPage({ embedded = false }) {
     const { openToast } = useToast();
     const [connections, setConnections] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -227,11 +227,11 @@ export default function ConnectionListPage() {
     const selectedSchema = getSchemaPreview(selectedConnection);
 
     return (
-        <div className="min-h-screen bg-gray-50 p-6">
+        <div className={`bg-gray-50 p-6 ${embedded ? "" : "min-h-screen"}`}>
             {/* Header */}
             <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">데이터 소스</h1>
+                    <h1 className="text-2xl font-bold text-gray-900">소스 연결</h1>
                     <p className="mt-1 text-sm text-gray-500">
                         MongoDB, PostgreSQL, S3 연결을 등록하고 상태를 확인합니다.
                     </p>

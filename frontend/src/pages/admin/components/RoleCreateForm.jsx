@@ -253,8 +253,8 @@ export default function RoleCreateForm({ editingRole, onRoleCreated, onCancel })
                                 onChange={(value) =>
                                     setFormData((prev) => ({ ...prev, datasetEtlAccess: value }))
                                 }
-                                label="데이터 소스/구축/실행 접근"
-                                description="데이터 소스, 데이터 구축, 실행/모니터링 화면에 접근할 수 있습니다"
+                                label="데이터 통합/실행 접근"
+                                description="데이터 통합과 실행/모니터링 화면에 접근할 수 있습니다"
                             />
 
                             {/* Query/AI Access Toggle */}
