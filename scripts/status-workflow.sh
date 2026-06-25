@@ -5,6 +5,10 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=scripts/lib/portable-tools.sh
 source "${script_dir}/lib/portable-tools.sh"
 
+issue_project_owner="${ASKLAKE_GITHUB_PROJECT_OWNER:-JUNGLE-TEAM1}"
+issue_project_number="${ASKLAKE_GITHUB_PROJECT_NUMBER:-3}"
+repo_full_name="${ASKLAKE_GITHUB_REPOSITORY:-JUNGLE-TEAM1/NMM_team1}"
+
 usage() {
   cat <<'USAGE'
 Usage:
@@ -80,6 +84,18 @@ remote_issue_state() {
   local issue_number="$1"
   [[ -n "$issue_number" ]] || return 1
   gh issue view "$issue_number" --json state --jq .state 2>/dev/null
+}
+
+remote_issue_project_status() {
+  local issue_number="$1"
+  local issue_url
+  [[ -n "$issue_number" ]] || return 1
+  issue_url="https://github.com/${repo_full_name}/issues/${issue_number}"
+  gh project item-list "$issue_project_number" \
+    --owner "$issue_project_owner" \
+    --limit 100 \
+    --format json \
+    --jq ".items[] | select(.content.url == \"${issue_url}\") | .status" 2>/dev/null
 }
 
 stale_note() {
@@ -327,12 +343,14 @@ if [[ -f "$sync_file" ]]; then
   done
   remote_pr_status=""
   remote_issue_status=""
+  remote_issue_project_status=""
   remote_status_source="not checked"
   if gh_ready; then
     pr_number="$(pr_number_from_link "$pr_link")"
     issue_number="$(issue_number_from_value "${linked_issue:-$issue_link}")"
     remote_pr_status="$(remote_pr_state "$pr_number" || true)"
     remote_issue_status="$(remote_issue_state "$issue_number" || true)"
+    remote_issue_project_status="$(remote_issue_project_status "$issue_number" || true)"
     remote_status_source="GitHub"
   else
     remote_status_source="unavailable: GitHub CLI unavailable or unauthenticated"
@@ -340,6 +358,10 @@ if [[ -f "$sync_file" ]]; then
   open_pr_closed_issue_mismatch="no"
   if [[ -n "${pr_link:-}" && "${remote_pr_status:-}" == "OPEN" && "${remote_issue_status:-}" == "CLOSED" ]]; then
     open_pr_closed_issue_mismatch="yes"
+  fi
+  closed_merged_project_mismatch="no"
+  if [[ "${remote_pr_status:-}" == "MERGED" && "${remote_issue_status:-}" == "CLOSED" && -n "${remote_issue_project_status:-}" && "${remote_issue_project_status:-}" != "Done" ]]; then
+    closed_merged_project_mismatch="yes"
   fi
   pr_conflict_detected_at="$(section_value "$sync_file" "## PR Conflict Resolution" "- conflict detected at:")"
   pr_conflict_command="$(section_value "$sync_file" "## PR Conflict Resolution" "- conflict detection command:")"
@@ -366,12 +388,17 @@ if [[ -f "$sync_file" ]]; then
   echo "  - Remote status source: ${remote_status_source}"
   echo "  - Remote PR state: ${remote_pr_status:-not checked}"
   echo "  - Remote issue state: ${remote_issue_status:-not checked}"
+  echo "  - Remote issue Project Status: ${remote_issue_project_status:-not checked}"
   echo "  - Open PR / closed issue mismatch: ${open_pr_closed_issue_mismatch}"
+  echo "  - Closed merged Project status mismatch: ${closed_merged_project_mismatch}"
   if stale_note "${merge_status:-}" "${remote_pr_status:-}"; then
     echo "  - Stale sync warning: sync.md merge status '${merge_status}' differs from GitHub PR state '${remote_pr_status}'"
   fi
   if stale_note "${issue_close_status:-}" "${remote_issue_status:-}"; then
     echo "  - Stale sync warning: sync.md issue close status '${issue_close_status}' differs from GitHub issue state '${remote_issue_status}'"
+  fi
+  if [[ "${closed_merged_project_mismatch:-no}" == "yes" ]]; then
+    echo "  - Project lifecycle mismatch: issue CLOSED and PR MERGED but Project Status is ${remote_issue_project_status}. 사람 승인 후 scripts/prepare-pr.sh --finalize <workspace> 재실행 또는 Project Status Done 수동 정렬이 필요합니다."
   fi
 else
   echo "  - sync.md missing"
@@ -613,6 +640,8 @@ elif [[ "$decision_status" == "none" && -f "$shared_docs" ]] && awk -F '|' '
   recommendation="Review shared-doc proposals and decide whether decisions.md needs an accepted/deferred decision."
 elif [[ "$workspace" == docs/workflows/*/integrate-* || "$workspace" == docs/workflows/*/*-integration ]]; then
   recommendation="Run scripts/validate-harness.sh --integration before integration completion."
+elif [[ "${closed_merged_project_mismatch:-no}" == "yes" ]]; then
+  recommendation="PR과 linked issue는 완료됐지만 Project Status가 '${remote_issue_project_status}'입니다. 자동보정하지 말고 사람 승인 후 scripts/prepare-pr.sh --finalize ${workspace}를 재실행하거나 Project Status를 Done으로 수동 정렬합니다."
 elif [[ "${remote_pr_status:-}" == "MERGED" && "${remote_issue_status:-}" == "CLOSED" ]]; then
   recommendation="Phase is merged and linked issue is closed according to GitHub; sync.md final fields may be stale after post-merge finalization."
 elif [[ "${merge_status:-}" =~ ^merged ]] && [[ "${issue_close_status:-}" =~ ^CLOSED ]]; then

@@ -114,6 +114,8 @@ PR merge/finalize -> issue closed + Project Done
 - `scripts/prepare-pr.sh --auto-pr`, `--approved-pr`, `--push --create-pr`, 또는 `--create-pr`가 PR을 만들거나 기존 PR을 감지하기 전 linked issue가 `CLOSED`이면 active work issue로 reopen을 시도하고 결과를 `sync.md`에 기록한다. 그 뒤 linked issue의 Project Status를 `Review`로 둔다.
 - linked issue close와 Project `Done` 전환은 PR merge 후 `scripts/prepare-pr.sh --close-issue` 또는 `--finalize` 경로에서만 수행한다.
 - PR이 아직 `OPEN`인데 linked issue가 이미 `CLOSED`이면 lifecycle mismatch다. `scripts/status-workflow.sh <workspace>`는 이를 별도 warning으로 보고하고, issue reopen + Project `Review` 정렬 또는 finalize evidence 확인을 권고한다. 이는 PR 생성 뒤 외부 조작이나 reopen 실패를 잡는 사후 안전망이다.
+- PR이 `MERGED`이고 linked issue가 `CLOSED`인데 Project Status가 `Done`이 아니면 lifecycle mismatch다. `scripts/status-workflow.sh <workspace>`는 이를 별도 warning으로 보고하고, 자동 보정하지 않는다. 사람 승인 후 `scripts/prepare-pr.sh --finalize <workspace>` 재실행 또는 GitHub Project UI에서 `Done` 수동 정렬로 처리한다.
+- 이미 merge/finalize된 workspace의 evidence-only PR이나 post-merge sync PR은 닫힌 linked issue를 `#123`처럼 직접 cross-reference하지 않는다. 필요하면 `Issue 123`, `PR 85`, workspace path, 또는 plain text를 사용해 GitHub Project automation이 닫힌 issue를 `Ready` 등으로 되돌리는 것을 피한다.
 - 과거 issue를 일괄 Project에 반영할 때는 이미 `CLOSED`인 issue 또는 사람이 명시한 target list에 한정한다. 열린 issue를 대량으로 `Done` 처리하지 않는다.
 
 ```bash
