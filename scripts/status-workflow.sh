@@ -309,12 +309,13 @@ if [[ -f "$sync_file" ]]; then
   linked_issue="$(section_value "$sync_file" "## Push / PR" "- linked GitHub issue:")"
   issue_link="$(section_value "$sync_file" "## Push / PR" "- issue link:")"
   issue_creation_result="$(section_value "$sync_file" "## Push / PR" "- issue creation result:")"
+  issue_project_result="$(section_value "$sync_file" "## Push / PR" "- issue project result:")"
   closing_keyword="$(section_value "$sync_file" "## Push / PR" "- PR closing keyword:")"
   pushed_branch="$(section_value "$sync_file" "## Push / PR" "- pushed branch:")"
   pr_link="$(section_value "$sync_file" "## Push / PR" "- PR link:")"
   merge_status="$(section_value "$sync_file" "## Push / PR" "- merge status:")"
   issue_close_status="$(section_value "$sync_file" "## Push / PR" "- issue close status:")"
-  for field_name in linked_issue issue_link issue_creation_result closing_keyword pushed_branch pr_link merge_status issue_close_status; do
+  for field_name in linked_issue issue_link issue_creation_result issue_project_result closing_keyword pushed_branch pr_link merge_status issue_close_status; do
     if emptyish "${!field_name}"; then
       printf -v "$field_name" '%s' ""
     fi
@@ -347,6 +348,7 @@ if [[ -f "$sync_file" ]]; then
   echo "  - Linked GitHub issue: ${linked_issue:-missing}"
   echo "  - Issue link: ${issue_link:-missing}"
   echo "  - Issue creation result: ${issue_creation_result:-missing}"
+  echo "  - Issue project result: ${issue_project_result:-missing}"
   echo "  - PR closing keyword: ${closing_keyword:-missing}"
   echo "  - Pushed branch: ${pushed_branch:-missing}"
   echo "  - PR link: ${pr_link:-missing}"

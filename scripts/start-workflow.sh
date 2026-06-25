@@ -118,6 +118,8 @@ dry_run=0
 checkout=1
 allow_dirty=0
 create_issue=1
+issue_project_owner="${ASKLAKE_GITHUB_PROJECT_OWNER:-JUNGLE-TEAM1}"
+issue_project_number="${ASKLAKE_GITHUB_PROJECT_NUMBER:-3}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -189,6 +191,7 @@ echo "Workspace: ${workspace_dir}"
 echo "Title: ${title}"
 if [[ "$create_issue" -eq 1 ]]; then
   echo "GitHub issue: create by team rule"
+  echo "GitHub project: add to ${issue_project_owner} project ${issue_project_number}"
 else
   echo "GitHub issue: skipped by --no-issue"
 fi
@@ -247,6 +250,7 @@ fi
 issue_ref=""
 issue_link=""
 issue_creation_result="not requested"
+issue_project_result="not requested"
 pr_closing_keyword=""
 sync_file="${workspace_dir}/sync.md"
 
@@ -296,12 +300,56 @@ EOF_ISSUE
           issue_ref="$issue_link"
         fi
         issue_creation_result="created"
+
+        if [[ -n "$issue_link" ]]; then
+          set +e
+          project_item_id="$(gh project item-add "$issue_project_number" --owner "$issue_project_owner" --url "$issue_link" --format json --jq .id 2>&1)"
+          project_status=$?
+          set -e
+
+          if [[ "$project_status" -eq 0 ]]; then
+            issue_project_result="added to ${issue_project_owner} project ${issue_project_number}"
+
+            set +e
+            project_id="$(gh project view "$issue_project_number" --owner "$issue_project_owner" --format json --jq .id 2>&1)"
+            project_id_status=$?
+            status_field_record="$(gh project field-list "$issue_project_number" --owner "$issue_project_owner" --format json --jq '.fields[] | select(.name == "Status") | [.id, (.options[] | select(.name == "In Progress") | .id)] | @tsv' 2>&1)"
+            status_field_status=$?
+            set -e
+
+            if [[ "$project_id_status" -eq 0 && "$status_field_status" -eq 0 && -n "$project_id" && -n "$status_field_record" ]]; then
+              status_field_id="${status_field_record%%$'\t'*}"
+              in_progress_option_id="${status_field_record#*$'\t'}"
+
+              set +e
+              status_output="$(gh project item-edit --id "$project_item_id" --project-id "$project_id" --field-id "$status_field_id" --single-select-option-id "$in_progress_option_id" 2>&1)"
+              status_update_status=$?
+              set -e
+
+              if [[ "$status_update_status" -eq 0 ]]; then
+                issue_project_result="${issue_project_result}; status set to In Progress"
+              else
+                issue_project_result="${issue_project_result}; status update failed: ${status_output//$'\n'/ }"
+              fi
+            else
+              issue_project_result="${issue_project_result}; status lookup failed: ${project_id//$'\n'/ } ${status_field_record//$'\n'/ }"
+            fi
+          else
+            issue_project_result="failed: ${project_item_id//$'\n'/ }"
+          fi
+        else
+          issue_project_result="skipped: issue link is missing"
+        fi
       else
         issue_creation_result="failed: ${issue_output//$'\n'/ }"
+        issue_project_result="skipped: issue creation failed"
       fi
     else
       issue_creation_result="skipped: GitHub CLI is not authenticated"
+      issue_project_result="skipped: GitHub CLI is not authenticated"
     fi
+  else
+    issue_project_result="skipped: GitHub CLI is not available"
   fi
 fi
 
@@ -794,6 +842,7 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 - linked GitHub issue: ${issue_ref}
 - issue link: ${issue_link}
 - issue creation result: ${issue_creation_result}
+- issue project result: ${issue_project_result}
 - PR closing keyword: ${pr_closing_keyword}
 - pushed branch:
 - PR link:
@@ -804,6 +853,7 @@ elif [[ "$create_issue" -eq 1 ]]; then
   set_field "${workspace_dir}/sync.md" "- linked GitHub issue:" "$issue_ref"
   set_field "${workspace_dir}/sync.md" "- issue link:" "$issue_link"
   set_field "${workspace_dir}/sync.md" "- issue creation result:" "$issue_creation_result"
+  set_field "${workspace_dir}/sync.md" "- issue project result:" "$issue_project_result"
   set_field "${workspace_dir}/sync.md" "- PR closing keyword:" "$pr_closing_keyword"
 fi
 

@@ -97,6 +97,8 @@ Before merge, `sync.md` may also hold local handoff values such as `merge status
 After merge, GitHub PR/issue state is the authoritative status source because local finalization edits can happen after the PR has already been merged into `main`.
 
 GitHub issue는 branch 생성 시 기본으로 만든다. 이 동작은 팀 규칙이며, `scripts/start-workflow.sh` 실행이 issue 생성까지 포함하는 시작 절차다.
+기본 생성된 issue는 `JUNGLE-TEAM1` organization Project `3`에도 추가하고 Status를 `In Progress`로 설정한다.
+Project 추가와 Status 설정의 성공 또는 실패 이유는 workspace `sync.md`의 `issue project result`에 기록한다.
 
 ```bash
 scripts/start-workflow.sh feature project-bootstrap "Project bootstrap"
@@ -137,6 +139,7 @@ scripts/prepare-pr.sh --finalize docs/workflows/feature/project-bootstrap
 Stacked PR처럼 default branch가 아닌 feature branch로 merge되는 PR은 `Closes #123`만으로 issue close가 보장되지 않는다.
 PR merge 후 `scripts/prepare-pr.sh --check-issue <workspace>`로 issue 상태를 확인한다.
 PR이 merged이고 issue가 아직 open이면 `scripts/prepare-pr.sh --close-issue <workspace>`로 PR merge 근거 comment를 남기고 issue를 닫은 뒤 `sync.md`에 `merge status`와 `issue close status`를 기록한다.
+linked issue가 closed이면 `scripts/prepare-pr.sh --close-issue` 또는 `--finalize`는 Project Status도 `Done`으로 설정하고 `issue project result`에 결과를 기록한다.
 PR 전에는 `scripts/prepare-pr.sh --check-pr-sync <workspace>`로 `sync.md`의 linked issue, closing keyword, pushed branch, PR link, merge/issue status 정적 일관성을 확인한다.
 PR merge 후에는 `scripts/prepare-pr.sh --finalize <workspace>`로 PR merged 상태와 issue close 상태를 확인한다.
 linked issue가 없는 `--no-issue` workspace는 finalize 때 PR merged 상태만 확인하고 `issue close status: n/a`로 기록한다.
