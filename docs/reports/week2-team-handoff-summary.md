@@ -4,8 +4,8 @@
 
 - Type: docs
 - Date: 2026-06-26
-- Changed: Phase 1~6에서 확정한 분업/진행상황을 팀원이 바로 읽을 수 있는 `team-handoff-summary.md`로 정리하고 ver2 README 읽는 순서에 추가했다.
-- Verified: handoff keyword check, `git diff --check`, `scripts/validate-harness.sh --strict`
+- Changed: Phase 1~6에서 확정한 분업/진행상황을 팀원이 바로 읽을 수 있는 `team-handoff-summary.md`로 정리하고, 모듈별 의존/완료 기준/runner checklist/병렬 시작 조건을 보강했다.
+- Verified: handoff keyword check including dependency/completion/start-condition terms, `git diff --check`, `scripts/validate-harness.sh --strict`
 - Remaining: PR review/CI. merge 후 M2/M3/M5 병렬 implementation 시작 가능
 - Next context: 팀 공유용 첫 문서는 `docs/project-context/asklake-week2-module-plan/ver2/team-handoff-summary.md`
 - Risk: docs-only summary라 실제 code adapter 구현은 후속 PR에서 진행한다.
@@ -32,13 +32,14 @@
 ## Implementation Summary / 구현 요약
 
 - Phase 1~6 결정 결과를 팀 공유 요약으로 압축했다.
-- 모듈별 역할, 지금 할 일, 하지 말 것, 보존할 구현, runner boundary, PR #105 처리 기준, 다음 병렬 구현 순서를 한 문서에 모았다.
+- 모듈별 역할, 지금 할 일, 의존 모듈, 완료 기준, 하지 말 것, 보존할 구현, runner boundary, PR #105 처리 기준, 다음 병렬 구현 순서를 한 문서에 모았다.
+- runner input/output 체크리스트와 병렬 구현 시작 조건을 추가했다.
 - ver2 README의 읽는 순서 첫 번째로 handoff summary를 추가했다.
 
 ## Verification Commands / 검증 명령
 
 ```bash
-rg -n "현재 진행 상태|모듈별 지금 할 일|Runner boundary|PR #105|다음 병렬 구현 순서|team-handoff-summary.md" docs/project-context/asklake-week2-module-plan/ver2/team-handoff-summary.md docs/project-context/asklake-week2-module-plan/ver2/README.md
+rg -n "현재 진행 상태|모듈별 지금 할 일|의존|완료 기준|Runner boundary|PR #105|다음 병렬 구현 순서|병렬 구현 시작 조건|team-handoff-summary.md" docs/project-context/asklake-week2-module-plan/ver2/team-handoff-summary.md docs/project-context/asklake-week2-module-plan/ver2/README.md
 git diff --check
 scripts/validate-harness.sh --strict
 ```
