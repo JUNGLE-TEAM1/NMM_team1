@@ -17,8 +17,8 @@
     "sample_profile": "demo",
     "encoding": "utf-8",
     "format": "jsonl",
-    "sample_rows": 4,
-    "sample_rows_decision": "demo fixture only; fixed/extended sample sizes remain M3 decisions"
+    "sample_rows": 10,
+    "sample_rows_decision": "demo fixture only; 10 rows make each Week 2 workflow node visibly useful"
   },
   "connection_test": {
     "status": "ready",

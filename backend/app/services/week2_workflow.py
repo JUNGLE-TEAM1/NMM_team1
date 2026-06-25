@@ -69,6 +69,7 @@ class Week2WorkflowService:
         run["bytes"] = runner_result.bytes
         run["duration_ms"] = runner_result.duration_ms
         run["task_results"] = runner_result.task_results
+        run["node_outputs"] = runner_result.node_outputs or []
         run["logs"] = self._logs_for_executor(executor, status, runner_result.logs)
 
         self.runs[run_id] = run
@@ -194,6 +195,7 @@ def result_with_logs(result: Week2RunnerResult, leading_logs: list[dict[str, str
         output_path=result.output_path,
         output_row_count=result.output_row_count,
         output_bytes=result.output_bytes,
+        node_outputs=result.node_outputs,
     )
 
 

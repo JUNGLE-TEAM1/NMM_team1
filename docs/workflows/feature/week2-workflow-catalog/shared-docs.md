@@ -8,7 +8,7 @@ integration branch는 branch 작업을 합치기 전에 이 파일을 읽는다.
 | File | Proposed Change | Reason | Merge Risk |
 | --- | --- | --- | --- |
 | `docs/03-interface-reference.md` | Week 2 execution metric semantics와 optional `dataset_path` storage pattern 반영 | M2 Taxi bootstrap PR #98과 M5 Workflow/Catalog가 같은 `ExecutionResult`/`CatalogMetadata` metric 의미를 공유해야 함 | 중간 |
-| `contracts/source_config.sample.json` | demo fixture path와 4-row sample availability 반영 | #92에서 M5 local runner가 계산 가능한 demo input을 필요로 함 | 낮음 |
+| `contracts/source_config.sample.json` | demo fixture path와 10-row sample availability 반영 | M5 local runner와 UI node board가 node별 transform 차이를 보여주는 demo input을 필요로 함 | 낮음 |
 | `contracts/workflow_definition.sample.json` | `runner.fallback_condition` TODO를 #94 fallback threshold로 확정 | Airflow adapter unavailable/error 또는 `succeeded` 외 status에서 local runner fallback이 일어나도록 구현과 계약을 맞춤 | 낮음 |
 | `contracts/execution_result.sample.json` | `metric_semantics`와 input metric definition 반영 | `ExecutionResult.row_count/bytes`가 primary input 기준임을 fixture에서 직접 확인 가능하게 함 | 낮음 |
 | `contracts/catalog_metadata.sample.json` | `metrics.semantics`로 output dataset metric definition 반영 | Catalog와 M6가 output dataset row/bytes를 사용하도록 명확히 하기 위해 | 낮음 |

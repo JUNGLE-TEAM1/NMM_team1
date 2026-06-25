@@ -23,7 +23,8 @@
 - Week 2 draft route를 `/api/week2/*`로 추가한다. 기존 `/api/pipelines` baseline은 그대로 둔다.
 - 실제 Airflow/MinIO 구현 전까지는 `contracts/*.sample.json`을 로드한 local run/catalog slice로 M1/M6 boundary를 검증한다. run/catalog handoff metadata는 `output_root/_metadata` 아래 JSON으로 유지한다.
 - local runner는 `Source`, `Select/Filter`, `Cast/Normalize`, `Aggregate`, `Load` node만 지원하고, 그 외 node type 또는 깨진 edge reference는 `fallback_failed`로 둔다.
-- M3 fixed/extended sample이 준비되기 전에는 `backend/samples/amazon_reviews_demo.jsonl` 4-row demo fixture를 사용한다. `ExecutionResult.row_count=4`, `ExecutionResult.bytes=580`은 input 기준이고, aggregate 결과 3 rows와 195 bytes는 `CatalogMetadata.metrics`와 `Load` task 기준으로 기록한다.
+- M3 fixed/extended sample이 준비되기 전에는 `backend/samples/amazon_reviews_demo.jsonl` 10-row demo fixture를 사용한다. `ExecutionResult.row_count=10`, `ExecutionResult.bytes=2173`은 input 기준이고, aggregate 결과 4 rows와 261 bytes는 `CatalogMetadata.metrics`와 `Load` task 기준으로 기록한다.
+- 10-row demo fixture는 node board에서 각 node 필요성이 보이도록 설계한다. `Source`는 extra columns와 raw string values를 포함하고, `Select/Filter`는 4개 컬럼만 남기며, `Cast/Normalize`는 rating/time을 정규화하고, `Aggregate`는 product-level rows로 줄인다.
 - catalog는 `succeeded` 또는 `fallback_succeeded` run에서만 갱신한다. `fallback_failed` run은 run history에는 남지만 catalog 최신 성공 metadata를 덮어쓰지 않는다.
 - Airflow fallback threshold는 `succeeded`만 primary success로 보고, adapter unavailable/error 또는 그 외 status는 local runner fallback으로 처리한다.
 - Week 2 output path는 `s3://<bucket>/<domain>/<layer>/[dataset_path/]run_id=<run_id>/`를 따른다. `dataset_path`는 Taxi의 `daily_metrics`처럼 domain-specific Gold output을 담을 때만 사용한다.
@@ -74,10 +75,10 @@ Run ID: run_reviews_demo_001
 Executed command or screen: POST /api/week2/workflows/pipeline_reviews_json_e2e/runs
 Input source or file: contracts/workflow_definition.sample.json
 Output S3/local path: s3://asklake-demo/reviews/gold/run_id=run_reviews_demo_001/
-ExecutionResult.row_count: 4
-ExecutionResult.bytes: 580
-CatalogMetadata.metrics.row_count: 3
-CatalogMetadata.metrics.bytes: 195
+ExecutionResult.row_count: 10
+ExecutionResult.bytes: 2173
+CatalogMetadata.metrics.row_count: 4
+CatalogMetadata.metrics.bytes: 261
 duration: 2 ms
 Produced JSON: ExecutionResult, CatalogMetadata
 Consumer module: M1, M6
@@ -104,7 +105,7 @@ fallback threshold: Airflow primary success requires status=succeeded
 focused verification: PYTHONPATH=backend ./.venv/bin/pytest backend/tests/test_week2_workflow_catalog.py backend/tests/test_week2_local_runner.py -q -> 12 passed
 ```
 
-## #95 Day 2 Smoke Evidence
+## #95 Day 2 Smoke Evidence / Historical
 
 ```text
 report: docs/reports/m5-day2-smoke-evidence.md
@@ -129,7 +130,7 @@ ExecutionResult.row_count: primary input rows processed
 ExecutionResult.bytes: primary input bytes read
 CatalogMetadata.metrics.row_count: output dataset rows
 CatalogMetadata.metrics.bytes: output dataset bytes
-local demo evidence: input rows=4, input bytes=580, output rows=3, output bytes=195
+local demo evidence: input rows=10, input bytes=2173, output rows=4, output bytes=261
 focused verification: PYTHONPATH=backend ./.venv/bin/pytest backend/tests/test_week2_workflow_catalog.py backend/tests/test_week2_local_runner.py -q -> 12 passed
 ```
 
@@ -144,4 +145,18 @@ restart behavior: run_reviews_demo_001 조회 가능, 다음 실행은 run_revie
 failure behavior: fallback_failed run은 run history에 저장되지만 latest successful catalog를 덮어쓰지 않음
 focused verification: PYTHONPATH=backend ./.venv/bin/pytest backend/tests/test_week2_workflow_catalog.py backend/tests/test_week2_local_runner.py -q -> 14 passed
 full backend verification: PYTHONPATH=backend ./.venv/bin/pytest backend/tests -q -> 32 passed
+```
+
+## M5 UI Node Board Evidence
+
+```text
+demo panel: frontend/src/features/week2/Week2M5Demo.jsx
+mock rows: 10
+run button: POST /api/week2/workflows/pipeline_reviews_json_e2e/runs
+catalog button: GET /api/week2/catalog/dataset_reviews_gold
+visible sections: Node Board, ExecutionResult, CatalogMetadata, Storage
+node board evidence: Source 9 columns -> Select/Filter 4 columns -> Normalize typed rating/time -> Aggregate 4 product rows -> Load output path
+frontend build: npm run build -> passed
+browser smoke: in-app browser at http://127.0.0.1:5176/ -> passed
+current metrics: ExecutionResult.row_count=10, ExecutionResult.bytes=2173, CatalogMetadata.metrics.row_count=4, CatalogMetadata.metrics.bytes=261
 ```

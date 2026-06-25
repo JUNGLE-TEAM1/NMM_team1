@@ -39,7 +39,7 @@ def test_week2_workflow_run_returns_execution_result_contract() -> None:
     assert run["executor"] == "local_runner"
     assert run["status"] == "fallback_succeeded"
     assert run["triggered_by"] == "m5_owner"
-    assert run["row_count"] == 4
+    assert run["row_count"] == 10
     assert run["bytes"] > 0
     assert run["duration_ms"] >= 1
     assert run["metric_semantics"]["row_count"] == "primary_input_rows_processed"
@@ -52,9 +52,26 @@ def test_week2_workflow_run_returns_execution_result_contract() -> None:
         "node_aggregate_reviews",
         "node_load_reviews",
     ]
-    assert [task["row_count"] for task in run["task_results"]] == [4, 4, 4, 3, 3]
+    assert [task["row_count"] for task in run["task_results"]] == [10, 10, 10, 4, 4]
     assert run["task_results"][0]["bytes"] == run["bytes"]
     assert run["task_results"][-1]["bytes"] > 0
+    assert [output["node_id"] for output in run["node_outputs"]] == [
+        "node_source_reviews",
+        "node_filter_reviews",
+        "node_normalize_reviews",
+        "node_aggregate_reviews",
+        "node_load_reviews",
+    ]
+    assert run["node_outputs"][0]["preview_rows"][0]["review_id"] == "R001"
+    assert "review_text" in run["node_outputs"][0]["preview_rows"][0]
+    assert "marketplace" in run["node_outputs"][0]["preview_rows"][0]
+    assert "review_text" not in run["node_outputs"][1]["preview_rows"][0]
+    assert "verified_purchase" not in run["node_outputs"][1]["preview_rows"][0]
+    assert run["node_outputs"][2]["preview_rows"][0]["rating"] == 5.0
+    assert run["node_outputs"][2]["preview_rows"][0]["review_time"] == "2026-06-20T10:00:00Z"
+    assert run["node_outputs"][3]["preview_rows"][0]["review_count"] == 3
+    assert len(run["node_outputs"][3]["preview_rows"]) == 4
+    assert run["node_outputs"][3]["preview_rows"][-1]["product_id"] == "B004"
 
     get_response = client.get("/api/week2/runs/run_reviews_demo_001")
 
@@ -83,7 +100,7 @@ def test_week2_catalog_metadata_tracks_successful_run_lineage() -> None:
         "row_count": "output_dataset_rows",
         "bytes": "output_dataset_bytes",
     }
-    assert catalog["metrics"]["row_count"] == 3
+    assert catalog["metrics"]["row_count"] == 4
     assert catalog["metrics"]["bytes"] > 0
     assert catalog["metrics"]["quality"] == {
         "schema_match": "passed",
@@ -182,7 +199,7 @@ def test_week2_airflow_executor_falls_back_when_adapter_unavailable() -> None:
     run = response.json()
     assert run["executor"] == "airflow"
     assert run["status"] == "fallback_succeeded"
-    assert run["row_count"] == 4
+    assert run["row_count"] == 10
     assert any("Airflow unavailable; falling back to local runner" in log["message"] for log in run["logs"])
     assert run["logs"][-1]["message"] == "airflow adapter fell back to local runner"
 
@@ -220,7 +237,7 @@ def test_week2_airflow_failed_result_uses_local_fallback(tmp_path: Path) -> None
     catalog = service.get_catalog_metadata("dataset_reviews_gold")
 
     assert run["status"] == "fallback_succeeded"
-    assert run["row_count"] == 4
+    assert run["row_count"] == 10
     assert any("Airflow returned failed; falling back to local runner" in log["message"] for log in run["logs"])
     assert catalog["lineage"]["run_id"] == "run_reviews_demo_001"
 
