@@ -1,7 +1,7 @@
 ---
 name: 기능 요청
 about: 새 기능이나 사용자 흐름 개선을 Phase 후보로 제안합니다.
-title: "[Feature] "
+title: "[기능] "
 labels: ["feature"]
 assignees: ""
 ---

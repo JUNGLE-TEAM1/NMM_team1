@@ -274,9 +274,10 @@ These are Week 2 draft routes, not final product API routes. If an implementatio
 Week 2 storage path pattern:
 
 ```text
-s3://<bucket>/<domain>/<layer>/run_id=<run_id>/
+s3://<bucket>/<domain>/<layer>/[dataset_path/]run_id=<run_id>/
 ```
 
+`dataset_path` is optional and may hold a domain-specific Gold output such as `daily_metrics`.
 MVP default bucket is `asklake-demo`; final MinIO endpoint and local fallback path remain implementation decisions that must be recorded before M3/M5 handoff.
 
 Week 2 SQL execution uses an adapter boundary:
@@ -326,6 +327,17 @@ Week 2 workflow/run status values:
 ```text
 queued, running, succeeded, failed, fallback_succeeded, fallback_failed
 ```
+
+Week 2 execution metric semantics:
+
+| Field | Canonical meaning |
+| --- | --- |
+| `ExecutionResult.row_count` | Primary input rows processed by the workflow run |
+| `ExecutionResult.bytes` | Primary input bytes read by the workflow run |
+| `ExecutionResult.task_results[].row_count` | Node-level row count, using the node's most useful available boundary; `Load` nodes record output dataset rows |
+| `ExecutionResult.task_results[].bytes` | Node-level bytes, using the node's most useful available boundary; `Source` nodes record input bytes and `Load` nodes record output bytes |
+| `CatalogMetadata.metrics.row_count` | Output dataset row count |
+| `CatalogMetadata.metrics.bytes` | Output dataset bytes |
 
 `ExecutionResult.task_results[]` records node-level status, attempt, row count, bytes, and error. M5 owns the canonical run state; M1 displays it; M6 may use successful `CatalogMetadata` only.
 For big/complex dataset manipulation, these fields are processing evidence: they prove that transform/normalize/load produced a bounded output dataset instead of only displaying a successful UI state.

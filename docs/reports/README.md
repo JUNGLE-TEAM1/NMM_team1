@@ -55,6 +55,7 @@ report가 늘어나면 영역별 최신 report index를 작게 유지한다. 이
 | PR Checkpoint Hardening | [`pr-checkpoint-hardening.md`](pr-checkpoint-hardening.md) | 작은 변경의 PR 진행이 Pre-PR checkpoint를 우회하지 않는지, dirty checkpoint가 untracked 파일을 자동 추적하지 않는지 확인 |
 | Auto PR Creation Policy | [`auto-pr-creation-policy.md`](auto-pr-creation-policy.md) | PR-ready branch의 feature branch push/PR 생성을 자동화하고 merge/finalize/cleanup은 사람 확인 gate로 유지한 최신 정책 확인 |
 | PR Finalization State Source | [`pr-finalization-state-source.md`](pr-finalization-state-source.md) | PR merge 뒤 stale `sync.md` final field가 남아도 GitHub PR/issue 상태로 완료 여부를 올바르게 해석하는지 확인 |
+| PR 템플릿 자동 body 정렬 | [`pr-template-auto-body-alignment.md`](pr-template-auto-body-alignment.md) | 자동 PR 생성 body가 한국어 PR 템플릿, linked issue closing keyword, quality/sync/human checkpoint 항목과 정렬되는지 확인 |
 | PR Conflict Resolution Protocol | [`pr-conflict-resolution-protocol.md`](pr-conflict-resolution-protocol.md) | PR conflict 감지, 분류, 사람 확인, 해결 후 재검증과 evidence 기록 규칙 확인 |
 | Harness 변경사항 병합 후 점검 | [`harness-post-merge-change-audit.md`](harness-post-merge-change-audit.md) | PR #45~#47 병합 뒤 Pre-PR checkpoint, Product Rebaseline, validation/script 충돌 여부 확인 |
 | Mid-Phase Steering 하네스 보강 | [`mid-phase-steering-harness.md`](mid-phase-steering-harness.md) | 작업 중 사람의 잦은 조향을 현재 Phase detail, scope change, Hotfix, 다음 Phase 후보, 보류 아이디어, 고영향 결정으로 분류하는 규칙 확인 |

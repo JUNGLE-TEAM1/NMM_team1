@@ -873,6 +873,28 @@ case_prepare_pr_check_is_local() {
     git commit -q -m "prepare pr fixture"
     scripts/prepare-pr.sh --check-pr-sync "$workspace" >/tmp/harness-prepare-pr.out
     ! rg -q "Created PR|To https://|github.com/.*/pull/" /tmp/harness-prepare-pr.out
+    rg -q "## 1\\. PR 요약" /tmp/harness-prepare-pr.out
+    rg -q -- "- 연결된 Issue: Closes #1" /tmp/harness-prepare-pr.out
+    rg -q -- "- Branch: \`test/harness-fixture\`" /tmp/harness-prepare-pr.out
+    rg -q -- "- Branch workspace: \`${workspace}\`" /tmp/harness-prepare-pr.out
+    rg -q "## 5\\. 품질 게이트" /tmp/harness-prepare-pr.out
+    rg -q -- "- Quality gate status: passed" /tmp/harness-prepare-pr.out
+    rg -q "## 6\\. Acceptance / Regression / Manual Verification" /tmp/harness-prepare-pr.out
+    rg -q "## 7\\. Git Sync / PR 상태" /tmp/harness-prepare-pr.out
+    rg -q -- "- Pre-Merge 또는 Pre-PR Sync: ready for PR preparation" /tmp/harness-prepare-pr.out
+    rg -q "## 10\\. Merge 전 Human Checkpoint" /tmp/harness-prepare-pr.out
+
+    awk '
+      /^- linked GitHub issue:/ { print "- linked GitHub issue:"; next }
+      /^- issue link:/ { print "- issue link:"; next }
+      /^- PR closing keyword:/ { print "- PR closing keyword:"; next }
+      { print }
+    ' "${workspace}/sync.md" > "${workspace}/sync.md.tmp"
+    mv "${workspace}/sync.md.tmp" "${workspace}/sync.md"
+    scripts/prepare-pr.sh --dry-run "$workspace" >/tmp/harness-prepare-pr-no-issue.out
+    rg -q -- "- 연결된 Issue: 연결된 issue 없음" /tmp/harness-prepare-pr-no-issue.out
+    rg -q -- "- Phase 또는 Hotfix: 테스트 fixture" /tmp/harness-prepare-pr-no-issue.out
+    rg -q -- "- PR readiness from \`scripts/status-workflow.sh\`: \`scripts/status-workflow.sh ${workspace}\` PR handoff 전 확인 필요" /tmp/harness-prepare-pr-no-issue.out
   )
 }
 

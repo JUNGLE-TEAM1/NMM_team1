@@ -24,6 +24,10 @@
     ]
   },
   "metrics": {
+    "semantics": {
+      "row_count": "output_dataset_rows",
+      "bytes": "output_dataset_bytes"
+    },
     "row_count": null,
     "bytes": null,
     "quality": {
