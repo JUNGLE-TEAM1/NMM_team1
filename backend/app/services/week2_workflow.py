@@ -7,6 +7,8 @@ from typing import Any
 
 from app.services.week2_local_runner import Week2LocalRunner
 
+SUCCESSFUL_RUN_STATUSES = {"succeeded", "fallback_succeeded"}
+
 
 class Week2WorkflowNotFoundError(ValueError):
     pass
@@ -62,7 +64,7 @@ class Week2WorkflowService:
         run["logs"] = self._logs_for_executor(executor, runner_result.logs)
 
         self.runs[run_id] = run
-        if status in {"succeeded", "fallback_succeeded"}:
+        if status in SUCCESSFUL_RUN_STATUSES:
             catalog = self._catalog_for_run(run_id, timestamp, runner_result)
             self.catalog[catalog["dataset_id"]] = catalog
         return run

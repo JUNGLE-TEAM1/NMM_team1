@@ -9,6 +9,7 @@
 - 2026-06-25: 첫 slice를 `feat: add week2 workflow catalog slice` 커밋(`6f8cd2f`)으로 기록했다.
 - 2026-06-25: 두 번째 slice에서 `Week2LocalRunner`를 분리해 지원 node type, edge reference, unsupported node failure를 검증한다.
 - 2026-06-25: #92 slice에서 `backend/samples/amazon_reviews_demo.jsonl` demo fixture를 추가하고 local runner가 실제 JSONL을 읽어 `row_count`, `bytes`, `duration_ms`, local fallback output path를 계산하게 했다.
+- 2026-06-25: #93 slice에서 catalog가 최신 성공 run(`run_reviews_demo_002`)을 가리키는지, 실패 run 이후에도 직전 성공 catalog를 유지하는지 테스트로 고정했다.
 
 ## 결정
 
@@ -16,6 +17,7 @@
 - 실제 Airflow/MinIO 구현 전까지는 `contracts/*.sample.json`을 로드한 in-memory run/catalog slice로 M1/M6 boundary를 검증한다.
 - local runner는 `Source`, `Select/Filter`, `Cast/Normalize`, `Aggregate`, `Load` node만 지원하고, 그 외 node type 또는 깨진 edge reference는 `fallback_failed`로 둔다.
 - M3 fixed/extended sample이 준비되기 전에는 `backend/samples/amazon_reviews_demo.jsonl` 4-row demo fixture를 사용하고, aggregate 결과 3 rows를 `ExecutionResult.row_count`로 기록한다.
+- catalog는 `succeeded` 또는 `fallback_succeeded` run에서만 갱신한다. `fallback_failed` run은 run history에는 남지만 catalog 최신 성공 metadata를 덮어쓰지 않는다.
 
 ## 열린 질문
 
@@ -23,6 +25,7 @@
 - 실제 MinIO endpoint와 local fallback path는 M3/M5 handoff 전에 확정해야 한다.
 - Catalog metadata를 나중에 SQLite metadata store에 persist할지 별도 Week 2 store를 둘지 결정이 필요하다.
 - local runner는 아직 Parquet을 쓰지 않고 local JSONL fallback output을 쓴다. Parquet/MinIO 전환은 다음 M5/M3 integration slice에서 진행한다.
+- catalog persistence는 아직 in-memory다. process restart 이후 최신 catalog 조회는 후속 persistence slice에서 다룬다.
 
 ## 링크 / 증거
 
@@ -37,6 +40,7 @@
 - `contracts/catalog_metadata.sample.json`
 - `contracts/source_config.sample.json`
 - `PYTHONPATH=backend ./.venv/bin/pytest backend/tests -q` -> 24 passed
+- `PYTHONPATH=backend ./.venv/bin/pytest backend/tests/test_week2_workflow_catalog.py -q` -> 5 passed
 - `scripts/validate-harness.sh --strict` -> passed
 
 ## Daily Evidence / 하루 종료 증거
@@ -56,4 +60,13 @@ Produced JSON: ExecutionResult, CatalogMetadata
 Consumer module: M1, M6
 Blocked issue: actual Airflow, Parquet, MinIO persistence not implemented in this slice
 Next first action: convert local JSONL output to Parquet/MinIO path or accept local fallback for Day 2 smoke
+```
+
+## #93 Catalog Latest Run Evidence
+
+```text
+latest successful run: run_reviews_demo_002
+catalog s3_uri: s3://asklake-demo/reviews/gold/run_id=run_reviews_demo_002/
+failed run behavior: fallback_failed run_id=run_reviews_demo_002 does not overwrite run_reviews_demo_001 catalog in failure-path test
+focused verification: PYTHONPATH=backend ./.venv/bin/pytest backend/tests/test_week2_workflow_catalog.py -q -> 5 passed
 ```

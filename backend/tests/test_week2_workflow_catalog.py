@@ -6,6 +6,8 @@ from fastapi.testclient import TestClient
 from app.adapters.sqlite_metadata_store import SQLiteMetadataStore
 from app.core.app_factory import create_app
 from app.core.settings import Settings
+from app.services.week2_local_runner import Week2RunnerResult
+from app.services.week2_workflow import Week2WorkflowService
 
 
 def make_client() -> TestClient:
@@ -81,6 +83,46 @@ def test_week2_catalog_metadata_tracks_successful_run_lineage() -> None:
     }
 
 
+def test_week2_catalog_metadata_tracks_latest_successful_run() -> None:
+    client = make_client()
+
+    first_run_response = client.post("/api/week2/workflows/pipeline_reviews_json_e2e/runs")
+    second_run_response = client.post("/api/week2/workflows/pipeline_reviews_json_e2e/runs")
+
+    assert first_run_response.status_code == 201
+    assert second_run_response.status_code == 201
+    assert first_run_response.json()["run_id"] == "run_reviews_demo_001"
+    assert second_run_response.json()["run_id"] == "run_reviews_demo_002"
+
+    response = client.get("/api/week2/catalog/dataset_reviews_gold")
+
+    assert response.status_code == 200
+    catalog = response.json()
+    assert catalog["s3_uri"] == "s3://asklake-demo/reviews/gold/run_id=run_reviews_demo_002/"
+    assert catalog["storage"]["prefix"] == "reviews/gold/run_id=run_reviews_demo_002/"
+    assert catalog["storage"]["local_fallback_path"].endswith(
+        "reviews/gold/run_id=run_reviews_demo_002/dataset_reviews_gold.jsonl"
+    )
+    assert catalog["lineage"]["run_id"] == "run_reviews_demo_002"
+
+
+def test_week2_catalog_metadata_ignores_failed_run_after_success(tmp_path: Path) -> None:
+    service = Week2WorkflowService(output_root=tmp_path / "out")
+    first_run = service.trigger_run("pipeline_reviews_json_e2e", executor="local_runner", triggered_by="m5_owner")
+    first_catalog = service.get_catalog_metadata("dataset_reviews_gold")
+    service.local_runner = FailingRunner()
+
+    failed_run = service.trigger_run("pipeline_reviews_json_e2e", executor="local_runner", triggered_by="m5_owner")
+    catalog_after_failure = service.get_catalog_metadata("dataset_reviews_gold")
+
+    assert first_run["status"] == "fallback_succeeded"
+    assert first_catalog["lineage"]["run_id"] == "run_reviews_demo_001"
+    assert failed_run["status"] == "fallback_failed"
+    assert failed_run["run_id"] == "run_reviews_demo_002"
+    assert catalog_after_failure["lineage"]["run_id"] == "run_reviews_demo_001"
+    assert catalog_after_failure["s3_uri"] == first_catalog["s3_uri"]
+
+
 def test_week2_workflow_routes_return_not_found_for_unknown_ids() -> None:
     client = make_client()
 
@@ -91,3 +133,22 @@ def test_week2_workflow_routes_return_not_found_for_unknown_ids() -> None:
     assert run_response.status_code == 404
     assert get_run_response.status_code == 404
     assert catalog_response.status_code == 404
+
+
+class FailingRunner:
+    def run(self, workflow_definition: dict, run_id: str) -> Week2RunnerResult:
+        return Week2RunnerResult(
+            status="fallback_failed",
+            task_results=[
+                {
+                    "node_id": "node_load_reviews",
+                    "status": "failed",
+                    "attempt": 1,
+                    "row_count": None,
+                    "bytes": None,
+                    "error": "forced failure",
+                }
+            ],
+            logs=[{"level": "error", "message": "forced failure"}],
+            duration_ms=1,
+        )
