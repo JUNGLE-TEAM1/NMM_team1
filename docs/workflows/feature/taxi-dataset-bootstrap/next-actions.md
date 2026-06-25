@@ -4,20 +4,20 @@
 
 ## Current State / 현재 상태
 
-- State: contract assumptions accepted
-- Summary: M2는 `yellow_tripdata_2024-01.parquet`, `taxi_trips`, `gold_taxi_daily_metrics`, `demo=10,000 rows`, `fixed=pickup_date 2024-01-01` 기준으로 진행한다.
+- State: ready for PR handoff
+- Summary: M2 Taxi dataset bootstrap 문서/계약 기준 정리가 끝났고, 최신 `origin/main` merge와 검증까지 완료했다.
 
 ## Recommended Next Action / 권장 다음 행동
 
-- confirmation gate와 PR 준비 상태를 정리한다.
-- Reason: 계약 질문은 blocking gate가 아니라 M2 기본 가정으로 처리하기로 했고, 이제 PR handoff에 필요한 confirmation/pre-merge만 남았다.
+- Pre-PR Human Checkpoint에서 PR 생성 여부를 선택한다.
+- Reason: 이 branch는 구현이 아니라 bootstrap 문서 PR이며, push/PR 생성은 사람 승인 후에만 실행한다.
 
 ## Options / 선택지
 
-1. confirmation gate를 정리하고 현재 branch를 PR 준비 상태로 만든다.
-2. pre-merge sync 방식을 사람 확인 후 기록한다.
-3. PR 생성 전 최종 검증을 실행한다.
-4. 이 workspace를 멈춘다.
+1. PR 생성: branch push 후 draft PR을 만든다.
+2. 로컬 보류: PR을 만들지 않고 재개 조건만 남긴다.
+3. 추가 보강: PR 전에 문서 문구나 계약 naming을 더 다듬는다.
+4. 후속 구현 branch 준비: 현재 PR을 먼저 올릴지 보류할지 결정한 뒤 진행한다.
 
 ## Waiting On Human / 사람 응답 대기
 
@@ -29,10 +29,11 @@
 - PostgreSQL table은 `taxi_trips`, 첫 Gold dataset은 `gold_taxi_daily_metrics`로 둔다.
 - `demo=10,000 rows`, `fixed=pickup_date 2024-01-01`로 둔다.
 - M5 계약 질문은 현재 PR을 막지 않고 M2 기본 가정으로 진행한다.
+- 최신 `origin/main`을 merge했고 충돌은 없었다.
 
 ## Next AI Action / 다음 AI 행동
 
-- option 1이면 `confirmations.md`, `report.md`, `quality.md`를 현재 결정에 맞춰 정리한다.
-- option 2이면 `sync.md`에 pre-merge sync 결과 또는 보류 사유를 기록한다.
-- option 3이면 `scripts/status-workflow.sh`, harness validation, strict validation을 실행하고 Pre-PR checkpoint로 간다.
-- option 4이면 pause reason을 `notes.md`에 기록한다.
+- option 1이면 `scripts/prepare-pr.sh --check-pr-sync` 후 승인된 push/PR 절차로 간다.
+- option 2이면 `sync.md`와 `next-actions.md`에 보류 사유와 재개 조건을 기록한다.
+- option 3이면 보강 범위가 현재 branch 안인지 확인하고 필요한 문서만 수정한다.
+- option 4이면 현재 branch PR 생성 여부를 먼저 정한 뒤 새 구현 workspace를 만든다.

@@ -54,12 +54,12 @@ AI가 멈추고 사람 확인을 받아야 하는 지점을 기록한다.
 
 ## Git Sync Confirm / Git sync 확인
 
-- Status: pending
+- Status: resolved
 - Ask human to confirm:
   - 구현 전 start sync command/result
   - mid-phase upstream change action
   - 완료 전 pre-merge sync command/result
-- Human response: 
+- Human response: `origin/main`이 `41409ac`까지 진행된 것을 확인했고, `git merge --no-edit origin/main`로 현재 branch에 반영했다. 충돌은 없었고 merge commit은 `c8859ff`다.
 
 ## Sync Conflict Confirm / sync 충돌 확인
 
@@ -89,13 +89,13 @@ AI가 멈추고 사람 확인을 받아야 하는 지점을 기록한다.
 
 ## Completion Confirm / 완료 확인
 
-- Status: pending
+- Status: resolved
 - Ask human to confirm:
   - 변경 요약
   - 검증 결과
   - 남은 위험
   - 다음 작업 문맥
-- Human response: 
+- Human response: 이 branch는 M2 Taxi dataset bootstrap 문서/계약 기준 정리를 완료한 것으로 본다. 실제 데이터 저장, PostgreSQL 적재, batch runner, Bronze/Gold Parquet 생성은 후속 구현 branch에서 진행한다.
 
 ## Integration Conflict Confirm / 통합 충돌 확인
 

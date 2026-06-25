@@ -20,11 +20,11 @@ main 동기화와 integration readiness를 기록한다.
 
 ## Pre-Merge Sync
 
-- main commit:
-- conflicts:
-- validation:
-- result:
-- deferral reason:
+- main commit: 41409ac
+- conflicts: none
+- validation: `git status --short`, `scripts/validate-harness.sh`, `scripts/validate-harness.sh --strict`, `git diff --check`
+- result: `git fetch origin main` 후 `git merge --no-edit origin/main`로 최신 `origin/main`을 현재 branch에 반영했다. 충돌 없이 merge commit `c8859ff` 생성.
+- deferral reason: not applicable
 
 ## PR Conflict Resolution
 
@@ -42,6 +42,7 @@ main 동기화와 integration readiness를 기록한다.
 - linked GitHub issue: #78
 - issue link: https://github.com/JUNGLE-TEAM1/NMM_team1/issues/78
 - issue creation result: created
+- issue project result: issue는 사람이 reopen했고 PR merge 전 기대 상태는 issue `Open`, GitHub Project `In Progress`
 - PR closing keyword: Closes #78
 - pushed branch:
 - PR link:
