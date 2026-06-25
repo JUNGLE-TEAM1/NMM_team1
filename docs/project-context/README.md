@@ -23,4 +23,4 @@
 
 | 경로 | 설명 | 우선 확인 문서 |
 | --- | --- | --- |
-| `docs/project-context/asklake-week2-module-plan/` | AskLake 2주차 모듈 분업, 결정 옵션, 확정 결정 로그, 회의 공유 문서 | `README.md`, `decisions.md` |
+| `docs/project-context/asklake-week2-module-plan/` | AskLake 2주차 모듈 분업, 결정 옵션, 확정 결정 로그, 공통 계약/병렬 실행 프롬프트, 회의 공유 문서 | `README.md`, `decisions.md`, `contract-setup-prompt.md`, `query-result-contract-prompt.md`, `query-result-contract-execution-prompt.md`, `lite-parallel-manifest-prompt.md` |

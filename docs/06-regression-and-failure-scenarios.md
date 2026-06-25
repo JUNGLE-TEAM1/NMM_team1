@@ -68,6 +68,26 @@
 | Verification method | `docs/03`, `docs/08`, `.milestones/target-mvp/manifest.yaml`, branch workspace `shared-docs.md`를 확인한다. |
 | Related docs/interface/Phase | `docs/03`, `docs/08`, `docs/17`, `.milestones/target-mvp/manifest.yaml` |
 
+### Week 2 Fixture Contract 없이 모듈 구현이 시작되는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | AskLake 2주차 M1~M6 구현은 `SourceConfig`, `SchemaDefinition`, `WorkflowDefinition`, `ExecutionResult`, `CatalogMetadata`, `AIQueryResult` fixture contract 없이 시작하지 않는다. |
+| Failure condition | 각 모듈이 tenant id, source id, dataset id, workflow result, catalog metadata, SQL result shape를 서로 다르게 정의한다. |
+| Expected behavior | `contracts/*.sample.json`과 `docs/03`의 Week 2 contract package를 먼저 확인하고, 불확실한 path/row count/MinIO layout은 TODO 또는 decision으로 남긴다. |
+| Verification method | JSON fixture 유효성, `docs/03` contract package, branch workspace `quality.md`와 `decisions.md`를 확인한다. |
+| Related docs/interface/Phase | `contracts/`, `docs/03`, `docs/project-context/asklake-week2-module-plan/` |
+
+### Week 2 공통 hardening 없이 모듈 구현이 시작되는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | M1~M6 구현은 API/UI route, ID 규칙, storage path pattern, workflow/run status, `QueryResult`, guardrail failure shape, daily smoke evidence 형식 없이 시작하지 않는다. |
+| Failure condition | 모듈별로 endpoint 이름, `run_id`/`dataset_id`, MinIO path, run status, SQL 결과, guardrail 실패 응답, smoke evidence 형식이 달라진다. |
+| Expected behavior | `docs/03` Week 2 Contract Package와 `contracts/*.sample.json`을 먼저 확인하고 변경이 필요하면 공통 계약을 갱신한 뒤 구현한다. |
+| Verification method | `docs/03`, `contracts/*.sample.json`, workspace `decisions.md`, `quality.md`, daily smoke evidence format을 확인한다. |
+| Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07`, `contracts/` |
+
 ### Mock/Fake Boundary를 넘어 실제 접근으로 진행되는 경우
 
 | 항목 | 내용 |
