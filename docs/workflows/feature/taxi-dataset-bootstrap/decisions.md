@@ -10,6 +10,7 @@
 - `yellow_tripdata_2024-01.parquet`를 로컬 기준 파일로 사용할지, 더 작은 샘플만 사용할지 비교했다.
 - Spark를 첫 구현 필수 조건으로 둘지, runner 경계만 Spark 전환 가능하게 유지할지 비교했다.
 - PostgreSQL table과 첫 Gold dataset 이름을 M2/M5/M6 handoff 기준으로 정리했다.
+- M5 확인 질문을 blocking gate로 둘지, M2 기본 가정으로 진행할지 정리했다.
 
 ## Accepted Decisions / 확정된 결정
 
@@ -20,6 +21,9 @@
 | 초기 실행 엔진 | Python 기반 batch runner 허용, Spark 전환 가능 interface 유지 | 첫 PR은 데이터 선택/범위/계약 mapping이고, 분산 처리 도입은 실제 병목 또는 scale-target 요구가 확인된 뒤 판단한다. | 사용자 대화 / 2026-06-25 |
 | PostgreSQL table | `taxi_trips` | M2 정형 batch 입력을 PostgreSQL table 기준으로 고정하면 M1/M5 source 연결과 M2 batch 구현 경계가 단순해진다. | 사용자 대화 / 2026-06-25 |
 | 첫 Gold dataset | `gold_taxi_daily_metrics` | 날짜별 운행 수, 거리, 금액, 품질 metric은 UI, SQL/RAG, batch 검산에 모두 쓰기 쉽고 원본 296만 rows를 분석용 요약으로 줄인다. | 사용자 대화 / 2026-06-25 |
+| `demo` 범위 | 10,000 rows | smoke와 UI 연결 확인은 빠른 반복이 우선이다. | 사용자 대화 / 2026-06-25 |
+| `fixed` 범위 | `pickup_date = 2024-01-01` | row offset보다 날짜 조건이 재현, 검산, SQL 설명에 유리하다. | 사용자 대화 / 2026-06-25 |
+| M5 계약 질문 처리 | blocking gate로 두지 않고 M2 기본 가정으로 진행 | M5도 아직 표준을 모를 가능성이 높으므로 첫 PR에서는 합리적 기본값을 명시하고 후속 통합에서 adapter로 조정한다. | 사용자 대화 / 2026-06-25 |
 
 ## Deferred Decisions / 보류한 결정
 
@@ -28,7 +32,7 @@
 | 전체 Taxi dataset 적재 범위 | 첫 PR은 로컬 기준과 계약 mapping이 목표이며, multi-month/year 적재는 storage/partition/engine 선택이 필요하다. | `local-full-month` 검증 후 또는 발표/리뷰에서 GB/TB급 증거가 요구될 때 | 후속 `scale-target` branch |
 | Spark 도입 시점 | 현재는 engine보다 계약 경계와 batch path 안정화가 우선이다. | local runner가 시간/메모리 한계를 반복적으로 넘거나 Airflow에서 Spark submit이 필요해질 때 | 후속 implementation branch |
 | MinIO bucket/prefix와 Catalog 등록 방식 | M5 Workflow/Catalog 책임 범위와 맞춰야 한다. | M5의 WorkflowDefinition/Catalog adapter 초안이 확정될 때 | M5 integration 또는 M2 handoff |
-| `ExecutionResult.row_count` 의미 | M2는 input trip row 수를 제안하지만, M5 run status 표준과 맞춰야 한다. | M5 Workflow/Status/Log contract 확인 시 | M5 integration 또는 M2 implementation branch |
+| M5 metric 표준과 다른 경우의 조정 | 현재는 `row_count=input trip rows`, `bytes=input bytes`로 진행한다. | M5 Workflow/Status/Log contract가 다른 의미를 명시할 때 | M5 integration 또는 M2 implementation branch |
 
 ## Revisit / Rollback Conditions / 재검토 또는 롤백 조건
 

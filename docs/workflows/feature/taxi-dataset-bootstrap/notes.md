@@ -11,13 +11,14 @@
 - 로컬에서 확인한 `yellow_tripdata_2024-01.parquet`는 약 48MB, 2,964,624 rows, 3 row groups이다.
 - 원본 Parquet, PostgreSQL volume, MinIO object, 생성된 Bronze/Gold Parquet은 repository에 commit하지 않는다.
 - 이 branch에서는 데이터 다운로드나 batch 구현을 하지 않고, 데이터 범위와 실행 전략을 고정한다.
+- GitHub issue `#78`은 사람이 다시 reopen했다. PR merge 전까지 기대 상태는 issue `Open`, GitHub Project `In Progress`다.
 
 ## 데이터 규모 전략
 
 | 단계 | 목적 | 후보 규모 | 사용 방식 |
 | --- | --- | --- | --- |
-| `demo` | UI/smoke/E2E 연결 확인 | 1,000~10,000 rows | 빠르게 반복 실행하고 실패 원인을 좁힌다. |
-| `fixed` | PR/리뷰/검산 반복 기준 | 100,000~500,000 rows 또는 고정 date range | 같은 입력에서 같은 row count와 Gold 결과가 나오는지 확인한다. |
+| `demo` | UI/smoke/E2E 연결 확인 | 10,000 rows | 빠르게 반복 실행하고 실패 원인을 좁힌다. |
+| `fixed` | PR/리뷰/검산 반복 기준 | `pickup_date = 2024-01-01` | 같은 입력에서 같은 row count와 Gold 결과가 나오는지 확인한다. |
 | `local-full-month` | 로컬 처리 규모 smoke/benchmark | `yellow_tripdata_2024-01.parquet` 전체, 약 2,964,624 rows / 48MB | 한 달 파일 전체를 같은 처리 경로로 돌리고 row count, bytes, duration, output path를 증거로 남긴다. |
 | `scale-target` | 전체 택시 데이터 또는 GB/TB급 처리 목표 | multi-month, year 단위, 또는 전체 TLC Taxi dataset | 후속 branch에서 distributed 처리 필요성, Spark 도입, storage/partition 전략을 검증한다. |
 
@@ -139,9 +140,20 @@ M2가 제공할 단위는 M5 runner가 호출할 수 있는 `run_taxi_batch(conf
 | `lineage.source_ids` | `["source_taxi_yellow_2024_01"]` | source 추적 |
 | `lineage.output_datasets` | `["dataset_taxi_daily_metrics_gold"]` | Gold dataset 추적 |
 
-`ExecutionResult.row_count`는 M2 기준으로 "처리한 input trip row 수"를 제안한다.
+`ExecutionResult.row_count`는 M2 기준으로 "처리한 input trip row 수"로 둔다.
 Gold output row 수는 `CatalogMetadata.metrics.row_count`와 `node_load_taxi_daily_metrics.row_count`에 남긴다.
-이 의미가 M5의 run status 모델과 다르면 Contract Confirm에서 조정한다.
+M5의 run status 모델이 나중에 다른 의미를 요구하면 implementation branch에서 adapter mapping으로 맞춘다.
+
+M5 확인은 현재 PR의 blocking gate로 두지 않는다.
+대신 M2 기본 가정을 아래처럼 둔다.
+
+| 항목 | M2 기본 가정 | 후속 조정 조건 |
+| --- | --- | --- |
+| `ExecutionResult.row_count` | input trip row 수 | M5가 workflow 전체 row count 의미를 별도로 표준화할 때 |
+| `ExecutionResult.bytes` | input bytes read | M5가 top-level bytes를 output bytes로 표준화할 때 |
+| task-level `bytes` | node별 input/output bytes 중 구현 가능한 값 | local runner와 Airflow adapter metric schema가 정해질 때 |
+| Gold output URI | `s3://asklake-demo/taxi/gold/daily_metrics/run_id=<run_id>/` | M5 Catalog/MinIO prefix 표준이 정해질 때 |
+| local fallback path | `data/processed/taxi/gold/daily_metrics/run_id=<run_id>/` | M1/M5 local dev setup이 다른 data root를 정할 때 |
 
 ### `CatalogMetadata`
 
@@ -215,20 +227,21 @@ Gold schema 후보:
 
 - `demo -> fixed -> local-full-month -> scale-target` 단계 확장 전략을 사용한다.
 - `yellow_tripdata_2024-01.parquet`는 로컬 full-month 검증 기준으로 사용하고, 전체 택시 데이터 적재 목표는 후속 `scale-target` 범위로 분리한다.
+- `demo`는 10,000 rows로 둔다.
+- `fixed`는 `pickup_date = 2024-01-01`로 둔다.
 - PostgreSQL table 후보는 `taxi_trips`로 둔다.
 - 첫 Gold dataset은 `gold_taxi_daily_metrics`로 둔다.
+- M5 확인 질문은 현재 PR의 blocking gate로 두지 않고, M2 기본 가정을 문서화한 뒤 후속 통합에서 조정한다.
 - 첫 구현은 Spark를 필수로 요구하지 않고, Spark 전환이 가능한 runner 경계를 유지한다.
 - Airflow DAG 구현은 M5 책임으로 두고, M2는 Airflow/local runner가 호출 가능한 Batch 처리 단위를 제공한다.
 
 ## 열린 질문
 
-- `demo`, `fixed`의 정확한 row 수와 date range를 `yellow_tripdata_2024-01.parquet` 안에서 어디까지 고정할지.
 - PostgreSQL 적재 스크립트를 M2가 소유할지, M1/M5의 local dev setup과 분리할지.
 - Bronze/Gold Parquet의 MinIO bucket/prefix 규칙을 M5와 어떻게 맞출지.
 - `local-full-month` 실행을 PR 필수 검증으로 둘지, manual/benchmark evidence로만 둘지.
 - `scale-target`에서 Spark를 언제 도입할지, 또는 local runner 성능 한계 확인 후 도입할지.
-- `ExecutionResult.row_count`를 input row 수로 확정할지, output dataset row 수로 맞출지 M5와 확인할지.
-- `bytes`를 input bytes, output bytes, 또는 둘 다 task-level로 기록할지 M5와 확인할지.
+- M5가 후속 구현에서 다른 `row_count`/`bytes` 표준을 정하면 M2 adapter mapping을 어떻게 바꿀지.
 
 ## 링크 / 증거
 

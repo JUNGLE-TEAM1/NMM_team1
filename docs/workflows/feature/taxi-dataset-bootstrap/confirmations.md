@@ -4,23 +4,23 @@ AI가 멈추고 사람 확인을 받아야 하는 지점을 기록한다.
 
 ## Scope Confirm / 범위 확인
 
-- Status: pending
+- Status: resolved
 - Ask human to confirm:
   - branch/workspace
   - 포함 범위
   - 제외 범위
   - 영향받는 Source of Truth 문서
-- Human response:
+- Human response: `yellow_tripdata_2024-01.parquet`, `taxi_trips`, `gold_taxi_daily_metrics`, `demo=10,000 rows`, `fixed=pickup_date 2024-01-01` 기준으로 진행한다. 실제 다운로드, 적재, connector, Parquet 생성, UI 구현은 후속 branch 범위로 둔다.
 
 ## Contract Confirm / 계약 확인
 
-- Status: pending
+- Status: resolved
 - Ask human to confirm:
   - data model 변경
   - interface/API/CLI/UI contract 변경
   - external dependency
   - 공유 Source of Truth 변경
-- Human response: 
+- Human response: M5 확인 질문은 현재 PR의 blocking gate로 두지 않는다. `ExecutionResult.row_count=input trip rows`, `ExecutionResult.bytes=input bytes`, Gold URI/prefix/local fallback은 M2 기본 가정으로 문서화하고 후속 통합에서 조정한다.
 
 ## Scope Change Confirm / 범위 변경 확인
 
@@ -33,24 +33,24 @@ AI가 멈추고 사람 확인을 받아야 하는 지점을 기록한다.
 
 ## Verification Confirm / 검증 확인
 
-- Status: pending
+- Status: resolved
 - Ask human to confirm:
   - test/build/smoke 명령
   - TDD 증거 또는 skip reason
   - CI/check 명령
   - manual verification 경로
   - completion criteria
-- Human response: 
+- Human response: 문서 전용 작업으로 `scripts/validate-harness.sh`, `scripts/validate-harness.sh --strict`, `git diff --check`를 사용한다. 제품 runtime/manual verification은 구현 branch에서 수행한다.
 
 ## Quality Gate Confirm / 품질 게이트 확인
 
-- Status: pending
+- Status: resolved
 - Ask human to confirm:
   - TDD 적용 또는 의도적 생략
   - 필요한 branch check와 CI gate
   - 생략한 검증과 이유
   - 관련 있는 deploy/publish gate
-- Human response: 
+- Human response: TDD는 문서 전용 변경이라 생략한다. CI는 필요하지 않으며 harness validation과 strict validation으로 검증한다.
 
 ## Git Sync Confirm / Git sync 확인
 
