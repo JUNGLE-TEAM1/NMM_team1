@@ -247,6 +247,7 @@ Workspace state 값:
 - PR-ready 조건과 자동 feature branch push/PR 생성 허용 범위는 `docs/11`이 정의한다.
 - pull, merge, rebase, PR merge, finalize, issue close, branch cleanup, deploy, external execution 승인 경계는 `docs/11`이 정의한다.
 - PR handoff 선택지는 `docs/10-next-action-menu.md`의 `Complete And PR Ready`와 `PR Ready` 메뉴를 사용한다.
+- linked issue Project status lifecycle은 `docs/11-git-sync-policy.md`를 따른다.
 - 상태 요약은 `scripts/status-workflow.sh <workspace>`, 남은 branch queue는 `scripts/list-active-branches.sh`를 사용한다.
 
 ## 재발 방지 하네스 규칙

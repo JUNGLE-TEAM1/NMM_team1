@@ -24,6 +24,7 @@
 | harness regression | `scripts/test-harness.sh` | passed | Harness regression tests passed: 22 |
 | harness validation | `scripts/validate-harness.sh` | passed | Harness validation passed. |
 | strict harness validation | `scripts/validate-harness.sh --strict` | passed | Harness validation passed. |
+| PR conflict revalidation | `scripts/validate-harness.sh`; `scripts/test-harness.sh`; `scripts/validate-harness.sh --strict` | passed | Harness validation passed; Harness regression tests passed: 26; strict validation passed |
 
 ## CI/CD Gate / CI-CD 게이트
 
@@ -39,6 +40,11 @@
 - Proposed file: `docs/08-development-workflow.md`
 - Validation command/result: `scripts/validate-harness.sh --strict` passed
 - Product acceptance/manual verification impact: none. 문서 구조 리팩토링이며 제품 기능, acceptance scenario, regression behavior, manual verification path를 바꾸지 않음.
+
+## PR Conflict Revalidation
+
+- Conflict resolution: merged `origin/main`; preserved main for `docs/04`, `docs/10`, `scripts/test-harness.sh`; combined `docs/08` slimdown with Project lifecycle reference.
+- Revalidation result: `scripts/validate-harness.sh` passed; `scripts/test-harness.sh` passed 26; `scripts/validate-harness.sh --strict` passed.
 
 ## Harness Test Update Gate
 

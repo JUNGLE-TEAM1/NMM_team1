@@ -399,11 +399,21 @@ case "${1:-}" in
         exit 0
         ;;
       view)
-        if [[ "${*: -2:1}" == "--jq" ]]; then
+        if [[ "$*" == *"--json url"* ]]; then
+          if [[ "${*: -2:1}" == "--jq" ]]; then
+            printf 'https://github.com/JUNGLE-TEAM1/NMM_team1/pull/99\n'
+          else
+            printf '{"url":"https://github.com/JUNGLE-TEAM1/NMM_team1/pull/99"}\n'
+          fi
+        elif [[ "${*: -2:1}" == "--jq" ]]; then
           printf '%s\n' "${FAKE_GH_PR_STATE:-MERGED}"
         else
           printf '{"state":"%s"}\n' "${FAKE_GH_PR_STATE:-MERGED}"
         fi
+        exit 0
+        ;;
+      create)
+        printf 'https://github.com/JUNGLE-TEAM1/NMM_team1/pull/99\n'
         exit 0
         ;;
     esac
@@ -423,6 +433,16 @@ case "${1:-}" in
         exit 0
         ;;
       close)
+        exit 0
+        ;;
+      reopen)
+        if [[ -n "${FAKE_GH_LOG:-}" ]]; then
+          printf '%s\n' "$*" >> "$FAKE_GH_LOG"
+        fi
+        if [[ "${FAKE_GH_REOPEN_FAIL:-0}" == "1" ]]; then
+          printf 'fake reopen failure\n' >&2
+          exit 1
+        fi
         exit 0
         ;;
     esac
@@ -452,11 +472,13 @@ case "${1:-}" in
         if [[ "${*: -2:1}" == "--jq" ]]; then
           if [[ "$*" == *"Done"* ]]; then
             printf 'PVTSSF_fake\t5e543244\n'
+          elif [[ "$*" == *"Review"* ]]; then
+            printf 'PVTSSF_fake\t209b4527\n'
           else
             printf 'PVTSSF_fake\t98236657\n'
           fi
         else
-          printf '{"fields":[{"id":"PVTSSF_fake","name":"Status","options":[{"id":"98236657","name":"In Progress"}]}]}\n'
+          printf '{"fields":[{"id":"PVTSSF_fake","name":"Status","options":[{"id":"98236657","name":"In Progress"},{"id":"209b4527","name":"Review"},{"id":"5e543244","name":"Done"}]}]}\n'
         fi
         exit 0
         ;;
@@ -700,6 +722,38 @@ case_status_does_not_warn_on_state_case_only_difference() {
   )
 }
 
+case_status_reports_open_pr_closed_issue_mismatch() {
+  local repo="${tmp_root}/open-pr-closed-issue"
+  copy_repo "$repo"
+  (
+    cd "$repo"
+    local fake_bin
+    fake_bin="$(install_fake_gh "$repo")"
+    PATH="${fake_bin}:$PATH"
+    FAKE_GH_PR_STATE="OPEN"
+    FAKE_GH_ISSUE_STATE="CLOSED"
+    export FAKE_GH_PR_STATE FAKE_GH_ISSUE_STATE
+    local base
+    base="$(base_commit)"
+    local workspace="docs/workflows/test/harness-open-pr-closed-issue"
+    write_common_workspace "$workspace" "complete" "passed" "accepted" "$base"
+    awk '
+      /^- pushed branch:/ { print "- pushed branch: test/harness-open-pr-closed-issue"; next }
+      /^- PR link:/ { print "- PR link: https://example.invalid/pull/99"; next }
+      /^- merge status:/ { print "- merge status: open"; next }
+      /^- issue close status:/ { print "- issue close status: open"; next }
+      { print }
+    ' "${workspace}/sync.md" > "${workspace}/sync.md.tmp"
+    mv "${workspace}/sync.md.tmp" "${workspace}/sync.md"
+    git add "$workspace"
+    git commit -q -m "open pr closed issue fixture"
+    scripts/status-workflow.sh "$workspace" > /tmp/harness-open-pr-closed-issue.out
+    rg -q "Open PR / closed issue mismatch: yes" /tmp/harness-open-pr-closed-issue.out
+    rg -q "PR merge 전 Done/close가 선행된 이상 상태" /tmp/harness-open-pr-closed-issue.out
+    ! rg -q "PR이 이미 열려 있습니다" /tmp/harness-open-pr-closed-issue.out
+  )
+}
+
 case_list_active_uses_remote_pr_state_for_stale_sync() {
   local repo="${tmp_root}/remote-pr-queue"
   copy_repo "$repo"
@@ -879,6 +933,99 @@ case_start_workflow_adds_created_issue_to_project() {
   )
 }
 
+case_prepare_pr_create_sets_project_review() {
+  local repo="${tmp_root}/prepare-pr-project-review"
+  copy_repo "$repo"
+  (
+    cd "$repo"
+    local fake_bin
+    fake_bin="$(install_fake_gh "$repo")"
+    PATH="${fake_bin}:$PATH"
+    FAKE_GH_LOG="/tmp/harness-prepare-pr-project-review-gh.log"
+    FAKE_GH_ISSUE_STATE="OPEN"
+    export FAKE_GH_LOG FAKE_GH_ISSUE_STATE
+    rm -f "$FAKE_GH_LOG"
+    local base
+    base="$(base_commit)"
+    local workspace="docs/workflows/test/harness-project-review"
+    write_common_workspace "$workspace" "complete" "passed" "accepted" "$base"
+    git add "$workspace"
+    git commit -q -m "project review fixture"
+
+    scripts/prepare-pr.sh --create-pr "$workspace" > /tmp/harness-prepare-pr-project-review.out
+
+    test -f "$FAKE_GH_LOG"
+    ! rg -q -- "issue reopen 1" "$FAKE_GH_LOG"
+    rg -q -- "project item-add 3 --owner JUNGLE-TEAM1 --url https://github.com/JUNGLE-TEAM1/NMM_team1/issues/1 --format json --jq .id" "$FAKE_GH_LOG"
+    rg -q -- "project item-edit --id PVTI_fake --project-id PVT_fake --field-id PVTSSF_fake --single-select-option-id 209b4527" "$FAKE_GH_LOG"
+    rg -q -- "- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/99" "$workspace/sync.md"
+    rg -q -- "- issue close status: open" "$workspace/sync.md"
+    rg -q -- "- issue reopen result: already open" "$workspace/sync.md"
+    rg -q -- "- issue project result: set to Review in JUNGLE-TEAM1 project 3" "$workspace/sync.md"
+  )
+}
+
+case_prepare_pr_reopens_closed_issue_before_project_review() {
+  local repo="${tmp_root}/prepare-pr-reopen-closed-issue"
+  copy_repo "$repo"
+  (
+    cd "$repo"
+    local fake_bin
+    fake_bin="$(install_fake_gh "$repo")"
+    PATH="${fake_bin}:$PATH"
+    FAKE_GH_LOG="/tmp/harness-prepare-pr-reopen-closed-gh.log"
+    FAKE_GH_ISSUE_STATE="CLOSED"
+    export FAKE_GH_LOG FAKE_GH_ISSUE_STATE
+    rm -f "$FAKE_GH_LOG"
+    local base
+    base="$(base_commit)"
+    local workspace="docs/workflows/test/harness-reopen-closed"
+    write_common_workspace "$workspace" "complete" "passed" "accepted" "$base"
+    git add "$workspace"
+    git commit -q -m "reopen closed issue fixture"
+
+    scripts/prepare-pr.sh --create-pr "$workspace" > /tmp/harness-prepare-pr-reopen-closed.out
+
+    test -f "$FAKE_GH_LOG"
+    rg -q -- "issue reopen 1 --comment" "$FAKE_GH_LOG"
+    rg -q -- "project item-edit --id PVTI_fake --project-id PVT_fake --field-id PVTSSF_fake --single-select-option-id 209b4527" "$FAKE_GH_LOG"
+    rg -q -- "- issue reopen result: reopened closed issue before PR open" "$workspace/sync.md"
+    rg -q -- "- issue close status: open" "$workspace/sync.md"
+    rg -q -- "- issue project result: set to Review in JUNGLE-TEAM1 project 3" "$workspace/sync.md"
+  )
+}
+
+case_prepare_pr_records_reopen_failure_before_project_review() {
+  local repo="${tmp_root}/prepare-pr-reopen-failure"
+  copy_repo "$repo"
+  (
+    cd "$repo"
+    local fake_bin
+    fake_bin="$(install_fake_gh "$repo")"
+    PATH="${fake_bin}:$PATH"
+    FAKE_GH_LOG="/tmp/harness-prepare-pr-reopen-failure-gh.log"
+    FAKE_GH_ISSUE_STATE="CLOSED"
+    FAKE_GH_REOPEN_FAIL="1"
+    export FAKE_GH_LOG FAKE_GH_ISSUE_STATE FAKE_GH_REOPEN_FAIL
+    rm -f "$FAKE_GH_LOG"
+    local base
+    base="$(base_commit)"
+    local workspace="docs/workflows/test/harness-reopen-failure"
+    write_common_workspace "$workspace" "complete" "passed" "accepted" "$base"
+    git add "$workspace"
+    git commit -q -m "reopen failure fixture"
+
+    scripts/prepare-pr.sh --create-pr "$workspace" > /tmp/harness-prepare-pr-reopen-failure.out
+
+    test -f "$FAKE_GH_LOG"
+    rg -q -- "issue reopen 1 --comment" "$FAKE_GH_LOG"
+    rg -q -- "- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/99" "$workspace/sync.md"
+    rg -q -- "- issue reopen result: reopen failed: fake reopen failure" "$workspace/sync.md"
+    rg -q -- "- issue close status: open" "$workspace/sync.md"
+    rg -q -- "- issue project result: set to Review in JUNGLE-TEAM1 project 3" "$workspace/sync.md"
+  )
+}
+
 case_prepare_pr_close_issue_sets_project_done() {
   local repo="${tmp_root}/prepare-pr-project-done"
   copy_repo "$repo"
@@ -997,6 +1144,7 @@ run_expect_success "status workflow reports Source of Truth proposal status" cas
 run_expect_success "existing PR status does not recommend auto PR" case_existing_pr_status_does_not_recommend_auto_pr
 run_expect_success "status workflow uses remote PR state for stale sync" case_status_uses_remote_pr_state_for_stale_sync
 run_expect_success "status workflow ignores state case-only differences" case_status_does_not_warn_on_state_case_only_difference
+run_expect_success "status workflow reports open PR closed issue mismatch" case_status_reports_open_pr_closed_issue_mismatch
 run_expect_success "branch queue uses remote PR state for stale sync" case_list_active_uses_remote_pr_state_for_stale_sync
 run_expect_success "complete PR-ready status recommends auto PR then checkpoint" case_complete_pr_ready_status_recommends_auto_pr_then_checkpoint
 run_expect_success "remote reconciliation status recommends auto PR" case_remote_reconciliation_status_recommends_auto_pr
@@ -1005,6 +1153,9 @@ run_expect_success "prepare-pr check stays local" case_prepare_pr_check_is_local
 run_expect_success "prepare-pr documents auto PR helper" case_prepare_pr_documents_auto_pr
 run_expect_success "start-workflow checkpoint excludes untracked files" case_start_workflow_checkpoint_excludes_untracked
 run_expect_success "start-workflow adds created issue to project" case_start_workflow_adds_created_issue_to_project
+run_expect_success "prepare-pr create PR sets project Review" case_prepare_pr_create_sets_project_review
+run_expect_success "prepare-pr reopens closed issue before project Review" case_prepare_pr_reopens_closed_issue_before_project_review
+run_expect_success "prepare-pr records reopen failure before project Review" case_prepare_pr_records_reopen_failure_before_project_review
 run_expect_success "prepare-pr close issue sets project Done" case_prepare_pr_close_issue_sets_project_done
 run_expect_failure "product context guard catches missing trust loop" case_product_context_guard_missing_trust_loop_fails
 run_expect_success "docs branch remote and tracking status is reported" case_docs_branch_remote_tracking_is_reported

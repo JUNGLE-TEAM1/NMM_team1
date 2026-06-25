@@ -431,6 +431,7 @@ Waiting on you:
 - Current state: scope, verification, confirmations, and pre-merge sync are complete.
 - Recommended next action: auto-create the PR with final validation and `scripts/prepare-pr.sh --auto-pr <workspace>` unless an opt-out or stop condition exists.
 - Remote operations reconciliation note: 원격 운영 상태 보정과 하네스 재현 변경이 함께 기록된 workspace는 팀 공유 산출물이다. opt-out 또는 stop condition이 없으면 PR 생성 전 추가 확인을 요구하지 않는다.
+- Project lifecycle note: linked issue Project status는 `docs/11-git-sync-policy.md`의 lifecycle을 따른다. PR 생성/감지는 `Review`, merge/finalize 이후만 `Done`이다.
 - Options:
   1. `자동 PR 생성`: run final validation, PR sync check, feature branch push, and PR creation.
   2. `로컬 완료로 보류`: do not push or create PR; record deferral reason and resume condition.

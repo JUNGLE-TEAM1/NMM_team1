@@ -29,14 +29,14 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 
 ## PR Conflict Resolution
 
-- conflict detected at:
-- conflict detection command:
-- conflict type:
-- affected files:
-- resolution path:
-- resolved files:
-- revalidation:
-- remaining risk:
+- conflict detected at: 2026-06-25
+- conflict detection command: `gh pr view 97 --json url,state,mergeStateStatus,reviewDecision,statusCheckRollup,isDraft,headRefName,baseRefName,mergeable`
+- conflict type: GitHub PR conflict / mergeable CONFLICTING
+- affected files: `docs/04-development-guide.md`, `docs/08-development-workflow.md`, `docs/10-next-action-menu.md`, `scripts/test-harness.sh`
+- resolution path: merged `origin/main` into `docs/workflow-harness-slimdown`; preserved main side for scope-out files and kept `docs/08` slimdown summary with Project lifecycle reference.
+- resolved files: `docs/04-development-guide.md`, `docs/08-development-workflow.md`, `docs/10-next-action-menu.md`, `scripts/test-harness.sh`
+- revalidation: `scripts/validate-harness.sh` passed; `scripts/test-harness.sh` passed 26; `scripts/validate-harness.sh --strict` passed; `scripts/status-workflow.sh docs/workflows/docs/workflow-harness-slimdown` reviewed.
+- remaining risk: PR #97 must be rechecked after push; PR merge/finalize/cleanup still require explicit human approval.
 
 ## Push / PR
 
