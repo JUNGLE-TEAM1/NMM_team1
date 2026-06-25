@@ -21,6 +21,7 @@
 - Airflow adapter boundary와 fallback threshold 적용
 - Week 2 execution metric semantics lock
 - local JSON handoff store로 run/catalog metadata process restart 조회 보장
+- M5 이해와 PR 전 로컬 확인을 위한 작은 Week 2 UI demo panel
 - focused backend contract tests
 
 ## 범위 제외
@@ -29,7 +30,7 @@
 - 실제 외부 Airflow webserver/scheduler/API 연결
 - 실제 Parquet 생성 또는 MinIO 업로드
 - 실제 SQLite/Postgres Catalog DB persistence
-- M1 UI route 구현
+- M1 정식 UI route 구현
 - M3 JSON schema inference/normalize 구현
 - M6 SQL/RAG/AI query 구현
 

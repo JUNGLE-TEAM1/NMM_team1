@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { getHealth } from "../api/asklakeClient";
 import { StatusPill } from "../components/StatusPill";
 import { SourceCatalog } from "../features/catalog/SourceCatalog";
+import { Week2M5Demo } from "../features/week2";
 import "./styles.css";
 
 export function App() {
@@ -32,6 +33,7 @@ export function App() {
           <StatusPill health={health} />
         </div>
 
+        <Week2M5Demo />
         <SourceCatalog />
       </section>
     </main>

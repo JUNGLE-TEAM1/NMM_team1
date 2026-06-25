@@ -15,6 +15,8 @@
 - 2026-06-25: #95 slice에서 M5 Day 2 smoke evidence를 `docs/reports/m5-day2-smoke-evidence.md`로 남겼다.
 - 2026-06-25: Day 3 Catalog persistence handoff slice에서 `Week2CatalogStore`를 추가했다. run history와 latest catalog metadata를 `output_root/_metadata` 아래 JSON으로 저장해 service restart 후에도 조회하고 다음 `run_id` sequence를 이어간다.
 - 2026-06-25: Day 3 Catalog persistence handoff slice를 GitHub issue #101로 등록했다.
+- 2026-06-25: PR 전 사람이 직접 눈으로 확인할 수 있도록 frontend에 `Week2M5Demo` 패널을 추가했다. 이 패널은 `POST /api/week2/workflows/pipeline_reviews_json_e2e/runs`와 `GET /api/week2/catalog/dataset_reviews_gold`를 호출해 `ExecutionResult`, `CatalogMetadata`, storage path를 보여준다.
+- 2026-06-25: M5 local UI demo panel slice를 GitHub issue #112로 등록했다.
 
 ## 결정
 
@@ -42,6 +44,8 @@
 - `backend/app/services/week2_airflow_adapter.py`
 - `backend/app/services/week2_local_runner.py`
 - `backend/app/api/week2_workflow.py`
+- `frontend/src/features/week2/Week2M5Demo.jsx`
+- `frontend/src/api/week2Api.js`
 - `backend/tests/test_week2_workflow_catalog.py`
 - `backend/tests/test_week2_local_runner.py`
 - `backend/samples/amazon_reviews_demo.jsonl`
@@ -51,10 +55,13 @@
 - `contracts/source_config.sample.json`
 - M2 PR #98 contract comment: `https://github.com/JUNGLE-TEAM1/NMM_team1/pull/98#issuecomment-4798361794`
 - M5 Day 3 issue: `https://github.com/JUNGLE-TEAM1/NMM_team1/issues/101`
+- M5 UI demo issue: `https://github.com/JUNGLE-TEAM1/NMM_team1/issues/112`
 - `docs/reports/m5-day2-smoke-evidence.md`
 - `docs/reports/m5-day3-catalog-persistence-handoff.md`
+- `docs/reports/m5-ui-demo.md`
 - `PYTHONPATH=backend ./.venv/bin/pytest backend/tests -q` -> 32 passed
 - `PYTHONPATH=backend ./.venv/bin/pytest backend/tests/test_week2_workflow_catalog.py backend/tests/test_week2_local_runner.py -q` -> 14 passed
+- `npm run build` in `frontend/` -> passed
 - `scripts/validate-harness.sh --strict` -> passed
 
 ## Daily Evidence / 하루 종료 증거
