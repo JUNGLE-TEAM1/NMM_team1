@@ -63,6 +63,7 @@ report가 늘어나면 영역별 최신 report index를 작게 유지한다. 이
 | PR 템플릿 문단형 설명 보강 | [`pr-template-readable-narrative.md`](pr-template-readable-narrative.md) | PR body가 7섹션 문단형 review handoff로 생성되는지 확인 |
 | GitHub record drift audit | [`github-record-drift-audit.md`](github-record-drift-audit.md) | GitHub issue/PR이 템플릿 생성 경로를 우회했는지 읽기 전용으로 감지하고 PR-ready 전에 막는지 확인 |
 | Week2 responsibility ver2 | [`week2-responsibility-ver2.md`](week2-responsibility-ver2.md) | 초기 회의안 이후 M1~M6 책임 분리를 ver2 기준으로 재정리하고 Spark/Parquet/Catalog 중복 책임을 제거 |
+| Week2 main E2E path | [`week2-main-e2e-path.md`](week2-main-e2e-path.md) | Amazon Reviews JSON -> M5 Workflow/Catalog -> M6 AI Query -> M1 UI 발표 필수 경로 확인 |
 | PR Conflict Resolution Protocol | [`pr-conflict-resolution-protocol.md`](pr-conflict-resolution-protocol.md) | PR conflict 감지, 분류, 사람 확인, 해결 후 재검증과 evidence 기록 규칙 확인 |
 | Harness 변경사항 병합 후 점검 | [`harness-post-merge-change-audit.md`](harness-post-merge-change-audit.md) | PR #45~#47 병합 뒤 Pre-PR checkpoint, Product Rebaseline, validation/script 충돌 여부 확인 |
 | Mid-Phase Steering 하네스 보강 | [`mid-phase-steering-harness.md`](mid-phase-steering-harness.md) | 작업 중 사람의 잦은 조향을 현재 Phase detail, scope change, Hotfix, 다음 Phase 후보, 보류 아이디어, 고영향 결정으로 분류하는 규칙 확인 |
