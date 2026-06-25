@@ -824,6 +824,10 @@ if ! rg -q "PR만.*PR creation|merge.*finalize" docs/13-human-command-flow.md; t
   fail "docs/13-human-command-flow.md must distinguish PR-only from merge/finalize flow"
 fi
 
+if ! rg -q "single-target|single target|단일.*target|one PR target|PR merge/finalize approval is a single-target approval" docs/10-next-action-menu.md docs/11-git-sync-policy.md docs/13-human-command-flow.md; then
+  fail "PR merge/finalize approval must be documented as a single-target guardrail"
+fi
+
 if ! rg -q "Complete And PR Ready|추가 보강|다음 Phase|보류|외부 실행 승인" docs/10-next-action-menu.md; then
   fail "docs/10-next-action-menu.md must include complete PR-ready choice details"
 fi

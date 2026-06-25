@@ -234,6 +234,7 @@ If the workspace is complete and PR-ready, AI may run final validation and `scri
 After PR creation, the handoff must present a choice menu instead of only asking whether to merge.
 The menu includes merge 진행, 추가 보강, 다음 Phase 이동, 보류, and 외부 실행 승인 단계 when relevant.
 `PR 진행` after an already created PR means CI/check status follow-up, merge, PR finalize, linked issue close verification, and automatic merged branch cleanup for the current branch.
+PR merge/finalize approval is a single-target approval. The target must be the current workspace PR or an explicitly named PR number/branch in the human message or checkpoint record. Broad wording such as `상태보고 머지까지해`, `남은 PR 머지해`, or `merge 가능한 것 처리해` authorizes status reporting for other open PRs, but it does not authorize merging additional PRs. If more than one open PR is mergeable, stop after the selected target and ask for a separate explicit PR number before merging another PR.
 If the human says `PR만`, `PR 생성만`, `초안 PR`, or `머지는 보류`, stop after PR creation and ask again before merge, finalize, issue close, or branch cleanup.
 Stop and report back if CI fails, merge conflicts exist, required review is missing, scope drift appears, deployment/AWS resource creation is involved, or the human limited the command to PR creation/draft/hold merge.
 Deploy and AWS resource creation still require separate explicit human approval.
