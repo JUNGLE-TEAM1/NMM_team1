@@ -10,7 +10,7 @@ class ColumnSchema(BaseModel):
 
 class SourceCreate(BaseModel):
     name: str = Field(min_length=1, max_length=80)
-    type: Literal["csv"]
+    type: Literal["csv", "json"]
     path: str = Field(min_length=1, max_length=500)
 
 
@@ -82,3 +82,97 @@ class PipelineRunRecord(BaseModel):
     logs: list[str] = []
     created_at: str
     updated_at: str
+
+
+class JsonFieldProfile(BaseModel):
+    source_path: str
+    target_name: str
+    inferred_type: str
+    observed_count: int
+    missing_count: int
+    nullable: bool
+    array: bool = False
+    nested: bool = False
+    sample_values: list[object] = []
+
+
+class JsonProfile(BaseModel):
+    dataset_id: str
+    format: str
+    record_path: str
+    sampled_rows: int
+    sample_limited: bool
+    fields: list[JsonFieldProfile]
+
+
+class SilverRecommendationColumn(BaseModel):
+    source_path: str
+    target_name: str
+    target_type: str
+    include: bool
+    transform: str
+    nullable: bool
+    confidence: float
+    reason: str
+
+
+class SilverUserDecision(BaseModel):
+    source_path: str
+    decision: str
+    options: list[str]
+    default: str
+    reason: str
+
+
+class SilverRecommendation(BaseModel):
+    recommendation_id: str
+    source_dataset_id: str
+    target_dataset_id: str
+    record_path: str
+    mode: str
+    columns: list[SilverRecommendationColumn]
+    needs_user_decision: list[SilverUserDecision] = []
+
+
+class GoldMetric(BaseModel):
+    name: str
+    function: str
+    column: str | None = None
+    condition: str | None = None
+
+
+class GoldRecommendation(BaseModel):
+    recommendation_id: str
+    source_dataset_id: str
+    target_dataset_id: str
+    type: str
+    group_by: list[str] = []
+    metrics: list[GoldMetric]
+    recommended_questions: list[str] = []
+    confidence: float
+    reason: str
+
+
+class CatalogMetadataDraft(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    dataset_id: str
+    name: str
+    layer: str
+    source_dataset_id: str | None = None
+    record_path: str | None = None
+    storage_uri: str | None = None
+    schema_fields: list[dict[str, object]] = Field(alias="schema")
+    metrics: dict[str, object]
+    quality: dict[str, object]
+    lineage: dict[str, object]
+    status: str
+
+
+class JsonRecommendationBundle(BaseModel):
+    profile: JsonProfile
+    bronze_catalog_metadata: CatalogMetadataDraft
+    silver_recommendation: SilverRecommendation
+    silver_catalog_metadata: CatalogMetadataDraft
+    gold_recommendation: GoldRecommendation
+    gold_catalog_metadata: CatalogMetadataDraft

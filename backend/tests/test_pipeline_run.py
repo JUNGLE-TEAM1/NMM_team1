@@ -1,4 +1,3 @@
-import tempfile
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -8,15 +7,13 @@ from app.core.app_factory import create_app
 from app.core.settings import Settings
 
 
-def make_client() -> TestClient:
-    temp_dir = tempfile.TemporaryDirectory()
+def make_client(tmp_path: Path) -> TestClient:
     settings = Settings(
-        metadata_url=f"sqlite:///{Path(temp_dir.name) / 'metadata.db'}",
-        result_store_path=str(Path(temp_dir.name) / "results"),
+        metadata_url=f"sqlite:///{tmp_path / 'metadata.db'}",
+        result_store_path=str(tmp_path / "results"),
     )
     store = SQLiteMetadataStore(settings.metadata_url)
     app = create_app(store, settings)
-    app.state.test_temp_dir = temp_dir
     return TestClient(app)
 
 
@@ -29,8 +26,8 @@ def register_sample_source(client: TestClient) -> dict:
     return response.json()
 
 
-def test_create_and_run_pipeline_success() -> None:
-    client = make_client()
+def test_create_and_run_pipeline_success(tmp_path: Path) -> None:
+    client = make_client(tmp_path)
     source_payload = register_sample_source(client)
 
     pipeline_response = client.post(
@@ -69,8 +66,8 @@ def test_create_and_run_pipeline_success() -> None:
     assert dataset["sample"][0] == {"order_id": "A001", "amount": 12000}
 
 
-def test_create_pipeline_rejects_unknown_select_field() -> None:
-    client = make_client()
+def test_create_pipeline_rejects_unknown_select_field(tmp_path: Path) -> None:
+    client = make_client(tmp_path)
     source_payload = register_sample_source(client)
 
     response = client.post(
@@ -88,7 +85,7 @@ def test_create_pipeline_rejects_unknown_select_field() -> None:
 
 
 def test_pipeline_run_records_failed_status_when_source_disappears(tmp_path: Path) -> None:
-    client = make_client()
+    client = make_client(tmp_path)
     csv_path = tmp_path / "orders.csv"
     csv_path.write_text("order_id,amount\nA-1,100\n", encoding="utf-8")
 
@@ -118,8 +115,8 @@ def test_pipeline_run_records_failed_status_when_source_disappears(tmp_path: Pat
     assert "CSV file not found" in run["error_message"]
 
 
-def test_run_missing_pipeline_returns_not_found() -> None:
-    client = make_client()
+def test_run_missing_pipeline_returns_not_found(tmp_path: Path) -> None:
+    client = make_client(tmp_path)
 
     response = client.post("/api/pipelines/not-found/runs")
 

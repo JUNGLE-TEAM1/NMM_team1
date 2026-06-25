@@ -3,8 +3,10 @@ import sqlite3
 from fastapi import APIRouter, HTTPException, status
 
 from app.adapters.csv_source import CsvInspectionError
+from app.adapters.json_source import JsonInspectionError, build_json_recommendation_bundle
 from app.domain.schemas import (
     CatalogDataset,
+    JsonRecommendationBundle,
     SourceCreate,
     SourceRecord,
     SourceRegistration,
@@ -27,7 +29,7 @@ def create_source_catalog_router(
     def create_source(source: SourceCreate) -> SourceRegistration:
         try:
             source_record, dataset = catalog_service.register_source(source)
-        except CsvInspectionError as error:
+        except (CsvInspectionError, JsonInspectionError, ValueError) as error:
             raise HTTPException(status_code=400, detail=str(error)) from error
         except sqlite3.IntegrityError as error:
             raise HTTPException(status_code=409, detail=f"Source name already exists: {source.name}") from error
@@ -54,6 +56,18 @@ def create_source_catalog_router(
         if dataset is None:
             raise HTTPException(status_code=404, detail="Catalog dataset not found")
         return dataset
+
+    @router.get("/catalog/datasets/{dataset_id}/json-recommendations", response_model=JsonRecommendationBundle)
+    def get_json_recommendations(dataset_id: str) -> JsonRecommendationBundle:
+        dataset = metadata_store.get_catalog_dataset(dataset_id)
+        if dataset is None:
+            raise HTTPException(status_code=404, detail="Catalog dataset not found")
+        if dataset.source_type != "json":
+            raise HTTPException(status_code=400, detail="JSON recommendations are only available for json datasets")
+        try:
+            return build_json_recommendation_bundle(dataset)
+        except JsonInspectionError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
 
     @router.post("/catalog/datasets/{dataset_id}/trust-gate", response_model=TrustGateResult)
     def evaluate_trust_gate(dataset_id: str, request: TrustGateEvaluationRequest) -> TrustGateResult:

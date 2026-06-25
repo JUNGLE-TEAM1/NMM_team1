@@ -1,4 +1,5 @@
 from app.adapters.csv_source import CsvSourceConnector
+from app.adapters.json_source import JsonSourceConnector
 from app.adapters.local_result_store import LocalResultStore
 from app.adapters.sqlite_metadata_store import SQLiteMetadataStore
 from app.core.settings import Settings
@@ -24,7 +25,7 @@ class AppContainer:
         return SQLiteMetadataStore(self.settings.metadata_url)
 
     def create_source_connectors(self) -> list[SourceConnector]:
-        return [CsvSourceConnector()]
+        return [CsvSourceConnector(), JsonSourceConnector()]
 
     def create_result_store(self) -> ResultStore:
         return LocalResultStore(self.settings.result_store_path)
