@@ -4,8 +4,8 @@
 
 ## Current State / 현재 상태
 
-- State: metric contract lock local validation passed
-- Summary: M5 Week 2 workflow/run/catalog runtime slice, local runner boundary, local JSONL demo metrics wiring, latest successful catalog guard, Airflow adapter fallback boundary, execution metric semantics lock이 구현됐고 backend/harness 검증이 통과했다.
+- State: #95 Day 2 smoke evidence recorded
+- Summary: M5 Week 2 workflow/run/catalog runtime slice, local runner boundary, local JSONL demo metrics wiring, latest successful catalog guard, Airflow adapter fallback boundary, execution metric semantics lock, Day 2 smoke evidence report가 완료됐고 backend/harness 검증이 통과했다.
 
 ## Recommended Next Action / 권장 다음 행동
 
@@ -15,7 +15,7 @@
 ## Options / 선택지
 
 1. 로컬 완료로 보류한다.
-2. 다음 M5 slice로 Day 2 smoke evidence(#95)를 진행한다.
+2. 다음 M5 slice로 Day 3 Catalog 연결 또는 Catalog persistence handoff를 진행한다.
 3. PR 준비를 위해 pre-merge sync와 push/PR checkpoint로 진행한다.
 4. 범위를 수정하거나 추가 요구를 반영한다.
 
@@ -26,10 +26,11 @@
 ## Last User Choice / 마지막 사용자 선택
 
 - 2026-06-25: M2 PR #98 검토 후 `ExecutionResult.row_count/bytes` input 기준, `CatalogMetadata.metrics.row_count/bytes` output 기준으로 계약 잠금을 요청했다.
+- 2026-06-25: #95 Day 2 smoke evidence 진행을 요청했다.
 
 ## Next AI Action / 다음 AI 행동
 
 - option 1이면 현재 branch를 로컬 완료 상태로 둔다.
-- option 2이면 #95 Day 2 smoke evidence를 진행한다.
+- option 2이면 Day 3 Catalog 연결 또는 Catalog persistence handoff를 진행한다.
 - option 3이면 Git Sync Confirm을 받은 뒤 pre-merge sync/push/PR 절차를 따른다.
 - option 4이면 `plan.md`와 관련 workspace 기록을 갱신한다.

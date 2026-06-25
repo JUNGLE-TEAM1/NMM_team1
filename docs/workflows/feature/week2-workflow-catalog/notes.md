@@ -12,6 +12,7 @@
 - 2026-06-25: #93 slice에서 catalog가 최신 성공 run(`run_reviews_demo_002`)을 가리키는지, 실패 run 이후에도 직전 성공 catalog를 유지하는지 테스트로 고정했다.
 - 2026-06-25: #94 slice에서 `Week2AirflowAdapter` boundary를 추가했다. `executor=airflow`는 Airflow adapter를 먼저 시도하고, adapter 미설정 또는 `succeeded` 외 status가 나오면 `Week2LocalRunner`로 fallback한다.
 - 2026-06-25: M2 Taxi bootstrap PR #98 검토 후 Week 2 execution metric semantics를 잠갔다. `ExecutionResult.row_count/bytes`는 primary input 기준, `CatalogMetadata.metrics.row_count/bytes`는 output dataset 기준이다.
+- 2026-06-25: #95 slice에서 M5 Day 2 smoke evidence를 `docs/reports/m5-day2-smoke-evidence.md`로 남겼다.
 
 ## 결정
 
@@ -45,6 +46,7 @@
 - `contracts/catalog_metadata.sample.json`
 - `contracts/source_config.sample.json`
 - M2 PR #98 contract comment: `https://github.com/JUNGLE-TEAM1/NMM_team1/pull/98#issuecomment-4798361794`
+- `docs/reports/m5-day2-smoke-evidence.md`
 - `PYTHONPATH=backend ./.venv/bin/pytest backend/tests -q` -> 30 passed
 - `PYTHONPATH=backend ./.venv/bin/pytest backend/tests/test_week2_workflow_catalog.py backend/tests/test_week2_local_runner.py -q` -> 12 passed
 - `scripts/validate-harness.sh --strict` -> passed
@@ -86,6 +88,23 @@ airflow success behavior: adapter status=succeeded keeps ExecutionResult.status=
 airflow unavailable behavior: default adapter falls back to local runner and returns fallback_succeeded
 airflow failed behavior: adapter status=failed falls back to local runner; if local runner also fails, catalog is not updated
 fallback threshold: Airflow primary success requires status=succeeded
+focused verification: PYTHONPATH=backend ./.venv/bin/pytest backend/tests/test_week2_workflow_catalog.py backend/tests/test_week2_local_runner.py -q -> 12 passed
+```
+
+## #95 Day 2 Smoke Evidence
+
+```text
+report: docs/reports/m5-day2-smoke-evidence.md
+run_id: run_reviews_demo_001
+executor: local_runner
+status: fallback_succeeded
+ExecutionResult.row_count: 4
+ExecutionResult.bytes: 580
+CatalogMetadata.metrics.row_count: 3
+CatalogMetadata.metrics.bytes: 195
+local output path: data/week2/reviews/gold/run_id=run_reviews_demo_001/dataset_reviews_gold.jsonl
+blocked issue: external Airflow, Parquet/MinIO write, persistent Catalog store are not implemented in this smoke
+next first action: Day 3 Catalog 연결에서 CatalogMetadata persistence 또는 M3 output handoff를 붙인다
 focused verification: PYTHONPATH=backend ./.venv/bin/pytest backend/tests/test_week2_workflow_catalog.py backend/tests/test_week2_local_runner.py -q -> 12 passed
 ```
 
