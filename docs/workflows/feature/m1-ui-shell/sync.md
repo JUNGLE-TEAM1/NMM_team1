@@ -24,7 +24,7 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 - main commit: `origin/main` at `a1c6493` when workspace started
 - conflicts: none local
 - validation: `scripts/validate-harness.sh`, `scripts/validate-harness.sh --strict`, `git diff --check`
-- result: local validation passed; PR readiness check pending
+- result: local validation and PR readiness check passed; PR #86 created
 - deferral reason: merge/rebase/pull은 사람 확인 전 실행하지 않음
 
 ## PR Conflict Resolution
@@ -45,7 +45,7 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 - issue creation result: created
 - issue project result: added to JUNGLE-TEAM1 project 3; status set to In Progress
 - PR closing keyword: Closes #84
-- pushed branch: pending
-- PR link: pending
-- merge status: not created yet
-- issue close status: not created yet
+- pushed branch: feature/m1-ui-shell
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/86
+- merge status: open
+- issue close status: already closed before PR #86 (GitHub state CLOSED)

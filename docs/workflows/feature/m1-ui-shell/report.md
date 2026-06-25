@@ -6,7 +6,7 @@
 - Date: 2026-06-25
 - Changed: `frontend/src/app/App.jsx`, `frontend/src/app/styles.css`, `docs/workflows/feature/m1-ui-shell/*`
 - Verified: `npm run build`, forbidden marker scan, browser route smoke, responsive smoke
-- Remaining: PR readiness 확인, push, PR 생성
+- Remaining: PR #86 CI/check 확인, 사람 확인 후 merge/finalize/cleanup
 - Next context: M2~M6는 M1 route shell과 `shared-docs.md` 연결 표를 기준으로 실제 기능을 붙인다.
 - Risk: 실제 backend/API 연결은 아직 없으며, M1은 pending/empty/error state까지만 검증했다.
 
@@ -139,7 +139,7 @@ npm run dev -- --host 127.0.0.1
 ## Failed / Incomplete / Follow-Up TODO
 
 - M2/M3/M4/M5/M6 실제 기능 연결은 후속 Phase 범위다.
-- PR 생성 후 CI 확인과 merge/finalize/cleanup은 사람 확인이 필요하다.
+- PR #86 CI 확인과 merge/finalize/cleanup은 사람 확인이 필요하다.
 
 ## Context For Next Phase / 다음 Phase 문맥
 
