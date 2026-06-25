@@ -421,6 +421,26 @@ case "${1:-}" in
   issue)
     case "${2:-}" in
       create)
+        if [[ -n "${FAKE_GH_LOG:-}" ]]; then
+          printf '%s\n' "$*" >> "$FAKE_GH_LOG"
+        fi
+        if [[ -n "${FAKE_GH_BODY_LOG:-}" ]]; then
+          body_file=""
+          while [[ $# -gt 0 ]]; do
+            case "$1" in
+              --body-file)
+                body_file="${2:-}"
+                shift 2
+                ;;
+              *)
+                shift
+                ;;
+            esac
+          done
+          if [[ -n "$body_file" && -f "$body_file" ]]; then
+            cat "$body_file" > "$FAKE_GH_BODY_LOG"
+          fi
+        fi
         printf 'https://github.com/JUNGLE-TEAM1/NMM_team1/issues/123\n'
         exit 0
         ;;
@@ -874,6 +894,11 @@ case_prepare_pr_check_is_local() {
     scripts/prepare-pr.sh --check-pr-sync "$workspace" >/tmp/harness-prepare-pr.out
     ! rg -q "Created PR|To https://|github.com/.*/pull/" /tmp/harness-prepare-pr.out
     rg -q "## 1\\. PR 요약" /tmp/harness-prepare-pr.out
+    rg -q -- "- 이 PR에서 한 일: fixture" /tmp/harness-prepare-pr.out
+    rg -q -- "- 리뷰어가 먼저 볼 것: 요약, 이 PR에서 한 일, 검증 요약, 남은 일/위험을 먼저 확인한 뒤 diff를 본다\\." /tmp/harness-prepare-pr.out
+    rg -q -- "- 검증 요약: fixture" /tmp/harness-prepare-pr.out
+    rg -q -- "- 남은 일: none" /tmp/harness-prepare-pr.out
+    rg -q -- "- 위험/주의: none" /tmp/harness-prepare-pr.out
     rg -q -- "- 연결된 Issue: Closes #1" /tmp/harness-prepare-pr.out
     rg -q -- "- Branch: \`test/harness-fixture\`" /tmp/harness-prepare-pr.out
     rg -q -- "- Branch workspace: \`${workspace}\`" /tmp/harness-prepare-pr.out
@@ -942,16 +967,53 @@ case_start_workflow_adds_created_issue_to_project() {
     fake_bin="$(install_fake_gh "$repo")"
     PATH="${fake_bin}:$PATH"
     FAKE_GH_LOG="/tmp/harness-start-workflow-project-gh.log"
-    export FAKE_GH_LOG
-    rm -f "$FAKE_GH_LOG"
+    FAKE_GH_BODY_LOG="/tmp/harness-start-workflow-project-body.md"
+    export FAKE_GH_LOG FAKE_GH_BODY_LOG
+    rm -f "$FAKE_GH_LOG" "$FAKE_GH_BODY_LOG"
 
     scripts/start-workflow.sh --no-checkout feature project-linked "Project linked" > /tmp/harness-start-workflow-project.out
 
     test -f "$FAKE_GH_LOG"
+    test -f "$FAKE_GH_BODY_LOG"
+    rg -q -- "issue create --title \\[기능\\] Project linked --body-file" "$FAKE_GH_LOG"
+    rg -q -- "--label feature" "$FAKE_GH_LOG"
     rg -q -- "project item-add 3 --owner JUNGLE-TEAM1 --url https://github.com/JUNGLE-TEAM1/NMM_team1/issues/123 --format json --jq .id" "$FAKE_GH_LOG"
     rg -q -- "project item-edit --id PVTI_fake --project-id PVT_fake --field-id PVTSSF_fake --single-select-option-id 98236657" "$FAKE_GH_LOG"
+    rg -q "## 1\\. 이슈 요약" "$FAKE_GH_BODY_LOG"
+    rg -q "## 5\\. 관련 문서 / Source of Truth" "$FAKE_GH_BODY_LOG"
+    rg -q "## 6\\. Acceptance Criteria" "$FAKE_GH_BODY_LOG"
+    rg -q "## 7\\. Regression / Failure Scenario" "$FAKE_GH_BODY_LOG"
+    rg -q "## 8\\. Manual Verification" "$FAKE_GH_BODY_LOG"
+    rg -q -- "- Branch: \`feature/project-linked\`" "$FAKE_GH_BODY_LOG"
+    rg -q -- "- Branch workspace: \`docs/workflows/feature/project-linked\`" "$FAKE_GH_BODY_LOG"
+    ! rg -q '\\n' "$FAKE_GH_BODY_LOG"
     rg -q -- "- linked GitHub issue: #123" docs/workflows/feature/project-linked/sync.md
     rg -q -- "- issue project result: added to JUNGLE-TEAM1 project 3; status set to In Progress" docs/workflows/feature/project-linked/sync.md
+  )
+}
+
+case_start_workflow_docs_issue_uses_korean_labels() {
+  local repo="${tmp_root}/start-workflow-docs-issue"
+  copy_repo "$repo"
+  (
+    cd "$repo"
+    local fake_bin
+    fake_bin="$(install_fake_gh "$repo")"
+    PATH="${fake_bin}:$PATH"
+    FAKE_GH_LOG="/tmp/harness-start-workflow-docs-gh.log"
+    FAKE_GH_BODY_LOG="/tmp/harness-start-workflow-docs-body.md"
+    export FAKE_GH_LOG FAKE_GH_BODY_LOG
+    rm -f "$FAKE_GH_LOG" "$FAKE_GH_BODY_LOG"
+
+    scripts/start-workflow.sh --no-checkout docs korean-template "한국어 템플릿 보강" > /tmp/harness-start-workflow-docs.out
+
+    rg -q -- "issue create --title \\[문서/운영\\] 한국어 템플릿 보강 --body-file" "$FAKE_GH_LOG"
+    rg -q -- "--label documentation" "$FAKE_GH_LOG"
+    rg -q -- "--label ops" "$FAKE_GH_LOG"
+    rg -q "## 1\\. 이슈 요약" "$FAKE_GH_BODY_LOG"
+    rg -q "작업 유형: 문서/운영 개선" "$FAKE_GH_BODY_LOG"
+    ! rg -q '## AskLake branch workspace|## Scope' "$FAKE_GH_BODY_LOG"
+    ! rg -q '\\n' "$FAKE_GH_BODY_LOG"
   )
 }
 
@@ -1175,6 +1237,7 @@ run_expect_success "prepare-pr check stays local" case_prepare_pr_check_is_local
 run_expect_success "prepare-pr documents auto PR helper" case_prepare_pr_documents_auto_pr
 run_expect_success "start-workflow checkpoint excludes untracked files" case_start_workflow_checkpoint_excludes_untracked
 run_expect_success "start-workflow adds created issue to project" case_start_workflow_adds_created_issue_to_project
+run_expect_success "start-workflow docs issue uses Korean template labels" case_start_workflow_docs_issue_uses_korean_labels
 run_expect_success "prepare-pr create PR sets project Review" case_prepare_pr_create_sets_project_review
 run_expect_success "prepare-pr reopens closed issue before project Review" case_prepare_pr_reopens_closed_issue_before_project_review
 run_expect_success "prepare-pr records reopen failure before project Review" case_prepare_pr_records_reopen_failure_before_project_review

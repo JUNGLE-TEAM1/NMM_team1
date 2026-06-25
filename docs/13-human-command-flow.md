@@ -197,7 +197,7 @@ AI does:
 - Checks `.github/pull_request_template.md`.
 - Reports missing `sync.md`, `quality.md`, confirmation, or validation items.
 - Runs validation only when approved or already within the agreed verification scope.
-- Linked GitHub issue가 있으면 `scripts/prepare-pr.sh <workspace>`로 `PR closing keyword`를 `sync.md`에 기록하고 PR body 초안을 만든다.
+- Linked GitHub issue가 있으면 `scripts/prepare-pr.sh <workspace>`로 `PR closing keyword`를 `sync.md`에 기록하고 PR body 초안을 만든다. PR body 초안은 workspace `report.md`의 `Changed`, `Verified`, `Remaining`, `Risk`를 상단에 반영해 사람이 diff를 보기 전에 구체 작업과 검증 상태를 이해할 수 있어야 한다.
 - Does not create extra issues during PR preparation. PR-ready feature branch push and PR creation may run automatically; merge PRs, finalize, close issues, or cleanup still require human confirmation. Branch workspace issue creation remains the team default in `scripts/start-workflow.sh`.
 
 Human says:
@@ -243,6 +243,7 @@ AI does:
 
 - Runs `scripts/start-workflow.sh <type> <short-kebab-name> "<title>"`; GitHub issue creation is the team default.
 - Records `linked GitHub issue`, `issue link`, `issue creation result`, and `PR closing keyword` in `sync.md`.
+- Creates the issue with Korean title prefix/body sections, type labels, and `--body-file`; the human-provided title content is not force-translated.
 - If GitHub CLI is unavailable or unauthenticated, creates the local workspace and records the failure reason instead of blocking all work.
 - Uses `--no-issue` only for an intentional exception and records the reason in the workspace.
 
