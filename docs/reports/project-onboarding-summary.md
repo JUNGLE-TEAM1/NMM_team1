@@ -4,9 +4,11 @@
 
 ## AskLake가 만들려는 것
 
-AskLake는 여러 곳에 흩어진 데이터를 한곳에서 다루게 해주는 제품이다. 하지만 단순히 데이터를 모으는 도구에 머무르지 않는다. 이 프로젝트가 정말 보여주려는 것은 “이 데이터와 이 답변을 왜 믿을 수 있는가”다. 기업 안의 데이터는 파일, 데이터베이스, 외부 API, 문서처럼 여러 형태로 나뉘어 있고, 그 데이터가 언제 들어왔는지, 어떤 검사를 통과했는지, 누가 볼 수 있는지, 나중에 어떤 답변이나 분석에 쓰였는지를 따라가기 어렵다. AskLake는 이 흐름을 한 제품 안에서 이어 보이게 하려는 프로젝트다.
+AskLake는 여러 곳에 흩어진 데이터를 한곳에서 다루게 해주는 B2B SaaS Trusted Data & AI Platform을 목표로 한다. 하지만 단순히 데이터를 모으는 도구에 머무르지 않는다. 이 프로젝트가 정말 보여주려는 것은 “큰 데이터셋을 어떻게 수집·변환·검산·게시했고, 이 데이터와 이 답변을 왜 믿을 수 있는가”다. 기업 안의 데이터는 파일, 데이터베이스, 외부 API, 문서처럼 여러 형태로 나뉘어 있고, 크기와 구조도 제각각이다. 데이터가 언제 들어왔는지, 어떤 스키마로 해석됐는지, 어떤 변환과 정규화를 거쳤는지, 어떤 검사를 통과했는지, 누가 볼 수 있는지, 나중에 어떤 답변이나 분석에 쓰였는지를 따라가기 어렵다. AskLake는 이 흐름을 한 제품 안에서 이어 보이게 하려는 프로젝트다.
 
-현재 제품 방향은 `Trusted Dataset -> Query/Ask -> Evidence -> Recovery`라는 흐름으로 정리되어 있다. 쉬운 말로 풀면, 먼저 믿을 수 있는 데이터셋을 만들고, 그 데이터셋으로 SQL이나 자연어 질문을 실행하고, 결과가 어떤 근거에서 나왔는지 보여주며, 문제가 생겼을 때 어디에 영향을 줬고 어떻게 복구했는지 확인하게 하는 것이다. 여기서 `Trusted Dataset`은 검사를 통과해 믿고 쓸 수 있다고 표시된 데이터셋이고, `Query/Ask`는 SQL 질의나 자연어 질문을 뜻한다. `Evidence`는 답변의 근거이며, `Recovery`는 데이터가 깨지거나 오래되었을 때 다시 정상 상태로 돌리는 과정이다.
+현재 제품 방향은 `Trusted Dataset -> Query/Ask -> Evidence -> Recovery`라는 흐름으로 정리되어 있다. 쉬운 말로 풀면, 먼저 대용량/복합 데이터셋을 source onboarding, schema inference, transform/normalize/load, SQL 검산, 품질/PII/권한 검토를 거쳐 믿을 수 있는 데이터셋으로 만들고, 그 데이터셋으로 SQL이나 자연어 질문을 실행하고, 결과가 어떤 근거에서 나왔는지 보여주며, 문제가 생겼을 때 어디에 영향을 줬고 어떻게 복구했는지 확인하게 하는 것이다. 여기서 `Trusted Dataset`은 검사를 통과해 믿고 쓸 수 있다고 표시된 데이터셋이고, `Query/Ask`는 SQL 질의나 자연어 질문을 뜻한다. `Evidence`는 답변의 근거와 처리 증거이며, `Recovery`는 데이터가 깨지거나 오래되었을 때 다시 정상 상태로 돌리는 과정이다.
+
+Target MVP는 상용 멀티테넌트 SaaS 운영 전체를 지금 완성한다는 뜻이 아니다. 실행 환경은 `local/container` 기반의 단일 Demo Tenant가 우선이고, 그 안에서 B2B SaaS로 확장될 핵심 구조를 검증한다. 따라서 로컬에서 실행한다고 해서 self-hosted 제품으로 방향이 바뀌는 것은 아니며, Demo Tenant와 `tenant_id`는 SaaS 확장 구조를 열어두기 위한 MVP 장치다.
 
 ## 처음 출발점
 
@@ -20,7 +22,7 @@ AskLake는 여러 곳에 흩어진 데이터를 한곳에서 다루게 해주는
 
 초기 데모를 만든 뒤, 프로젝트는 단순한 파이프라인 데모에서 Trusted Data & AI Platform 방향으로 제품 기준을 다시 잡았다. 원문 기획서에는 AskLake가 데이터 수집, 품질, 권한, 리니지, 감사 기록, SQL 분석, 자연어 질문, 장애 복구까지 이어지는 더 큰 제품으로 설명되어 있었다. 이 방향은 프로젝트의 장기 목표와 잘 맞았지만, 그대로 현재 MVP에 덮어쓰면 범위가 너무 커지고 기존에 완료된 작은 baseline과 충돌할 위험이 있었다.
 
-그래서 Product Rebaseline을 했다. 이 작업의 핵심은 현재 구현 baseline과 앞으로 만들 Target MVP를 분리하는 것이었다. 현재 baseline은 이미 작동하는 CSV/local pipeline demo로 남기고, 새 Target MVP는 `Trusted Dataset -> Query/Ask -> Evidence -> Recovery` 신뢰 흐름을 증명하는 방향으로 정리했다. 과거 M0부터 M5까지의 report는 historical evidence로 보존하고, 새 제품 목표는 Source of Truth 문서에 반영했다.
+그래서 Product Rebaseline을 했다. 이 작업의 핵심은 현재 구현 baseline과 앞으로 만들 Target MVP를 분리하는 것이었다. 현재 baseline은 이미 작동하는 CSV/local pipeline demo로 남기고, 새 Target MVP는 대용량/복합 데이터셋 조작 증거를 포함한 `Trusted Dataset -> Query/Ask -> Evidence -> Recovery` 신뢰 흐름을 증명하는 방향으로 정리했다. 과거 M0부터 M5까지의 report는 historical evidence로 보존하고, 새 제품 목표는 Source of Truth 문서에 반영했다.
 
 이 결정 덕분에 팀은 두 가지를 동시에 잃지 않게 되었다. 하나는 이미 만들어진 작고 검증된 동작이고, 다른 하나는 앞으로 만들어야 할 더 큰 제품 방향이다. 현재 문서들은 이 둘을 계속 분리해서 설명한다.
 
@@ -34,15 +36,15 @@ AskLake는 여러 곳에 흩어진 데이터를 한곳에서 다루게 해주는
 
 ## 병렬 개발을 위해 준비한 것
 
-Target MVP는 한 줄로 순서대로만 개발하기에는 범위가 크다. Source 연결, Catalog, Trust Gate, Job 상태, Query, Policy, Ask, Evidence, Recovery, Packaging 같은 부분이 서로 연결되어 있기 때문이다. 그래서 하네스는 Target MVP를 여러 workstream으로 나누고, 나중에 integration spine으로 이어 붙이는 방향을 잡았다.
+Target MVP는 한 줄로 순서대로만 개발하기에는 범위가 크다. Source 연결, Schema Inference, Transform/Normalize/Load, Catalog, Trust Gate, Job 상태, Query, Policy, Ask, Evidence, Recovery, Packaging 같은 부분이 서로 연결되어 있기 때문이다. 그래서 하네스는 Target MVP를 여러 workstream으로 나누고, 나중에 integration spine으로 이어 붙이는 방향을 잡았다.
 
-여기서 workstream은 팀이 따로 맡을 수 있는 작업 흐름을 뜻한다. 예를 들어 Catalog / Trust는 데이터셋 상태와 신뢰 조건을 담당하고, Source Connector는 외부 source 연결과 schema 확인을 담당한다. Job / Orchestrator는 실행 상태를 기록하고, Query / Policy는 데이터셋을 조회해도 되는지 판단하는 흐름을 담당한다. Ask / Evidence는 자연어 질문과 근거 연결을 맡고, Recovery / Operate는 문제가 생겼을 때 영향과 복구를 보여준다. Packaging은 로컬 실행과 배포 준비를 담당한다.
+여기서 workstream은 팀이 따로 맡을 수 있는 작업 흐름을 뜻한다. 예를 들어 Catalog / Trust는 데이터셋 상태와 신뢰 조건을 담당하고, Source Connector는 외부 source 연결과 schema 확인을 담당한다. Data Plane / Workflow는 스키마 추론, 사용자 보정, 변환, 정규화, 적재, row count, bytes, duration, output path 같은 처리 증거를 담당한다. Job / Orchestrator는 실행 상태를 기록하고, Query / Policy는 데이터셋을 조회해도 되는지 판단하는 흐름을 담당한다. Ask / Evidence는 자연어 질문과 근거 연결을 맡고, Recovery / Operate는 문제가 생겼을 때 영향과 복구를 보여준다. Packaging은 로컬 실행과 배포 준비를 담당한다.
 
 병렬 개발에서 가장 중요한 것은 각 모듈이 서로 같은 언어를 쓰게 하는 것이다. 그래서 Modular Contract Baseline을 만들었다. 이 문서는 `Dataset`, `DatasetStatus`, `TrustGateResult`, `SourceConnection`, `JobRun`, `PolicyDecision`, `QueryExecution`, `EvidenceItem`, `RetrievalTrace`, `AssetImpact`, `RecoveryAction` 같은 공통 이름과 최소 필드를 정리한다. 쉽게 말하면, 각 모듈이 서로 주고받을 약속을 먼저 정한 것이다.
 
 integration spine은 따로 만든 모듈들을 나중에 하나의 제품 흐름으로 이어 붙이는 순서다. 먼저 source에서 dataset draft가 만들어지고 trust gate 결과를 가진다. 그 다음 dataset 상태를 바탕으로 query가 허용되거나 차단된다. 그 뒤 query나 ask 결과가 evidence와 연결되고, 장애나 품질 실패가 생겼을 때 recovery 흐름으로 이어진다. 이 순서를 정해두면 여러 사람이 병렬로 개발해도 마지막에 무엇부터 합칠지 알 수 있다.
 
-아직 모든 외부 시스템을 실제로 붙인 것은 아니다. 대신 mock, fake, fixture라는 임시 대역을 허용했다. 이것들은 실제 데이터베이스, 실제 LLM, 실제 Trino 같은 큰 시스템 없이도 각 모듈이 먼저 개발될 수 있게 해주는 가짜 입력과 결과다. 예를 들어 Query / Policy는 진짜 Query Engine이 없어도 fake dataset status로 허용과 차단을 검증할 수 있고, Ask / Evidence는 실제 LLM 없이도 정해진 질문과 정해진 근거로 화면과 흐름을 먼저 만들 수 있다.
+아직 모든 외부 시스템을 실제로 붙인 것은 아니다. 대신 mock, fake, fixture라는 임시 대역을 허용했다. 이것들은 실제 데이터베이스, 실제 LLM, 실제 Trino 같은 큰 시스템 없이도 각 모듈이 먼저 개발될 수 있게 해주는 가짜 입력과 결과다. 예를 들어 Query / Policy는 진짜 Query Engine이 없어도 adapter 경계와 fake dataset status로 허용과 차단을 검증할 수 있고, Ask / Evidence는 실제 LLM 없이도 정해진 질문과 정해진 근거로 화면과 흐름을 먼저 만들 수 있다.
 
 ## 현재 코드와 문서가 준비된 상태
 
@@ -58,7 +60,7 @@ Target MVP를 준비하기 위한 얇은 runtime skeleton도 생겼다. `backend
 
 원문 기획서에는 Build, Trust, Analyze, Ask, Operate, Admin의 화면 경험과 사용자 여정이 훨씬 풍부하게 적혀 있다. 하지만 현재 Source of Truth 문서에는 그 모든 UX 디테일이 그대로 들어와 있지는 않다. 의도적으로 압축되어 있다. 그래서 화면 설계 Phase에 들어가면 원문 기획서에서 필요한 사용자 경험을 다시 꺼내어, 그 Phase에서 실제 구현 범위로 승격해야 한다.
 
-또 실제 Trino, 외부 LLM, AWS, EKS, S3, 대규모 vector store 같은 큰 인프라는 아직 도입하지 않았다. 이런 것들은 비용, 권한, 보안, 운영 부담이 생길 수 있기 때문에 승인과 별도 결정 뒤에 진행해야 한다. 현재 하네스는 그런 큰 선택을 바로 구현하지 않고, Decision Option Brief와 approval gate를 거치도록 되어 있다.
+또 실제 Trino, 외부 LLM, AWS, EKS, AWS S3, 대규모 vector store 같은 큰 인프라는 아직 도입하지 않았다. Query Engine은 특정 엔진이 아니라 adapter 경계로 두고, 저장소는 로컬 또는 MinIO 같은 S3-compatible 경로로 먼저 검증한다. 이런 것들은 비용, 권한, 보안, 운영 부담이 생길 수 있기 때문에 승인과 별도 결정 뒤에 진행해야 한다. 현재 하네스는 그런 큰 선택을 바로 구현하지 않고, Decision Option Brief와 approval gate를 거치도록 되어 있다.
 
 ## 다음 개발을 시작하는 방법
 
@@ -66,10 +68,10 @@ Target MVP를 준비하기 위한 얇은 runtime skeleton도 생겼다. `backend
 
 병렬로 진행하려면 먼저 모듈 계약표와 integration spine을 확인한다. 이것은 새 규칙을 만드는 일이 아니라, 이미 하네스에 들어 있는 병렬 개발 규칙을 실제 개발 목록에 맞춰 적용하는 일이다. 그 다음 각 모듈별 branch workspace를 만들고, 실제 외부 시스템을 붙이기 전에 fake나 fixture로 제품 표면과 최소 흐름을 먼저 만든다.
 
-처음 목표는 전체 AskLake를 완성하는 것이 아니라, 모듈들이 서로 말이 통하는 첫 흐름을 만드는 것이다. 예를 들어 source에서 dataset draft가 생기고, trust gate가 pass 또는 fail 이유를 만들고, dataset 상태에 따라 query가 허용되거나 차단되며, 그 결과에 evidence가 붙는 흐름까지 얇게 연결하는 식이다. 이 흐름이 잡히면 이후에 실제 품질 엔진, 실제 권한 정책, 실제 Query Engine, 실제 Ask 경험, 실제 Recovery 기능을 더 안전하게 키울 수 있다.
+처음 목표는 전체 AskLake를 완성하는 것이 아니라, 모듈들이 서로 말이 통하는 첫 흐름을 만드는 것이다. 예를 들어 source에서 dataset draft가 생기고, schema inference와 transform/normalize/load를 거쳐 output dataset과 처리 증거가 남고, trust gate가 pass 또는 fail 이유를 만들고, dataset 상태에 따라 query가 허용되거나 차단되며, 그 결과에 evidence가 붙는 흐름까지 얇게 연결하는 식이다. 이 흐름이 잡히면 이후에 실제 품질 엔진, 실제 권한 정책, 실제 Query Engine, 실제 Ask 경험, 실제 Recovery 기능을 더 안전하게 키울 수 있다.
 
 ## 지금까지의 결론
 
-AskLake는 이제 단순한 아이디어나 원문 기획서만 있는 상태가 아니다. 작게 동작하는 current baseline이 있고, 더 큰 Target MVP 방향이 문서로 분리되어 있으며, 병렬 개발을 위한 공통 계약과 얇은 runtime skeleton도 준비되어 있다. 동시에 아직 완성된 제품 기능은 제한적이라는 점도 분명하다.
+AskLake는 이제 단순한 아이디어나 원문 기획서만 있는 상태가 아니다. 작게 동작하는 current baseline이 있고, B2B SaaS 제품 방향과 `local/container` Target MVP 실행 범위가 분리되어 있으며, 대용량/복합 데이터셋 조작과 신뢰 증거를 중심으로 한 병렬 개발 맥락도 잡혀 있다. 동시에 아직 완성된 제품 기능은 제한적이라는 점도 분명하다.
 
 지금 팀이 해야 할 일은 “전체 플랫폼을 한 번에 만들자”가 아니라, 어떤 모듈부터 병렬로 열지 정하고, 그 모듈들이 서로 연결되는 첫 흐름을 만드는 것이다. 하네스는 그 과정에서 범위가 커지는 것을 막고, 결정과 검증을 남기며, 팀원과 AI가 같은 맥락 위에서 일할 수 있게 도와주는 역할을 한다.

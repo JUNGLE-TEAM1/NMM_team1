@@ -2,7 +2,7 @@
 
 크래프톤 정글 SW-AI LAB 12기 나만의 무기 만들기 302호 1팀 프로젝트 AskLake.
 
-AskLake는 여러 데이터 소스를 연결해 검증된 데이터셋으로 게시하고, 권한 안에서 SQL과 자연어 질문으로 활용하며, 답변과 분석 결과의 근거를 리니지·품질·정책·감사 기록으로 확인하게 하는 B2B SaaS Trusted Data & AI Platform을 목표로 한다.
+AskLake는 여러 데이터 소스를 연결해 대용량/복합 데이터셋을 수집·변환·검산·게시하고, 권한 안에서 SQL과 자연어 질문으로 활용하며, 답변과 분석 결과의 근거를 리니지·품질·정책·감사 기록으로 확인하게 하는 B2B SaaS Trusted Data & AI Platform을 목표로 한다.
 
 ## 제품 방향
 
@@ -10,7 +10,7 @@ AskLake의 Target MVP는 `Trusted Dataset -> Query/Ask -> Evidence -> Recovery` 
 Target MVP는 `local/container` 환경의 단일 Demo Tenant로 핵심 신뢰 루프를 검증하며, 상용 멀티테넌트 SaaS 운영은 후속 범위로 둔다.
 
 핵심 질문은 “데이터를 가져올 수 있는가”가 아니라 “이 데이터와 답변을 왜 믿을 수 있는가”다.
-따라서 Target MVP는 하나의 데이터셋이 source onboarding, 품질/PII/권한 검토, `Trusted` 게시, Query 또는 Ask 사용, Evidence 확인, 장애 영향 분석과 복구까지 이어지는 흐름을 우선한다.
+따라서 Target MVP는 하나의 데이터셋이 source onboarding, schema inference, 변환/정규화, Parquet 또는 S3-compatible 저장, 품질/PII/권한 검토, `Trusted` 게시, Query 또는 Ask 사용, Evidence 확인, 장애 영향 분석과 복구까지 이어지는 흐름을 우선한다.
 
 ## Current Implementation Baseline
 
