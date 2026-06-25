@@ -75,10 +75,148 @@ NYC TLC Yellow Taxi monthly Parquet
 이 파일은 로컬 기준 dataset이며, 전체 Taxi dataset 적재 목표를 대체하지 않는다.
 정확한 `demo`/`fixed` date range와 row 수는 이 파일 안에서 잘라 정하고, multi-month/year 단위 확장은 후속 `scale-target` branch에서 다룬다.
 
+## M2 Taxi 계약 mapping 초안
+
+기존 `contracts/*.sample.json`은 Amazon Reviews 예시이므로 덮어쓰지 않는다.
+M2는 같은 계약 구조를 따라 아래 Taxi 전용 값을 채운다.
+
+### `SourceConfig`
+
+| Field | M2 Taxi 값 | 설명 |
+| --- | --- | --- |
+| `tenant_id` | `tenant_demo` | demo tenant 기준 |
+| `source_id` | `source_taxi_yellow_2024_01` | 2024년 1월 Yellow Taxi 로컬 기준 source |
+| `source_type` | `postgres_taxi` | M2 batch가 읽는 안정 계약은 PostgreSQL table 기준 |
+| `name` | `NYC TLC Yellow Taxi 2024-01` | UI/Catalog 표시 이름 |
+| `connection_ref.kind` | `postgres_table` | 원본 Parquet 자체가 아니라 적재된 table을 batch 입력으로 본다. |
+| `connection_ref.secret_ref` | `ASKLAKE_DEMO_POSTGRES_DSN` 또는 M1/M5가 정한 local secret ref | 실제 credential 값은 commit하지 않는다. |
+| `connection_ref.path` | `public.taxi_trips` | PostgreSQL schema/table 후보 |
+| `options.source_file_name` | `yellow_tripdata_2024-01.parquet` | local bootstrap 원본 파일명 |
+| `options.event_time_column` | `tpep_pickup_datetime` | daily aggregation과 freshness 기준 |
+| `options.sample_profile` | `demo`, `fixed`, `local-full-month` | 실행 범위 선택값 |
+
+`/Users/liamtsy/Downloads/yellow_tripdata_2024-01.parquet`는 현재 로컬 확인 파일 경로일 뿐 계약에 박는 portable path가 아니다.
+구현 branch에서는 repo 밖 또는 gitignore된 `data/raw/taxi/yellow_tripdata_2024-01.parquet` 같은 경로를 사용한다.
+
+### `WorkflowDefinition`
+
+| Node ID | Type | 입력 | 출력 | M2 의미 |
+| --- | --- | --- | --- | --- |
+| `node_source_taxi` | `Source` | `source_taxi_yellow_2024_01` | `artifact_taxi_trips_raw` | `taxi_trips`에서 원천 row를 읽는다. |
+| `node_normalize_taxi` | `Cast/Normalize` | `artifact_taxi_trips_raw` | `artifact_taxi_trips_bronze` | 시간/숫자 타입과 품질 플래그를 정규화한다. |
+| `node_aggregate_taxi_daily` | `Aggregate` | `artifact_taxi_trips_bronze` | `artifact_taxi_daily_metrics_gold` | `pickup_date` 기준 Gold metric을 만든다. |
+| `node_load_taxi_daily_metrics` | `Load` | `artifact_taxi_daily_metrics_gold` | `dataset_taxi_daily_metrics_gold` | Gold Parquet을 저장하고 Catalog 등록 대상으로 넘긴다. |
+
+Workflow 후보 값:
+
+| Field | M2 Taxi 값 |
+| --- | --- |
+| `pipeline_id` | `pipeline_taxi_daily_metrics` |
+| `name` | `NYC Taxi Daily Metrics` |
+| `target_dataset` | `dataset_taxi_daily_metrics_gold` |
+| `runner.primary` | `airflow` |
+| `runner.fallback` | `local_runner` |
+| `retry.max_attempts` | `2` |
+
+M2는 Airflow DAG 자체를 소유하지 않는다.
+M2가 제공할 단위는 M5 runner가 호출할 수 있는 `run_taxi_batch(config) -> ExecutionResult` 형태다.
+
+### `ExecutionResult`
+
+| Field | M2 Taxi 값 | 설명 |
+| --- | --- | --- |
+| `run_id` | `run_taxi_2024_01_<profile>_<timestamp>` | 실행 단위 식별자 |
+| `pipeline_id` | `pipeline_taxi_daily_metrics` | WorkflowDefinition과 연결 |
+| `executor` | `airflow` 또는 `local_runner` | 실제 실행자 |
+| `fallback_compatible_executor` | `local_runner` | Airflow 실패 시 local fallback 가능 |
+| `status` | `succeeded`, `failed`, `fallback_succeeded`, `fallback_failed` | 기존 status model 사용 |
+| `row_count` | 처리한 input trip row 수 | `local-full-month` 기준 후보는 2,964,624 rows |
+| `bytes` | 읽은 input bytes 또는 주요 output bytes | 최소 input bytes와 Gold output bytes 중 무엇을 표준으로 둘지 M5와 확인 필요 |
+| `outputs[].dataset_id` | `dataset_taxi_daily_metrics_gold` | Gold 결과 dataset |
+| `outputs[].layer` | `gold` | Catalog layer |
+| `outputs[].uri` | `s3://asklake-demo/taxi/gold/daily_metrics/run_id=<run_id>/` | MinIO/S3 후보 URI |
+| `task_results[].node_id` | workflow node id와 동일 | node별 row count, bytes, error 기록 |
+| `lineage.source_ids` | `["source_taxi_yellow_2024_01"]` | source 추적 |
+| `lineage.output_datasets` | `["dataset_taxi_daily_metrics_gold"]` | Gold dataset 추적 |
+
+`ExecutionResult.row_count`는 M2 기준으로 "처리한 input trip row 수"를 제안한다.
+Gold output row 수는 `CatalogMetadata.metrics.row_count`와 `node_load_taxi_daily_metrics.row_count`에 남긴다.
+이 의미가 M5의 run status 모델과 다르면 Contract Confirm에서 조정한다.
+
+### `CatalogMetadata`
+
+| Field | M2 Taxi 값 | 설명 |
+| --- | --- | --- |
+| `dataset_id` | `dataset_taxi_daily_metrics_gold` | Gold daily metrics dataset |
+| `name` | `NYC Taxi Daily Metrics Gold` | Catalog 표시 이름 |
+| `layer` | `gold` | 분석/AI 질의용 최종 산출물 |
+| `s3_uri` | `s3://asklake-demo/taxi/gold/daily_metrics/run_id=<run_id>/` | MinIO/S3 후보 |
+| `storage.bucket` | `asklake-demo` | M5와 최종 확정 필요 |
+| `storage.prefix` | `taxi/gold/daily_metrics/run_id=<run_id>/` | partition/prefix 후보 |
+| `storage.local_fallback_path` | `data/processed/taxi/gold/daily_metrics/run_id=<run_id>/` | MinIO 미사용 fallback 후보 |
+| `query.table_name` | `gold_taxi_daily_metrics` | M6 SQL/RAG와 M1 UI가 조회할 논리 table |
+| `freshness.event_time_column` | `pickup_date` | Gold freshness 기준 |
+
+Gold schema 후보:
+
+| Field | Type | 설명 |
+| --- | --- | --- |
+| `pickup_date` | `date` | `tpep_pickup_datetime`에서 만든 집계 기준일 |
+| `trip_count` | `integer` | 일별 운행 건수 |
+| `total_passenger_count` | `integer` | 일별 승객 수 합계 |
+| `total_trip_distance` | `number` | 일별 이동거리 합계 |
+| `avg_trip_distance` | `number` | 평균 이동거리 |
+| `total_fare_amount` | `number` | 운임 합계 |
+| `total_tip_amount` | `number` | 팁 합계 |
+| `total_tolls_amount` | `number` | 통행료 합계 |
+| `total_amount` | `number` | 총 결제 금액 합계 |
+| `avg_total_amount` | `number` | 평균 결제 금액 |
+| `avg_duration_minutes` | `number` | 평균 운행 시간 |
+| `valid_trip_count` | `integer` | 품질 조건을 통과한 row 수 |
+| `invalid_trip_count` | `integer` | 음수 거리/금액, 잘못된 시간 등 제외 또는 경고 대상 row 수 |
+
+초기 valid trip 조건 후보:
+
+- `tpep_pickup_datetime`와 `tpep_dropoff_datetime`가 존재한다.
+- `tpep_dropoff_datetime >= tpep_pickup_datetime`이다.
+- `trip_distance >= 0`이다.
+- `total_amount >= 0`이다.
+
+## 데이터셋 컬럼 확인
+
+로컬 Parquet metadata 기준 확인 결과:
+
+| Column | Type | M2 사용처 |
+| --- | --- | --- |
+| `VendorID` | `INT32` | source 품질/분류 |
+| `tpep_pickup_datetime` | `TIMESTAMP_MICROS` | `pickup_date`, freshness, partition 기준 |
+| `tpep_dropoff_datetime` | `TIMESTAMP_MICROS` | duration 계산 |
+| `passenger_count` | `INT64` | `total_passenger_count` |
+| `trip_distance` | `DOUBLE` | 거리 metric, valid trip 조건 |
+| `RatecodeID` | `INT64` | 후속 ratecode별 분석 후보 |
+| `store_and_fwd_flag` | `UTF8` | 품질/운영 flag 후보 |
+| `PULocationID` | `INT32` | 후속 pickup zone 분석 후보 |
+| `DOLocationID` | `INT32` | 후속 route 분석 후보 |
+| `payment_type` | `INT64` | 후속 결제수단별 분석 후보 |
+| `fare_amount` | `DOUBLE` | 운임 metric |
+| `extra` | `DOUBLE` | 추가 요금 metric 후보 |
+| `mta_tax` | `DOUBLE` | 세금 metric 후보 |
+| `tip_amount` | `DOUBLE` | 팁 metric |
+| `tolls_amount` | `DOUBLE` | 통행료 metric |
+| `improvement_surcharge` | `DOUBLE` | 수수료 metric 후보 |
+| `total_amount` | `DOUBLE` | 총액 metric, valid trip 조건 |
+| `congestion_surcharge` | `DOUBLE` | 혼잡 요금 metric 후보 |
+| `Airport_fee` | `DOUBLE` | 공항 요금 metric 후보 |
+
+첫 Gold는 `gold_taxi_daily_metrics` 하나로 제한한다.
+`payment_type`, `PULocationID`, `DOLocationID` 기반 Gold는 후속 구현 또는 scale-target에서 확장한다.
+
 ## 결정
 
 - `demo -> fixed -> local-full-month -> scale-target` 단계 확장 전략을 사용한다.
 - `yellow_tripdata_2024-01.parquet`는 로컬 full-month 검증 기준으로 사용하고, 전체 택시 데이터 적재 목표는 후속 `scale-target` 범위로 분리한다.
+- PostgreSQL table 후보는 `taxi_trips`로 둔다.
+- 첫 Gold dataset은 `gold_taxi_daily_metrics`로 둔다.
 - 첫 구현은 Spark를 필수로 요구하지 않고, Spark 전환이 가능한 runner 경계를 유지한다.
 - Airflow DAG 구현은 M5 책임으로 두고, M2는 Airflow/local runner가 호출 가능한 Batch 처리 단위를 제공한다.
 
@@ -89,10 +227,12 @@ NYC TLC Yellow Taxi monthly Parquet
 - Bronze/Gold Parquet의 MinIO bucket/prefix 규칙을 M5와 어떻게 맞출지.
 - `local-full-month` 실행을 PR 필수 검증으로 둘지, manual/benchmark evidence로만 둘지.
 - `scale-target`에서 Spark를 언제 도입할지, 또는 local runner 성능 한계 확인 후 도입할지.
+- `ExecutionResult.row_count`를 input row 수로 확정할지, output dataset row 수로 맞출지 M5와 확인할지.
+- `bytes`를 input bytes, output bytes, 또는 둘 다 task-level로 기록할지 M5와 확인할지.
 
 ## 링크 / 증거
 
 - NYC TLC Trip Record Data: `https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page`
 - 관련 계획: `docs/project-context/asklake-week2-module-plan/plan.md`
 - 관련 결정: `docs/project-context/asklake-week2-module-plan/decisions.md`
-- 관련 계약: `contracts/execution_result.sample.json`, `contracts/catalog_metadata.sample.json`, `contracts/workflow_definition.sample.json`
+- 관련 계약: `contracts/source_config.sample.json`, `contracts/workflow_definition.sample.json`, `contracts/execution_result.sample.json`, `contracts/catalog_metadata.sample.json`
