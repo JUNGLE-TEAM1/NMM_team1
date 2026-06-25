@@ -480,6 +480,14 @@ case "${1:-}" in
         fi
         exit 0
         ;;
+      item-list)
+        if [[ "${*: -2:1}" == "--jq" ]]; then
+          printf '%s\n' "${FAKE_GH_PROJECT_STATUS:-Done}"
+        else
+          printf '{"items":[{"content":{"url":"https://github.com/JUNGLE-TEAM1/NMM_team1/issues/1"},"status":"%s"}]}\n' "${FAKE_GH_PROJECT_STATUS:-Done}"
+        fi
+        exit 0
+        ;;
       view)
         if [[ "${*: -2:1}" == "--jq" ]]; then
           printf 'PVT_fake\n'
@@ -771,6 +779,40 @@ case_status_reports_open_pr_closed_issue_mismatch() {
     rg -q "Open PR / closed issue mismatch: yes" /tmp/harness-open-pr-closed-issue.out
     rg -q "PR merge 전 Done/close가 선행된 이상 상태" /tmp/harness-open-pr-closed-issue.out
     ! rg -q "PR이 이미 열려 있습니다" /tmp/harness-open-pr-closed-issue.out
+  )
+}
+
+case_status_reports_closed_merged_project_status_mismatch() {
+  local repo="${tmp_root}/closed-merged-project-ready"
+  copy_repo "$repo"
+  (
+    cd "$repo"
+    local fake_bin
+    fake_bin="$(install_fake_gh "$repo")"
+    PATH="${fake_bin}:$PATH"
+    FAKE_GH_PR_STATE="MERGED"
+    FAKE_GH_ISSUE_STATE="CLOSED"
+    FAKE_GH_PROJECT_STATUS="Ready"
+    export FAKE_GH_PR_STATE FAKE_GH_ISSUE_STATE FAKE_GH_PROJECT_STATUS
+    local base
+    base="$(base_commit)"
+    local workspace="docs/workflows/test/harness-closed-merged-project-ready"
+    write_common_workspace "$workspace" "complete" "passed" "accepted" "$base"
+    awk '
+      /^- pushed branch:/ { print "- pushed branch: test/harness-closed-merged-project-ready"; next }
+      /^- PR link:/ { print "- PR link: https://example.invalid/pull/99"; next }
+      /^- merge status:/ { print "- merge status: merged"; next }
+      /^- issue close status:/ { print "- issue close status: CLOSED"; next }
+      { print }
+    ' "${workspace}/sync.md" > "${workspace}/sync.md.tmp"
+    mv "${workspace}/sync.md.tmp" "${workspace}/sync.md"
+    git add "$workspace"
+    git commit -q -m "closed merged project ready fixture"
+    scripts/status-workflow.sh "$workspace" > /tmp/harness-closed-merged-project-ready.out
+    rg -q "Remote issue Project Status: Ready" /tmp/harness-closed-merged-project-ready.out
+    rg -q "Closed merged Project status mismatch: yes" /tmp/harness-closed-merged-project-ready.out
+    rg -q "Project lifecycle mismatch: issue CLOSED and PR MERGED but Project Status is Ready" /tmp/harness-closed-merged-project-ready.out
+    rg -q "자동보정하지 말고 사람 승인 후 scripts/prepare-pr.sh --finalize" /tmp/harness-closed-merged-project-ready.out
   )
 }
 
@@ -1229,6 +1271,7 @@ run_expect_success "existing PR status does not recommend auto PR" case_existing
 run_expect_success "status workflow uses remote PR state for stale sync" case_status_uses_remote_pr_state_for_stale_sync
 run_expect_success "status workflow ignores state case-only differences" case_status_does_not_warn_on_state_case_only_difference
 run_expect_success "status workflow reports open PR closed issue mismatch" case_status_reports_open_pr_closed_issue_mismatch
+run_expect_success "status workflow reports closed merged Project status mismatch" case_status_reports_closed_merged_project_status_mismatch
 run_expect_success "branch queue uses remote PR state for stale sync" case_list_active_uses_remote_pr_state_for_stale_sync
 run_expect_success "complete PR-ready status recommends auto PR then checkpoint" case_complete_pr_ready_status_recommends_auto_pr_then_checkpoint
 run_expect_success "remote reconciliation status recommends auto PR" case_remote_reconciliation_status_recommends_auto_pr
