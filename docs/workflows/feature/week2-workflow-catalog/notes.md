@@ -6,27 +6,33 @@
 - 2026-06-25: 프로젝트 전용 `.venv`를 생성했고 `.gitignore`에 `.venv/`를 추가했다.
 - 2026-06-25: M5 runtime slice는 기존 baseline `PipelineService`를 섞지 않고 `Week2WorkflowService`로 분리했다.
 - 2026-06-25: fixture 기반 `ExecutionResult`는 local runner 요청 시 `fallback_succeeded`를 반환하며 Airflow와 같은 response shape를 유지한다.
+- 2026-06-25: 첫 slice를 `feat: add week2 workflow catalog slice` 커밋(`6f8cd2f`)으로 기록했다.
+- 2026-06-25: 두 번째 slice에서 `Week2LocalRunner`를 분리해 지원 node type, edge reference, unsupported node failure를 검증한다.
 
 ## 결정
 
 - Week 2 draft route를 `/api/week2/*`로 추가한다. 기존 `/api/pipelines` baseline은 그대로 둔다.
 - 실제 Airflow/MinIO 구현 전까지는 `contracts/*.sample.json`을 로드한 in-memory run/catalog slice로 M1/M6 boundary를 검증한다.
+- local runner는 `Source`, `Select/Filter`, `Cast/Normalize`, `Aggregate`, `Load` node만 지원하고, 그 외 node type 또는 깨진 edge reference는 `fallback_failed`로 둔다.
 
 ## 열린 질문
 
 - 실제 Airflow fallback threshold는 M5 adapter 구현 전 확정해야 한다.
 - 실제 MinIO endpoint와 local fallback path는 M3/M5 handoff 전에 확정해야 한다.
 - Catalog metadata를 나중에 SQLite metadata store에 persist할지 별도 Week 2 store를 둘지 결정이 필요하다.
+- local runner가 아직 실제 file/Parquet 처리를 수행하지 않으므로 row_count/bytes/duration은 M3 output 연결 뒤 채운다.
 
 ## 링크 / 증거
 
 - `backend/app/services/week2_workflow.py`
+- `backend/app/services/week2_local_runner.py`
 - `backend/app/api/week2_workflow.py`
 - `backend/tests/test_week2_workflow_catalog.py`
+- `backend/tests/test_week2_local_runner.py`
 - `contracts/workflow_definition.sample.json`
 - `contracts/execution_result.sample.json`
 - `contracts/catalog_metadata.sample.json`
-- `PYTHONPATH=backend ./.venv/bin/pytest backend/tests -q` -> 21 passed
+- `PYTHONPATH=backend ./.venv/bin/pytest backend/tests -q` -> 24 passed
 - `scripts/validate-harness.sh --strict` -> passed
 
 ## Daily Evidence / 하루 종료 증거

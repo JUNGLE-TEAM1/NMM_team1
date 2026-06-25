@@ -5,21 +5,22 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from app.services.week2_local_runner import Week2LocalRunner
+
 
 class Week2WorkflowNotFoundError(ValueError):
     pass
 
 
 class Week2WorkflowService:
-    def __init__(self, contracts_dir: Path | None = None) -> None:
+    def __init__(self, contracts_dir: Path | None = None, local_runner: Week2LocalRunner | None = None) -> None:
         self.contracts_dir = contracts_dir or default_contracts_dir()
         self.workflow_definition = self._load_contract("workflow_definition.sample.json")
         self.execution_template = self._load_contract("execution_result.sample.json")
         self.catalog_template = self._load_contract("catalog_metadata.sample.json")
+        self.local_runner = local_runner or Week2LocalRunner()
         self.runs: dict[str, dict[str, Any]] = {}
-        self.catalog: dict[str, dict[str, Any]] = {
-            self.catalog_template["dataset_id"]: deepcopy(self.catalog_template)
-        }
+        self.catalog: dict[str, dict[str, Any]] = {}
         self.sequence = 0
 
     def trigger_run(self, pipeline_id: str, executor: str, triggered_by: str) -> dict[str, Any]:
@@ -29,7 +30,8 @@ class Week2WorkflowService:
         self.sequence += 1
         run_id = f"run_reviews_demo_{self.sequence:03d}"
         timestamp = now_iso()
-        status = "succeeded" if executor == "airflow" else "fallback_succeeded"
+        runner_result = self.local_runner.run(self.workflow_definition)
+        status = "succeeded" if executor == "airflow" and runner_result.status == "fallback_succeeded" else runner_result.status
 
         run = deepcopy(self.execution_template)
         run["run_id"] = run_id
@@ -42,17 +44,13 @@ class Week2WorkflowService:
             "finished_at": timestamp,
         }
         run["outputs"] = [self._output_for_run(output, run_id) for output in run["outputs"]]
-        run["task_results"] = [self._task_result_for_node(node) for node in self.workflow_definition["nodes"]]
-        run["logs"] = [
-            {
-                "level": "info",
-                "message": f"{executor} completed Week 2 fixture workflow with shared ExecutionResult shape",
-            }
-        ]
+        run["task_results"] = runner_result.task_results
+        run["logs"] = self._logs_for_executor(executor, runner_result.logs)
 
-        catalog = self._catalog_for_run(run_id, timestamp)
         self.runs[run_id] = run
-        self.catalog[catalog["dataset_id"]] = catalog
+        if status in {"succeeded", "fallback_succeeded"}:
+            catalog = self._catalog_for_run(run_id, timestamp)
+            self.catalog[catalog["dataset_id"]] = catalog
         return run
 
     def get_run(self, run_id: str) -> dict[str, Any]:
@@ -77,16 +75,6 @@ class Week2WorkflowService:
         updated_output["uri"] = replace_run_id(updated_output["uri"], run_id)
         return updated_output
 
-    def _task_result_for_node(self, node: dict[str, Any]) -> dict[str, Any]:
-        return {
-            "node_id": node["id"],
-            "status": "succeeded",
-            "attempt": 1,
-            "row_count": None,
-            "bytes": None,
-            "error": None,
-        }
-
     def _catalog_for_run(self, run_id: str, timestamp: str) -> dict[str, Any]:
         catalog = deepcopy(self.catalog_template)
         catalog["s3_uri"] = replace_run_id(catalog["s3_uri"], run_id)
@@ -94,6 +82,14 @@ class Week2WorkflowService:
         catalog["lineage"]["run_id"] = run_id
         catalog["updated_at"] = timestamp
         return catalog
+
+    def _logs_for_executor(self, executor: str, runner_logs: list[dict[str, str]]) -> list[dict[str, str]]:
+        logs = deepcopy(runner_logs)
+        if executor == "airflow":
+            logs.append({"level": "info", "message": "airflow adapter placeholder used Week 2 runner boundary"})
+        else:
+            logs.append({"level": "info", "message": "local runner executed Week 2 workflow boundary"})
+        return logs
 
 
 def default_contracts_dir() -> Path:
