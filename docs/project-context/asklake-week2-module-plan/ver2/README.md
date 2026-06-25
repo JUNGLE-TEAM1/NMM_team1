@@ -11,7 +11,8 @@
 1. `revised-nonoverlap-responsibility.md`
 2. `original-vs-revised-flow.md`
 3. `implementation-transition-plan.md`
-4. 필요 시 상위 폴더의 `decisions.md`, `plan.md`, `meeting-summary.md`
+4. `main-e2e-path.md`
+5. 필요 시 상위 폴더의 `decisions.md`, `plan.md`, `meeting-summary.md`
 
 ## 현재 기준
 
@@ -45,3 +46,5 @@
 | 6 | M5 runner boundary decision | M2 SparkRunner와 M3 job logic이 붙을 실행 경계 확정 | `Week2WorkflowService` 중심 runner boundary와 호출 계약 확정 |
 
 Phase 2의 현재 기준은 [`implementation-transition-plan.md`](implementation-transition-plan.md)에 둔다.
+
+Phase 3의 현재 기준은 [`main-e2e-path.md`](main-e2e-path.md)에 둔다.
