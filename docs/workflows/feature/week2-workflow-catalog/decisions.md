@@ -18,12 +18,13 @@
 | Runner boundary | `Week2LocalRunner`로 supported node execution과 failure validation 분리 | 실제 Airflow/local runner adapter를 붙일 자리를 만들고 service/API contract를 안정적으로 유지하기 위해 | 두 번째 M5 slice, 2026-06-25 |
 | Demo metrics fixture | `backend/samples/amazon_reviews_demo.jsonl` 4-row JSONL을 사용해 aggregate output 3 rows를 계산 | M3 fixed/extended sample 전에도 #92 `ExecutionResult` metrics wiring을 검증하기 위해 | #92 slice, 2026-06-25 |
 | Catalog update guard | `succeeded`와 `fallback_succeeded` run만 catalog를 갱신 | 실패 run이 최신 성공 `CatalogMetadata`를 오염시키지 않도록 보호하기 위해 | #93 slice, 2026-06-25 |
+| Airflow fallback threshold | Airflow adapter status가 `succeeded`일 때만 primary success로 보고, adapter unavailable/error 또는 그 외 status는 `local_runner` fallback | M1/M6가 같은 `ExecutionResult` shape를 유지하면서 실제 Airflow 미설정/실패를 안전하게 통과하도록 하기 위해 | #94 slice, 2026-06-25 |
 
 ## Deferred Decisions / 보류한 결정
 
 | Decision | Deferred Reason | Revisit Trigger | Target Branch / Phase |
 | --- | --- | --- | --- |
-| Actual Airflow adapter | 이번 slice는 fixture-backed contract runtime이며 실제 Airflow 환경은 아직 연결하지 않음 | Day 2 첫 실제 처리에서 Airflow Trigger/Status를 붙일 때 | M5 Workflow/Catalog follow-up |
+| External Airflow deployment connection | 이번 slice는 adapter boundary와 fallback threshold만 구현했고 실제 Airflow webserver/scheduler/API는 연결하지 않음 | 실제 Airflow 환경 URL/auth/DAG trigger contract가 준비될 때 | M5/Airflow integration follow-up |
 | Catalog persistence strategy | 지금은 in-memory fixture catalog로 M1/M6 boundary만 검증 | M3 output과 Catalog 자동 등록을 연결할 때 | M5 Workflow/Catalog follow-up |
 | Parquet/MinIO output | #92는 local JSONL fallback output까지만 만든다 | Day 2 smoke에서 Parquet 또는 MinIO가 필요하다고 결정될 때 | M5/M3 integration slice |
 | Persistent latest catalog | #93은 in-memory latest successful catalog만 보장한다 | process restart 이후 catalog 조회가 필요할 때 | M5 persistence slice |

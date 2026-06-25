@@ -4,8 +4,8 @@
 
 ## Current State / 현재 상태
 
-- State: #93 local validation passed
-- Summary: M5 Week 2 workflow/run/catalog runtime slice, local runner boundary, local JSONL demo metrics wiring, latest successful catalog guard가 구현됐고 backend/harness 검증이 통과했다.
+- State: #94 local validation passed
+- Summary: M5 Week 2 workflow/run/catalog runtime slice, local runner boundary, local JSONL demo metrics wiring, latest successful catalog guard, Airflow adapter fallback boundary가 구현됐고 backend/harness 검증이 통과했다.
 
 ## Recommended Next Action / 권장 다음 행동
 
@@ -15,7 +15,7 @@
 ## Options / 선택지
 
 1. 로컬 완료로 보류한다.
-2. 다음 M5 slice로 Airflow adapter fallback threshold 또는 Day 2 smoke evidence를 진행한다.
+2. 다음 M5 slice로 Day 2 smoke evidence(#95)를 진행한다.
 3. PR 준비를 위해 pre-merge sync와 push/PR checkpoint로 진행한다.
 4. 범위를 수정하거나 추가 요구를 반영한다.
 
@@ -25,11 +25,11 @@
 
 ## Last User Choice / 마지막 사용자 선택
 
-- 2026-06-25: "M5 작업을 진행해주세요."
+- 2026-06-25: "좋아요. 갑시다."로 #94 Airflow adapter fallback threshold 진행을 승인했다.
 
 ## Next AI Action / 다음 AI 행동
 
 - option 1이면 현재 branch를 로컬 완료 상태로 둔다.
-- option 2이면 #94 Airflow adapter 또는 #95 Day 2 smoke evidence 중 다음 우선순위를 확인한다.
+- option 2이면 #95 Day 2 smoke evidence를 진행한다.
 - option 3이면 Git Sync Confirm을 받은 뒤 pre-merge sync/push/PR 절차를 따른다.
 - option 4이면 `plan.md`와 관련 workspace 기록을 갱신한다.

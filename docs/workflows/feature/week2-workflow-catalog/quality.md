@@ -3,7 +3,7 @@
 이 파일은 이 branch의 TDD, check, CI/CD 증거를 기록한다.
 
 - Quality gate status: passed
-- Source Of Truth impact: none
+- Source Of Truth impact: `contracts/workflow_definition.sample.json` fallback condition updated
 - Harness test impact: none
 
 ## TDD Plan / TDD 계획
@@ -12,16 +12,16 @@
 - Reason: Week 2 M5 API contract와 fallback-compatible run state는 M1/M6 integration boundary라 regression risk가 있다.
 - Failing test first: not captured; focused contract tests were added with the implementation in this turn.
 - Expected failure command/result: not captured
-- Pass command/result: `PYTHONPATH=backend ./.venv/bin/pytest backend/tests/test_week2_workflow_catalog.py -q` -> 5 passed; `PYTHONPATH=backend ./.venv/bin/pytest backend/tests/test_week2_local_runner.py backend/tests/test_week2_workflow_catalog.py -q` -> 8 passed; `PYTHONPATH=backend ./.venv/bin/pytest backend/tests -q` -> 26 passed
-- Refactor notes: 기존 baseline `PipelineService`와 분리해 Week 2 fixture slice를 `Week2WorkflowService`에 격리했고, runner boundary는 `Week2LocalRunner`로 분리했다. #92에서 local JSONL demo fixture를 읽어 metrics를 계산하도록 확장했다. #93에서 catalog update 조건을 successful run status로 명시했다.
+- Pass command/result: `PYTHONPATH=backend ./.venv/bin/pytest backend/tests/test_week2_workflow_catalog.py backend/tests/test_week2_local_runner.py -q` -> 12 passed; `PYTHONPATH=backend ./.venv/bin/pytest backend/tests -q` -> 30 passed
+- Refactor notes: 기존 baseline `PipelineService`와 분리해 Week 2 fixture slice를 `Week2WorkflowService`에 격리했고, runner boundary는 `Week2LocalRunner`로 분리했다. #92에서 local JSONL demo fixture를 읽어 metrics를 계산하도록 확장했다. #93에서 catalog update 조건을 successful run status로 명시했다. #94에서 `Week2AirflowAdapter` boundary와 Airflow fallback threshold를 추가했다.
 
 ## Branch Checks / 브랜치 검증
 
 | Check | Command | Result | Evidence |
 | --- | --- | --- | --- |
 | lint | `jq -e . contracts/*.sample.json >/dev/null` | passed | 6개 fixture JSON 유효성 확인 |
-| unit/focused test | `PYTHONPATH=backend ./.venv/bin/pytest backend/tests/test_week2_local_runner.py backend/tests/test_week2_workflow_catalog.py -q` | passed | 8 passed |
-| integration/contract test | `PYTHONPATH=backend ./.venv/bin/pytest backend/tests -q` | passed | 26 passed |
+| unit/focused test | `PYTHONPATH=backend ./.venv/bin/pytest backend/tests/test_week2_workflow_catalog.py backend/tests/test_week2_local_runner.py -q` | passed | 12 passed |
+| integration/contract test | `PYTHONPATH=backend ./.venv/bin/pytest backend/tests -q` | passed | 30 passed |
 | evidence run | `PYTHONPATH=backend ./.venv/bin/python -c "...Week2WorkflowService..."` | passed | `row_count=3`, `bytes=195`, `duration_ms=2`, local fallback path created |
 | build/typecheck | not run | skipped | 별도 typecheck/build command 없음 |
 | harness validation | `scripts/validate-harness.sh` | passed via strict | strict validation에 포함 |
@@ -40,4 +40,4 @@
 | Check | Reason | Human Confirmed |
 | --- | --- | --- |
 | frontend build | frontend 변경 없음 | not needed |
-| real Airflow/MinIO smoke | 이번 slice는 local JSONL fallback runtime이며 실제 Airflow/MinIO 구현은 범위 제외 | not needed |
+| real Airflow/MinIO smoke | 이번 slice는 Airflow adapter boundary와 local JSONL fallback 검증이며 실제 외부 Airflow/MinIO 연결은 범위 제외 | not needed |

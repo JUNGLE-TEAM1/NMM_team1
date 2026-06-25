@@ -10,6 +10,7 @@
 - 2026-06-25: 두 번째 slice에서 `Week2LocalRunner`를 분리해 지원 node type, edge reference, unsupported node failure를 검증한다.
 - 2026-06-25: #92 slice에서 `backend/samples/amazon_reviews_demo.jsonl` demo fixture를 추가하고 local runner가 실제 JSONL을 읽어 `row_count`, `bytes`, `duration_ms`, local fallback output path를 계산하게 했다.
 - 2026-06-25: #93 slice에서 catalog가 최신 성공 run(`run_reviews_demo_002`)을 가리키는지, 실패 run 이후에도 직전 성공 catalog를 유지하는지 테스트로 고정했다.
+- 2026-06-25: #94 slice에서 `Week2AirflowAdapter` boundary를 추가했다. `executor=airflow`는 Airflow adapter를 먼저 시도하고, adapter 미설정 또는 `succeeded` 외 status가 나오면 `Week2LocalRunner`로 fallback한다.
 
 ## 결정
 
@@ -18,10 +19,11 @@
 - local runner는 `Source`, `Select/Filter`, `Cast/Normalize`, `Aggregate`, `Load` node만 지원하고, 그 외 node type 또는 깨진 edge reference는 `fallback_failed`로 둔다.
 - M3 fixed/extended sample이 준비되기 전에는 `backend/samples/amazon_reviews_demo.jsonl` 4-row demo fixture를 사용하고, aggregate 결과 3 rows를 `ExecutionResult.row_count`로 기록한다.
 - catalog는 `succeeded` 또는 `fallback_succeeded` run에서만 갱신한다. `fallback_failed` run은 run history에는 남지만 catalog 최신 성공 metadata를 덮어쓰지 않는다.
+- Airflow fallback threshold는 `succeeded`만 primary success로 보고, adapter unavailable/error 또는 그 외 status는 local runner fallback으로 처리한다.
 
 ## 열린 질문
 
-- 실제 Airflow fallback threshold는 M5 adapter 구현 전 확정해야 한다.
+- 실제 외부 Airflow webserver/scheduler/API 연결 방식은 아직 정하지 않았다.
 - 실제 MinIO endpoint와 local fallback path는 M3/M5 handoff 전에 확정해야 한다.
 - Catalog metadata를 나중에 SQLite metadata store에 persist할지 별도 Week 2 store를 둘지 결정이 필요하다.
 - local runner는 아직 Parquet을 쓰지 않고 local JSONL fallback output을 쓴다. Parquet/MinIO 전환은 다음 M5/M3 integration slice에서 진행한다.
@@ -30,6 +32,7 @@
 ## 링크 / 증거
 
 - `backend/app/services/week2_workflow.py`
+- `backend/app/services/week2_airflow_adapter.py`
 - `backend/app/services/week2_local_runner.py`
 - `backend/app/api/week2_workflow.py`
 - `backend/tests/test_week2_workflow_catalog.py`
@@ -39,8 +42,8 @@
 - `contracts/execution_result.sample.json`
 - `contracts/catalog_metadata.sample.json`
 - `contracts/source_config.sample.json`
-- `PYTHONPATH=backend ./.venv/bin/pytest backend/tests -q` -> 24 passed
-- `PYTHONPATH=backend ./.venv/bin/pytest backend/tests/test_week2_workflow_catalog.py -q` -> 5 passed
+- `PYTHONPATH=backend ./.venv/bin/pytest backend/tests -q` -> 30 passed
+- `PYTHONPATH=backend ./.venv/bin/pytest backend/tests/test_week2_workflow_catalog.py backend/tests/test_week2_local_runner.py -q` -> 12 passed
 - `scripts/validate-harness.sh --strict` -> passed
 
 ## Daily Evidence / 하루 종료 증거
@@ -69,4 +72,14 @@ latest successful run: run_reviews_demo_002
 catalog s3_uri: s3://asklake-demo/reviews/gold/run_id=run_reviews_demo_002/
 failed run behavior: fallback_failed run_id=run_reviews_demo_002 does not overwrite run_reviews_demo_001 catalog in failure-path test
 focused verification: PYTHONPATH=backend ./.venv/bin/pytest backend/tests/test_week2_workflow_catalog.py -q -> 5 passed
+```
+
+## #94 Airflow Fallback Evidence
+
+```text
+airflow success behavior: adapter status=succeeded keeps ExecutionResult.status=succeeded and updates CatalogMetadata
+airflow unavailable behavior: default adapter falls back to local runner and returns fallback_succeeded
+airflow failed behavior: adapter status=failed falls back to local runner; if local runner also fails, catalog is not updated
+fallback threshold: Airflow primary success requires status=succeeded
+focused verification: PYTHONPATH=backend ./.venv/bin/pytest backend/tests/test_week2_workflow_catalog.py backend/tests/test_week2_local_runner.py -q -> 12 passed
 ```

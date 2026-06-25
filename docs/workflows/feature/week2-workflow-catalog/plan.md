@@ -18,11 +18,13 @@
 - `GET /api/week2/catalog/{dataset_id}`
 - `contracts/workflow_definition.sample.json`, `contracts/execution_result.sample.json`, `contracts/catalog_metadata.sample.json` 로드
 - local runner fallback compatible status와 node-level `task_results[]` 생성
+- Airflow adapter boundary와 fallback threshold 적용
 - focused backend contract tests
 
 ## 범위 제외
 
 - 실제 Airflow DAG 구현
+- 실제 외부 Airflow webserver/scheduler/API 연결
 - 실제 Parquet 생성 또는 MinIO 업로드
 - 실제 Catalog DB persistence
 - M1 UI route 구현

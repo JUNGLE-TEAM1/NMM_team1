@@ -1,13 +1,14 @@
 import tempfile
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app.adapters.sqlite_metadata_store import SQLiteMetadataStore
 from app.core.app_factory import create_app
 from app.core.settings import Settings
 from app.services.week2_local_runner import Week2RunnerResult
-from app.services.week2_workflow import Week2WorkflowService
+from app.services.week2_workflow import Week2WorkflowNotFoundError, Week2WorkflowService
 
 
 def make_client() -> TestClient:
@@ -123,6 +124,75 @@ def test_week2_catalog_metadata_ignores_failed_run_after_success(tmp_path: Path)
     assert catalog_after_failure["s3_uri"] == first_catalog["s3_uri"]
 
 
+def test_week2_airflow_executor_falls_back_when_adapter_unavailable() -> None:
+    client = make_client()
+
+    response = client.post(
+        "/api/week2/workflows/pipeline_reviews_json_e2e/runs",
+        json={"executor": "airflow", "triggered_by": "m5_owner"},
+    )
+
+    assert response.status_code == 201
+    run = response.json()
+    assert run["executor"] == "airflow"
+    assert run["status"] == "fallback_succeeded"
+    assert run["row_count"] == 3
+    assert any("Airflow unavailable; falling back to local runner" in log["message"] for log in run["logs"])
+    assert run["logs"][-1]["message"] == "airflow adapter fell back to local runner"
+
+
+def test_week2_airflow_success_updates_catalog_without_local_fallback(tmp_path: Path) -> None:
+    service = Week2WorkflowService(
+        airflow_adapter=SuccessfulAirflowAdapter(tmp_path / "airflow" / "dataset_reviews_gold.jsonl"),
+        local_runner=FailingRunner(),
+        output_root=tmp_path / "out",
+    )
+
+    run = service.trigger_run("pipeline_reviews_json_e2e", executor="airflow", triggered_by="m5_owner")
+    catalog = service.get_catalog_metadata("dataset_reviews_gold")
+
+    assert run["executor"] == "airflow"
+    assert run["status"] == "succeeded"
+    assert run["row_count"] == 7
+    assert run["bytes"] > 0
+    assert run["task_results"][0]["node_id"] == "airflow_dag_reviews"
+    assert not any("falling back" in log["message"] for log in run["logs"])
+    assert run["logs"][-1]["message"] == "airflow adapter executed Week 2 workflow boundary"
+    assert catalog["lineage"]["run_id"] == "run_reviews_demo_001"
+    assert catalog["metrics"]["row_count"] == 7
+    assert catalog["storage"]["local_fallback_path"].endswith("dataset_reviews_gold.jsonl")
+
+
+def test_week2_airflow_failed_result_uses_local_fallback(tmp_path: Path) -> None:
+    service = Week2WorkflowService(
+        airflow_adapter=FailedAirflowAdapter(),
+        output_root=tmp_path / "out",
+    )
+
+    run = service.trigger_run("pipeline_reviews_json_e2e", executor="airflow", triggered_by="m5_owner")
+    catalog = service.get_catalog_metadata("dataset_reviews_gold")
+
+    assert run["status"] == "fallback_succeeded"
+    assert run["row_count"] == 3
+    assert any("Airflow returned failed; falling back to local runner" in log["message"] for log in run["logs"])
+    assert catalog["lineage"]["run_id"] == "run_reviews_demo_001"
+
+
+def test_week2_airflow_and_local_failure_do_not_update_catalog(tmp_path: Path) -> None:
+    service = Week2WorkflowService(
+        airflow_adapter=FailedAirflowAdapter(),
+        local_runner=FailingRunner(),
+        output_root=tmp_path / "out",
+    )
+
+    run = service.trigger_run("pipeline_reviews_json_e2e", executor="airflow", triggered_by="m5_owner")
+
+    assert run["status"] == "fallback_failed"
+    assert any("Airflow returned failed; falling back to local runner" in log["message"] for log in run["logs"])
+    with pytest.raises(Week2WorkflowNotFoundError):
+        service.get_catalog_metadata("dataset_reviews_gold")
+
+
 def test_week2_workflow_routes_return_not_found_for_unknown_ids() -> None:
     client = make_client()
 
@@ -150,5 +220,51 @@ class FailingRunner:
                 }
             ],
             logs=[{"level": "error", "message": "forced failure"}],
+            duration_ms=1,
+        )
+
+
+class SuccessfulAirflowAdapter:
+    def __init__(self, output_path: Path) -> None:
+        self.output_path = output_path
+
+    def run(self, workflow_definition: dict, run_id: str) -> Week2RunnerResult:
+        self.output_path.parent.mkdir(parents=True, exist_ok=True)
+        self.output_path.write_text('{"product_id": "B001", "review_count": 7}\n', encoding="utf-8")
+        return Week2RunnerResult(
+            status="succeeded",
+            task_results=[
+                {
+                    "node_id": "airflow_dag_reviews",
+                    "status": "succeeded",
+                    "attempt": 1,
+                    "row_count": 7,
+                    "bytes": self.output_path.stat().st_size,
+                    "error": None,
+                }
+            ],
+            logs=[{"level": "info", "message": f"Airflow DAG completed for {run_id}"}],
+            row_count=7,
+            bytes=self.output_path.stat().st_size,
+            duration_ms=2,
+            output_path=str(self.output_path),
+        )
+
+
+class FailedAirflowAdapter:
+    def run(self, workflow_definition: dict, run_id: str) -> Week2RunnerResult:
+        return Week2RunnerResult(
+            status="failed",
+            task_results=[
+                {
+                    "node_id": "airflow_dag_reviews",
+                    "status": "failed",
+                    "attempt": 1,
+                    "row_count": None,
+                    "bytes": None,
+                    "error": "dag failed",
+                }
+            ],
+            logs=[{"level": "error", "message": f"Airflow DAG failed for {run_id}"}],
             duration_ms=1,
         )
