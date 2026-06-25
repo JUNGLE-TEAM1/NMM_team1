@@ -409,14 +409,64 @@ case "${1:-}" in
     esac
     ;;
   issue)
-    if [[ "${2:-}" == "view" ]]; then
-      if [[ "${*: -2:1}" == "--jq" ]]; then
-        printf 'CLOSED\n'
-      else
-        printf '{"state":"CLOSED"}\n'
-      fi
-      exit 0
-    fi
+    case "${2:-}" in
+      create)
+        printf 'https://github.com/JUNGLE-TEAM1/NMM_team1/issues/123\n'
+        exit 0
+        ;;
+      view)
+        if [[ "${*: -2:1}" == "--jq" ]]; then
+          printf 'CLOSED\n'
+        else
+          printf '{"state":"CLOSED"}\n'
+        fi
+        exit 0
+        ;;
+      close)
+        exit 0
+        ;;
+    esac
+    ;;
+  project)
+    case "${2:-}" in
+      item-add)
+        if [[ -n "${FAKE_GH_LOG:-}" ]]; then
+          printf '%s\n' "$*" >> "$FAKE_GH_LOG"
+        fi
+        if [[ "${*: -2:1}" == "--jq" ]]; then
+          printf 'PVTI_fake\n'
+        else
+          printf '{"id":"PVTI_fake","type":"Issue"}\n'
+        fi
+        exit 0
+        ;;
+      view)
+        if [[ "${*: -2:1}" == "--jq" ]]; then
+          printf 'PVT_fake\n'
+        else
+          printf '{"id":"PVT_fake"}\n'
+        fi
+        exit 0
+        ;;
+      field-list)
+        if [[ "${*: -2:1}" == "--jq" ]]; then
+          if [[ "$*" == *"Done"* ]]; then
+            printf 'PVTSSF_fake\t5e543244\n'
+          else
+            printf 'PVTSSF_fake\t98236657\n'
+          fi
+        else
+          printf '{"fields":[{"id":"PVTSSF_fake","name":"Status","options":[{"id":"98236657","name":"In Progress"}]}]}\n'
+        fi
+        exit 0
+        ;;
+      item-edit)
+        if [[ -n "${FAKE_GH_LOG:-}" ]]; then
+          printf '%s\n' "$*" >> "$FAKE_GH_LOG"
+        fi
+        exit 0
+        ;;
+    esac
     ;;
 esac
 
@@ -751,6 +801,64 @@ case_start_workflow_checkpoint_excludes_untracked() {
   )
 }
 
+case_start_workflow_adds_created_issue_to_project() {
+  local repo="${tmp_root}/start-workflow-project"
+  copy_repo "$repo"
+  (
+    cd "$repo"
+    local fake_bin
+    fake_bin="$(install_fake_gh "$repo")"
+    PATH="${fake_bin}:$PATH"
+    FAKE_GH_LOG="/tmp/harness-start-workflow-project-gh.log"
+    export FAKE_GH_LOG
+    rm -f "$FAKE_GH_LOG"
+
+    scripts/start-workflow.sh --no-checkout feature project-linked "Project linked" > /tmp/harness-start-workflow-project.out
+
+    test -f "$FAKE_GH_LOG"
+    rg -q -- "project item-add 3 --owner JUNGLE-TEAM1 --url https://github.com/JUNGLE-TEAM1/NMM_team1/issues/123 --format json --jq .id" "$FAKE_GH_LOG"
+    rg -q -- "project item-edit --id PVTI_fake --project-id PVT_fake --field-id PVTSSF_fake --single-select-option-id 98236657" "$FAKE_GH_LOG"
+    rg -q -- "- linked GitHub issue: #123" docs/workflows/feature/project-linked/sync.md
+    rg -q -- "- issue project result: added to JUNGLE-TEAM1 project 3; status set to In Progress" docs/workflows/feature/project-linked/sync.md
+  )
+}
+
+case_prepare_pr_close_issue_sets_project_done() {
+  local repo="${tmp_root}/prepare-pr-project-done"
+  copy_repo "$repo"
+  (
+    cd "$repo"
+    local fake_bin
+    fake_bin="$(install_fake_gh "$repo")"
+    PATH="${fake_bin}:$PATH"
+    FAKE_GH_LOG="/tmp/harness-prepare-pr-project-done-gh.log"
+    export FAKE_GH_LOG
+    rm -f "$FAKE_GH_LOG"
+    local base
+    base="$(base_commit)"
+    local workspace="docs/workflows/test/harness-project-done"
+    write_common_workspace "$workspace" "complete" "passed" "accepted" "$base"
+    awk '
+      /^- pushed branch:/ { print "- pushed branch: test/harness-project-done"; next }
+      /^- PR link:/ { print "- PR link: https://example.invalid/pull/99"; next }
+      /^- merge status:/ { print "- merge status: open"; next }
+      /^- issue close status:/ { print "- issue close status: open"; next }
+      { print }
+    ' "${workspace}/sync.md" > "${workspace}/sync.md.tmp"
+    mv "${workspace}/sync.md.tmp" "${workspace}/sync.md"
+    git add "$workspace"
+    git commit -q -m "project done fixture"
+
+    scripts/prepare-pr.sh --close-issue "$workspace" > /tmp/harness-prepare-pr-project-done.out
+
+    test -f "$FAKE_GH_LOG"
+    rg -q -- "project item-add 3 --owner JUNGLE-TEAM1 --url https://github.com/JUNGLE-TEAM1/NMM_team1/issues/1 --format json --jq .id" "$FAKE_GH_LOG"
+    rg -q -- "project item-edit --id PVTI_fake --project-id PVT_fake --field-id PVTSSF_fake --single-select-option-id 5e543244" "$FAKE_GH_LOG"
+    rg -q -- "- issue close status: CLOSED" "$workspace/sync.md"
+    rg -q -- "- issue project result: set to Done in JUNGLE-TEAM1 project 3" "$workspace/sync.md"
+  )
+}
+
 case_product_context_guard_missing_trust_loop_fails() {
   local repo="${tmp_root}/product-context-missing-loop"
   copy_repo "$repo"
@@ -838,6 +946,8 @@ run_expect_success "status workflow prioritizes PR conflict resolution" case_sta
 run_expect_success "prepare-pr check stays local" case_prepare_pr_check_is_local
 run_expect_success "prepare-pr documents auto PR helper" case_prepare_pr_documents_auto_pr
 run_expect_success "start-workflow checkpoint excludes untracked files" case_start_workflow_checkpoint_excludes_untracked
+run_expect_success "start-workflow adds created issue to project" case_start_workflow_adds_created_issue_to_project
+run_expect_success "prepare-pr close issue sets project Done" case_prepare_pr_close_issue_sets_project_done
 run_expect_failure "product context guard catches missing trust loop" case_product_context_guard_missing_trust_loop_fails
 run_expect_success "docs branch remote and tracking status is reported" case_docs_branch_remote_tracking_is_reported
 run_expect_failure "missing harness regression script fails validation" case_missing_harness_test_script_fails

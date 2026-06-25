@@ -27,6 +27,8 @@ check_issue=0
 check_pr_sync=0
 close_issue=0
 finalize=0
+issue_project_owner="${ASKLAKE_GITHUB_PROJECT_OWNER:-JUNGLE-TEAM1}"
+issue_project_number="${ASKLAKE_GITHUB_PROJECT_NUMBER:-3}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -157,6 +159,67 @@ emptyish() {
     ""|none|None|NONE|n/a|N/A|"not requested") return 0 ;;
     *) return 1 ;;
   esac
+}
+
+set_issue_project_status() {
+  local issue_url="$1"
+  local status_name="$2"
+  local project_item_id
+  local project_status
+  local project_id
+  local project_id_status
+  local status_field_record
+  local status_field_status
+  local status_field_id
+  local status_option_id
+  local status_output
+  local status_update_status
+
+  if ! command -v gh >/dev/null 2>&1; then
+    printf 'skipped: GitHub CLI is not available'
+    return 0
+  fi
+
+  if ! gh auth status >/dev/null 2>&1; then
+    printf 'skipped: GitHub CLI is not authenticated'
+    return 0
+  fi
+
+  set +e
+  project_item_id="$(gh project item-add "$issue_project_number" --owner "$issue_project_owner" --url "$issue_url" --format json --jq .id 2>&1)"
+  project_status=$?
+  set -e
+
+  if [[ "$project_status" -ne 0 ]]; then
+    printf 'failed: %s' "${project_item_id//$'\n'/ }"
+    return 0
+  fi
+
+  set +e
+  project_id="$(gh project view "$issue_project_number" --owner "$issue_project_owner" --format json --jq .id 2>&1)"
+  project_id_status=$?
+  status_field_record="$(gh project field-list "$issue_project_number" --owner "$issue_project_owner" --format json --jq '.fields[] | select(.name == "Status") | [.id, (.options[] | select(.name == "'"$status_name"'") | .id)] | @tsv' 2>&1)"
+  status_field_status=$?
+  set -e
+
+  if [[ "$project_id_status" -ne 0 || "$status_field_status" -ne 0 || -z "$project_id" || -z "$status_field_record" ]]; then
+    printf 'status lookup failed: %s %s' "${project_id//$'\n'/ }" "${status_field_record//$'\n'/ }"
+    return 0
+  fi
+
+  status_field_id="${status_field_record%%$'\t'*}"
+  status_option_id="${status_field_record#*$'\t'}"
+
+  set +e
+  status_output="$(gh project item-edit --id "$project_item_id" --project-id "$project_id" --field-id "$status_field_id" --single-select-option-id "$status_option_id" 2>&1)"
+  status_update_status=$?
+  set -e
+
+  if [[ "$status_update_status" -eq 0 ]]; then
+    printf 'set to %s in %s project %s' "$status_name" "$issue_project_owner" "$issue_project_number"
+  else
+    printf 'status update failed: %s' "${status_output//$'\n'/ }"
+  fi
 }
 
 workspace_branch() {
@@ -439,12 +502,18 @@ if [[ "$close_issue" -eq 1 || "$finalize" -eq 1 ]]; then
   if [[ "$issue_state" == "CLOSED" ]]; then
     set_field "$sync_file" "- merge status:" "merged"
     set_field "$sync_file" "- issue close status:" "CLOSED"
+    issue_project_result="$(set_issue_project_status "https://github.com/JUNGLE-TEAM1/NMM_team1/issues/${issue_number}" "Done")"
+    set_field "$sync_file" "- issue project result:" "$issue_project_result"
     echo "Issue #${issue_number} is already CLOSED."
+    echo "Issue #${issue_number} project status: ${issue_project_result}"
   else
     gh issue close "$issue_number" --comment "Closed after PR #${pr_number} was merged. PR: ${pr_link}"
     set_field "$sync_file" "- merge status:" "merged"
     set_field "$sync_file" "- issue close status:" "CLOSED"
+    issue_project_result="$(set_issue_project_status "https://github.com/JUNGLE-TEAM1/NMM_team1/issues/${issue_number}" "Done")"
+    set_field "$sync_file" "- issue project result:" "$issue_project_result"
     echo "Closed issue #${issue_number} after PR #${pr_number} merge."
+    echo "Issue #${issue_number} project status: ${issue_project_result}"
   fi
 
   if [[ "$finalize" -eq 1 ]]; then
