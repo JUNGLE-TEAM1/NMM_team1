@@ -355,7 +355,10 @@ fi
 
 if [[ "$check_issue" -eq 1 || "$close_issue" -eq 1 || "$finalize" -eq 1 ]]; then
   if [[ -z "$issue_number" ]]; then
-    echo "Cannot check issue state: linked GitHub issue is missing or unparseable." >&2
+    if [[ "$check_issue" -eq 1 && "$finalize" -eq 0 ]]; then
+      echo "Cannot check issue state: linked GitHub issue is missing or unparseable." >&2
+    fi
+    set_field "$sync_file" "- issue close status:" "n/a"
   elif ! command -v gh >/dev/null 2>&1; then
     echo "Cannot check issue state: GitHub CLI is not available." >&2
   elif ! gh auth status >/dev/null 2>&1; then
@@ -369,9 +372,42 @@ fi
 
 if [[ "$close_issue" -eq 1 || "$finalize" -eq 1 ]]; then
   if [[ -z "$issue_number" ]]; then
-    echo "Cannot close issue: linked GitHub issue is missing or unparseable." >&2
+    if [[ "$finalize" -eq 0 ]]; then
+      echo "Cannot close issue: linked GitHub issue is missing or unparseable." >&2
+      rm -f "$pr_body_file"
+      exit 1
+    fi
+
+    if [[ -z "$pr_number" ]]; then
+      echo "Cannot finalize PR: PR link is missing or unparseable in sync.md." >&2
+      rm -f "$pr_body_file"
+      exit 1
+    fi
+
+    if ! command -v gh >/dev/null 2>&1; then
+      echo "Cannot finalize PR: GitHub CLI is not available." >&2
+      rm -f "$pr_body_file"
+      exit 1
+    fi
+
+    if ! gh auth status >/dev/null 2>&1; then
+      echo "Cannot finalize PR: GitHub CLI is not authenticated." >&2
+      rm -f "$pr_body_file"
+      exit 1
+    fi
+
+    pr_state="$(gh pr view "$pr_number" --json state --jq .state)"
+    if [[ "$pr_state" != "MERGED" ]]; then
+      echo "Cannot finalize PR: PR #${pr_number} state is ${pr_state}, expected MERGED." >&2
+      rm -f "$pr_body_file"
+      exit 1
+    fi
+
+    set_field "$sync_file" "- merge status:" "merged"
+    set_field "$sync_file" "- issue close status:" "n/a"
+    scripts/cleanup-merged-branches.sh
     rm -f "$pr_body_file"
-    exit 1
+    exit 0
   fi
 
   if [[ -z "$pr_number" ]]; then
