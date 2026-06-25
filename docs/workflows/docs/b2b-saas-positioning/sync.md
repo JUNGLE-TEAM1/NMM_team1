@@ -11,7 +11,7 @@
 
 - linked GitHub issue: none
 - PR closing keyword: none
-- push/PR/merge: not run
+- push/PR/merge: pushed and PR opened; merge not run
 
 main 동기화와 integration readiness를 기록한다.
 사람 확인 없이 pull, merge, rebase, push, PR action을 실행하지 않는다.
@@ -35,9 +35,9 @@ main 동기화와 integration readiness를 기록한다.
 
 - main commit: not checked with pull/merge/rebase; remote state 변경 명령은 실행하지 않음
 - conflicts: none observed in local working tree
-- validation: `scripts/validate-harness.sh` passed; strict validation 재실행 예정
+- validation: `scripts/validate-harness.sh` passed; `scripts/validate-harness.sh --strict` passed
 - result: local validation complete
-- deferral reason: pull/merge/rebase/push/PR은 사람 확인 전 실행하지 않는다.
+- deferral reason: merge는 PR CI와 사람 확인 전 실행하지 않는다.
 
 ## PR Conflict Resolution
 
@@ -52,11 +52,11 @@ main 동기화와 integration readiness를 기록한다.
 
 ## Push / PR
 
-- linked GitHub issue: 
-- issue link: 
+- linked GitHub issue: none
+- issue link: none
 - issue creation result: not requested
-- PR closing keyword: 
-- pushed branch:
-- PR link:
-- merge status:
-- issue close status:
+- PR closing keyword: none
+- pushed branch: `codex/b2b-saas-positioning`
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/74
+- merge status: open; CI in progress at creation
+- issue close status: not applicable
