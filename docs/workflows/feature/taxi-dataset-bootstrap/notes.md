@@ -3,11 +3,12 @@
 ## 진행 메모
 
 - M2의 목표는 단순 샘플 처리가 아니라 정형 Batch가 대용량 데이터 처리 증거를 남길 수 있음을 보여주는 것이다.
-- 첫 구현은 큰 데이터 전체를 처음부터 묶지 않고 `demo -> fixed -> extended` 단계로 확장한다.
+- 첫 구현은 큰 데이터 전체를 처음부터 묶지 않고 `demo -> fixed -> local-full-month -> scale-target` 단계로 확장한다.
 - NYC TLC Taxi 데이터는 월별 Parquet을 기준 후보로 둔다.
   - 기본 후보: Yellow Taxi monthly Parquet
-  - 권장 시작점: 2024년 월별 파일 1개
+  - 권장 시작점: `yellow_tripdata_2024-01.parquet`
   - 이유: 2025년부터 일부 dataset에 `cbd_congestion_fee` 컬럼이 추가되어 schema drift가 생길 수 있으므로, 첫 안정화는 2024년 데이터가 유리하다.
+- 로컬에서 확인한 `yellow_tripdata_2024-01.parquet`는 약 48MB, 2,964,624 rows, 3 row groups이다.
 - 원본 Parquet, PostgreSQL volume, MinIO object, 생성된 Bronze/Gold Parquet은 repository에 commit하지 않는다.
 - 이 branch에서는 데이터 다운로드나 batch 구현을 하지 않고, 데이터 범위와 실행 전략을 고정한다.
 
@@ -17,10 +18,13 @@
 | --- | --- | --- | --- |
 | `demo` | UI/smoke/E2E 연결 확인 | 1,000~10,000 rows | 빠르게 반복 실행하고 실패 원인을 좁힌다. |
 | `fixed` | PR/리뷰/검산 반복 기준 | 100,000~500,000 rows 또는 고정 date range | 같은 입력에서 같은 row count와 Gold 결과가 나오는지 확인한다. |
-| `extended` | 처리 규모 증거 | 1,000,000+ rows 또는 월별 파일 전체 | row count, bytes, duration, output path를 발표/보고 증거로 남긴다. |
+| `local-full-month` | 로컬 처리 규모 smoke/benchmark | `yellow_tripdata_2024-01.parquet` 전체, 약 2,964,624 rows / 48MB | 한 달 파일 전체를 같은 처리 경로로 돌리고 row count, bytes, duration, output path를 증거로 남긴다. |
+| `scale-target` | 전체 택시 데이터 또는 GB/TB급 처리 목표 | multi-month, year 단위, 또는 전체 TLC Taxi dataset | 후속 branch에서 distributed 처리 필요성, Spark 도입, storage/partition 전략을 검증한다. |
 
 전략은 작은 데이터만 처리하는 것이 아니라, 같은 처리 경로를 작은 입력으로 먼저 안정화한 뒤 큰 입력으로 확장하는 것이다.
-`extended`는 CI 필수 경로가 아니라 manual/benchmark evidence로 다룬다.
+`local-full-month`는 CI 필수 경로가 아니라 manual/benchmark evidence로 다룬다.
+이 단계는 "GB/TB급 ETL 가능"을 증명하는 단계가 아니라, M2 batch path가 실제 월별 Parquet 전체를 끝까지 처리할 수 있는지 확인하는 로컬 기준이다.
+`scale-target`은 별도 설계와 검증이 필요한 후속 범위로 남긴다.
 
 ## 실행 엔진 전략
 
@@ -41,7 +45,7 @@ run_taxi_batch(config) -> ExecutionResult
 
 나중에 Spark가 필요해지는 조건:
 
-- `extended` 범위에서 단일 프로세스 처리 시간이 데모/리뷰 기준을 반복적으로 넘는다.
+- `local-full-month` 또는 후속 `scale-target` 범위에서 단일 프로세스 처리 시간이 데모/리뷰 기준을 반복적으로 넘는다.
 - join, group by, partitioned write 같은 작업이 local runner 메모리 한계를 넘는다.
 - 발표 또는 리뷰에서 분산 처리 자체가 필수 증거로 요구된다.
 - Airflow task가 단일 Python batch 대신 Spark submit을 호출해야 할 정도로 처리량 목표가 커진다.
@@ -67,22 +71,24 @@ NYC TLC Yellow Taxi monthly Parquet
 -> M1 UI, M5 Workflow/Catalog, M6 SQL/RAG가 소비
 ```
 
-첫 데이터 후보는 공식 TLC 월별 Yellow Taxi Parquet 중 2024년 파일 1개로 둔다.
-정확한 월, row 수, date range는 다운로드 가능성, 파일 크기, 팀 통합 일정 확인 후 이 branch에서 확정하거나 후속 branch 결정으로 남긴다.
+첫 데이터 후보는 공식 TLC 월별 Yellow Taxi Parquet 중 `yellow_tripdata_2024-01.parquet`로 둔다.
+이 파일은 로컬 기준 dataset이며, 전체 Taxi dataset 적재 목표를 대체하지 않는다.
+정확한 `demo`/`fixed` date range와 row 수는 이 파일 안에서 잘라 정하고, multi-month/year 단위 확장은 후속 `scale-target` branch에서 다룬다.
 
 ## 결정
 
-- `demo -> fixed -> extended` 단계 확장 전략을 사용한다.
+- `demo -> fixed -> local-full-month -> scale-target` 단계 확장 전략을 사용한다.
+- `yellow_tripdata_2024-01.parquet`는 로컬 full-month 검증 기준으로 사용하고, 전체 택시 데이터 적재 목표는 후속 `scale-target` 범위로 분리한다.
 - 첫 구현은 Spark를 필수로 요구하지 않고, Spark 전환이 가능한 runner 경계를 유지한다.
 - Airflow DAG 구현은 M5 책임으로 두고, M2는 Airflow/local runner가 호출 가능한 Batch 처리 단위를 제공한다.
 
 ## 열린 질문
 
-- M2 첫 기준 파일을 `yellow_tripdata_2024-01.parquet`로 고정할지, 다른 2024년 월별 파일을 선택할지.
-- `demo`, `fixed`, `extended`의 정확한 row 수와 date range를 어디까지 고정할지.
+- `demo`, `fixed`의 정확한 row 수와 date range를 `yellow_tripdata_2024-01.parquet` 안에서 어디까지 고정할지.
 - PostgreSQL 적재 스크립트를 M2가 소유할지, M1/M5의 local dev setup과 분리할지.
 - Bronze/Gold Parquet의 MinIO bucket/prefix 규칙을 M5와 어떻게 맞출지.
-- `extended` 실행을 PR 필수 검증으로 둘지, manual/benchmark evidence로만 둘지.
+- `local-full-month` 실행을 PR 필수 검증으로 둘지, manual/benchmark evidence로만 둘지.
+- `scale-target`에서 Spark를 언제 도입할지, 또는 local runner 성능 한계 확인 후 도입할지.
 
 ## 링크 / 증거
 

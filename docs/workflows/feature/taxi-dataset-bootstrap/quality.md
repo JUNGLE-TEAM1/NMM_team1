@@ -6,12 +6,12 @@
 
 ## TDD Plan / TDD 계획
 
-- Applies: TBD
-- Reason: 
-- Failing test first: 
-- Expected failure command/result: 
-- Pass command/result: 
-- Refactor notes: 
+- Applies: no
+- Reason: 이번 변경은 구현이 아니라 M2 데이터 규모 전략과 후속 scale target을 정리하는 문서 변경이다.
+- Failing test first: not applicable
+- Expected failure command/result: not applicable
+- Pass command/result: `scripts/validate-harness.sh` 통과
+- Refactor notes: not applicable
 
 ## Branch Checks / 브랜치 검증
 
@@ -21,7 +21,7 @@
 | unit/focused test |  |  |  |
 | integration/contract test |  |  |  |
 | build/typecheck |  |  |  |
-| harness validation | `scripts/validate-harness.sh` |  |  |
+| harness validation | `scripts/validate-harness.sh` | passed | 2026-06-25 실행 결과 `Harness validation passed.` |
 | strict harness validation | `scripts/validate-harness.sh --strict` |  |  |
 
 ## CI/CD Gate / CI-CD 게이트
@@ -36,4 +36,5 @@
 
 | Check | Reason | Human Confirmed |
 | --- | --- | --- |
-|  |  |  |
+| lint/unit/build | 코드 구현 변경이 없는 문서 전략 커밋이다. | not required |
+| strict harness validation | workspace가 아직 draft이고 pending confirmation이 남아 있어 strict 통과 대상이 아니다. | not required |
