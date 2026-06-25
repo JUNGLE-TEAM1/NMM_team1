@@ -936,20 +936,20 @@ case_prepare_pr_check_is_local() {
     scripts/prepare-pr.sh --check-pr-sync "$workspace" >/tmp/harness-prepare-pr.out
     ! rg -q "Created PR|To https://|github.com/.*/pull/" /tmp/harness-prepare-pr.out
     rg -q "## 1\\. PR 요약" /tmp/harness-prepare-pr.out
-    rg -q -- "- 이 PR에서 한 일: fixture" /tmp/harness-prepare-pr.out
-    rg -q -- "- 리뷰어가 먼저 볼 것: 요약, 이 PR에서 한 일, 검증 요약, 남은 일/위험을 먼저 확인한 뒤 diff를 본다\\." /tmp/harness-prepare-pr.out
-    rg -q -- "- 검증 요약: fixture" /tmp/harness-prepare-pr.out
-    rg -q -- "- 남은 일: none" /tmp/harness-prepare-pr.out
-    rg -q -- "- 위험/주의: none" /tmp/harness-prepare-pr.out
+    rg -q "## 2\\. 변경 내용" /tmp/harness-prepare-pr.out
+    rg -q "## 3\\. 검증" /tmp/harness-prepare-pr.out
+    rg -q "## 4\\. 영향 범위" /tmp/harness-prepare-pr.out
+    rg -q "## 5\\. 리뷰어에게 부탁할 부분" /tmp/harness-prepare-pr.out
+    rg -q "## 6\\. 남은 일 / 제외한 일" /tmp/harness-prepare-pr.out
+    rg -q "## 7\\. Merge 전 확인" /tmp/harness-prepare-pr.out
+    rg -q "fixture" /tmp/harness-prepare-pr.out
+    rg -q "이번 PR에서 아직 남은 일 또는 제외한 일은 다음과 같다\\. none" /tmp/harness-prepare-pr.out
+    rg -q "마지막으로 남은 위험을 확인해 주세요\\. none" /tmp/harness-prepare-pr.out
     rg -q -- "- 연결된 Issue: Closes #1" /tmp/harness-prepare-pr.out
     rg -q -- "- Branch: \`test/harness-fixture\`" /tmp/harness-prepare-pr.out
     rg -q -- "- Branch workspace: \`${workspace}\`" /tmp/harness-prepare-pr.out
-    rg -q "## 5\\. 품질 게이트" /tmp/harness-prepare-pr.out
     rg -q -- "- Quality gate status: passed" /tmp/harness-prepare-pr.out
-    rg -q "## 6\\. Acceptance / Regression / Manual Verification" /tmp/harness-prepare-pr.out
-    rg -q "## 7\\. Git Sync / PR 상태" /tmp/harness-prepare-pr.out
     rg -q -- "- Pre-Merge 또는 Pre-PR Sync: ready for PR preparation" /tmp/harness-prepare-pr.out
-    rg -q "## 10\\. Merge 전 Human Checkpoint" /tmp/harness-prepare-pr.out
 
     awk '
       /^- linked GitHub issue:/ { print "- linked GitHub issue:"; next }
@@ -960,7 +960,7 @@ case_prepare_pr_check_is_local() {
     mv "${workspace}/sync.md.tmp" "${workspace}/sync.md"
     scripts/prepare-pr.sh --dry-run "$workspace" >/tmp/harness-prepare-pr-no-issue.out
     rg -q -- "- 연결된 Issue: 연결된 issue 없음" /tmp/harness-prepare-pr-no-issue.out
-    rg -q -- "- Phase 또는 Hotfix: 테스트 fixture" /tmp/harness-prepare-pr-no-issue.out
+    rg -q "이번 PR은 Harness fixture report 작업을 리뷰 가능한 상태로 인계한다\\." /tmp/harness-prepare-pr-no-issue.out
     rg -q -- "- PR readiness from \`scripts/status-workflow.sh\`: \`scripts/status-workflow.sh ${workspace}\` PR handoff 전 확인 필요" /tmp/harness-prepare-pr-no-issue.out
   )
 }

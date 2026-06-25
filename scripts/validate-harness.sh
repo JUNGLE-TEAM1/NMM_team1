@@ -936,12 +936,12 @@ if ! rg -q "짧은 보고|검증 명령|수동 검증|최종 판단" docs/report
   fail "docs/reports/_template.md is not Korean-centered"
 fi
 
-if ! rg -q "공유 문서|품질 게이트|사람 확인|요약|이 PR에서 한 일|리뷰어가 먼저 볼 것|검증 요약|위험/주의" .github/pull_request_template.md; then
+if ! rg -q "PR 요약|변경 내용|검증|영향 범위|리뷰어에게 부탁할 부분|남은 일 / 제외한 일|Merge 전 확인" .github/pull_request_template.md; then
   fail ".github/pull_request_template.md is not Korean-centered"
 fi
 
-if ! rg -q "changed_summary|verified_summary|remaining_summary|risk_summary|리뷰어가 먼저 볼 것" scripts/prepare-pr.sh scripts/test-harness.sh; then
-  fail "prepare-pr PR body does not surface concrete reviewer context from workspace reports"
+if ! rg -q "changed_summary|verified_summary|remaining_summary|risk_summary|## 2\\. 변경 내용|## 5\\. 리뷰어에게 부탁할 부분|## 6\\. 남은 일 / 제외한 일" scripts/prepare-pr.sh scripts/test-harness.sh; then
+  fail "prepare-pr PR body does not surface readable reviewer context from workspace reports"
 fi
 
 if ! rg -q "목적|절차|기대 결과|실패 시|증거" docs/manual-verification/01-golden-path.md; then
