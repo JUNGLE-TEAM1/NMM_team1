@@ -148,14 +148,14 @@ Each workspace records sync status in `sync.md`.
 
 When a workspace has a linked GitHub issue, do not rename the branch to include the issue number. Keep the branch/workspace path stable and put the closing keyword, such as `Closes #123`, in the PR body so GitHub closes the issue after merge.
 
-AI should ask for Git Sync Confirm before pull, merge, rebase, push, PR creation, or PR merge. If main or shared Source of Truth changes during a Phase, AI should stop and offer the next action menu from `docs/10-next-action-menu.md`.
+AI should ask for Git Sync Confirm before pull, merge, rebase, PR merge, finalize, issue close, or cleanup. Feature branch push and PR creation may run automatically after PR-ready checks pass. If main or shared Source of Truth changes during a Phase, AI should stop and offer the next action menu from `docs/10-next-action-menu.md`.
 
-When local validation has passed and PR/push/handoff is the next natural action, AI must run `Pre-PR Human Checkpoint`:
+When local validation has passed and PR readiness is clear, AI may auto-create the PR unless an opt-out or stop condition exists. After PR creation, when merge/finalize/cleanup/handoff is the next natural action, AI must run `Pre-PR Human Checkpoint`:
 
 - present 2-4 choices such as `PR 진행`, `로컬 완료로 보류`, `추가 수정`, and `다음 Phase`
-- do not push, create PR, merge, finalize, or cleanup until the human explicitly chooses the remote action
+- do not merge, finalize, issue close, or cleanup until the human explicitly chooses the follow-up remote action
 - record the checkpoint in `confirmations.md` under `## Pre-PR Human Checkpoint`
-- if the human approves PR/push, record the approved action in `sync.md`
+- record the auto-created PR link or approved follow-up action in `sync.md`
 - if the human chooses hold or does not answer, record the deferral reason in `sync.md` and the resume condition in `next-actions.md`
 
 ## Quality Gates
