@@ -156,6 +156,7 @@ run button: POST /api/week2/workflows/pipeline_reviews_json_e2e/runs
 catalog button: GET /api/week2/catalog/dataset_reviews_gold
 visible sections: Node Board, ExecutionResult, CatalogMetadata, Storage
 node board evidence: Source 9 columns -> Select/Filter 4 columns -> Normalize typed rating/time -> Aggregate 4 product rows -> Load output path
+node preview behavior: Source/Select/Normalize node는 10개 demo rows 전체를 table로 보여주고, Aggregate/Load node는 4개 product rows 전체를 보여준다.
 frontend build: npm run build -> passed
 browser smoke: in-app browser at http://127.0.0.1:5176/ -> passed
 current metrics: ExecutionResult.row_count=10, ExecutionResult.bytes=2173, CatalogMetadata.metrics.row_count=4, CatalogMetadata.metrics.bytes=261

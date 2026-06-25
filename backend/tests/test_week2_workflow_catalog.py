@@ -62,6 +62,7 @@ def test_week2_workflow_run_returns_execution_result_contract() -> None:
         "node_aggregate_reviews",
         "node_load_reviews",
     ]
+    assert [len(output["preview_rows"]) for output in run["node_outputs"]] == [10, 10, 10, 4, 4]
     assert run["node_outputs"][0]["preview_rows"][0]["review_id"] == "R001"
     assert "review_text" in run["node_outputs"][0]["preview_rows"][0]
     assert "marketplace" in run["node_outputs"][0]["preview_rows"][0]
@@ -70,7 +71,6 @@ def test_week2_workflow_run_returns_execution_result_contract() -> None:
     assert run["node_outputs"][2]["preview_rows"][0]["rating"] == 5.0
     assert run["node_outputs"][2]["preview_rows"][0]["review_time"] == "2026-06-20T10:00:00Z"
     assert run["node_outputs"][3]["preview_rows"][0]["review_count"] == 3
-    assert len(run["node_outputs"][3]["preview_rows"]) == 4
     assert run["node_outputs"][3]["preview_rows"][-1]["product_id"] == "B004"
 
     get_response = client.get("/api/week2/runs/run_reviews_demo_001")
