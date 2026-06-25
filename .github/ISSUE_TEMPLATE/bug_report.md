@@ -1,7 +1,7 @@
 ---
 name: 버그 리포트
 about: 재현 가능한 오류, 회귀, 기대와 다른 동작을 보고합니다.
-title: "[Bug] "
+title: "[버그] "
 labels: ["bug"]
 assignees: ""
 ---

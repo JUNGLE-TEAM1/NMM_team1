@@ -14,6 +14,9 @@
 ## 범위
 
 - `docs/08-development-workflow.md`의 중복 설명 축소
+- 사용자 추가 요청에 따른 GitHub Issue/PR 템플릿 제목 한국어화
+- `scripts/prepare-pr.sh` 자동 PR body를 `.github/pull_request_template.md` 기반으로 정렬
+- `scripts/test-harness.sh` prepare-pr 회귀 fixture 보강
 - canonical 참조 정리:
   - PR/sync/branch/issue/merge/finalize/cleanup: `docs/11-git-sync-policy.md`
   - TDD/CI/CD/quality evidence: `docs/12-quality-gates.md`
@@ -28,7 +31,7 @@
 - 제품 요구사항, architecture, interface, acceptance 내용 변경
 - PR/merge/cleanup 승인 정책 의미 변경
 - 새 문서 추가
-- 기능 구현 또는 스크립트 동작 변경
+- 원격 push, PR 생성, merge, issue close, branch cleanup 실행
 - 기존 unrelated 수정 되돌리기
 
 ## Source of Truth 문맥

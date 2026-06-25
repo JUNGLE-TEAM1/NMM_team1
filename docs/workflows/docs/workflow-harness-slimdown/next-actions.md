@@ -4,17 +4,17 @@
 
 ## Current State / 현재 상태
 
-- State: PR conflict resolved and revalidated locally
-- Summary: PR #97 conflict was resolved locally by merging `origin/main` into `docs/workflow-harness-slimdown`. Local validation passed; push and PR mergeability recheck are pending.
+- State: PR conflict resolved, PR template helper strengthened, and local validation passed
+- Summary: PR #97 conflict was resolved locally. 추가로 `prepare-pr` 자동 PR body가 `.github/pull_request_template.md` 기반으로 생성되도록 보강했고 issue/PR 기본 제목 문구를 한국어화했다. Local validation passed; push and PR mergeability recheck are pending.
 
 ## Recommended Next Action / 권장 다음 행동
 
-- conflict 해결 commit을 push하고 PR 상태를 다시 확인한다.
+- 변경 commit을 push하고 PR 상태를 다시 확인한다.
 - Reason: local validation은 통과했고, GitHub mergeability는 push 이후 다시 계산된다.
 
 ## Options / 선택지
 
-1. conflict 해결 commit을 push한다.
+1. conflict/template 보강 commit을 push한다.
 2. PR 상태를 다시 확인한다.
 3. PR을 보류하고 재개 조건을 남긴다.
 4. 사람이 직접 추가 확인한다.

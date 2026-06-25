@@ -95,6 +95,7 @@ workspace="${1%/}"
 sync_file="${workspace}/sync.md"
 report_file="${workspace}/report.md"
 plan_file="${workspace}/plan.md"
+quality_file="${workspace}/quality.md"
 
 if [[ ! -f "$sync_file" ]]; then
   echo "sync.md not found: ${sync_file}" >&2
@@ -318,7 +319,7 @@ if [[ -n "$issue_number" ]]; then
   closing_keyword="Closes #${issue_number}"
 fi
 
-title="PR handoff for ${branch}"
+title="PR 인계: ${branch}"
 if [[ -f "$report_file" ]]; then
   report_title="$(sed -n '1s/^# //p' "$report_file")"
   [[ -n "$report_title" ]] && title="$report_title"
@@ -327,23 +328,79 @@ elif [[ -f "$plan_file" ]]; then
   [[ -n "$plan_title" ]] && title="$plan_title"
 fi
 
+workspace_type="${workspace#docs/workflows/}"
+workspace_type="${workspace_type%%/*}"
+phase_or_hotfix="$workspace_type"
+case "$workspace_type" in
+  feature) phase_or_hotfix="기능 Phase" ;;
+  hotfix) phase_or_hotfix="긴급수정" ;;
+  docs) phase_or_hotfix="문서/운영 작은 변경" ;;
+  chore) phase_or_hotfix="정리 작업" ;;
+  test) phase_or_hotfix="테스트 fixture" ;;
+esac
+
+quality_status=""
+tdd_status=""
+if [[ -f "$quality_file" ]]; then
+  quality_status="$(first_value "$quality_file" "- Quality gate status:")"
+  tdd_status="$(first_value "$quality_file" "- Applies:")"
+fi
+emptyish "$quality_status" && quality_status="PR review 전 기록 필요"
+emptyish "$tdd_status" && tdd_status="PR review 전 기록 필요"
+
+start_sync_result="$(section_value "$sync_file" "## Start Sync / 시작 sync" "- result:")"
+pre_merge_result="$(section_value "$sync_file" "## Pre-Merge Sync" "- result:")"
+pre_merge_deferral="$(section_value "$sync_file" "## Pre-Merge Sync" "- deferral reason:")"
+mid_phase_sync="workspace sync.md 참고"
+pre_pr_sync="${pre_merge_result:-${pre_merge_deferral:-PR review 전 기록 필요}}"
+pr_readiness="\`scripts/status-workflow.sh ${workspace}\` PR handoff 전 확인 필요"
+
 pr_body_file="$(mktemp)"
-cat > "$pr_body_file" <<EOF_BODY
-## Summary
+pr_template_file=".github/pull_request_template.md"
+if [[ -f "$pr_template_file" ]]; then
+  awk \
+    -v title="$title" \
+    -v issue="${closing_keyword:-연결된 issue 없음}" \
+    -v phase="$phase_or_hotfix" \
+    -v branch="$branch" \
+    -v workspace="$workspace" \
+    -v quality_status="$quality_status" \
+    -v tdd_status="$tdd_status" \
+    -v start_sync="${start_sync_result:-PR review 전 기록 필요}" \
+    -v mid_sync="$mid_phase_sync" \
+    -v pre_sync="$pre_pr_sync" \
+    -v readiness="$pr_readiness" '
+      /^- 요약:/ { print "- 요약: " title; next }
+      /^- 연결된 Issue:/ { print "- 연결된 Issue: " issue; next }
+      /^- Phase 또는 Hotfix:/ { print "- Phase 또는 Hotfix: " phase; next }
+      /^- Branch:/ { print "- Branch: `" branch "`"; next }
+      /^- Branch workspace:/ { print "- Branch workspace: `" workspace "`"; next }
+      /^- Quality gate status:/ { print "- Quality gate status: " quality_status; next }
+      /^- TDD 상태:/ { print "- TDD 상태: " tdd_status; next }
+      /^- Start Sync:/ { print "- Start Sync: " start_sync; next }
+      /^- Mid-Phase Sync:/ { print "- Mid-Phase Sync: " mid_sync; next }
+      /^- Pre-Merge 또는 Pre-PR Sync:/ { print "- Pre-Merge 또는 Pre-PR Sync: " pre_sync; next }
+      /^- PR readiness from `scripts\/status-workflow.sh`:/ { print "- PR readiness from `scripts/status-workflow.sh`: " readiness; next }
+      { print }
+    ' "$pr_template_file" > "$pr_body_file"
+else
+  cat > "$pr_body_file" <<EOF_BODY
+## 요약
 
 - Workspace: \`${workspace}\`
 - Branch: \`${branch}\`
 
-## Issue
+## 연결된 Issue
 
-${closing_keyword:-No linked issue recorded.}
+${closing_keyword:-연결된 issue 없음}
 
-## Checklist
+## 체크리스트
 
 - [ ] \`scripts/status-workflow.sh ${workspace}\` reviewed
 - [ ] \`scripts/validate-harness.sh\` passed
 - [ ] \`scripts/validate-harness.sh --strict\` passed
 EOF_BODY
+fi
 
 echo "PR handoff"
 echo "=========="

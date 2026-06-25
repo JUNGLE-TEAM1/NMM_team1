@@ -21,7 +21,10 @@
 | unit/focused test | n/a | skipped | 제품 코드 변경 없음 |
 | integration/contract test | n/a | skipped | API/schema/runtime contract 변경 없음 |
 | build/typecheck | n/a | skipped | 제품 코드 변경 없음 |
-| harness regression | `scripts/test-harness.sh` | passed | Harness regression tests passed: 22 |
+| shell syntax | `bash -n scripts/prepare-pr.sh scripts/test-harness.sh scripts/start-workflow.sh` | passed | no syntax output |
+| issue template YAML | `ruby -ryaml -e 'Dir[".github/ISSUE_TEMPLATE/*.md"].sort.each { ... }'` | passed | 4개 issue template front matter 파싱 통과 |
+| prepare-pr dry-run | `scripts/prepare-pr.sh --dry-run docs/workflows/docs/workflow-harness-slimdown` | passed | PR body가 `.github/pull_request_template.md` 섹션을 유지하고 workspace/branch/quality/sync 값을 자동 채움. 원격 상태 변경 없음 |
+| harness regression | `scripts/test-harness.sh` | passed | Harness regression tests passed: 26 |
 | harness validation | `scripts/validate-harness.sh` | passed | Harness validation passed. |
 | strict harness validation | `scripts/validate-harness.sh --strict` | passed | Harness validation passed. |
 | PR conflict revalidation | `scripts/validate-harness.sh`; `scripts/test-harness.sh`; `scripts/validate-harness.sh --strict` | passed | Harness validation passed; Harness regression tests passed: 26; strict validation passed |
@@ -37,7 +40,7 @@
 ## Source of Truth Impact Gate
 
 - Source of Truth impact: applied
-- Proposed file: `docs/08-development-workflow.md`
+- Proposed files: `docs/08-development-workflow.md`, `.github/ISSUE_TEMPLATE/*.md`, `scripts/prepare-pr.sh`, `scripts/test-harness.sh`
 - Validation command/result: `scripts/validate-harness.sh --strict` passed
 - Product acceptance/manual verification impact: none. 문서 구조 리팩토링이며 제품 기능, acceptance scenario, regression behavior, manual verification path를 바꾸지 않음.
 
@@ -48,8 +51,8 @@
 
 ## Harness Test Update Gate
 
-- Harness test impact: skipped
-- Reason: 하네스 정책 의미나 스크립트 동작을 바꾸지 않고 `docs/08`의 중복 설명을 canonical 참조로 압축했다. 기존 fixture 기대값 변경이 필요하지 않다.
+- Harness test impact: updated
+- Reason: `scripts/prepare-pr.sh` PR body 생성 동작을 바꿨으므로 prepare-pr fixture가 한국어 PR 템플릿 섹션, linked issue closing keyword, branch/workspace, quality, sync, human checkpoint 섹션을 확인하도록 보강했다.
 
 ## Skipped Checks / 생략한 검증
 

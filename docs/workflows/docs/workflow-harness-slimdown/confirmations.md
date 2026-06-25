@@ -24,12 +24,12 @@ AI가 멈추고 사람 확인을 받아야 하는 지점을 기록한다.
 
 ## Scope Change Confirm / 범위 변경 확인
 
-- Status: not needed
+- Status: accepted
 - Ask human when:
   - 작업이 `plan.md` 범위를 넘을 때
   - 기능을 다른 branch로 분리해야 할 때
   - 구현 중 새 제품 결정이 드러날 때
-- Human response: 
+- Human response: 사용자 추가 요청으로 PR 템플릿 자동 body 정렬과 issue/PR 제목 한국어화를 같은 docs/ops PR 보강 범위에 포함.
 
 ## Verification Confirm / 검증 확인
 
@@ -89,13 +89,21 @@ AI가 멈추고 사람 확인을 받아야 하는 지점을 기록한다.
 
 ## Completion Confirm / 완료 확인
 
-- Status: ready-for-review
+- Status: accepted
 - Ask human to confirm:
   - 변경 요약
   - 검증 결과
   - 남은 위험
   - 다음 작업 문맥
-- Human response: 변경/검증 결과는 report에 기록.
+- Human response: "pr을 마무리해" 요청으로 현재 PR #97에 보강 변경을 반영하고 CI 확인, merge, finalize, cleanup까지 진행 승인.
+
+## Pre-PR Human Checkpoint
+
+- Status: approved
+- Human choice: PR 진행
+- Human response: "pr을 마무리해"
+- Approved scope: final local checks, commit, push, PR title/body update, CI check, merge, finalize, linked issue close check if applicable, automatic merged branch cleanup.
+- Stop conditions: CI failure, merge conflict, required review blocker, scope drift, deployment/cloud/resource action.
 
 ## Integration Conflict Confirm / 통합 충돌 확인
 
