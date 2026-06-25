@@ -8,6 +8,7 @@ integration branch는 branch 작업을 합치기 전에 이 파일을 읽는다.
 | File | Proposed Change | Reason | Merge Risk |
 | --- | --- | --- | --- |
 | `docs/03-interface-reference.md` | 변경 없음 | 이번 slice는 이미 문서화된 Week 2 draft route/fixture contract를 구현에 연결 | 낮음 |
+| `contracts/source_config.sample.json` | demo fixture path와 4-row sample availability 반영 | #92에서 M5 local runner가 계산 가능한 demo input을 필요로 함 | 낮음 |
 
 ## Integration Notes / 통합 메모
 

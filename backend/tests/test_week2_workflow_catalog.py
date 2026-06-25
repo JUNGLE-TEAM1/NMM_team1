@@ -36,6 +36,9 @@ def test_week2_workflow_run_returns_execution_result_contract() -> None:
     assert run["executor"] == "local_runner"
     assert run["status"] == "fallback_succeeded"
     assert run["triggered_by"] == "m5_owner"
+    assert run["row_count"] == 3
+    assert run["bytes"] > 0
+    assert run["duration_ms"] >= 1
     assert run["outputs"][0]["uri"] == "s3://asklake-demo/reviews/gold/run_id=run_reviews_demo_001/"
     assert [task["node_id"] for task in run["task_results"]] == [
         "node_source_reviews",
@@ -44,6 +47,8 @@ def test_week2_workflow_run_returns_execution_result_contract() -> None:
         "node_aggregate_reviews",
         "node_load_reviews",
     ]
+    assert [task["row_count"] for task in run["task_results"]] == [4, 4, 4, 3, 3]
+    assert run["task_results"][-1]["bytes"] > 0
 
     get_response = client.get("/api/week2/runs/run_reviews_demo_001")
 
@@ -64,12 +69,15 @@ def test_week2_catalog_metadata_tracks_successful_run_lineage() -> None:
     assert catalog["contract"] == "CatalogMetadata"
     assert catalog["dataset_id"] == "dataset_reviews_gold"
     assert catalog["s3_uri"] == "s3://asklake-demo/reviews/gold/run_id=run_reviews_demo_001/"
+    assert Path(catalog["storage"]["local_fallback_path"]).exists()
     assert catalog["lineage"]["pipeline_id"] == "pipeline_reviews_json_e2e"
     assert catalog["lineage"]["run_id"] == "run_reviews_demo_001"
     assert catalog["query"]["allow_readonly_sql"] is True
+    assert catalog["metrics"]["row_count"] == 3
+    assert catalog["metrics"]["bytes"] > 0
     assert catalog["metrics"]["quality"] == {
-        "schema_match": "pending",
-        "row_count_checked": False,
+        "schema_match": "passed",
+        "row_count_checked": True,
     }
 
 

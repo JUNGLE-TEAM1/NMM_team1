@@ -13,7 +13,7 @@
 - Failing test first: not captured; focused contract tests were added with the implementation in this turn.
 - Expected failure command/result: not captured
 - Pass command/result: `PYTHONPATH=backend ./.venv/bin/pytest backend/tests/test_week2_local_runner.py backend/tests/test_week2_workflow_catalog.py -q` -> 6 passed; `PYTHONPATH=backend ./.venv/bin/pytest backend/tests -q` -> 24 passed
-- Refactor notes: 기존 baseline `PipelineService`와 분리해 Week 2 fixture slice를 `Week2WorkflowService`에 격리했고, runner boundary는 `Week2LocalRunner`로 분리했다.
+- Refactor notes: 기존 baseline `PipelineService`와 분리해 Week 2 fixture slice를 `Week2WorkflowService`에 격리했고, runner boundary는 `Week2LocalRunner`로 분리했다. #92에서 local JSONL demo fixture를 읽어 metrics를 계산하도록 확장했다.
 
 ## Branch Checks / 브랜치 검증
 
@@ -22,6 +22,7 @@
 | lint | `jq -e . contracts/*.sample.json >/dev/null` | passed | 6개 fixture JSON 유효성 확인 |
 | unit/focused test | `PYTHONPATH=backend ./.venv/bin/pytest backend/tests/test_week2_local_runner.py backend/tests/test_week2_workflow_catalog.py -q` | passed | 6 passed |
 | integration/contract test | `PYTHONPATH=backend ./.venv/bin/pytest backend/tests -q` | passed | 24 passed |
+| evidence run | `PYTHONPATH=backend ./.venv/bin/python -c "...Week2WorkflowService..."` | passed | `row_count=3`, `bytes=195`, `duration_ms=2`, local fallback path created |
 | build/typecheck | not run | skipped | 별도 typecheck/build command 없음 |
 | harness validation | `scripts/validate-harness.sh` | passed via strict | strict validation에 포함 |
 | strict harness validation | `scripts/validate-harness.sh --strict` | passed | Harness validation passed |
@@ -39,4 +40,4 @@
 | Check | Reason | Human Confirmed |
 | --- | --- | --- |
 | frontend build | frontend 변경 없음 | not needed |
-| real Airflow/MinIO smoke | 이번 slice는 fixture contract runtime이며 실제 Airflow/MinIO 구현은 범위 제외 | not needed |
+| real Airflow/MinIO smoke | 이번 slice는 local JSONL fallback runtime이며 실제 Airflow/MinIO 구현은 범위 제외 | not needed |

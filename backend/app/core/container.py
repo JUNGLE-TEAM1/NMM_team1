@@ -41,4 +41,4 @@ class AppContainer:
         return PipelineService(self.metadata_store, self.source_connectors, self.result_store)
 
     def create_week2_workflow_service(self) -> Week2WorkflowService:
-        return Week2WorkflowService()
+        return Week2WorkflowService(output_root=self.result_store.base_path / "week2")
