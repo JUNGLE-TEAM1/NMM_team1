@@ -324,6 +324,7 @@ require_file ".github/pull_request_template.md"
 require_file ".github/workflows/harness-validation.example.yml"
 require_file "scripts/start-workflow.sh"
 require_file "scripts/status-workflow.sh"
+require_file "scripts/audit-github-records.sh"
 require_file "scripts/harness-flow-check.sh"
 require_file "scripts/list-active-branches.sh"
 require_file "scripts/test-harness.sh"
@@ -922,6 +923,18 @@ fi
 
 if ! rg -q "FAKE_GH_BODY_LOG|연결된 Issue: 연결된 issue 없음|이슈 요약" scripts/test-harness.sh; then
   fail "scripts/test-harness.sh does not guard generated issue/PR template bodies"
+fi
+
+if ! rg -q "title-prefix-missing|body-template-missing|readable-pr-handoff-missing|stale-pr-summary-checklist|label-missing" scripts/audit-github-records.sh; then
+  fail "scripts/audit-github-records.sh does not detect GitHub Issue/PR template drift"
+fi
+
+if ! rg -q "GitHub record drift audit detects bypass|GitHub record drift audit passes clean records|feat: M5 local UI demo panel" scripts/test-harness.sh; then
+  fail "scripts/test-harness.sh does not cover GitHub record drift audit fixtures"
+fi
+
+if ! rg -q "GitHub record drift audit" scripts/status-workflow.sh; then
+  fail "scripts/status-workflow.sh does not surface GitHub record drift audit status"
 fi
 
 if ! rg -q "내부 단계별 프롬프트" docs/08-development-workflow.md; then

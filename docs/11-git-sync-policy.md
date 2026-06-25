@@ -102,6 +102,20 @@ Project 추가와 Status 설정의 성공 또는 실패 이유는 workspace `syn
 `scripts/start-workflow.sh`가 만든 issue는 GitHub UI issue template을 자동으로 타지 않으므로, 스크립트가 직접 한국어 title prefix, body sections, 작업 type별 label을 생성한다.
 Issue body는 literal newline escape가 남지 않도록 `--body-file` 경로로 전달한다.
 
+### GitHub Record Drift Audit
+
+GitHub issue/PR이 UI, `gh`, 외부 자동화, 또는 오래된 스크립트 경로로 생성되면 하네스 템플릿을 우회할 수 있다.
+이 경우 `scripts/audit-github-records.sh`를 먼저 실행해 한국어 issue title/body/label, PR 제목, 읽기 쉬운 PR handoff body, closing keyword 누락을 읽기 전용으로 확인한다.
+
+```bash
+scripts/audit-github-records.sh --issue 112
+scripts/audit-github-records.sh --pr 114
+```
+
+`scripts/status-workflow.sh <workspace>`는 linked issue 또는 PR link가 있고 GitHub CLI를 사용할 수 있을 때 이 감사를 함께 표시한다.
+드리프트가 있으면 complete + PR-ready workspace라도 자동 PR 생성 권고를 멈추고 사람이 확인할 수 있게 drift reason, 현재 title, suggested title/label을 보고한다.
+이 감사는 GitHub record를 수정하지 않는다. 기존 issue/PR 보정은 별도 사람 지시 후 수행한다.
+
 Linked issue와 Project Status lifecycle은 아래 순서가 기준이다.
 
 ```text

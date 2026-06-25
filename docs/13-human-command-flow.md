@@ -203,6 +203,19 @@ AI does:
 Human says:
 
 ```text
+이 이슈/PR 템플릿 뚫린 거야?
+```
+
+AI does:
+
+- Runs read-only checks first: `scripts/audit-github-records.sh --issue <number>` and/or `scripts/audit-github-records.sh --pr <number>`.
+- Reports drift reasons, current title/body shape, suggested Korean title prefix, missing label, missing PR handoff sections, and closing keyword risk.
+- Does not edit existing GitHub issue/PR records until the human explicitly asks for correction.
+- If the drift came from a harness gap, adds or updates fixture regression coverage before correcting the existing records.
+
+Human says:
+
+```text
 PR 충돌 해결해
 ```
 

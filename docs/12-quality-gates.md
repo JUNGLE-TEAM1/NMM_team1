@@ -35,6 +35,7 @@ Before a branch is considered complete:
 - Local tool/runtime readiness evidence is recorded before marking required test/build/smoke/manual verification as skipped.
 - Source of Truth Impact Gate evidence is recorded when implementation or documentation changes can alter shared project truth.
 - Harness Test Update Gate evidence is recorded when harness rules, scripts, or CI harness jobs change.
+- GitHub record drift audit evidence is recorded when the branch changes issue/PR template generation, PR handoff body rules, or GitHub lifecycle guard behavior.
 - `scripts/validate-harness.sh` passes.
 - `scripts/validate-harness.sh --strict` passes before integration or PR readiness.
 - After PR conflict resolution, `sync.md` records conflict type, resolution method, resolved files, rerun validation, and remaining PR/CI/merge risk before PR progression resumes. `quality.md` records rerun check commands/results when tests or harness validation are affected.
@@ -99,6 +100,7 @@ Each workspace uses `quality.md` to record:
 - Source of Truth validation command/result when `shared-docs.md` proposes shared document changes
 - Harness test impact: `none`, `required`, `updated`, `skipped`, or `deferred`
 - Harness regression command/result, usually `scripts/test-harness.sh`, when harness behavior changes
+- GitHub record drift audit command/result when GitHub issue/PR template or lifecycle guard behavior changes; live audit commands are read-only and fixture tests cover CI-safe regression cases
 - skipped checks and reasons
 - deployment or publish gate when relevant
 

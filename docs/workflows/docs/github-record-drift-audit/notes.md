@@ -1,0 +1,21 @@
+# GitHub record drift audit 보강 노트
+
+## 진행 메모
+
+- #112 `feat: M5 local UI demo panel`은 GitHub issue template/harness script 생성 경로 밖에서 만들어져 한국어 title prefix, body sections, label이 빠진 edge case로 확인했다.
+- `scripts/audit-github-records.sh --issue 112`는 drift를 감지하고, `--issue 111`은 통과해 정상/비정상 구분을 확인했다.
+- `scripts/status-workflow.sh`는 linked issue/PR audit 결과를 표시하고 drift가 있으면 자동 PR 생성을 보류한다.
+
+## 결정
+
+- 기존 GitHub issue/PR record는 이 branch에서 자동 수정하지 않는다. 먼저 하네스 보강과 회귀 검증을 완료한다.
+
+## 열린 질문
+
+- #112 및 이후 record 보정은 이 PR 또는 후속 작업 병합 후 별도 사람 지시로 수행한다.
+
+## 링크 / 증거
+
+- `scripts/test-harness.sh`: `Harness regression tests passed: 30`
+- `scripts/audit-github-records.sh --issue 112`: drift 감지
+- `scripts/audit-github-records.sh --issue 111`: pass
