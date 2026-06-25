@@ -6,6 +6,8 @@
 
 이 문서는 Source of Truth나 하네스 운영 규칙이 아니다. `main`, `dev`, `master` 같은 브랜치 전략을 바꾸지 않고, 필요할 때 고정 스냅샷을 남기는 실행 루트만 제공한다.
 
+공용 실행은 `scripts/create-main-backup-tag.sh`를 사용한다.
+
 ## 트리거 문구
 
 아래와 같은 요청을 받으면 이 프롬프트를 적용한다.
@@ -18,12 +20,8 @@
 ## 실행 절차
 
 1. 현재 저장소와 브랜치 상태를 확인한다.
-2. `origin/main` 최신 commit을 확인한다.
-3. 오늘 날짜 기준으로 `backup/main-YYYY-MM-DD` 태그명을 만든다.
-4. 같은 태그가 이미 있으면 `backup/main-YYYY-MM-DD-1`, `backup/main-YYYY-MM-DD-2`처럼 번호를 붙여 충돌을 피한다.
-5. 태그는 `origin/main`이 가리키는 commit에 생성한다.
-6. 태그를 `origin`에 push한다.
-7. 완료 후 태그명, 대상 commit, GitHub Tags 링크를 보고한다.
+2. `scripts/create-main-backup-tag.sh`를 실행한다.
+3. 완료 후 스크립트가 출력한 태그명, 대상 commit, GitHub Tags 링크를 보고한다.
 
 ## 안전 규칙
 
@@ -33,6 +31,7 @@
 - 기존 태그를 덮어쓰거나 삭제하지 않는다.
 - 하네스 Source of Truth 문서에는 반영하지 않는다.
 - 단순 백업 실행으로 취급하고, 별도 Phase나 PR 정책 변경으로 확대하지 않는다.
+- 검증이 필요하면 `scripts/create-main-backup-tag.sh --dry-run`을 먼저 실행한다.
 
 ## 태그명 규칙
 
@@ -43,17 +42,13 @@
 
 ```bash
 git status --short --branch
-git fetch origin
-git rev-parse --short origin/main
-git tag backup/main-YYYY-MM-DD origin/main
-git push origin backup/main-YYYY-MM-DD
+scripts/create-main-backup-tag.sh
 ```
 
-중복 태그가 있으면 새 번호를 붙인 뒤 생성한다.
+실제 태그를 만들지 않고 확인만 하려면 dry run을 사용한다.
 
 ```bash
-git tag backup/main-YYYY-MM-DD-1 origin/main
-git push origin backup/main-YYYY-MM-DD-1
+scripts/create-main-backup-tag.sh --dry-run
 ```
 
 ## 완료 보고 예시
