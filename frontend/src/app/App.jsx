@@ -37,28 +37,22 @@ import "./styles.css";
 
 const navItems = [
   {
-    path: "/catalog",
-    label: "데이터 카탈로그",
-    description: "Metadata",
-    icon: LayoutDashboard,
-  },
-  {
     path: "/sources",
     label: "데이터 통합",
     description: "소스 연결",
     icon: GitMerge,
   },
   {
-    path: "/schema-preview",
-    label: "스키마 미리보기",
-    description: "추론/보정",
-    icon: FileJson,
-  },
-  {
     path: "/runs",
     label: "실행/모니터링",
     description: "Run 상태",
     icon: ListChecks,
+  },
+  {
+    path: "/catalog",
+    label: "데이터 카탈로그",
+    description: "Metadata",
+    icon: LayoutDashboard,
   },
   {
     path: "/ask",
@@ -203,6 +197,7 @@ const pipelineRows = [
 
 function normalizePath(pathname) {
   if (pathname === "/" || pathname === "" || pathname === "/dataset") return "/sources";
+  if (pathname === "/schema-preview") return "/sources";
   if (pathname === "/etl/visual" || pathname === "/etl-visual") return "/etl-visual";
   if (pathname === "/etl") return "/runs";
   if (pathname === "/query") return "/ask";
@@ -247,6 +242,7 @@ export function App() {
   const activeItem = useMemo(
     () => {
       if (activePath === "/etl-visual") return navItems.find((item) => item.path === "/sources");
+      if (activePath === "/schema-preview") return navItems.find((item) => item.path === "/sources");
       if (activePath === "/catalog-detail") return navItems.find((item) => item.path === "/catalog");
       return navItems.find((item) => item.path === activePath) || navItems[0];
     },
@@ -333,7 +329,6 @@ export function App() {
         <section className="page-surface">
           {notice ? <ToastNotice message={notice} onClose={() => setNotice("")} /> : null}
           {activePath === "/sources" ? <SourcesPage navigate={navigate} setNotice={setNotice} /> : null}
-          {activePath === "/schema-preview" ? <SchemaPreviewPage /> : null}
           {activePath === "/etl-visual" ? <VisualEditorPage navigate={navigate} setNotice={setNotice} /> : null}
           {activePath === "/runs" ? <RunStatusPage navigate={navigate} /> : null}
           {activePath === "/catalog" ? <CatalogPage navigate={navigate} /> : null}
@@ -436,6 +431,7 @@ function SourcesPage({ navigate, setNotice }) {
         </div>
       </section>
       <PipelineTable navigate={navigate} setNotice={setNotice} />
+      <SchemaPreviewSection />
       <div className="grid two">
         <InfoCard title="Contract" value={sourceConfig.contract} detail="Producer: M1 / Consumers: M2, M3, M4, M5" />
         <InfoCard title="Demo Tenant" value={sourceConfig.tenant_id} detail="실제 로그인/RBAC 없이 tenant_id 구조만 유지" />
@@ -618,14 +614,19 @@ function SourceStartModal({ onClose, onManageConnections, onProceed }) {
   );
 }
 
-function SchemaPreviewPage() {
+function SchemaPreviewSection() {
   return (
-    <div className="page-stack">
-      <PageHeader
-        title="스키마 미리보기"
-        body="Amazon Reviews JSON의 추론 스키마와 사용자 보정 결과를 렌더링할 위치입니다."
-        actionLabel="M3 연결 예정"
-      />
+    <section className="schema-preview-block">
+      <div className="table-card-header">
+        <div className="table-title-line">
+          <FileJson size={20} />
+          <div>
+            <strong>스키마 미리보기 / 보정</strong>
+            <p>M3 JSON sample reader가 붙으면 source 선택 다음 단계에서 실제 추론 결과를 표시합니다.</p>
+          </div>
+        </div>
+        <span className="badge slate">M3 연결 예정</span>
+      </div>
       <DataTable
         columns={["field path", "type", "nullable", "override"]}
         rows={schemaDefinition.fields}
@@ -635,7 +636,7 @@ function SchemaPreviewPage() {
         title="sample size와 실제 파일 경로는 아직 확정 전입니다"
         body="계약 fixture의 TODO 값을 실제 M3 구현 결과로 교체해야 합니다."
       />
-    </div>
+    </section>
   );
 }
 

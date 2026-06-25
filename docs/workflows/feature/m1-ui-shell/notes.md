@@ -11,6 +11,8 @@
 - demo3에서 기대되는 기본 UI interaction으로 sidebar collapse/expand와 AI 도우미 close/reopen toggle을 M1 shell에 연결했다.
 - 통합 보완으로 `/dataset?manage=connections`, `/etl/visual`, `/etl`, `/catalog`, `/catalog/dataset_reviews_gold`, `/query`, `/dashboard`, `/admin` route shell을 추가했다.
 - `소스 선택하고 시작`, `연결 관리`, table row detail, catalog tab, query view mode, search/filter/pagination 계열은 local UI state로만 반응한다.
+- 사용자 흐름 기준으로 최상위 메뉴를 `데이터 통합 -> 실행/모니터링 -> 데이터 카탈로그 -> AI Query -> Dashboard -> 사용자/권한` 순서로 조정했다.
+- `스키마 미리보기`는 최상위 메뉴에서 제거하고 `데이터 통합` 내부 M3 step으로 이동했다.
 
 ## 결정
 

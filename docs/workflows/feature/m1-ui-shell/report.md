@@ -48,6 +48,7 @@
 - demo3의 `/dataset` 화면 구조를 기준으로 sidebar/topbar/card/table/AI 도우미 디자인을 M1 shell에 다시 반영했다.
 - sidebar collapse/expand와 AI 도우미 close/reopen interaction을 local UI state로 연결했다.
 - demo3 주요 이어지는 route와 modal flow를 static shell로 보강하고, 버튼마다 최소 frontend 반응을 붙였다.
+- 최상위 메뉴를 사용자 흐름 기준으로 정렬하고, M3 schema preview는 데이터 통합 내부 step으로 이동했다.
 - `SourceConfig`, `SchemaDefinition`, `WorkflowDefinition`, `CatalogMetadata`, `AIQueryResult` preview surface를 배치했다.
 - 실제 기능이 없는 영역은 pending/empty/error 상태로 표시하고, 자동 성공/완료 연출은 넣지 않았다.
 - 기존 `getHealth()`와 `StatusPill`만 유지해 backend health 실패를 실제 error state로 보여준다.
