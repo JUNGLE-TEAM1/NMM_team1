@@ -319,7 +319,7 @@ Minimum SQL guardrail failure shape:
 | --- | --- |
 | `status` | `succeeded`, `blocked`, `failed` |
 | `guardrail.validation_status` | `passed`, `blocked`, `failed` |
-| `guardrail.failure_code` | `non_select_sql`, `table_not_allowed`, `timeout`, `limit_required`, `engine_unavailable`, or `null` |
+| `guardrail.failure_code` | `non_select_sql`, `table_not_allowed`, `column_not_allowed`, `timeout`, `limit_required`, `engine_unavailable`, or `null` |
 | `guardrail.failure_message` | human-readable reason or `null` |
 
 Week 2 workflow/run status values:

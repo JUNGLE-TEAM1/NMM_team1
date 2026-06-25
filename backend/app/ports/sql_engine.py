@@ -1,0 +1,13 @@
+from typing import Protocol
+
+from app.domain.ai_query import DatasetSchema, EngineHealth, QueryResult, SqlEngineContext, ValidationResult
+
+
+class SqlEngineAdapter(Protocol):
+    def validate(self, sql: str, context: SqlEngineContext) -> ValidationResult: ...
+
+    def execute(self, sql: str, context: SqlEngineContext) -> QueryResult: ...
+
+    def explain_schema(self, context: SqlEngineContext) -> DatasetSchema: ...
+
+    def health_check(self) -> EngineHealth: ...
