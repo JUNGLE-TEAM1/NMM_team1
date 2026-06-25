@@ -4,6 +4,8 @@ import {
   ArrowRight,
   Boxes,
   ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
   Database,
   FileJson,
   GitBranch,
@@ -20,6 +22,7 @@ import {
   Sparkles,
   Trash2,
   Wrench,
+  X,
 } from "lucide-react";
 
 import { getHealth } from "../api/asklakeClient";
@@ -196,6 +199,8 @@ function normalizePath(pathname) {
 export function App() {
   const [health, setHealth] = useState({ state: "loading", message: "확인 중" });
   const [activePath, setActivePath] = useState(() => normalizePath(window.location.pathname));
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isCopilotOpen, setIsCopilotOpen] = useState(true);
 
   useEffect(() => {
     refreshHealth();
@@ -230,7 +235,7 @@ export function App() {
   );
 
   return (
-    <main className="m1-shell">
+    <main className={`m1-shell ${isSidebarCollapsed ? "sidebar-collapsed" : ""}`}>
       <aside className="shell-sidebar" aria-label="AskLake M1 navigation">
         <div className="brand-block">
           <img className="brand-logo" src={asklakeLogo} alt="AskLake" />
@@ -266,8 +271,14 @@ export function App() {
       </aside>
 
       <section className="shell-main">
-        <button type="button" className="collapse-button" aria-label="Collapse sidebar">
-          <ChevronRight size={14} />
+        <button
+          type="button"
+          className="collapse-button"
+          aria-label={isSidebarCollapsed ? "사이드바 펼치기" : "사이드바 접기"}
+          aria-pressed={isSidebarCollapsed}
+          onClick={() => setIsSidebarCollapsed((current) => !current)}
+        >
+          {isSidebarCollapsed ? <ChevronsRight size={14} /> : <ChevronsLeft size={14} />}
         </button>
         <header className="topbar">
           <div className="topbar-search">
@@ -288,6 +299,15 @@ export function App() {
               <strong>study</strong>
               <span>관리자</span>
             </div>
+            <button
+              type="button"
+              className="copilot-toggle"
+              onClick={() => setIsCopilotOpen((current) => !current)}
+              aria-pressed={isCopilotOpen}
+            >
+              <Sparkles size={16} />
+              AI 도우미
+            </button>
           </div>
         </header>
 
@@ -300,7 +320,7 @@ export function App() {
           {activePath === "/dashboard" ? <DashboardPlaceholder /> : null}
           {activePath === "/admin" ? <AdminPlaceholder /> : null}
         </section>
-        <AiCopilotDock />
+        <AiCopilotDock isOpen={isCopilotOpen} onClose={() => setIsCopilotOpen(false)} />
       </section>
     </main>
   );
@@ -590,9 +610,9 @@ function AdminPlaceholder() {
   );
 }
 
-function AiCopilotDock() {
+function AiCopilotDock({ isOpen, onClose }) {
   return (
-    <aside className="ai-copilot-dock">
+    <aside className={`ai-copilot-dock ${isOpen ? "open" : ""}`} aria-hidden={!isOpen}>
       <header>
         <div className="copilot-icon">
           <Sparkles size={16} />
@@ -601,6 +621,9 @@ function AiCopilotDock() {
           <strong>AI 도우미</strong>
           <span>자연어 SQL 변환</span>
         </div>
+        <button type="button" className="copilot-close" onClick={onClose} aria-label="AI 도우미 닫기">
+          <X size={18} />
+        </button>
       </header>
       <div className="copilot-empty">
         <div className="copilot-large-icon">

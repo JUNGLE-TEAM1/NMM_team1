@@ -8,6 +8,7 @@
 - backend health는 기존 `getHealth()`만 사용한다. backend 미실행 시 error pill을 보여주며, 성공처럼 보이는 fake 상태로 대체하지 않는다.
 - 후속 확인에서 demo3의 시각 디자인이 충분히 보존되지 않은 문제가 확인되어, 2026-06-25에 demo3의 흰 sidebar/topbar/card 중심 디자인 언어를 M1 shell에 다시 반영했다.
 - 추가 확인에서 여전히 실제 demo page 구조가 부족해, demo3 `/dataset` 화면 기준의 `데이터셋/파이프라인` 테이블, 전체 sidebar nav, 상단 사용자 영역, AI 도우미 패널, AskLake logo asset을 M1 shell에 반영했다.
+- demo3에서 기대되는 기본 UI interaction으로 sidebar collapse/expand와 AI 도우미 close/reopen toggle을 M1 shell에 연결했다.
 
 ## 결정
 
@@ -15,6 +16,7 @@
 - contract preview는 inline shell data로 보여주되, 실제 결과처럼 보이지 않도록 `연결 대기`, `실행 결과 없음`, `아직 등록된 실제 source가 없습니다` 상태를 명시한다.
 - M1 범위 밖 기능은 버튼/자동 진행으로 시연하지 않고, 후속 모듈 연결 지점으로 남긴다.
 - 디자인 복구는 CSS/정적 shell 구조만 수정하고 fake API, fake auth, fake run success는 추가하지 않는다.
+- interaction 보강은 local UI state만 사용한다. backend/API 호출이나 fake success state는 추가하지 않는다.
 
 ## 열린 질문
 

@@ -50,6 +50,10 @@ code {
   background: #f9fafb;
 }
 
+.m1-shell.sidebar-collapsed {
+  grid-template-columns: 80px minmax(0, 1fr);
+}
+
 .shell-sidebar {
   position: sticky;
   top: 0;
@@ -60,6 +64,11 @@ code {
   flex-direction: column;
   border-right: 1px solid #e5e7eb;
   background: #ffffff;
+  transition: width 260ms ease;
+}
+
+.m1-shell.sidebar-collapsed .shell-sidebar {
+  width: 80px;
 }
 
 .brand-block {
@@ -68,6 +77,7 @@ code {
   align-items: center;
   border-bottom: 1px solid #e5e7eb;
   padding: 0 16px;
+  overflow: hidden;
 }
 
 .brand-logo {
@@ -76,6 +86,14 @@ code {
   width: auto;
   max-width: 148px;
   object-fit: contain;
+  transition: width 260ms ease;
+}
+
+.m1-shell.sidebar-collapsed .brand-logo {
+  width: 42px;
+  max-width: 42px;
+  object-fit: cover;
+  object-position: left center;
 }
 
 .brand-kicker,
@@ -116,6 +134,19 @@ code {
   transition:
     background 160ms ease,
     color 160ms ease;
+}
+
+.m1-shell.sidebar-collapsed .nav-item {
+  grid-template-columns: 20px;
+  justify-content: center;
+  padding-right: 0;
+  padding-left: 0;
+}
+
+.m1-shell.sidebar-collapsed .nav-item span {
+  width: 0;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .nav-item svg {
@@ -206,6 +237,17 @@ code {
   text-align: left;
 }
 
+.m1-shell.sidebar-collapsed .logout-button {
+  justify-content: center;
+  width: calc(100% - 24px);
+  padding-right: 0;
+  padding-left: 0;
+}
+
+.m1-shell.sidebar-collapsed .logout-button {
+  font-size: 0;
+}
+
 .logout-button:hover {
   background: #fef2f2;
   color: #dc2626;
@@ -214,6 +256,10 @@ code {
 .shell-main {
   min-width: 0;
   padding-top: 64px;
+}
+
+.m1-shell.sidebar-collapsed .shell-main {
+  min-width: 0;
 }
 
 .collapse-button {
@@ -232,6 +278,10 @@ code {
   box-shadow: 0 4px 10px rgb(15 23 42 / 0.12);
 }
 
+.m1-shell.sidebar-collapsed .collapse-button {
+  left: 68px;
+}
+
 .topbar {
   position: fixed;
   top: 0;
@@ -246,6 +296,10 @@ code {
   border-bottom: 1px solid #e5e7eb;
   background: #ffffff;
   padding: 0 24px;
+}
+
+.m1-shell.sidebar-collapsed .topbar {
+  left: 80px;
 }
 
 .topbar-search {
@@ -290,7 +344,8 @@ code {
 }
 
 .refresh-button,
-.ghost-action {
+.ghost-action,
+.copilot-toggle {
   display: inline-flex;
   min-height: 40px;
   align-items: center;
@@ -309,8 +364,13 @@ code {
 }
 
 .refresh-button:hover,
-.ghost-action:hover {
+.ghost-action:hover,
+.copilot-toggle:hover {
   background: #f9fafb;
+}
+
+.copilot-toggle {
+  color: #4f46e5;
 }
 
 .status-pill {
@@ -983,6 +1043,14 @@ tbody tr:hover {
   flex-direction: column;
   background: #ffffff;
   box-shadow: -12px 0 30px rgb(15 23 42 / 0.16);
+  transform: translateX(100%);
+  transition: transform 260ms ease;
+  pointer-events: none;
+}
+
+.ai-copilot-dock.open {
+  transform: translateX(0);
+  pointer-events: auto;
 }
 
 .ai-copilot-dock header {
@@ -992,6 +1060,23 @@ tbody tr:hover {
   border-bottom: 1px solid #e5e7eb;
   background: linear-gradient(90deg, #eef2ff, #faf5ff);
   padding: 12px 16px;
+}
+
+.copilot-close {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  margin-left: auto;
+  color: #6b7280;
+}
+
+.copilot-close:hover {
+  background: rgb(255 255 255 / 0.65);
+  color: #374151;
 }
 
 .copilot-icon {
