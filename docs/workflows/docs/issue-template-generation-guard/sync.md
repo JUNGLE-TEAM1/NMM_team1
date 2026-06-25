@@ -45,7 +45,7 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 - issue creation result: skipped by `--no-issue`; 이번 작업은 remote issue 생성 금지
 - issue project result: skipped by `--no-issue`
 - PR closing keyword:
-- pushed branch:
-- PR link:
-- merge status:
-- issue close status:
+- pushed branch: docs/issue-template-generation-guard
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/110
+- merge status: open
+- issue close status: n/a
