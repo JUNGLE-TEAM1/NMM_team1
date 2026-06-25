@@ -82,3 +82,8 @@ class PipelineRunRecord(BaseModel):
     logs: list[str] = []
     created_at: str
     updated_at: str
+
+
+class Week2WorkflowRunRequest(BaseModel):
+    executor: Literal["airflow", "local_runner"] = "local_runner"
+    triggered_by: str = Field(default="demo_user", min_length=1, max_length=80)

@@ -8,6 +8,7 @@ from app.ports.source_connector import SourceConnector
 from app.services.pipeline import PipelineService
 from app.services.catalog_trust import CatalogTrustService
 from app.services.source_catalog import SourceCatalogService
+from app.services.week2_workflow import Week2WorkflowService
 
 
 class AppContainer:
@@ -19,6 +20,7 @@ class AppContainer:
         self.catalog_trust_service = self.create_catalog_trust_service()
         self.source_catalog_service = self.create_source_catalog_service()
         self.pipeline_service = self.create_pipeline_service()
+        self.week2_workflow_service = self.create_week2_workflow_service()
 
     def create_metadata_store(self) -> MetadataStore:
         return SQLiteMetadataStore(self.settings.metadata_url)
@@ -37,3 +39,6 @@ class AppContainer:
 
     def create_pipeline_service(self) -> PipelineService:
         return PipelineService(self.metadata_store, self.source_connectors, self.result_store)
+
+    def create_week2_workflow_service(self) -> Week2WorkflowService:
+        return Week2WorkflowService()
