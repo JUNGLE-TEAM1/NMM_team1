@@ -56,6 +56,127 @@ set_field() {
   mv "$tmp" "$file"
 }
 
+issue_title_prefix() {
+  case "$1" in
+    feature) printf '[기능]' ;;
+    fix) printf '[버그]' ;;
+    docs) printf '[문서/운영]' ;;
+    hotfix) printf '[긴급수정]' ;;
+    chore) printf '[문서/운영]' ;;
+    test) printf '[검증]' ;;
+    *) printf '[작업]' ;;
+  esac
+}
+
+issue_labels_for_type() {
+  case "$1" in
+    feature) printf '%s\n' feature ;;
+    fix) printf '%s\n' bug ;;
+    docs) printf '%s\n%s\n' documentation ops ;;
+    hotfix) printf '%s\n' hotfix ;;
+    chore) printf '%s\n' ops ;;
+    test) ;;
+  esac
+}
+
+prefixed_issue_title() {
+  local type="$1"
+  local raw_title="$2"
+  local prefix
+
+  prefix="$(issue_title_prefix "$type")"
+  case "$raw_title" in
+    \[*\]*) printf '%s\n' "$raw_title" ;;
+    *) printf '%s %s\n' "$prefix" "$raw_title" ;;
+  esac
+}
+
+write_issue_body() {
+  local file="$1"
+  local type="$2"
+  local branch="$3"
+  local workspace="$4"
+  local raw_title="$5"
+  local closing_keyword="$6"
+  local type_label
+
+  case "$type" in
+    feature) type_label="기능 Phase" ;;
+    fix) type_label="버그 수정" ;;
+    docs) type_label="문서/운영 개선" ;;
+    test) type_label="검증 보강" ;;
+    chore) type_label="운영 정리" ;;
+    hotfix) type_label="긴급수정" ;;
+    *) type_label="작업" ;;
+  esac
+
+  cat > "$file" <<EOF_ISSUE
+## 1. 이슈 요약
+
+- 요약: ${raw_title}
+- 작업 유형: ${type_label}
+- Branch: \`${branch}\`
+- Branch workspace: \`${workspace}\`
+- PR closing keyword: ${closing_keyword:-PR 생성 전 issue 번호 확정 후 기록}
+
+## 2. 목표
+
+- branch workspace와 PR closing keyword를 연결하고, 구체 범위와 검증 결과는 workspace 문서에서 계속 업데이트한다.
+
+## 3. 작업 범위
+
+- [ ] \`${workspace}/plan.md\` 기준 범위를 확정한다.
+- [ ] \`${workspace}/quality.md\`에 검증 결과를 기록한다.
+- [ ] \`${workspace}/report.md\`에 완료 증거를 기록한다.
+
+## 4. 제외 범위
+
+- 이번 이슈 생성 시점에는 제품/API/schema 요구사항을 새로 확정하지 않는다.
+- remote issue/PR 상태 보정은 별도 명시 지시 없이는 진행하지 않는다.
+
+## 5. 관련 문서 / Source of Truth
+
+- Development Operations: \`docs/04-development-guide.md\`
+- Workflow: \`docs/08-development-workflow.md\`
+- Git Sync Policy: \`docs/11-git-sync-policy.md\`
+- Quality Gates: \`docs/12-quality-gates.md\`
+- Branch workspace: \`${workspace}\`
+
+## 6. Acceptance Criteria
+
+- [ ] 작업 범위가 workspace 문서와 일치한다.
+- [ ] 필요한 validation 또는 skip reason이 \`quality.md\`에 기록된다.
+- [ ] PR을 만들 경우 PR body에 closing keyword가 포함된다.
+
+## 7. Regression / Failure Scenario
+
+- 깨지면 안 되는 것: branch/workspace/issue/PR 연결과 closing keyword 추적.
+- 확인해야 할 실패 시나리오: issue body 줄바꿈이 깨지거나, PR closing keyword가 누락되는 경우.
+
+## 8. Manual Verification
+
+1. 이 issue 제목과 본문이 한국어 협업 산출물 규칙을 따르는지 확인한다.
+2. Branch와 workspace 경로가 맞는지 확인한다.
+3. PR 생성 전 \`sync.md\`의 linked issue와 closing keyword가 맞는지 확인한다.
+
+## 9. 영향도
+
+- [ ] 팀 협업 흐름
+- [ ] PR readiness
+- [ ] Issue / Project 운영
+- [ ] 문서 일관성
+- [ ] 영향도 낮음
+
+상세:
+
+- \`scripts/start-workflow.sh\` 자동 생성 issue.
+
+## 10. 참고 링크 / 로그
+
+- Workspace: \`${workspace}\`
+EOF_ISSUE
+}
+
 worktree_dirty() {
   [[ -n "$(git status --porcelain --untracked-files=normal)" ]]
 }
@@ -118,6 +239,8 @@ dry_run=0
 checkout=1
 allow_dirty=0
 create_issue=1
+issue_project_owner="${ASKLAKE_GITHUB_PROJECT_OWNER:-JUNGLE-TEAM1}"
+issue_project_number="${ASKLAKE_GITHUB_PROJECT_NUMBER:-3}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -189,6 +312,7 @@ echo "Workspace: ${workspace_dir}"
 echo "Title: ${title}"
 if [[ "$create_issue" -eq 1 ]]; then
   echo "GitHub issue: create by team rule"
+  echo "GitHub project: add to ${issue_project_owner} project ${issue_project_number}"
 else
   echo "GitHub issue: skipped by --no-issue"
 fi
@@ -247,8 +371,10 @@ fi
 issue_ref=""
 issue_link=""
 issue_creation_result="not requested"
+issue_project_result="not requested"
 pr_closing_keyword=""
 sync_file="${workspace_dir}/sync.md"
+issue_title="$(prefixed_issue_title "$branch_type" "$title")"
 
 if [[ "$create_issue" -eq 1 ]]; then
   issue_creation_result="skipped: GitHub CLI is not available"
@@ -267,21 +393,14 @@ if [[ "$create_issue" -eq 1 ]]; then
   elif command -v gh >/dev/null 2>&1; then
     if gh auth status >/dev/null 2>&1; then
       issue_body_file="$(mktemp)"
-      cat > "$issue_body_file" <<EOF_ISSUE
-## AskLake branch workspace
-
-- Branch: \`${branch_name}\`
-- Workspace: \`${workspace_dir}\`
-- Title: ${title}
-
-## Scope
-
-이슈는 branch workspace와 PR closing keyword를 연결하기 위해 팀 규칙에 따라 \`scripts/start-workflow.sh\`가 생성했다.
-구체 범위와 검증 결과는 workspace 문서를 기준으로 업데이트한다.
-EOF_ISSUE
+      write_issue_body "$issue_body_file" "$branch_type" "$branch_name" "$workspace_dir" "$title" "$pr_closing_keyword"
+      issue_create_args=(issue create --title "$issue_title" --body-file "$issue_body_file")
+      while IFS= read -r issue_label; do
+        [[ -n "$issue_label" ]] && issue_create_args+=(--label "$issue_label")
+      done < <(issue_labels_for_type "$branch_type")
 
       set +e
-      issue_output="$(gh issue create --title "$title" --body-file "$issue_body_file" 2>&1)"
+      issue_output="$(gh "${issue_create_args[@]}" 2>&1)"
       issue_status=$?
       set -e
       rm -f "$issue_body_file"
@@ -296,12 +415,56 @@ EOF_ISSUE
           issue_ref="$issue_link"
         fi
         issue_creation_result="created"
+
+        if [[ -n "$issue_link" ]]; then
+          set +e
+          project_item_id="$(gh project item-add "$issue_project_number" --owner "$issue_project_owner" --url "$issue_link" --format json --jq .id 2>&1)"
+          project_status=$?
+          set -e
+
+          if [[ "$project_status" -eq 0 ]]; then
+            issue_project_result="added to ${issue_project_owner} project ${issue_project_number}"
+
+            set +e
+            project_id="$(gh project view "$issue_project_number" --owner "$issue_project_owner" --format json --jq .id 2>&1)"
+            project_id_status=$?
+            status_field_record="$(gh project field-list "$issue_project_number" --owner "$issue_project_owner" --format json --jq '.fields[] | select(.name == "Status") | [.id, (.options[] | select(.name == "In Progress") | .id)] | @tsv' 2>&1)"
+            status_field_status=$?
+            set -e
+
+            if [[ "$project_id_status" -eq 0 && "$status_field_status" -eq 0 && -n "$project_id" && -n "$status_field_record" ]]; then
+              status_field_id="${status_field_record%%$'\t'*}"
+              in_progress_option_id="${status_field_record#*$'\t'}"
+
+              set +e
+              status_output="$(gh project item-edit --id "$project_item_id" --project-id "$project_id" --field-id "$status_field_id" --single-select-option-id "$in_progress_option_id" 2>&1)"
+              status_update_status=$?
+              set -e
+
+              if [[ "$status_update_status" -eq 0 ]]; then
+                issue_project_result="${issue_project_result}; status set to In Progress"
+              else
+                issue_project_result="${issue_project_result}; status update failed: ${status_output//$'\n'/ }"
+              fi
+            else
+              issue_project_result="${issue_project_result}; status lookup failed: ${project_id//$'\n'/ } ${status_field_record//$'\n'/ }"
+            fi
+          else
+            issue_project_result="failed: ${project_item_id//$'\n'/ }"
+          fi
+        else
+          issue_project_result="skipped: issue link is missing"
+        fi
       else
         issue_creation_result="failed: ${issue_output//$'\n'/ }"
+        issue_project_result="skipped: issue creation failed"
       fi
     else
       issue_creation_result="skipped: GitHub CLI is not authenticated"
+      issue_project_result="skipped: GitHub CLI is not authenticated"
     fi
+  else
+    issue_project_result="skipped: GitHub CLI is not available"
   fi
 fi
 
@@ -666,7 +829,7 @@ AI가 멈추고 사람 확인을 받아야 하는 지점을 기록한다.
 - Ask human when:
   - Phase 중 main이 바뀐 경우
   - 공유 Source of Truth 문서가 이 branch와 충돌하는 경우
-  - merge/rebase/pull/push/PR action이 필요한 경우
+  - merge/rebase/pull/PR merge/finalize/cleanup action이 필요한 경우
 - Human response: 
 
 ## PR Conflict Confirm / PR 충돌 확인
@@ -752,7 +915,8 @@ if [[ ! -f "${workspace_dir}/sync.md" ]]; then
 # ${title} Git Sync
 
 main 동기화와 integration readiness를 기록한다.
-사람 확인 없이 pull, merge, rebase, push, PR action을 실행하지 않는다.
+PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행할 수 있다.
+사람 확인 없이 pull, merge, rebase, PR merge, finalize, issue close, branch cleanup action을 실행하지 않는다.
 
 ## Start Sync / 시작 sync
 
@@ -793,6 +957,7 @@ main 동기화와 integration readiness를 기록한다.
 - linked GitHub issue: ${issue_ref}
 - issue link: ${issue_link}
 - issue creation result: ${issue_creation_result}
+- issue project result: ${issue_project_result}
 - PR closing keyword: ${pr_closing_keyword}
 - pushed branch:
 - PR link:
@@ -803,6 +968,7 @@ elif [[ "$create_issue" -eq 1 ]]; then
   set_field "${workspace_dir}/sync.md" "- linked GitHub issue:" "$issue_ref"
   set_field "${workspace_dir}/sync.md" "- issue link:" "$issue_link"
   set_field "${workspace_dir}/sync.md" "- issue creation result:" "$issue_creation_result"
+  set_field "${workspace_dir}/sync.md" "- issue project result:" "$issue_project_result"
   set_field "${workspace_dir}/sync.md" "- PR closing keyword:" "$pr_closing_keyword"
 fi
 

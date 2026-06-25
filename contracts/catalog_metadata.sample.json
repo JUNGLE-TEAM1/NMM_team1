@@ -1,0 +1,57 @@
+{
+  "contract": "CatalogMetadata",
+  "producers": ["M2", "M3", "M4", "M5"],
+  "consumers": ["M1", "M6"],
+  "tenant_id": "tenant_demo",
+  "dataset_id": "dataset_reviews_gold",
+  "version": "v1",
+  "name": "Amazon Reviews Gold",
+  "layer": "gold",
+  "s3_uri": "s3://asklake-demo/reviews/gold/run_id=run_reviews_demo_001/",
+  "s3_uri_status": "example_pending_minio_path_contract",
+  "storage": {
+    "profile": "minio",
+    "bucket": "asklake-demo",
+    "prefix": "reviews/gold/run_id=run_reviews_demo_001/",
+    "local_fallback_path": "TODO: confirm local fallback path if MinIO is unavailable"
+  },
+  "schema": {
+    "schema_version": "schema_reviews_gold_v1",
+    "fields": [
+      {"name": "product_id", "type": "string", "nullable": false},
+      {"name": "review_count", "type": "integer", "nullable": false},
+      {"name": "average_rating", "type": "number", "nullable": true}
+    ]
+  },
+  "metrics": {
+    "semantics": {
+      "row_count": "output_dataset_rows",
+      "bytes": "output_dataset_bytes"
+    },
+    "row_count": null,
+    "bytes": null,
+    "quality": {
+      "schema_match": "pending",
+      "row_count_checked": false
+    }
+  },
+  "lineage": {
+    "source_ids": ["source_amazon_reviews_demo"],
+    "pipeline_id": "pipeline_reviews_json_e2e",
+    "run_id": "run_reviews_demo_001",
+    "upstream_datasets": ["dataset_reviews_silver"]
+  },
+  "query": {
+    "table_name": "reviews_gold",
+    "allow_readonly_sql": true,
+    "allowed_columns": ["product_id", "review_count", "average_rating"],
+    "default_limit": 100,
+    "timeout_seconds": 30
+  },
+  "freshness": {
+    "event_time_column": null,
+    "data_interval_start": null,
+    "data_interval_end": null
+  },
+  "updated_at": "2026-06-25T10:03:00+09:00"
+}

@@ -21,6 +21,8 @@
 
 ## 현재 등록된 프로젝트 맥락
 
+현재 AskLake의 제품 방향은 B2B SaaS Trusted Data & AI Platform이며, Target MVP는 `local/container` 단일 Demo Tenant에서 대용량/복합 데이터셋을 신뢰 가능한 분석 자산으로 만드는 흐름을 검증한다. 핵심은 데이터셋의 수집·스키마화·변환·검산·게시와 row count/bytes/duration/output path 같은 처리 증거를 `Trusted Dataset -> Query/Ask -> Evidence -> Recovery` 신뢰 루프에 연결하는 것이다. project context 문서가 과거 회의 표현이나 후보 기술을 포함하더라도, 현재 기준은 `README.md`와 Source of Truth 계층을 우선한다.
+
 | 경로 | 설명 | 우선 확인 문서 |
 | --- | --- | --- |
-| `docs/project-context/asklake-week2-module-plan/` | AskLake 2주차 모듈 분업, 결정 옵션, 확정 결정 로그, 회의 공유 문서 | `README.md`, `decisions.md` |
+| `docs/project-context/asklake-week2-module-plan/` | AskLake 2주차 모듈 분업, 대용량/복합 데이터셋 조작 E2E, 결정 옵션, 확정 결정 로그, 공통 계약/병렬 실행 프롬프트, 회의 공유 문서 | `README.md`, `decisions.md`, `contract-setup-prompt.md`, `query-result-contract-prompt.md`, `query-result-contract-execution-prompt.md`, `lite-parallel-manifest-prompt.md` |

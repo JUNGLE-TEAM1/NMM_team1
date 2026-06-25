@@ -9,7 +9,7 @@ This document defines how TDD and CI/CD fit into the collaboration harness witho
 - CI/CD is a quality gate language first and an automation pipeline second.
 - A branch can be complete only when its agreed tests, harness validation, and manual verification evidence are recorded.
 - Deployment, publish, destructive migration, and production-impacting CD steps stay behind human confirmation.
-- Passing local quality gates does not authorize push, PR creation, merge, or handoff by itself; PR/push next steps require `Pre-PR Human Checkpoint`.
+- Passing local quality gates plus PR readiness authorizes automatic feature branch push and PR creation when no opt-out or stop condition exists; merge, finalize, issue close, cleanup, deploy, and handoff still require `Pre-PR Human Checkpoint`.
 
 ## 2) TDD Loop
 
@@ -35,11 +35,12 @@ Before a branch is considered complete:
 - Local tool/runtime readiness evidence is recorded before marking required test/build/smoke/manual verification as skipped.
 - Source of Truth Impact Gate evidence is recorded when implementation or documentation changes can alter shared project truth.
 - Harness Test Update Gate evidence is recorded when harness rules, scripts, or CI harness jobs change.
+- GitHub record drift audit evidence is recorded when the branch changes issue/PR template generation, PR handoff body rules, or GitHub lifecycle guard behavior.
 - `scripts/validate-harness.sh` passes.
 - `scripts/validate-harness.sh --strict` passes before integration or PR readiness.
 - After PR conflict resolution, `sync.md` records conflict type, resolution method, resolved files, rerun validation, and remaining PR/CI/merge risk before PR progression resumes. `quality.md` records rerun check commands/results when tests or harness validation are affected.
 - Manual verification evidence is recorded when user-visible behavior changes.
-- If PR/push/handoff is the next natural action, `Pre-PR Human Checkpoint` is recorded in `confirmations.md` before any remote-changing command; approved action or deferral details are also recorded in `sync.md` and `next-actions.md` as applicable.
+- If PR readiness is complete, automatic push/PR creation is recorded in `sync.md`. If merge/finalize/cleanup/handoff is the next natural action, `Pre-PR Human Checkpoint` is recorded in `confirmations.md` before those follow-up remote-changing commands; approved action or deferral details are also recorded in `sync.md` and `next-actions.md` as applicable.
 
 ## 4) CI Gate
 
@@ -99,6 +100,7 @@ Each workspace uses `quality.md` to record:
 - Source of Truth validation command/result when `shared-docs.md` proposes shared document changes
 - Harness test impact: `none`, `required`, `updated`, `skipped`, or `deferred`
 - Harness regression command/result, usually `scripts/test-harness.sh`, when harness behavior changes
+- GitHub record drift audit command/result when GitHub issue/PR template or lifecycle guard behavior changes; live audit commands are read-only and fixture tests cover CI-safe regression cases
 - skipped checks and reasons
 - deployment or publish gate when relevant
 

@@ -6,12 +6,19 @@
 
 아직 모든 세부 계약이 Source of Truth에 반영된 것은 아니므로, 구현 계약으로 확정할 내용은 공통 계약 설계 때 별도로 확인한다.
 
+현재 Source of Truth 기준에서 AskLake는 B2B SaaS Trusted Data & AI Platform을 목표로 하며, 2주차 계획은 `local/container` 단일 Demo Tenant에서 대용량/복합 데이터셋을 신뢰 가능한 분석 자산으로 만드는 흐름을 얇게 증명하는 실행 맥락이다. 이 묶음의 MinIO, DuckDB, Airflow, Amazon Reviews 같은 선택은 수집·스키마화·변환·검산·게시와 처리 증거를 local-friendly 방식으로 검증하기 위한 후보이며, 제품 정체성을 self-hosted로 바꾸거나 Trino/Athena/AWS 같은 후속 후보를 즉시 도입한다는 뜻이 아니다.
+
 ## 읽는 순서
 
 1. `decisions.md`
 2. `plan.md`
-3. `decision-options.md`
-4. 필요 시 `meeting-summary.md`, `meeting-decision-options.md`
+3. `m1-ui-shell-plan.md`
+4. `contract-setup-prompt.md`
+5. `query-result-contract-prompt.md`
+6. `query-result-contract-execution-prompt.md`
+7. `lite-parallel-manifest-prompt.md`
+8. `decision-options.md`
+9. 필요 시 `meeting-summary.md`, `meeting-decision-options.md`
 
 자동 또는 반자동 데이터 활용에서도 위 순서를 기본값으로 사용한다.
 
@@ -21,6 +28,11 @@
 | --- | --- | --- |
 | `decisions.md` | canonical 최종 결정 로그 | 작업자가 가장 먼저 확인할 기준 문서 |
 | `plan.md` | 이번 주 실행 계획과 모듈별 목표 | 모듈별 산출물과 실행 순서 확인 |
+| `m1-ui-shell-plan.md` | M1 UI Shell 계획 | demo3 UI를 AskLake M1 통합 shell로 정제할 때 포함/제외 범위와 Phase 분해 확인 |
+| `contract-setup-prompt.md` | 공통 계약 설정 Phase 시작 프롬프트 | 2주차 구현 전 계약 fixture와 producer/consumer 경계를 고정할 때 사용 |
+| `query-result-contract-prompt.md` | `QueryResult` 계약 보완 프롬프트 | `SqlEngineAdapter.execute()` 반환 shape와 `AIQueryResult` fixture를 정렬할 때 사용 |
+| `query-result-contract-execution-prompt.md` | `QueryResult` 계약 보완 실행 프롬프트 | `docs/03`, `AIQueryResult` fixture, workspace/report를 실제로 보완할 때 사용 |
+| `lite-parallel-manifest-prompt.md` | Lite 병렬 manifest 생성 프롬프트 | M1~M6 병렬 개발을 위한 AI/harness coordination 계약을 만들 때 사용 |
 | `decision-options.md` | 결정 옵션과 장단점 근거 | 결정 배경이나 대안 검토가 필요할 때 확인 |
 | `meeting-summary.md` | 회의 공유용 요약 | 팀 공유와 미팅 진행용 |
 | `meeting-decision-options.md` | 회의용 옵션 분석 | 회의에서 같이 볼 설명용 |
@@ -42,6 +54,7 @@
 ## 작업자가 따라야 할 핵심 원칙
 
 - 공통 계약 설계 전에는 세부 path, row count, sample contract 값을 임의로 확정하지 않는다.
+- 2주차 작업은 `schema inference -> transform/normalize/load -> output path/row count/bytes/duration -> SQL 검산 -> catalog/trust/evidence` 흐름의 증거를 우선한다.
 - M6는 DuckDB를 직접 import하지 않고 `SqlEngineAdapter`를 통해 호출한다.
 - 검증 질문은 Day 4 전까지 고정하지 않는다.
 - Airflow 실패 시 같은 `WorkflowDefinition`을 local runner로 실행할 수 있게 유지한다.

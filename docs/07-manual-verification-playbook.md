@@ -74,16 +74,24 @@ Target MVP 기능이 구현될 때 아래 경로를 단계별로 실제 manual v
 4. `.milestones/target-mvp/manifest.yaml`이 workstream scope, contracts, integration checkpoint를 포함하는지 확인한다.
 5. Query/Ask workstream이 실제 Trust 구현 전에는 mock/fake policy boundary 안에서만 진행되도록 기록되어 있는지 확인한다.
 6. 첫 병렬 wave와 integration checkpoint가 `docs/05` acceptance checkpoint와 연결되는지 확인한다.
+7. Week 2 모듈 구현 전 `contracts/source_config.sample.json`, `contracts/schema_definition.sample.json`, `contracts/workflow_definition.sample.json`, `contracts/execution_result.sample.json`, `contracts/catalog_metadata.sample.json`, `contracts/ai_query_result.sample.json`이 존재하고 유효한 JSON인지 확인한다.
+8. Week 2 fixture가 M1~M6 producer/consumer, Airflow/local runner fallback, `SqlEngineAdapter` 경계를 명시하는지 확인한다.
+9. Week 2 공통 hardening으로 API/UI route, ID 규칙, storage path pattern, workflow/run status, `QueryResult`, guardrail failure shape, daily smoke evidence 형식이 `docs/03`에 정리되어 있는지 확인한다.
+10. `contracts/ai_query_result.sample.json`의 `query_result` 필드가 `docs/03`의 `QueryResult` 필드와 일치하는지 확인한다.
 
 ### Trust Gate 점검
 
 1. source를 등록하고 schema discovery 결과를 확인한다.
-2. catalog draft가 생성되는지 확인한다.
-3. dataset status가 `Draft` 또는 `Verifying`으로 시작하는지 확인한다.
-4. quality, PII, owner, access policy, approval gate 중 남은 조건이 표시되는지 확인한다.
-5. 조건 미충족 dataset이 일반 Query/Ask 후보로 노출되지 않는지 확인한다.
-6. 모든 필수 조건이 충족된 뒤에만 `Trusted`로 전환되는지 확인한다.
-7. gate 실패 시 `Blocked` 또는 제한 상태와 이유가 표시되는지 확인한다.
+2. schema inference, user override, 또는 schema 확인 결과를 본다.
+3. transform/normalize/load를 실행해 output dataset이 생성되는지 확인한다.
+4. output path, row count, bytes, duration이 `ExecutionResult` 또는 `CatalogMetadata`에 남는지 확인한다.
+5. SQL 또는 `QueryResult`로 output dataset 결과를 검산한다.
+6. catalog draft가 생성되는지 확인한다.
+7. dataset status가 `Draft` 또는 `Verifying`으로 시작하는지 확인한다.
+8. quality, PII, owner, access policy, approval gate 중 남은 조건이 표시되는지 확인한다.
+9. 조건 미충족 dataset이 일반 Query/Ask 후보로 노출되지 않는지 확인한다.
+10. 모든 필수 조건이 충족된 뒤에만 `Trusted`로 전환되는지 확인한다.
+11. gate 실패 시 `Blocked` 또는 제한 상태와 이유가 표시되는지 확인한다.
 
 ### Query / Access 점검
 

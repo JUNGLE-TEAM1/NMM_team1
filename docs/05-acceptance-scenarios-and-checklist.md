@@ -5,14 +5,16 @@
 AskLake의 Target MVP 대표 성공 시나리오는 `Trusted Dataset -> Query/Ask -> Evidence -> Recovery` 신뢰 루프다.
 
 1. 데이터 엔지니어가 source를 연결하고 schema/sample을 확인한다.
-2. 시스템이 catalog draft와 pipeline/job 상태를 만든다.
-3. 스튜어드가 quality, PII, owner, access policy, approval 조건을 검토한다.
-4. 필수 gate를 통과한 dataset만 `Trusted`로 게시된다.
-5. 분석가 또는 업무 사용자가 Query 또는 Ask를 실행한다.
-6. 시스템은 권한 preflight와 masking/deny 정책을 적용한다.
-7. 결과는 SQL, dataset, metric, document chunk, freshness, lineage, policy decision, retrieval trace evidence를 보여준다.
-8. schema drift, freshness 지연, 품질 실패가 발생하면 영향을 받는 자산이 `Degraded` 또는 `Blocked`로 표시된다.
-9. retry/rerun/backfill 후 중복/누락 없이 상태가 복구되고 audit event가 남는다.
+2. 시스템이 schema inference 또는 user override를 거쳐 transform/normalize/load 실행 계획을 만든다.
+3. Data Plane이 output dataset을 만들고 output path, row count, bytes, duration, SQL 검산 evidence를 남긴다.
+4. 시스템이 catalog draft와 pipeline/job 상태를 만든다.
+5. 스튜어드가 quality, PII, owner, access policy, approval 조건을 검토한다.
+6. 필수 gate를 통과한 dataset만 `Trusted`로 게시된다.
+7. 분석가 또는 업무 사용자가 Query 또는 Ask를 실행한다.
+8. 시스템은 권한 preflight와 masking/deny 정책을 적용한다.
+9. 결과는 SQL, dataset, metric, document chunk, freshness, lineage, policy decision, retrieval trace evidence를 보여준다.
+10. schema drift, freshness 지연, 품질 실패가 발생하면 영향을 받는 자산이 `Degraded` 또는 `Blocked`로 표시된다.
+11. retry/rerun/backfill 후 중복/누락 없이 상태가 복구되고 audit event가 남는다.
 
 ## 2) Current Baseline Acceptance
 
@@ -44,9 +46,15 @@ AskLake의 Target MVP 대표 성공 시나리오는 `Trusted Dataset -> Query/As
 - [ ] `docs/08`이 R1~R7을 선형 queue가 아니라 workstream alias와 integration spine으로 해석한다.
 - [ ] `.milestones/target-mvp/manifest.yaml` 또는 동등한 manifest가 workstream scope, contract, integration checkpoint를 기록한다.
 - [ ] 첫 병렬 wave와 integration checkpoint가 하나 이상 제안되어 있다.
+- [ ] Week 2 모듈 구현 전 `contracts/*.sample.json` fixture가 producer/consumer 경계, Airflow/local runner 호환 결과, SQL engine adapter 경계를 제공한다.
+- [ ] Week 2 모듈 구현 전 API/UI route, ID 규칙, storage path pattern, workflow/run status, `QueryResult`, guardrail failure shape, daily smoke evidence 형식이 공통 계약으로 확인된다.
 
 ### Trusted Dataset
 
+- [ ] 입력 source 또는 dataset은 schema inference, user override, 또는 schema 확인을 거친다.
+- [ ] transform/normalize/load 결과가 output dataset으로 남는다.
+- [ ] row count, bytes, duration, output path 같은 처리 증거가 기록된다.
+- [ ] SQL 또는 `QueryResult`로 output dataset 결과를 검산할 수 있다.
 - [ ] dataset은 `Draft`, `Verifying`, `Trusted`, `Degraded`, `Blocked`, `Archived` 상태를 구분한다.
 - [ ] 최초 실행 성공만으로 dataset이 `Trusted`가 되지 않는다.
 - [ ] 품질, PII, owner, access policy, approval gate 중 남은 조건이 사용자에게 보인다.
@@ -111,6 +119,8 @@ AskLake의 Target MVP 대표 성공 시나리오는 `Trusted Dataset -> Query/As
 | --- | --- |
 | R0. Product Rebaseline | current baseline과 Target MVP가 문서에서 분리되고 하네스 검증이 통과한다. |
 | R0.5. Modular Contract Baseline | shared contract, owner, mock/fake boundary, integration spine이 문서와 manifest에 기록된다. |
+| Week 2 Contract Setup | `contracts/*.sample.json`이 M1~M6 fixture contract와 adapter/fallback 경계를 제공한다. |
+| Week 2 Shared Contract Hardening | M1~M6 구현 전 route, ID, path, status, `QueryResult`, guardrail, smoke evidence 계약이 정렬된다. |
 | Spine 1. Trusted Dataset Draft | source에서 dataset draft가 생성되고 trust gate reason을 가진다. |
 | Spine 2. Governed Query | Trusted 또는 Blocked 상태와 policy decision으로 query 허용/차단을 검증한다. |
 | Spine 3. Evidence & Recovery | Ask/Evidence와 Recovery가 같은 dataset/policy/audit contract를 공유한다. |

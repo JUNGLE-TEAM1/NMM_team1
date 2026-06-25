@@ -2,15 +2,18 @@
 
 이 문서는 branch workspace가 `main`과 동기화되고, GitHub issue/PR 상태를 추적하는 방식을 정의한다.
 branch workspace 생성은 팀 규칙상 GitHub issue 생성을 포함한다.
-push, PR 생성, merge 같은 추가 원격 변경은 사람이 명시한 명령으로만 실행한다.
+feature branch push와 PR 생성은 PR-ready 조건을 통과하면 자동화할 수 있다.
+pull, merge, rebase, PR merge, finalize, issue close, branch cleanup, deploy 같은 추가 원격/통합 변경은 사람이 명시한 명령으로만 실행한다.
 
 ## 1) Core Policy
 
 - Start each Phase from the latest approved `main` Source of Truth.
 - Re-sync with `main` before a Phase is considered complete or integration-ready.
 - Use `git pull --ff-only` as the default pull policy.
-- Do not pull, merge, rebase, push, or create PRs without human confirmation.
-- If local validation has passed and push, PR creation, PR handoff, or integration handoff is the next natural action, run `Pre-PR Human Checkpoint` before any remote-changing command.
+- Do not pull, merge, rebase, merge PRs, finalize PRs, close issues, or clean up branches without human confirmation.
+- If local validation, pre-merge/pre-PR sync, PR checklist, and stop-condition checks pass, AI may push the feature branch and create the PR automatically.
+- If the human says `PR 올리지 마`, `로컬에만 둬`, `보류`, `PR은 나중에`, `draft만`, or an equivalent opt-out before PR creation, do not push or create a PR.
+- After PR creation, run `Pre-PR Human Checkpoint` before merge, finalize, issue close, branch cleanup, integration handoff, or next Phase handoff.
 - Branch workspace를 만들 때 GitHub issue도 생성한다. 예외가 필요하면 `--no-issue`를 명시하고 이유를 `sync.md`에 기록한다.
 - Prefer feature branch push and PR review over direct push to `main`.
 - 다른 branch workspace로 이동하기 전에 worktree가 dirty이면 `scripts/start-workflow.sh`가 현재 branch에 checkpoint commit을 만든 뒤 이동한다.
@@ -94,6 +97,40 @@ Before merge, `sync.md` may also hold local handoff values such as `merge status
 After merge, GitHub PR/issue state is the authoritative status source because local finalization edits can happen after the PR has already been merged into `main`.
 
 GitHub issue는 branch 생성 시 기본으로 만든다. 이 동작은 팀 규칙이며, `scripts/start-workflow.sh` 실행이 issue 생성까지 포함하는 시작 절차다.
+기본 생성된 issue는 `JUNGLE-TEAM1` organization Project `3`에도 추가하고 Status를 `In Progress`로 설정한다.
+Project 추가와 Status 설정의 성공 또는 실패 이유는 workspace `sync.md`의 `issue project result`에 기록한다.
+`scripts/start-workflow.sh`가 만든 issue는 GitHub UI issue template을 자동으로 타지 않으므로, 스크립트가 직접 한국어 title prefix, body sections, 작업 type별 label을 생성한다.
+Issue body는 literal newline escape가 남지 않도록 `--body-file` 경로로 전달한다.
+
+### GitHub Record Drift Audit
+
+GitHub issue/PR이 UI, `gh`, 외부 자동화, 또는 오래된 스크립트 경로로 생성되면 하네스 템플릿을 우회할 수 있다.
+이 경우 `scripts/audit-github-records.sh`를 먼저 실행해 한국어 issue title/body/label, PR 제목, 읽기 쉬운 PR handoff body, closing keyword 누락을 읽기 전용으로 확인한다.
+
+```bash
+scripts/audit-github-records.sh --issue 112
+scripts/audit-github-records.sh --pr 114
+```
+
+`scripts/status-workflow.sh <workspace>`는 linked issue 또는 PR link가 있고 GitHub CLI를 사용할 수 있을 때 이 감사를 함께 표시한다.
+드리프트가 있으면 complete + PR-ready workspace라도 자동 PR 생성 권고를 멈추고 사람이 확인할 수 있게 drift reason, 현재 title, suggested title/label을 보고한다.
+이 감사는 GitHub record를 수정하지 않는다. 기존 issue/PR 보정은 별도 사람 지시 후 수행한다.
+
+Linked issue와 Project Status lifecycle은 아래 순서가 기준이다.
+
+```text
+branch start -> issue + Project In Progress
+PR open -> Project Review
+PR merge/finalize -> issue closed + Project Done
+```
+
+- `scripts/start-workflow.sh`는 linked issue를 만들고 Project Status를 `In Progress`로 둔다.
+- `scripts/prepare-pr.sh --auto-pr`, `--approved-pr`, `--push --create-pr`, 또는 `--create-pr`가 PR을 만들거나 기존 PR을 감지하기 전 linked issue가 `CLOSED`이면 active work issue로 reopen을 시도하고 결과를 `sync.md`에 기록한다. 그 뒤 linked issue의 Project Status를 `Review`로 둔다.
+- linked issue close와 Project `Done` 전환은 PR merge 후 `scripts/prepare-pr.sh --close-issue` 또는 `--finalize` 경로에서만 수행한다.
+- PR이 아직 `OPEN`인데 linked issue가 이미 `CLOSED`이면 lifecycle mismatch다. `scripts/status-workflow.sh <workspace>`는 이를 별도 warning으로 보고하고, issue reopen + Project `Review` 정렬 또는 finalize evidence 확인을 권고한다. 이는 PR 생성 뒤 외부 조작이나 reopen 실패를 잡는 사후 안전망이다.
+- PR이 `MERGED`이고 linked issue가 `CLOSED`인데 Project Status가 `Done`이 아니면 lifecycle mismatch다. `scripts/status-workflow.sh <workspace>`는 이를 별도 warning으로 보고하고, 자동 보정하지 않는다. 사람 승인 후 `scripts/prepare-pr.sh --finalize <workspace>` 재실행 또는 GitHub Project UI에서 `Done` 수동 정렬로 처리한다.
+- 이미 merge/finalize된 workspace의 evidence-only PR이나 post-merge sync PR은 닫힌 linked issue를 `#123`처럼 직접 cross-reference하지 않는다. 필요하면 `Issue 123`, `PR 85`, workspace path, 또는 plain text를 사용해 GitHub Project automation이 닫힌 issue를 `Ready` 등으로 되돌리는 것을 피한다.
+- 과거 issue를 일괄 Project에 반영할 때는 이미 `CLOSED`인 issue 또는 사람이 명시한 target list에 한정한다. 열린 issue를 대량으로 `Done` 처리하지 않는다.
 
 ```bash
 scripts/start-workflow.sh feature project-bootstrap "Project bootstrap"
@@ -101,13 +138,26 @@ scripts/start-workflow.sh --no-issue chore local-notes "Local notes only"
 ```
 
 PR 준비 단계에서는 linked issue가 있으면 closing keyword를 `sync.md`와 PR 본문에 반영한다.
-complete + PR-ready workspace라도 remote push와 PR 생성은 `Pre-PR Human Checkpoint`에서 사람이 `PR 진행`, `PR 생성`, 또는 동등한 승인을 선택한 뒤에만 실행한다.
-사람이 `PR 올리지 마`, `로컬에만 둬`, `보류`, `PR은 나중에`, `draft만`이라고 명시하거나 응답하지 않으면 PR 생성을 하지 않는다.
+complete + PR-ready workspace는 아래 조건을 모두 만족하면 feature branch push와 PR 생성을 자동 실행할 수 있다.
+
+- `scripts/validate-harness.sh --strict`와 필요한 local validation이 통과했다.
+- Pre-Merge Sync 또는 승인된 deferral reason이 `sync.md`에 기록되어 있다.
+- `scripts/prepare-pr.sh --check-pr-sync <workspace>`가 통과했다.
+- included/excluded file 범위가 분리되어 있고 `.DS_Store`, 개인 초안, unrelated untracked file이 제외됐다.
+- linked issue와 PR closing keyword가 필요한 경우 `sync.md`와 PR body에 반영됐다.
+- 사람의 opt-out 문구나 scope drift, conflict, CI/check blocker, data migration, deploy/cloud 영향이 없다.
+
+GitHub Issue / Project / PR 같은 원격 운영 상태를 직접 보정한 뒤, 그 보정을 하네스 스크립트/문서/검증 규칙으로 재현 가능하게 반영한 변경은 complete + PR-ready 조건을 통과하면 자동 PR 대상이다.
+이 규칙은 commit, feature/hotfix branch push, PR 생성까지만 허용한다.
+PR merge, issue close/finalize, branch cleanup, deploy/cloud/resource 변경은 기존과 같이 사람의 명시 지시가 필요하다.
+
+사람이 `PR 올리지 마`, `로컬에만 둬`, `보류`, `PR은 나중에`, `draft만`이라고 명시하면 PR 생성을 하지 않는다.
 사람이 로컬 완료 보류를 선택하면 `sync.md`의 `Pre-Merge Sync` 또는 `Push / PR` 섹션에 deferral reason을 기록하고 `next-actions.md`에 재개 조건을 남긴다.
 
 ```bash
 scripts/prepare-pr.sh docs/workflows/feature/project-bootstrap
 scripts/prepare-pr.sh --check-pr-sync docs/workflows/feature/project-bootstrap
+scripts/prepare-pr.sh --auto-pr docs/workflows/feature/project-bootstrap
 scripts/prepare-pr.sh --approved-pr docs/workflows/feature/project-bootstrap
 scripts/prepare-pr.sh --push --create-pr docs/workflows/feature/project-bootstrap
 scripts/prepare-pr.sh --check-issue docs/workflows/feature/project-bootstrap
@@ -115,8 +165,8 @@ scripts/prepare-pr.sh --close-issue docs/workflows/feature/project-bootstrap
 scripts/prepare-pr.sh --finalize docs/workflows/feature/project-bootstrap
 ```
 
-`--approved-pr`는 `Pre-PR Human Checkpoint`에서 사람이 PR 생성/진행을 승인한 뒤 사용하는 helper다.
-`--auto-pr`는 과거 호환용 deprecated alias이며, 사람 승인 없이 쓰지 않는다.
+`--auto-pr`는 PR-ready 조건을 통과한 workspace에서 final PR sync check, feature branch push, PR 생성을 자동 실행하는 기본 helper다.
+`--approved-pr`는 과거 호환용 alias이며, 사람이 명시 승인한 경우에도 같은 push/PR 생성 helper로 동작한다.
 
 중간에 다른 작업이 끼어들면 같은 범위의 작업은 해당 workspace의 `notes.md`, `quality.md`, `sync.md`, `report.md`에 추가 기록한다.
 범위가 바뀌면 `Scope Change Confirm`을 해결하고, 필요하면 새 branch workspace를 만든다.
@@ -125,8 +175,10 @@ scripts/prepare-pr.sh --finalize docs/workflows/feature/project-bootstrap
 Stacked PR처럼 default branch가 아닌 feature branch로 merge되는 PR은 `Closes #123`만으로 issue close가 보장되지 않는다.
 PR merge 후 `scripts/prepare-pr.sh --check-issue <workspace>`로 issue 상태를 확인한다.
 PR이 merged이고 issue가 아직 open이면 `scripts/prepare-pr.sh --close-issue <workspace>`로 PR merge 근거 comment를 남기고 issue를 닫은 뒤 `sync.md`에 `merge status`와 `issue close status`를 기록한다.
+linked issue가 closed이면 `scripts/prepare-pr.sh --close-issue` 또는 `--finalize`는 위 lifecycle에 따라 Project Status도 `Done`으로 설정하고 `issue project result`에 결과를 기록한다.
 PR 전에는 `scripts/prepare-pr.sh --check-pr-sync <workspace>`로 `sync.md`의 linked issue, closing keyword, pushed branch, PR link, merge/issue status 정적 일관성을 확인한다.
 PR merge 후에는 `scripts/prepare-pr.sh --finalize <workspace>`로 PR merged 상태와 issue close 상태를 확인한다.
+linked issue가 없는 `--no-issue` workspace는 finalize 때 PR merged 상태만 확인하고 `issue close status: n/a`로 기록한다.
 이 명령이 local `sync.md`를 갱신하더라도, 그 갱신은 이미 merge된 PR에 자동으로 다시 포함되지 않는다.
 따라서 `sync.md`의 final fields는 local evidence일 수 있고, `scripts/status-workflow.sh`와 `scripts/list-active-branches.sh`는 PR link가 있으면 GitHub PR/issue 상태를 조회해 stale `sync.md` 값을 보정해서 해석한다.
 `scripts/prepare-pr.sh --finalize <workspace>`는 성공 후 `scripts/cleanup-merged-branches.sh`를 실행해 merged/closed workspace branch cleanup을 자동 수행한다.
@@ -154,16 +206,16 @@ For ready-for-review, complete, or integration-ready workspaces, Pre-Merge Sync 
 - a result, or
 - a deferral reason approved by the human.
 
-For PR handoff, `Pre-PR Human Checkpoint` must record one of:
+For PR handoff after PR creation, `Pre-PR Human Checkpoint` must record one of:
 
-- human-approved PR/push action,
+- human-approved merge/finalize/cleanup action,
 - local hold / deferral reason, or
 - next Phase / additional work choice.
 
 Preferred evidence location:
 
 - `confirmations.md`: `## Pre-PR Human Checkpoint` section with human choice and result
-- `sync.md`: approved push/PR action or deferral reason
+- `sync.md`: auto-created PR link, approved merge/finalize action, or deferral reason
 - `next-actions.md`: resume condition when held
 
 Before PR handoff, run or review:
@@ -178,17 +230,16 @@ After PR finalize, run or review:
 scripts/list-active-branches.sh
 ```
 
-If the workspace is complete and PR-ready, the handoff must present a choice menu instead of only asking whether to create a PR.
-The menu includes PR 진행, 추가 보강, 다음 Phase 이동, 보류, and 외부 실행 승인 단계 when relevant.
-Complete PR-ready workspaces do not create a PR until the human chooses `PR 진행`, `PR 생성`, or an equivalent explicit action.
-If the human chooses local hold or does not answer, AI records a deferral reason and reports the next resume choice instead of pushing.
-`PR 진행` means final validation, push, PR creation, CI check, merge, PR finalize, linked issue close verification, and automatic merged branch cleanup for the current branch.
-After approval, prefer `scripts/prepare-pr.sh --approved-pr <workspace>` over the deprecated `--auto-pr` alias.
-If the human says `PR만`, `PR 생성만`, or `초안 PR`, stop after PR creation and ask again before merge, finalize, issue close, or branch cleanup.
+If the workspace is complete and PR-ready, AI may run final validation and `scripts/prepare-pr.sh --auto-pr <workspace>` to push the feature branch and create the PR unless an opt-out or stop condition exists.
+After PR creation, the handoff must present a choice menu instead of only asking whether to merge.
+The menu includes merge 진행, 추가 보강, 다음 Phase 이동, 보류, and 외부 실행 승인 단계 when relevant.
+`PR 진행` after an already created PR means CI/check status follow-up, merge, PR finalize, linked issue close verification, and automatic merged branch cleanup for the current branch.
+PR merge/finalize approval is a single-target approval. The target must be the current workspace PR or an explicitly named PR number/branch in the human message or checkpoint record. Broad wording such as `상태보고 머지까지해`, `남은 PR 머지해`, or `merge 가능한 것 처리해` authorizes status reporting for other open PRs, but it does not authorize merging additional PRs. If more than one open PR is mergeable, stop after the selected target and ask for a separate explicit PR number before merging another PR.
+If the human says `PR만`, `PR 생성만`, `초안 PR`, or `머지는 보류`, stop after PR creation and ask again before merge, finalize, issue close, or branch cleanup.
 Stop and report back if CI fails, merge conflicts exist, required review is missing, scope drift appears, deployment/AWS resource creation is involved, or the human limited the command to PR creation/draft/hold merge.
 Deploy and AWS resource creation still require separate explicit human approval.
 
-Use `.github/pull_request_template.md` as the checklist when the project uses PRs.
+Use `.github/pull_request_template.md` as the readable handoff shape when the project uses PRs. The expected PR body has seven sections: PR summary, narrative change explanation, validation, impact scope, reviewer focus, remaining/excluded work, and pre-merge checks. `scripts/prepare-pr.sh` fills this shape from workspace `report.md` fields such as `Changed`, `Verified`, `Remaining`, and `Risk`, so the PR body should read like a review handoff rather than a long audit checklist.
 
 ## 6) PR Conflict Resolution Protocol
 

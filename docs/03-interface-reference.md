@@ -234,6 +234,125 @@ R0.6 Thin Runtime Core code mapping:
 | Thin services | `backend/app/services/catalog_trust.py`, `backend/app/services/query_policy.py`, `backend/app/services/job_orchestrator.py` | minimal use-case skeleton for first workstream wave |
 | Frontend feature entries | `frontend/src/features/catalog/`, `frontend/src/features/sources/`, `frontend/src/features/jobs/`, `frontend/src/features/query/` | feature folder anchors for later parallel UI work |
 
+### AskLake Week 2 Contract Package
+
+Week 2 module work must start from fixture contracts before M1~M6 feature implementation.
+The fixture package lives in `contracts/` and is a thin consumer/producer contract, not a final storage schema.
+
+| Fixture | Producer | Consumers | Purpose |
+| --- | --- | --- | --- |
+| `contracts/source_config.sample.json` | M1 | M2, M3, M4, M5 | Demo tenant source identity, source type, connection reference, and source options |
+| `contracts/schema_definition.sample.json` | M3 | M1, M5, M6 | Amazon Reviews inferred/overridden schema shape used by workflow, catalog, and SQL planning |
+| `contracts/workflow_definition.sample.json` | M1/M5 | M5 | Source -> Select/Filter -> Cast/Normalize -> Aggregate -> Load workflow shape |
+| `contracts/execution_result.sample.json` | M2, M3, M4, M5 | M1, M5, M6 | Airflow and local runner compatible execution result shape |
+| `contracts/catalog_metadata.sample.json` | M2, M3, M4, M5 | M1, M6 | Dataset metadata, location, schema, metrics, lineage, and SQL allowlist context |
+| `contracts/ai_query_result.sample.json` | M6 | M1 | Dataset selection, evidence, SELECT-only SQL, rows, summary, and chart result shape |
+
+Week 2 shared IDs:
+
+| ID | Owner | Required format |
+| --- | --- | --- |
+| `tenant_id` | M1 | `tenant_demo` for MVP demo; every major fixture carries it |
+| `source_id` | M1/M3/M4 | `source_<domain>_<profile>` |
+| `pipeline_id` | M1/M5 | `pipeline_<domain>_<flow>` |
+| `run_id` | M5 | `run_<domain>_<profile>_<sequence>` |
+| `dataset_id` | M3/M5 | `dataset_<domain>_<layer>` |
+
+Week 2 draft API/UI route contract:
+
+| Flow | Method / Route or UI route | Owner | Response fixture |
+| --- | --- | --- | --- |
+| Source register | `POST /api/week2/sources` / `/sources` | M1 + M3 | `SourceConfig`, `SchemaDefinition` preview |
+| Schema preview/override | `POST /api/week2/schemas/{source_id}/preview` / `/schema-preview` | M3 + M1 | `SchemaDefinition` |
+| Workflow run | `POST /api/week2/workflows/{pipeline_id}/runs` / `/runs` | M5 + M1 | `ExecutionResult` |
+| Run status | `GET /api/week2/runs/{run_id}` / `/runs/{run_id}` | M5 + M1 | `ExecutionResult` |
+| Catalog detail | `GET /api/week2/catalog/{dataset_id}` / `/catalog/{dataset_id}` | M5 + M1 | `CatalogMetadata` |
+| AI query | `POST /api/week2/ai/query` / `/ask` | M6 + M1 | `AIQueryResult` |
+
+These are Week 2 draft routes, not final product API routes. If an implementation uses existing baseline `/api/sources`, `/api/pipelines`, or `/api/catalog/datasets` routes, it must either adapt to these fixture names at the boundary or update this section before module work continues.
+
+Week 2 storage path pattern:
+
+```text
+s3://<bucket>/<domain>/<layer>/[dataset_path/]run_id=<run_id>/
+```
+
+`dataset_path` is optional and may hold a domain-specific Gold output such as `daily_metrics`.
+MVP default bucket is `asklake-demo`; final MinIO endpoint and local fallback path remain implementation decisions that must be recorded before M3/M5 handoff.
+
+Week 2 SQL execution uses an adapter boundary:
+
+```text
+M6 AI Query
+-> SqlEngineAdapter
+-> DuckDBSqlEngine for MVP
+-> CatalogMetadata.s3_uri or local path
+```
+
+Minimum `SqlEngineAdapter` methods:
+
+| Method | Purpose |
+| --- | --- |
+| `validate(sql, context)` | enforce SELECT-only, table allowlist, timeout, and limit rules before execution |
+| `execute(sql, context)` | run SQL through the selected engine and return `QueryResult` |
+| `explain_schema(dataset)` | expose dataset columns/types to SQL generation and validation |
+| `health_check()` | report whether the selected engine is ready for the current profile |
+
+Minimum `QueryResult` shape:
+
+| Field | Required | Notes |
+| --- | --- | --- |
+| `engine` | yes | `duckdb` for MVP |
+| `sql` | yes | executed or validated SELECT-only SQL |
+| `columns` | yes | list of `{name, type}` |
+| `rows` | yes | list of row objects |
+| `row_count` | yes | count of returned rows, not necessarily full scan count |
+| `duration_ms` | yes | execution duration in milliseconds |
+| `executed_at` | yes | ISO timestamp |
+
+`AIQueryResult.query_result` is the canonical SQL execution result for Week 2.
+Top-level `AIQueryResult.sql` and `AIQueryResult.rows` may remain as backward-compatible M1 display convenience fields, but they must mirror `query_result.sql` and `query_result.rows`.
+
+Minimum SQL guardrail failure shape:
+
+| Field | Values |
+| --- | --- |
+| `status` | `succeeded`, `blocked`, `failed` |
+| `guardrail.validation_status` | `passed`, `blocked`, `failed` |
+| `guardrail.failure_code` | `non_select_sql`, `table_not_allowed`, `column_not_allowed`, `timeout`, `limit_required`, `engine_unavailable`, or `null` |
+| `guardrail.failure_message` | human-readable reason or `null` |
+
+Week 2 workflow/run status values:
+
+```text
+queued, running, succeeded, failed, fallback_succeeded, fallback_failed
+```
+
+Week 2 execution metric semantics:
+
+| Field | Canonical meaning |
+| --- | --- |
+| `ExecutionResult.row_count` | Primary input rows processed by the workflow run |
+| `ExecutionResult.bytes` | Primary input bytes read by the workflow run |
+| `ExecutionResult.task_results[].row_count` | Node-level row count, using the node's most useful available boundary; `Load` nodes record output dataset rows |
+| `ExecutionResult.task_results[].bytes` | Node-level bytes, using the node's most useful available boundary; `Source` nodes record input bytes and `Load` nodes record output bytes |
+| `CatalogMetadata.metrics.row_count` | Output dataset row count |
+| `CatalogMetadata.metrics.bytes` | Output dataset bytes |
+
+`ExecutionResult.task_results[]` records node-level status, attempt, row count, bytes, and error. M5 owns the canonical run state; M1 displays it; M6 may use successful `CatalogMetadata` only.
+For big/complex dataset manipulation, these fields are processing evidence: they prove that transform/normalize/load produced a bounded output dataset instead of only displaying a successful UI state.
+
+Week 2 daily smoke evidence must include:
+
+```text
+Date, Module, Owner, Run ID, Command or screen, Input source/file,
+Output S3/local path, row_count, bytes, duration, Produced JSON,
+Consumer module, Blocked issue, Next first action
+```
+
+M6 must not import DuckDB, Trino, or Athena directly. The MVP implementation may use `DuckDBSqlEngine` behind the adapter.
+Unconfirmed values such as real sample file path, row count, and final MinIO path remain TODO in fixture files until the responsible module verifies them.
+
 ### Workstream Ownership
 
 | Workstream | Owns | Must Not Own |

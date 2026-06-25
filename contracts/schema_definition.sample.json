@@ -1,0 +1,80 @@
+{
+  "contract": "SchemaDefinition",
+  "producer": "M3",
+  "consumers": ["M1", "M5", "M6"],
+  "tenant_id": "tenant_demo",
+  "source_id": "source_amazon_reviews_demo",
+  "dataset_id": "dataset_reviews_silver",
+  "schema_version": "schema_reviews_v1",
+  "fields": [
+    {
+      "path": "review_id",
+      "type": "string",
+      "nullable": false,
+      "array": false,
+      "override": false,
+      "missing_ratio": 0,
+      "nested_kind": "scalar"
+    },
+    {
+      "path": "product_id",
+      "type": "string",
+      "nullable": false,
+      "array": false,
+      "override": false,
+      "missing_ratio": 0,
+      "nested_kind": "scalar"
+    },
+    {
+      "path": "rating",
+      "type": "number",
+      "nullable": true,
+      "array": false,
+      "override": true,
+      "missing_ratio": null,
+      "nested_kind": "scalar"
+    },
+    {
+      "path": "review_text",
+      "type": "string",
+      "nullable": true,
+      "array": false,
+      "override": false,
+      "missing_ratio": null,
+      "nested_kind": "scalar"
+    },
+    {
+      "path": "review_time",
+      "type": "timestamp",
+      "nullable": true,
+      "array": false,
+      "override": true,
+      "missing_ratio": null,
+      "nested_kind": "scalar"
+    },
+    {
+      "path": "verified_purchase",
+      "type": "boolean",
+      "nullable": true,
+      "array": false,
+      "override": false,
+      "missing_ratio": null,
+      "nested_kind": "scalar"
+    }
+  ],
+  "transform_hints": [
+    {
+      "operation": "cast",
+      "field": "rating",
+      "target_type": "number"
+    },
+    {
+      "operation": "cast",
+      "field": "review_time",
+      "target_type": "timestamp"
+    }
+  ],
+  "sample_size": null,
+  "sample_size_decision": "TODO: confirm demo/fixed/extended sample sizes during contract setup",
+  "captured_at": "2026-06-25T09:05:00+09:00"
+}
