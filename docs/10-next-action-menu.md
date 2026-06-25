@@ -405,6 +405,7 @@ Waiting on you:
 
 - Current state: 작은 변경이 완료됐고 local validation이 통과했지만 PR 여부가 애매하다.
 - Recommended next action: 이 변경이 `main`에 남길 팀 공유 산출물인지 먼저 판단하고, PR 전 포함 파일과 제외 파일을 분리한다.
+- Remote operations reconciliation note: GitHub Issue / Project / PR 같은 원격 운영 상태를 직접 보정했고 그 보정이 하네스 스크립트/문서/검증 규칙으로 반영됐다면 PR 여부는 애매하지 않다. complete + PR-ready 조건이 clear이면 자동 PR 생성으로 이동한다.
 - Options:
   1. `PR 진행`: 팀 공유 산출물이므로 PR-ready 자동 생성 흐름으로 이동한다. 이 선택만으로 merge, finalize, cleanup을 실행하지 않는다.
   2. `로컬 완료로 보류`: PR을 만들지 않고 보류 이유와 재개 조건을 기록한다.
@@ -429,6 +430,7 @@ Waiting on you:
 
 - Current state: scope, verification, confirmations, and pre-merge sync are complete.
 - Recommended next action: auto-create the PR with final validation and `scripts/prepare-pr.sh --auto-pr <workspace>` unless an opt-out or stop condition exists.
+- Remote operations reconciliation note: 원격 운영 상태 보정과 하네스 재현 변경이 함께 기록된 workspace는 팀 공유 산출물이다. opt-out 또는 stop condition이 없으면 PR 생성 전 추가 확인을 요구하지 않는다.
 - Options:
   1. `자동 PR 생성`: run final validation, PR sync check, feature branch push, and PR creation.
   2. `로컬 완료로 보류`: do not push or create PR; record deferral reason and resume condition.

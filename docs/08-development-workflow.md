@@ -180,6 +180,8 @@ Hotfix로 전환하면 현재 Phase 또는 Hotfix 항목에 표시하고, 원래
 
 작은 변경도 `main`에 남길 팀 공유 산출물이면 PR을 기본 완료 경로로 본다.
 예를 들어 report 추가, report index 수정, Source of Truth 주변 문서 보강, workflow/quality/sync/collaboration rule 변경, 완료된 branch workspace 문서는 작더라도 다음 팀원이 기준으로 삼을 수 있으므로 PR 후보가 된다.
+GitHub Issue / Project / PR 같은 원격 운영 상태를 직접 보정했고 그 보정이 하네스 스크립트, 문서, 또는 검증 규칙으로 재현 가능하게 반영된 경우도 팀 공유 산출물이므로 자동 PR 대상이다.
+이 경우 workspace evidence에는 `Remote operations reconciliation` 또는 동등한 한국어 기록으로 어떤 원격 상태를 바꿨고 어떤 하네스 변경으로 재현성을 확보했는지 남긴다.
 
 로컬 보류를 선택할 수 있는 경우는 개인 메모, throwaway 초안, 곧 더 큰 branch에 흡수할 변경, 사람의 문체/방향 검토가 남은 문서, 검증이 끝나지 않은 작업이다.
 로컬 보류는 이유와 재개 조건을 `sync.md`와 `next-actions.md`에 기록한다.

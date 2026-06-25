@@ -237,6 +237,7 @@ if [[ ! -d "$workspace" ]]; then
 fi
 
 plan="${workspace}/plan.md"
+notes="${workspace}/notes.md"
 report="${workspace}/report.md"
 shared_docs="${workspace}/shared-docs.md"
 sources="${workspace}/sources.md"
@@ -523,6 +524,14 @@ if [[ "$decision_status" != "missing" && "$decision_status" != "brief-needed" ]]
   decisions_ready="yes"
 fi
 
+remote_reconciliation_recorded="no"
+for evidence_file in "$report" "$quality" "$notes" "$sync_file" "$shared_docs"; do
+  if [[ -f "$evidence_file" ]] && rg -q "Remote operations reconciliation|remote operations reconciliation|원격 운영 상태|원격 상태 보정" "$evidence_file"; then
+    remote_reconciliation_recorded="yes"
+    break
+  fi
+done
+
 pr_ready="no"
 if [[ "$missing_files" -eq 0 && "$pending_count" -eq 0 && "$start_recorded" == "yes" && "$premerge_recorded" == "yes" && "$quality_ready" == "yes" && "$decisions_ready" == "yes" ]]; then
   pr_ready="yes"
@@ -556,6 +565,7 @@ echo "  - linked issue recorded: ${linked_issue_recorded}"
 echo "  - PR closing keyword recorded: ${closing_keyword_recorded}"
 echo "  - quality ready: ${quality_ready}"
 echo "  - decisions ready: ${decisions_ready}"
+echo "  - remote operations reconciliation recorded: ${remote_reconciliation_recorded}"
 echo "  - PR checklist ready: ${pr_ready}"
 echo
 
@@ -604,6 +614,8 @@ elif [[ -n "${pr_link:-}" ]] && [[ ! "${merge_status:-}" =~ ^merged ]]; then
   recommendation="PR이 이미 열려 있습니다. CI/check 상태를 확인한 뒤 선택지: 1 PR 진행(merge, finalize, issue close 확인, automatic branch cleanup), 2 추가 보강(현재 PR에 추가 커밋), 3 보류(PR 유지 + 재개 조건 기록), 4 다음 Phase(현재 PR merge 또는 명시 보류 후 진행), 5 외부 실행 승인(deploy/AWS 등 별도 승인)."
 elif [[ "$pr_ready" == "yes" && "${#auto_pr_blockers[@]}" -gt 0 ]]; then
   recommendation="완료 + PR 준비 상태지만 자동 PR 생성은 보류합니다. Blockers: $(IFS='; '; echo "${auto_pr_blockers[*]}"). 포함/제외 파일과 branch checkout을 정리한 뒤 scripts/prepare-pr.sh --auto-pr <workspace>를 다시 실행합니다."
+elif [[ "$pr_ready" == "yes" && "$remote_reconciliation_recorded" == "yes" ]]; then
+  recommendation="원격 운영 상태 보정이 하네스 변경으로 재현 가능하게 기록된 complete + PR-ready workspace입니다. 자동 PR 생성 대상입니다. 다음 AI action: final validation 후 scripts/prepare-pr.sh --auto-pr <workspace>로 branch push/PR 생성. merge/finalize/cleanup은 PR 생성 뒤 사람 명시 지시 전까지 보류합니다."
 elif [[ "$pr_ready" == "yes" ]]; then
   recommendation="완료 + PR 준비 상태입니다. 자동 PR 생성 대상입니다. 다음 AI action: final validation 후 scripts/prepare-pr.sh --auto-pr <workspace>로 feature branch push/PR 생성, 그 뒤 Pre-PR Human Checkpoint 선택지: 1 PR 진행(CI 확인/merge/finalize/issue close 확인/automatic branch cleanup), 2 PR 보류(sync.md deferral reason + next-actions.md resume condition 기록), 3 추가 보강, 4 다음 Phase(현재 PR merge 또는 명시 보류 후 진행), 5 외부 실행 승인(deploy/AWS 등 별도 승인)."
 else
