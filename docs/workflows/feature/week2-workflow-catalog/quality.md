@@ -26,7 +26,7 @@
 | frontend build | `npm run build` in `frontend/` | passed | Vite production build passed |
 | UI proxy smoke | `POST http://127.0.0.1:5176/api/week2/workflows/pipeline_reviews_json_e2e/runs` | passed | Vite proxy를 통해 `ExecutionResult` payload 수신 |
 | evidence run | `POST /api/week2/workflows/pipeline_reviews_json_e2e/runs` | passed | `ExecutionResult.row_count=10`, `ExecutionResult.bytes=2173`, `CatalogMetadata.metrics.row_count=4`, `CatalogMetadata.metrics.bytes=261`, local fallback path created |
-| node board visual smoke | in-app browser at `http://127.0.0.1:5176/` | passed | Source/Select/Normalize full 10-row previews, Aggregate/Load full 4-row previews |
+| node board visual smoke | in-app browser at `http://127.0.0.1:5176/` | passed | Source 9 columns, Select/Filter 4 columns, Normalize typed rating/time, Aggregate 4 product rows |
 | day2 smoke report | `docs/reports/m5-day2-smoke-evidence.md` | passed | `ExecutionResult`, `CatalogMetadata`, output path, blocked issue, next first action recorded |
 | build/typecheck | not run | skipped | 별도 typecheck/build command 없음 |
 | harness validation | `scripts/validate-harness.sh` | passed via strict | strict validation에 포함 |

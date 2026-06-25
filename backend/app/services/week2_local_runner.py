@@ -317,9 +317,8 @@ def node_output_name(node: dict[str, Any]) -> str:
     return outputs[0] if outputs else node.get("target_dataset", "output")
 
 
-def preview_rows(rows: list[dict[str, Any]], limit: int | None = None, field_limit: int = 10) -> list[dict[str, Any]]:
-    visible_rows = rows if limit is None else rows[:limit]
-    return [preview_row(row, field_limit) for row in visible_rows]
+def preview_rows(rows: list[dict[str, Any]], limit: int = 4, field_limit: int = 10) -> list[dict[str, Any]]:
+    return [preview_row(row, field_limit) for row in rows[:limit]]
 
 
 def preview_row(row: dict[str, Any], field_limit: int) -> dict[str, Any]:

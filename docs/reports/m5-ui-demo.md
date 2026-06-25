@@ -33,7 +33,6 @@ Select/Filter: 10 rows, 4 columns: review_id, product_id, rating, review_time
 Cast/Normalize: rating string -> number, review_time raw string -> ISO timestamp
 Aggregate: 4 product rows with review_count and average_rating
 Load: writes dataset_reviews_gold.jsonl
-Preview: each node table exposes all demo output rows instead of a 4-row cutoff
 ```
 
 ## Secret / Migration / Env Check
