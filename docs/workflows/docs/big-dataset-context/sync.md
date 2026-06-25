@@ -50,7 +50,7 @@ main 동기화와 integration readiness를 기록한다.
 - issue link: 
 - issue creation result: not requested
 - PR closing keyword: 
-- pushed branch: pending after human instruction "pr 마무리해"
-- PR link: pending after push
-- merge status:
+- pushed branch: `origin/codex/big-dataset-context`
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/75
+- merge status: PR open; initial `gh pr view` reports mergeable, CI in progress
 - issue close status:

@@ -9,8 +9,8 @@
 
 ## Recommended Next Action / 권장 다음 행동
 
-- PR 생성 절차를 진행한다.
-- Reason: local validation은 완료됐고, 사용자가 “pr 마무리해”라고 지시해 push/PR 생성이 승인됐다.
+- PR CI 결과를 확인한다.
+- Reason: push와 PR 생성은 완료됐고, merge/finalize는 PR 상태와 CI 결과 확인 뒤 진행한다.
 
 ## Options / 선택지
 
@@ -21,7 +21,7 @@
 
 ## Waiting On Human / 사람 응답 대기
 
-- push/PR 생성은 승인됨. merge/finalize는 PR 상태와 CI 결과 확인 후 별도 판단한다.
+- push/PR 생성은 완료됨. merge/finalize는 PR 상태와 CI 결과 확인 후 별도 판단한다.
 
 ## Last User Choice / 마지막 사용자 선택
 
