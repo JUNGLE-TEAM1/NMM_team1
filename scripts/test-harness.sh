@@ -400,9 +400,9 @@ case "${1:-}" in
         ;;
       view)
         if [[ "${*: -2:1}" == "--jq" ]]; then
-          printf 'MERGED\n'
+          printf '%s\n' "${FAKE_GH_PR_STATE:-MERGED}"
         else
-          printf '{"state":"MERGED"}\n'
+          printf '{"state":"%s"}\n' "${FAKE_GH_PR_STATE:-MERGED}"
         fi
         exit 0
         ;;
@@ -416,9 +416,9 @@ case "${1:-}" in
         ;;
       view)
         if [[ "${*: -2:1}" == "--jq" ]]; then
-          printf 'CLOSED\n'
+          printf '%s\n' "${FAKE_GH_ISSUE_STATE:-CLOSED}"
         else
-          printf '{"state":"CLOSED"}\n'
+          printf '{"state":"%s"}\n' "${FAKE_GH_ISSUE_STATE:-CLOSED}"
         fi
         exit 0
         ;;
@@ -670,6 +670,36 @@ case_status_uses_remote_pr_state_for_stale_sync() {
   )
 }
 
+case_status_does_not_warn_on_state_case_only_difference() {
+  local repo="${tmp_root}/remote-pr-status-case"
+  copy_repo "$repo"
+  (
+    cd "$repo"
+    local fake_bin
+    fake_bin="$(install_fake_gh "$repo")"
+    PATH="${fake_bin}:$PATH"
+    FAKE_GH_PR_STATE="OPEN"
+    FAKE_GH_ISSUE_STATE="OPEN"
+    export FAKE_GH_PR_STATE FAKE_GH_ISSUE_STATE
+    local base
+    base="$(base_commit)"
+    local workspace="docs/workflows/test/harness-remote-pr-status-case"
+    write_common_workspace "$workspace" "complete" "passed" "accepted" "$base"
+    awk '
+      /^- pushed branch:/ { print "- pushed branch: test/harness-remote-pr-status-case"; next }
+      /^- PR link:/ { print "- PR link: https://example.invalid/pull/99"; next }
+      /^- merge status:/ { print "- merge status: open"; next }
+      /^- issue close status:/ { print "- issue close status: open"; next }
+      { print }
+    ' "${workspace}/sync.md" > "${workspace}/sync.md.tmp"
+    mv "${workspace}/sync.md.tmp" "${workspace}/sync.md"
+    git add "$workspace"
+    git commit -q -m "remote pr status case fixture"
+    scripts/status-workflow.sh "$workspace" > /tmp/harness-remote-pr-status-case.out
+    ! rg -q "Stale sync warning" /tmp/harness-remote-pr-status-case.out
+  )
+}
+
 case_list_active_uses_remote_pr_state_for_stale_sync() {
   local repo="${tmp_root}/remote-pr-queue"
   copy_repo "$repo"
@@ -721,6 +751,32 @@ case_complete_pr_ready_status_recommends_auto_pr_then_checkpoint() {
     rg -q "자동 PR 생성 대상입니다" /tmp/harness-auto-pr-checkpoint-status.out
     rg -q -- "--auto-pr" /tmp/harness-auto-pr-checkpoint-status.out
     rg -q "Pre-PR Human Checkpoint" /tmp/harness-auto-pr-checkpoint-status.out
+  )
+}
+
+case_remote_reconciliation_status_recommends_auto_pr() {
+  local repo="${tmp_root}/remote-reconciliation-auto-pr"
+  copy_repo "$repo"
+  (
+    cd "$repo"
+    git checkout -q -b test/remote-reconciliation-auto-pr
+    local base
+    base="$(base_commit)"
+    local workspace="docs/workflows/test/remote-reconciliation-auto-pr"
+    write_common_workspace "$workspace" "complete" "passed" "accepted" "$base"
+    cat >> "${workspace}/report.md" <<'EOF_REMOTE'
+
+## Remote operations reconciliation
+
+- Remote state changed: GitHub Project issue status was manually reconciled.
+- Harness codified: scripts and docs now reproduce the state transition.
+EOF_REMOTE
+    git add "$workspace"
+    git commit -q -m "remote reconciliation fixture"
+    scripts/status-workflow.sh "$workspace" > /tmp/harness-remote-reconciliation-auto-pr.out
+    rg -q "remote operations reconciliation recorded: yes" /tmp/harness-remote-reconciliation-auto-pr.out
+    rg -q "원격 운영 상태 보정이 하네스 변경으로 재현 가능하게 기록된 complete + PR-ready workspace입니다" /tmp/harness-remote-reconciliation-auto-pr.out
+    rg -q -- "--auto-pr" /tmp/harness-remote-reconciliation-auto-pr.out
   )
 }
 
@@ -940,8 +996,10 @@ run_expect_failure "complete workspace with missing pre-merge sync fails" case_m
 run_expect_success "status workflow reports Source of Truth proposal status" case_status_reports_sot
 run_expect_success "existing PR status does not recommend auto PR" case_existing_pr_status_does_not_recommend_auto_pr
 run_expect_success "status workflow uses remote PR state for stale sync" case_status_uses_remote_pr_state_for_stale_sync
+run_expect_success "status workflow ignores state case-only differences" case_status_does_not_warn_on_state_case_only_difference
 run_expect_success "branch queue uses remote PR state for stale sync" case_list_active_uses_remote_pr_state_for_stale_sync
 run_expect_success "complete PR-ready status recommends auto PR then checkpoint" case_complete_pr_ready_status_recommends_auto_pr_then_checkpoint
+run_expect_success "remote reconciliation status recommends auto PR" case_remote_reconciliation_status_recommends_auto_pr
 run_expect_success "status workflow prioritizes PR conflict resolution" case_status_reports_pr_conflict_priority
 run_expect_success "prepare-pr check stays local" case_prepare_pr_check_is_local
 run_expect_success "prepare-pr documents auto PR helper" case_prepare_pr_documents_auto_pr

@@ -115,6 +115,10 @@ complete + PR-ready workspace는 아래 조건을 모두 만족하면 feature br
 - linked issue와 PR closing keyword가 필요한 경우 `sync.md`와 PR body에 반영됐다.
 - 사람의 opt-out 문구나 scope drift, conflict, CI/check blocker, data migration, deploy/cloud 영향이 없다.
 
+GitHub Issue / Project / PR 같은 원격 운영 상태를 직접 보정한 뒤, 그 보정을 하네스 스크립트/문서/검증 규칙으로 재현 가능하게 반영한 변경은 complete + PR-ready 조건을 통과하면 자동 PR 대상이다.
+이 규칙은 commit, feature/hotfix branch push, PR 생성까지만 허용한다.
+PR merge, issue close/finalize, branch cleanup, deploy/cloud/resource 변경은 기존과 같이 사람의 명시 지시가 필요하다.
+
 사람이 `PR 올리지 마`, `로컬에만 둬`, `보류`, `PR은 나중에`, `draft만`이라고 명시하면 PR 생성을 하지 않는다.
 사람이 로컬 완료 보류를 선택하면 `sync.md`의 `Pre-Merge Sync` 또는 `Push / PR` 섹션에 deferral reason을 기록하고 `next-actions.md`에 재개 조건을 남긴다.
 
