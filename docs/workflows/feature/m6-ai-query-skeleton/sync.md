@@ -21,11 +21,11 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 
 ## Pre-Merge Sync
 
-- main commit:
-- conflicts:
-- validation:
-- result:
-- deferral reason:
+- main commit: 36bde33
+- conflicts: none
+- validation: after `git merge origin/main --no-edit`, `PYTHONPATH=backend /private/tmp/nmm_team1_m6_venv/bin/python -m pytest backend/tests/test_week2_ai_query.py -q` -> 4 passed; `PYTHONPATH=backend /private/tmp/nmm_team1_m6_venv/bin/python -m pytest backend/tests -q` -> 22 passed; `scripts/validate-harness.sh --strict` -> passed
+- result: merged latest `origin/main` into `feature/m6-ai-query-skeleton` with no conflicts
+- deferral reason: n/a
 
 ## PR Conflict Resolution
 

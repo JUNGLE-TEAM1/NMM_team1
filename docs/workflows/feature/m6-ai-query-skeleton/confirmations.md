@@ -89,13 +89,13 @@ AI가 멈추고 사람 확인을 받아야 하는 지점을 기록한다.
 
 ## Completion Confirm / 완료 확인
 
-- Status: pending
+- Status: confirmed
 - Ask human to confirm:
   - 변경 요약
   - 검증 결과
   - 남은 위험
   - 다음 작업 문맥
-- Human response: 로컬 구현 검증은 완료. PR 전 pre-merge sync와 포함 파일 검토가 남아 있어 completion confirm은 아직 보류.
+- Human response: 사용자가 PR 생성을 요청함. `origin/main` merge sync 후 focused/backend/strict harness validation 통과. Merge/finalize/issue close는 하지 않고 PR 생성까지만 진행.
 
 ## Integration Conflict Confirm / 통합 충돌 확인
 
