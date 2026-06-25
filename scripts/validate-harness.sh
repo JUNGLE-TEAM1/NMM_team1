@@ -175,6 +175,13 @@ section_value() {
   ' "$file"
 }
 
+emptyish() {
+  case "$1" in
+    ""|none|None|NONE|n/a|N/A|"not requested") return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 validate_sync_handoff() {
   local dir="$1"
   local sync_file="${dir}/sync.md"
@@ -191,6 +198,11 @@ validate_sync_handoff() {
   pr_link="$(section_value "$sync_file" "## Push / PR" "- PR link:")"
   merge_status="$(section_value "$sync_file" "## Push / PR" "- merge status:")"
   issue_close_status="$(section_value "$sync_file" "## Push / PR" "- issue close status:")"
+  for field_name in linked_issue closing_keyword pushed_branch pr_link merge_status issue_close_status; do
+    if emptyish "${!field_name}"; then
+      printf -v "$field_name" '%s' ""
+    fi
+  done
 
   if [[ -n "$linked_issue" && -z "$closing_keyword" ]]; then
     fail "sync.md linked issue exists but PR closing keyword is missing: ${sync_file}"
@@ -765,16 +777,16 @@ if ! rg -q "PR 올리지 마|로컬에만 둬|PR은 나중에|draft만" docs/08-
   fail "PR hold/opt-out phrases are not documented"
 fi
 
-if ! rg -q "사람이 응답하지 않았거나 명시 승인이 없으면.*push/PR/merge를 실행하지 않는다|do not create a PR until the human chooses|does not push or create a PR from a status question alone" docs/08-development-workflow.md docs/11-git-sync-policy.md docs/13-human-command-flow.md; then
-  fail "Pre-PR Human Checkpoint must prevent push/PR/merge without explicit human approval"
+if ! rg -q "자동 PR 생성|auto-create the PR|Auto PR Creation" docs/08-development-workflow.md docs/10-next-action-menu.md docs/11-git-sync-policy.md docs/13-human-command-flow.md scripts/status-workflow.sh; then
+  fail "Automatic PR creation policy must be documented across workflow docs and status workflow"
 fi
 
-if ! rg -q -- "--approved-pr" scripts/prepare-pr.sh || ! rg -q "approved_pr=1" scripts/prepare-pr.sh; then
-  fail "scripts/prepare-pr.sh must provide --approved-pr for human-approved PR handoff"
+if ! rg -q -- "--auto-pr" scripts/prepare-pr.sh || ! rg -q "approved_pr=1" scripts/prepare-pr.sh; then
+  fail "scripts/prepare-pr.sh must provide --auto-pr for automatic PR creation"
 fi
 
-if ! rg -q "deprecated compatibility alias for --approved-pr|--auto-pr is deprecated" scripts/prepare-pr.sh docs/11-git-sync-policy.md; then
-  fail "Deprecated --auto-pr compatibility behavior must be documented"
+if ! rg -q "compatibility alias for --auto-pr|과거 호환용 alias" scripts/prepare-pr.sh docs/11-git-sync-policy.md; then
+  fail "Compatibility behavior for --approved-pr must be documented"
 fi
 
 if ! rg -q "cleanup-merged-branches.sh" scripts/prepare-pr.sh || ! rg -q "scripts/cleanup-merged-branches.sh" docs/11-git-sync-policy.md; then
@@ -815,8 +827,8 @@ if ! rg -q "Complete And PR Ready|추가 보강|다음 Phase|보류|외부 실�
   fail "docs/10-next-action-menu.md must include complete PR-ready choice details"
 fi
 
-if ! rg -q "완료 \\+ PR 준비 상태입니다.*Pre-PR Human Checkpoint.*1 PR 진행.*2 로컬 완료로 보류.*3 추가 보강.*4 다음 Phase.*5 외부 실행 승인" scripts/status-workflow.sh; then
-  fail "scripts/status-workflow.sh must recommend Pre-PR Human Checkpoint choices for complete PR-ready workspaces"
+if ! rg -q "완료 \\+ PR 준비 상태입니다.*자동 PR 생성 대상입니다.*--auto-pr.*Pre-PR Human Checkpoint.*1 PR 진행.*2 PR 보류.*3 추가 보강.*4 다음 Phase.*5 외부 실행 승인" scripts/status-workflow.sh; then
+  fail "scripts/status-workflow.sh must recommend automatic PR creation followed by Pre-PR Human Checkpoint choices for complete PR-ready workspaces"
 fi
 
 if ! rg -q "PR이 이미 열려 있습니다.*1 PR 진행\\(merge, finalize, issue close 확인, automatic branch cleanup\\).*2 추가 보강.*3 보류.*4 다음 Phase" scripts/status-workflow.sh; then

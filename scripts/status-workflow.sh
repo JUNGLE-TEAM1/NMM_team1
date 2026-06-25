@@ -85,7 +85,30 @@ remote_issue_state() {
 stale_note() {
   local local_value="$1"
   local remote_value="$2"
-  [[ -n "$local_value" && -n "$remote_value" && "$local_value" != "$remote_value" ]]
+  local local_normalized
+  local remote_normalized
+  local_normalized="$(printf '%s' "$local_value" | tr '[:lower:]' '[:upper:]')"
+  remote_normalized="$(printf '%s' "$remote_value" | tr '[:lower:]' '[:upper:]')"
+  [[ -n "$local_normalized" && -n "$remote_normalized" && "$local_normalized" != "$remote_normalized" ]]
+}
+
+emptyish() {
+  case "$1" in
+    ""|none|None|NONE|n/a|N/A|"not requested") return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+workspace_branch() {
+  case "$workspace" in
+    docs/workflows/*/*)
+      local rest="${workspace#docs/workflows/}"
+      printf '%s\n' "$rest"
+      ;;
+    *)
+      return 1
+      ;;
+  esac
 }
 
 source_of_truth_files() {
@@ -218,6 +241,7 @@ if [[ ! -d "$workspace" ]]; then
 fi
 
 plan="${workspace}/plan.md"
+notes="${workspace}/notes.md"
 report="${workspace}/report.md"
 shared_docs="${workspace}/shared-docs.md"
 sources="${workspace}/sources.md"
@@ -290,11 +314,17 @@ if [[ -f "$sync_file" ]]; then
   linked_issue="$(section_value "$sync_file" "## Push / PR" "- linked GitHub issue:")"
   issue_link="$(section_value "$sync_file" "## Push / PR" "- issue link:")"
   issue_creation_result="$(section_value "$sync_file" "## Push / PR" "- issue creation result:")"
+  issue_project_result="$(section_value "$sync_file" "## Push / PR" "- issue project result:")"
   closing_keyword="$(section_value "$sync_file" "## Push / PR" "- PR closing keyword:")"
   pushed_branch="$(section_value "$sync_file" "## Push / PR" "- pushed branch:")"
   pr_link="$(section_value "$sync_file" "## Push / PR" "- PR link:")"
   merge_status="$(section_value "$sync_file" "## Push / PR" "- merge status:")"
   issue_close_status="$(section_value "$sync_file" "## Push / PR" "- issue close status:")"
+  for field_name in linked_issue issue_link issue_creation_result issue_project_result closing_keyword pushed_branch pr_link merge_status issue_close_status; do
+    if emptyish "${!field_name}"; then
+      printf -v "$field_name" '%s' ""
+    fi
+  done
   remote_pr_status=""
   remote_issue_status=""
   remote_status_source="not checked"
@@ -306,6 +336,10 @@ if [[ -f "$sync_file" ]]; then
     remote_status_source="GitHub"
   else
     remote_status_source="unavailable: GitHub CLI unavailable or unauthenticated"
+  fi
+  open_pr_closed_issue_mismatch="no"
+  if [[ -n "${pr_link:-}" && "${remote_pr_status:-}" == "OPEN" && "${remote_issue_status:-}" == "CLOSED" ]]; then
+    open_pr_closed_issue_mismatch="yes"
   fi
   pr_conflict_detected_at="$(section_value "$sync_file" "## PR Conflict Resolution" "- conflict detected at:")"
   pr_conflict_command="$(section_value "$sync_file" "## PR Conflict Resolution" "- conflict detection command:")"
@@ -323,6 +357,7 @@ if [[ -f "$sync_file" ]]; then
   echo "  - Linked GitHub issue: ${linked_issue:-missing}"
   echo "  - Issue link: ${issue_link:-missing}"
   echo "  - Issue creation result: ${issue_creation_result:-missing}"
+  echo "  - Issue project result: ${issue_project_result:-missing}"
   echo "  - PR closing keyword: ${closing_keyword:-missing}"
   echo "  - Pushed branch: ${pushed_branch:-missing}"
   echo "  - PR link: ${pr_link:-missing}"
@@ -331,6 +366,7 @@ if [[ -f "$sync_file" ]]; then
   echo "  - Remote status source: ${remote_status_source}"
   echo "  - Remote PR state: ${remote_pr_status:-not checked}"
   echo "  - Remote issue state: ${remote_issue_status:-not checked}"
+  echo "  - Open PR / closed issue mismatch: ${open_pr_closed_issue_mismatch}"
   if stale_note "${merge_status:-}" "${remote_pr_status:-}"; then
     echo "  - Stale sync warning: sync.md merge status '${merge_status}' differs from GitHub PR state '${remote_pr_status}'"
   fi
@@ -471,6 +507,12 @@ closing_keyword_recorded="n/a"
 if [[ -f "$sync_file" ]]; then
   linked_issue_value="$(section_value "$sync_file" "## Push / PR" "- linked GitHub issue:")"
   closing_keyword_value="$(section_value "$sync_file" "## Push / PR" "- PR closing keyword:")"
+  if emptyish "$linked_issue_value"; then
+    linked_issue_value=""
+  fi
+  if emptyish "$closing_keyword_value"; then
+    closing_keyword_value=""
+  fi
   if [[ -n "$linked_issue_value" ]]; then
     linked_issue_recorded="yes"
     if [[ -n "$closing_keyword_value" ]]; then
@@ -491,6 +533,14 @@ if [[ "$decision_status" != "missing" && "$decision_status" != "brief-needed" ]]
   decisions_ready="yes"
 fi
 
+remote_reconciliation_recorded="no"
+for evidence_file in "$report" "$quality" "$notes" "$sync_file" "$shared_docs"; do
+  if [[ -f "$evidence_file" ]] && rg -q "Remote operations reconciliation|remote operations reconciliation|원격 운영 상태|원격 상태 보정" "$evidence_file"; then
+    remote_reconciliation_recorded="yes"
+    break
+  fi
+done
+
 pr_ready="no"
 if [[ "$missing_files" -eq 0 && "$pending_count" -eq 0 && "$start_recorded" == "yes" && "$premerge_recorded" == "yes" && "$quality_ready" == "yes" && "$decisions_ready" == "yes" ]]; then
   pr_ready="yes"
@@ -498,6 +548,22 @@ fi
 
 if [[ "$workspace_state" == "archived" ]]; then
   pr_ready="n/a (archived)"
+fi
+
+auto_pr_blockers=()
+expected_branch="$(workspace_branch || true)"
+current_branch="$(git branch --show-current 2>/dev/null || true)"
+if [[ "$pr_ready" == "yes" && -n "$expected_branch" && -n "$current_branch" && "$current_branch" != "$expected_branch" ]]; then
+  auto_pr_blockers+=("current branch '${current_branch}' does not match workspace branch '${expected_branch}'")
+fi
+if [[ "$pr_ready" == "yes" ]] && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  non_artifact_status="$(git status --porcelain | awk '
+    /^\?\? (.*\/)?\.DS_Store$/ { next }
+    { print }
+  ')"
+  if [[ -n "$non_artifact_status" ]]; then
+    auto_pr_blockers+=("worktree has uncommitted or non-artifact untracked changes")
+  fi
 fi
 
 echo "  - missing required files: ${missing_files}"
@@ -508,6 +574,7 @@ echo "  - linked issue recorded: ${linked_issue_recorded}"
 echo "  - PR closing keyword recorded: ${closing_keyword_recorded}"
 echo "  - quality ready: ${quality_ready}"
 echo "  - decisions ready: ${decisions_ready}"
+echo "  - remote operations reconciliation recorded: ${remote_reconciliation_recorded}"
 echo "  - PR checklist ready: ${pr_ready}"
 echo
 
@@ -552,10 +619,16 @@ elif [[ "${merge_status:-}" =~ ^merged ]] && [[ "${issue_close_status:-}" =~ ^CL
   recommendation="Phase is merged and linked issue is closed; choose the next phase or archive/cleanup follow-up."
 elif [[ -n "${pr_link:-}" ]] && [[ "${remote_pr_status:-}" == "MERGED" ]]; then
   recommendation="PR is merged according to GitHub. Run or review finalize/cleanup evidence; do not treat stale sync.md open fields as an active PR."
+elif [[ "${open_pr_closed_issue_mismatch:-no}" == "yes" ]]; then
+  recommendation="Open PR but linked issue is CLOSED. PR merge 전 Done/close가 선행된 이상 상태입니다. issue를 다시 열어 Project Review로 맞추거나, 이미 merge/finalize된 PR인지 확인한 뒤 finalize evidence를 정리합니다."
 elif [[ -n "${pr_link:-}" ]] && [[ ! "${merge_status:-}" =~ ^merged ]]; then
   recommendation="PR이 이미 열려 있습니다. CI/check 상태를 확인한 뒤 선택지: 1 PR 진행(merge, finalize, issue close 확인, automatic branch cleanup), 2 추가 보강(현재 PR에 추가 커밋), 3 보류(PR 유지 + 재개 조건 기록), 4 다음 Phase(현재 PR merge 또는 명시 보류 후 진행), 5 외부 실행 승인(deploy/AWS 등 별도 승인)."
+elif [[ "$pr_ready" == "yes" && "${#auto_pr_blockers[@]}" -gt 0 ]]; then
+  recommendation="완료 + PR 준비 상태지만 자동 PR 생성은 보류합니다. Blockers: $(IFS='; '; echo "${auto_pr_blockers[*]}"). 포함/제외 파일과 branch checkout을 정리한 뒤 scripts/prepare-pr.sh --auto-pr <workspace>를 다시 실행합니다."
+elif [[ "$pr_ready" == "yes" && "$remote_reconciliation_recorded" == "yes" ]]; then
+  recommendation="원격 운영 상태 보정이 하네스 변경으로 재현 가능하게 기록된 complete + PR-ready workspace입니다. 자동 PR 생성 대상입니다. 다음 AI action: final validation 후 scripts/prepare-pr.sh --auto-pr <workspace>로 branch push/PR 생성. merge/finalize/cleanup은 PR 생성 뒤 사람 명시 지시 전까지 보류합니다."
 elif [[ "$pr_ready" == "yes" ]]; then
-  recommendation="완료 + PR 준비 상태입니다. Pre-PR Human Checkpoint가 필요합니다. 선택지: 1 PR 진행(승인 후 push/PR 생성/CI 확인/merge/finalize/issue close 확인/automatic branch cleanup), 2 로컬 완료로 보류(sync.md deferral reason + next-actions.md resume condition 기록), 3 추가 보강, 4 다음 Phase(현재 branch PR 또는 명시 보류 후 진행), 5 외부 실행 승인(deploy/AWS 등 별도 승인)."
+  recommendation="완료 + PR 준비 상태입니다. 자동 PR 생성 대상입니다. 다음 AI action: final validation 후 scripts/prepare-pr.sh --auto-pr <workspace>로 feature branch push/PR 생성, 그 뒤 Pre-PR Human Checkpoint 선택지: 1 PR 진행(CI 확인/merge/finalize/issue close 확인/automatic branch cleanup), 2 PR 보류(sync.md deferral reason + next-actions.md resume condition 기록), 3 추가 보강, 4 다음 Phase(현재 PR merge 또는 명시 보류 후 진행), 5 외부 실행 승인(deploy/AWS 등 별도 승인)."
 else
   recommendation="Prepare Completion Confirm or PR checklist."
 fi
