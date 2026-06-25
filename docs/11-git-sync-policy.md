@@ -239,7 +239,7 @@ If the human says `PR만`, `PR 생성만`, `초안 PR`, or `머지는 보류`, s
 Stop and report back if CI fails, merge conflicts exist, required review is missing, scope drift appears, deployment/AWS resource creation is involved, or the human limited the command to PR creation/draft/hold merge.
 Deploy and AWS resource creation still require separate explicit human approval.
 
-Use `.github/pull_request_template.md` as the checklist when the project uses PRs. `scripts/prepare-pr.sh` also fills reviewer-facing PR context from workspace `report.md` fields such as `Changed`, `Verified`, `Remaining`, and `Risk`, so the PR body should explain the concrete work, validation evidence, and review risks before reviewers read the diff.
+Use `.github/pull_request_template.md` as the readable handoff shape when the project uses PRs. The expected PR body has seven sections: PR summary, narrative change explanation, validation, impact scope, reviewer focus, remaining/excluded work, and pre-merge checks. `scripts/prepare-pr.sh` fills this shape from workspace `report.md` fields such as `Changed`, `Verified`, `Remaining`, and `Risk`, so the PR body should read like a review handoff rather than a long audit checklist.
 
 ## 6) PR Conflict Resolution Protocol
 

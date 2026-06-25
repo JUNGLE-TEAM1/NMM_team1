@@ -21,22 +21,22 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 
 ## Pre-Merge Sync
 
-- main commit: f95d999
-- conflicts: none
-- validation: `bash -n scripts/audit-github-records.sh scripts/status-workflow.sh scripts/test-harness.sh scripts/validate-harness.sh`; `scripts/test-harness.sh`; `scripts/validate-harness.sh`; `scripts/validate-harness.sh --strict`; live read-only audit `--issue 112` expected drift and `--issue 111` pass
-- result: ready for PR preparation
+- main commit: 91c0747
+- conflicts: `docs/reports/README.md` report index row conflict while merging `origin/main`
+- validation: `bash -n scripts/audit-github-records.sh scripts/status-workflow.sh scripts/test-harness.sh scripts/validate-harness.sh`; `scripts/test-harness.sh`; `scripts/validate-harness.sh`; `scripts/validate-harness.sh --strict`; live read-only audit `--issue 112` expected drift and `--issue 111` pass; after conflict resolution `git diff --check`, `bash -n scripts/audit-github-records.sh scripts/status-workflow.sh scripts/test-harness.sh scripts/validate-harness.sh scripts/prepare-pr.sh`, `scripts/validate-harness.sh --strict`, and `scripts/test-harness.sh`
+- result: merged latest `origin/main`; report index conflict resolved by keeping both `pr-template-readable-narrative.md` and `github-record-drift-audit.md`
 - deferral reason:
 
 ## PR Conflict Resolution
 
-- conflict detected at:
-- conflict detection command:
-- conflict type:
-- affected files:
-- resolution path:
-- resolved files:
-- revalidation:
-- remaining risk:
+- conflict detected at: 2026-06-25 PR finalization
+- conflict detection command: `git merge --no-edit origin/main`
+- conflict type: report index content conflict
+- affected files: `docs/reports/README.md`
+- resolution path: keep both latest report index rows because both reports are valid evidence entries
+- resolved files: `docs/reports/README.md`
+- revalidation: passed after conflict resolution (`scripts/test-harness.sh`: 30 tests passed)
+- remaining risk: none known
 
 ## Push / PR
 
