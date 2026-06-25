@@ -227,7 +227,7 @@ Target MVP planning alias:
 | R4 | Query / Policy, `feature/query-policy-preflight` | Trusted dataset query와 권한 preflight 구현 | R0.5 contract baseline, policy decision | 허용/마스킹/차단 query 검증 |
 | R5 | Ask / Evidence, `feature/ask-evidence` | Ask route와 Evidence 연결 | R0.5 contract baseline, mock 또는 real policy 확정 | 근거 있음/부족/권한 거부 Ask 검증 |
 | R6 | Recovery / Operate, `feature/recovery-impact` | schema drift/quality failure 영향 분석과 backfill 복구 | R0.5 contract baseline | 복구 후 중복/누락 없이 상태 정상화 |
-| R7 | Packaging, `feature/packaging-dev-lite` | self-hosted 배포 프로파일 안정화 | 배포 target decision | local/container 또는 dev-lite smoke와 secret/config 검증 |
+| R7 | Packaging, `feature/packaging-dev-lite` | local/container 또는 dev-lite packaging 프로파일 안정화 | 배포 target decision | local/container 또는 dev-lite smoke와 secret/config 검증 |
 
 Target MVP Workstream Pool:
 

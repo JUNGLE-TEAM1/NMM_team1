@@ -242,7 +242,7 @@ Target MVP 구현 시에는 dataset trust status로 확장하거나 migration pa
 | GitHub Project / Notion sync | 보드 상태 동기화 | `.github/workflows/notion-issue-sync.yml` 결과와 secrets 설정 확인 |
 | GitHub Actions | CI/CD 실행 | 실패 job log를 확인하고 배포를 중단 |
 | Docker / Compose | current baseline local/container 실행 | `scripts/smoke-container-app.sh` 실패 시 완료 보류 |
-| Kubernetes / Helm | target self-hosted packaging | secret 없는 manifest/helm validation 먼저, real deploy는 approval gate |
+| Kubernetes / Helm | target dev-lite packaging 후보 | secret 없는 manifest/helm validation 먼저, real deploy는 approval gate |
 | AWS 후보 | ECR/EKS/S3/RDS 등 target runtime 후보 | 비용/resource 생성 전 approval checklist 필요 |
 | LLM provider 후보 | Ask/NL2SQL/RAG model execution | LLM Gateway, redaction, evaluation, policy trace 필요 |
 
