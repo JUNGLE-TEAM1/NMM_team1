@@ -39,10 +39,10 @@ main 동기화와 integration readiness를 기록한다.
 
 ## Push / PR
 
-- linked GitHub issue: #112
-- issue link: https://github.com/JUNGLE-TEAM1/NMM_team1/issues/112
-- issue creation result: created for M5 local UI demo panel
-- PR closing keyword: Closes #112
+- linked GitHub issue: #101
+- issue link: https://github.com/JUNGLE-TEAM1/NMM_team1/issues/101
+- issue creation result: created for Day 3 Catalog persistence handoff
+- PR closing keyword: none
 - pushed branch: not pushed
 - PR link: none
 - merge status: not requested
