@@ -14,7 +14,8 @@
 4. `main-e2e-path.md`
 5. `existing-implementation-anchor.md`
 6. `m3-json-main-path-decision.md`
-7. 필요 시 상위 폴더의 `decisions.md`, `plan.md`, `meeting-summary.md`
+7. `runner-boundary-decision.md`
+8. 필요 시 상위 폴더의 `decisions.md`, `plan.md`, `meeting-summary.md`
 
 ## 현재 기준
 
@@ -54,3 +55,5 @@ Phase 3의 현재 기준은 [`main-e2e-path.md`](main-e2e-path.md)에 둔다.
 Phase 4의 현재 기준은 [`existing-implementation-anchor.md`](existing-implementation-anchor.md)에 둔다.
 
 Phase 5의 현재 기준은 [`m3-json-main-path-decision.md`](m3-json-main-path-decision.md)에 둔다.
+
+Phase 6의 현재 기준은 [`runner-boundary-decision.md`](runner-boundary-decision.md)에 둔다.
