@@ -41,7 +41,7 @@
 - issue creation result: not requested
 - issue project result: not requested
 - PR closing keyword:
-- pushed branch:
-- PR link:
-- merge status:
-- issue close status:
+- pushed branch: hotfix/project-status-mismatch-guard
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/113
+- merge status: open
+- issue close status: n/a
