@@ -22,6 +22,13 @@
 - 디자인 복구는 CSS/정적 shell 구조만 수정하고 fake API, fake auth, fake run success는 추가하지 않는다.
 - interaction 보강은 local UI state만 사용한다. backend/API 호출이나 fake success state는 추가하지 않는다.
 - M1 static shell에서 `연결 대기`, `실행 대기`, `disabled`, `placeholder` 표현을 유지한다.
+- static shell data를 `frontend/src/app/m1StaticShellData.js`로 분리했다. 후속 기능 연결 시 이 파일의 placeholder export를 real API state로 교체한다.
+- 교체 mapping:
+  - M2/M3/M4 source/connection 연결: `m1ConnectionPlaceholders` 제거 또는 API response로 교체
+  - M3 schema inference 연결: `m1SchemaPreviewPlaceholder` 제거 또는 schema preview response로 교체
+  - M5 workflow/run/catalog 연결: `m1WorkflowPlaceholder`, `m1PipelinePlaceholders`, `m1CatalogPlaceholder` 제거 또는 API state로 교체
+  - M6 AI Query 연결: `m1AiQueryPlaceholder` 제거 또는 `AIQueryResult`/`QueryResult` response로 교체
+- `활성`, `Gold/Silver/Bronze`, `Trusted`, `succeeded`, `complete`처럼 실제 완료 상태로 오해될 수 있는 shell 표현을 placeholder/연결 대기 문맥으로 정리했다.
 
 ## 열린 질문
 

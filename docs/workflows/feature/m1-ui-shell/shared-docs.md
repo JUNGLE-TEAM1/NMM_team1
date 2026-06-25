@@ -16,6 +16,11 @@ integration branch는 branch 작업을 합치기 전에 이 파일을 읽는다.
 - M4 Kafka: `/sources`, `/runs`에 streaming source 상태, lag, throughput, failure 상태를 연결한다.
 - M5 Workflow/Catalog: `/runs`, `/catalog`에 workflow definition, execution result, logs, retry, catalog metadata를 연결한다.
 - M6 RAG/AI Query: `/ask`, `/catalog`에 dataset allowlist, evidence, SQL/result/chart spec을 연결한다.
+- Static placeholder cleanup:
+  - M2/M3/M4는 `frontend/src/app/m1StaticShellData.js`의 `m1ConnectionPlaceholders`를 실제 source/connection state로 교체한다.
+  - M3는 `m1SchemaPreviewPlaceholder`를 schema inference response로 교체한다.
+  - M5는 `m1WorkflowPlaceholder`, `m1PipelinePlaceholders`, `m1CatalogPlaceholder`를 workflow/run/catalog API state로 교체한다.
+  - M6는 `m1AiQueryPlaceholder`를 AI query/evidence/query result state로 교체한다.
 
 ## Conflicts To Resolve / 해결할 충돌
 

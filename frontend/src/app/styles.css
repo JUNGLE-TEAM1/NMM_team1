@@ -633,14 +633,14 @@ code {
   overflow-x: auto;
 }
 
-.demo-table {
+.shell-table {
   width: 100%;
   min-width: 1040px;
   table-layout: fixed;
   border-collapse: collapse;
 }
 
-.demo-table th {
+.shell-table th {
   border-bottom: 1px solid #e5e7eb;
   background: #f9fafb;
   padding: 12px;
@@ -651,39 +651,39 @@ code {
   white-space: nowrap;
 }
 
-.demo-table th:nth-child(1) {
+.shell-table th:nth-child(1) {
   width: 17%;
 }
 
-.demo-table th:nth-child(2) {
+.shell-table th:nth-child(2) {
   width: 10%;
 }
 
-.demo-table th:nth-child(3) {
+.shell-table th:nth-child(3) {
   width: 11%;
 }
 
-.demo-table th:nth-child(4) {
+.shell-table th:nth-child(4) {
   width: 8%;
 }
 
-.demo-table th:nth-child(5) {
+.shell-table th:nth-child(5) {
   width: 12%;
 }
 
-.demo-table th:nth-child(6) {
+.shell-table th:nth-child(6) {
   width: 18%;
 }
 
-.demo-table th:nth-child(7) {
+.shell-table th:nth-child(7) {
   width: 17%;
 }
 
-.demo-table th:nth-child(8) {
+.shell-table th:nth-child(8) {
   width: 7%;
 }
 
-.demo-table td {
+.shell-table td {
   border-bottom: 1px solid #e5e7eb;
   padding: 12px;
   color: #374151;
@@ -692,7 +692,7 @@ code {
   vertical-align: top;
 }
 
-.demo-table tr:hover {
+.shell-table tr:hover {
   background: #f9fafb;
 }
 

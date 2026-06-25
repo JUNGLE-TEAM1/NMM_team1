@@ -33,6 +33,17 @@ import {
 import { getHealth } from "../api/asklakeClient";
 import asklakeLogo from "../assets/asklake-logo.png";
 import { StatusPill } from "../components/StatusPill";
+import {
+  m1AiQueryPlaceholder,
+  m1CatalogPlaceholder,
+  m1ConnectionPlaceholders,
+  m1IntegrationRows,
+  m1PipelinePlaceholders,
+  m1SchemaPreviewPlaceholder,
+  m1SourceConfigPlaceholder,
+  m1StartSteps,
+  m1WorkflowPlaceholder,
+} from "./m1StaticShellData";
 import "./styles.css";
 
 const navItems = [
@@ -74,126 +85,11 @@ const navItems = [
   },
 ];
 
-const sourceConfig = {
-  contract: "SourceConfig",
-  tenant_id: "tenant_demo",
-  source_id: "source_amazon_reviews_demo",
-  source_type: "amazon_reviews_json",
-  name: "Amazon Reviews JSON demo source",
-  connection_ref: {
-    kind: "local_file_or_minio_object",
-    path_status: "pending_data_location_decision",
-  },
-  options: {
-    sample_profile: "demo",
-    format: "jsonl",
-    sample_rows_decision: "M3 sample reader 구현 전 확정",
-  },
+const stepIcons = {
+  source: Database,
+  schema: FileJson,
+  workflow: GitBranch,
 };
-
-const schemaDefinition = {
-  contract: "SchemaDefinition",
-  schema_version: "schema_reviews_v1",
-  dataset_id: "dataset_reviews_silver",
-  fields: [
-    ["review_id", "string", "false", "none"],
-    ["product_id", "string", "false", "none"],
-    ["rating", "number", "true", "cast override"],
-    ["review_text", "string", "true", "none"],
-    ["review_time", "timestamp", "true", "cast override"],
-    ["verified_purchase", "boolean", "true", "none"],
-  ],
-};
-
-const workflowDefinition = {
-  contract: "WorkflowDefinition",
-  pipeline_id: "pipeline_reviews_json_e2e",
-  nodes: [
-    ["Source", "Amazon Reviews JSON", "M1/M3 source config"],
-    ["Select/Filter", "필드 선택", "M5 workflow node"],
-    ["Cast/Normalize", "rating, review_time 보정", "M3 schema output"],
-    ["Aggregate", "product_id별 review metric", "M5 workflow node"],
-    ["Load", "dataset_reviews_gold", "M5 catalog handoff"],
-  ],
-};
-
-const catalogMetadata = {
-  contract: "CatalogMetadata",
-  dataset_id: "dataset_reviews_gold",
-  name: "Amazon Reviews Gold",
-  layer: "gold",
-  s3_uri: "s3://asklake-demo/reviews/gold/run_id=run_reviews_demo_001/",
-  query_table: "reviews_gold",
-  quality: "schema_match, row_count 확인 대기",
-};
-
-const aiQueryResult = {
-  contract: "AIQueryResult",
-  status: "M6 연결 대기",
-  question: "Day 4 검증 질문 확정 전",
-  sql: "SELECT product_id, review_count, average_rating FROM reviews_gold LIMIT 10",
-  chart_spec: "bar(product_id, review_count)",
-};
-
-const integrationRows = [
-  ["M2 Batch", "batch source/run metrics", "ExecutionResult, CatalogMetadata"],
-  ["M3 JSON/Schema", "schema preview/override", "SourceConfig, SchemaDefinition"],
-  ["M4 Kafka", "streaming status/lag/throughput", "SourceConfig, ExecutionResult"],
-  ["M5 Workflow/Catalog", "run status, logs, retry, lineage", "WorkflowDefinition, ExecutionResult, CatalogMetadata"],
-  ["M6 RAG/AI Query", "question, evidence, SQL result, chart", "AIQueryResult, QueryResult"],
-];
-
-const startSteps = [
-  ["소스 연결", "기존 연결 선택 또는 새 연결 생성", Database],
-  ["원본 데이터", "테이블, 컬렉션, 경로, 토픽 선택", FileJson],
-  ["파이프라인 구성", "선택한 원본으로 캔버스 시작", GitBranch],
-];
-
-const connections = [
-  ["PostgreSQL 주문 DB", "postgres_order_transactions", "연결 대기", "M2 Batch"],
-  ["MongoDB 고객 프로필", "mongo_customer_profiles", "연결 대기", "M3 JSON/Schema"],
-  ["Kafka 주문 이벤트", "commerce.order.events", "연결 대기", "M4 Kafka"],
-  ["AskLake S3 Lake", "s3://asklake/bronze/order_events", "연결 대기", "M5 Catalog"],
-];
-
-const pipelineRows = [
-  {
-    name: "고객 주문 통합 Silver Dataset",
-    owner: "데이터 엔지니어링 팀",
-    type: "결과 데이터셋",
-    status: "활성",
-    mode: "배치",
-    purpose: "MongoDB 고객 프로필 컬럼과 PostgreSQL 주문 컬럼을 user_id 기준으로 조인해 분석 가능한 형태로 정제한 Silver Dataset입니다.",
-    updated: "2026. 6. 25. 오후 4:59:27",
-  },
-  {
-    name: "고객 주문 원본 Bronze Dataset",
-    owner: "데이터 엔지니어링 팀",
-    type: "결과 데이터셋",
-    status: "활성",
-    mode: "배치",
-    purpose: "MongoDB 고객 프로필과 주문 거래 PostgreSQL 데이터를 원본 형태로 S3 Bronze 영역에 적재한 데이터셋입니다.",
-    updated: "2026. 6. 25. 오후 4:59:27",
-  },
-  {
-    name: "mongo_customer_profiles",
-    owner: "고객 플랫폼 팀",
-    type: "수집 대상",
-    status: "비활성",
-    mode: "배치",
-    purpose: "MongoDB 고객 프로필 컬렉션에서 고객 등급과 지역 정보를 가져옵니다.",
-    updated: "2026. 6. 25. 오후 4:59:27",
-  },
-  {
-    name: "postgres_order_transactions",
-    owner: "주문 플랫폼 팀",
-    type: "수집 대상",
-    status: "비활성",
-    mode: "배치",
-    purpose: "PostgreSQL 주문 테이블에서 주문 금액과 상태 컬럼을 가져옵니다.",
-    updated: "2026. 6. 25. 오후 4:59:27",
-  },
-];
 
 function normalizePath(pathname) {
   if (pathname === "/" || pathname === "" || pathname === "/dataset") return "/sources";
@@ -307,7 +203,7 @@ export function App() {
               Health
             </button>
             <StatusPill health={health} />
-            <div className="user-chip" aria-label="Current demo user">
+            <div className="user-chip" aria-label="Current shell user">
               <span>S</span>
             </div>
             <div className="user-meta">
@@ -406,7 +302,9 @@ function SourcesPage({ navigate, setNotice }) {
           </div>
         </div>
         <div className="start-steps">
-          {startSteps.map(([title, description, Icon], index) => (
+          {m1StartSteps.map(([title, description, iconKey], index) => {
+            const Icon = stepIcons[iconKey];
+            return (
             <article className="start-step" key={title}>
               <span>{index + 1}</span>
               <div>
@@ -417,7 +315,8 @@ function SourcesPage({ navigate, setNotice }) {
                 <p>{description}</p>
               </div>
             </article>
-          ))}
+            );
+          })}
         </div>
         <div className="start-actions">
           <button type="button" className="primary-action" onClick={() => setIsStartOpen(true)}>
@@ -433,10 +332,10 @@ function SourcesPage({ navigate, setNotice }) {
       <PipelineTable navigate={navigate} setNotice={setNotice} />
       <SchemaPreviewSection />
       <div className="grid two">
-        <InfoCard title="Contract" value={sourceConfig.contract} detail="Producer: M1 / Consumers: M2, M3, M4, M5" />
-        <InfoCard title="Demo Tenant" value={sourceConfig.tenant_id} detail="실제 로그인/RBAC 없이 tenant_id 구조만 유지" />
-        <InfoCard title="Source ID" value={sourceConfig.source_id} detail={sourceConfig.source_type} />
-        <InfoCard title="Connection" value={sourceConfig.connection_ref.kind} detail={sourceConfig.connection_ref.path_status} />
+        <InfoCard title="Contract" value={m1SourceConfigPlaceholder.contract} detail="Producer: M1 / Consumers: M2, M3, M4, M5" />
+        <InfoCard title="Tenant" value={m1SourceConfigPlaceholder.tenant_id} detail="실제 로그인/RBAC 없이 tenant_id 구조만 유지" />
+        <InfoCard title="Source ID" value={m1SourceConfigPlaceholder.source_id} detail={m1SourceConfigPlaceholder.source_type} />
+        <InfoCard title="Connection" value={m1SourceConfigPlaceholder.connection_ref.kind} detail={m1SourceConfigPlaceholder.connection_ref.path_status} />
       </div>
       <EmptyState
         icon={Boxes}
@@ -465,7 +364,7 @@ function SourcesPage({ navigate, setNotice }) {
 function PipelineTable({ navigate, setNotice }) {
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
-  const filteredRows = pipelineRows.filter((row) =>
+  const filteredRows = m1PipelinePlaceholders.filter((row) =>
     `${row.name} ${row.owner} ${row.purpose}`.toLowerCase().includes(query.toLowerCase()),
   );
 
@@ -488,7 +387,7 @@ function PipelineTable({ navigate, setNotice }) {
         </label>
       </div>
       <div className="wide-table-wrap">
-        <table className="demo-table">
+        <table className="shell-table">
           <thead>
             <tr>
               <th>파이프라인 이름</th>
@@ -510,7 +409,7 @@ function PipelineTable({ navigate, setNotice }) {
                   <span className={`badge ${row.type === "결과 데이터셋" ? "orange" : "gray"}`}>{row.type}</span>
                 </td>
                 <td>
-                  <span className={`badge ${row.status === "활성" ? "green" : "slate"}`}>{row.status}</span>
+                  <span className="badge slate">{row.status}</span>
                 </td>
                 <td>
                   <span className="badge blue">{row.mode}</span>
@@ -563,14 +462,14 @@ function ConnectionManagerShell({ onBack, setNotice }) {
       </div>
       <DataTable
         columns={["connection", "resource", "status", "owner module"]}
-        rows={connections}
+        rows={m1ConnectionPlaceholders}
       />
     </section>
   );
 }
 
 function SourceStartModal({ onClose, onManageConnections, onProceed }) {
-  const [selected, setSelected] = useState(connections[0][0]);
+  const [selected, setSelected] = useState(m1ConnectionPlaceholders[0][0]);
 
   return (
     <div className="modal-backdrop" role="presentation">
@@ -585,7 +484,7 @@ function SourceStartModal({ onClose, onManageConnections, onProceed }) {
           </button>
         </header>
         <div className="source-options">
-          {connections.map(([name, resource, status]) => (
+          {m1ConnectionPlaceholders.map(([name, resource, status]) => (
             <button
               key={name}
               type="button"
@@ -629,7 +528,7 @@ function SchemaPreviewSection() {
       </div>
       <DataTable
         columns={["field path", "type", "nullable", "override"]}
-        rows={schemaDefinition.fields}
+        rows={m1SchemaPreviewPlaceholder.fields}
       />
       <EmptyState
         icon={AlertCircle}
@@ -659,7 +558,7 @@ function VisualEditorPage({ navigate, setNotice }) {
         </button>
         <div>
           <h2>파이프라인 시각 편집</h2>
-          <p>demo3의 canvas flow를 M1 static shell로 보존합니다.</p>
+          <p>기준 데모의 canvas flow를 M1 static shell로 보존합니다.</p>
         </div>
         <div className="toolbar-actions">
           <button type="button" className="ghost-action" onClick={() => setNotice("M1에서는 저장 API를 호출하지 않습니다.")}>
@@ -711,7 +610,7 @@ function VisualEditorPage({ navigate, setNotice }) {
 
 function RunStatusPage({ navigate }) {
   const [query, setQuery] = useState("");
-  const rows = pipelineRows.filter((row) => row.name.toLowerCase().includes(query.toLowerCase()));
+  const rows = m1PipelinePlaceholders.filter((row) => row.name.toLowerCase().includes(query.toLowerCase()));
 
   return (
     <div className="page-stack">
@@ -726,7 +625,7 @@ function RunStatusPage({ navigate }) {
             <ListChecks size={20} />
             <div>
               <strong>Job Runs</strong>
-              <p>demo3 실행/모니터링 목록 shell입니다.</p>
+              <p>기준 데모의 실행/모니터링 목록 shell입니다.</p>
             </div>
           </div>
           <label className="table-search">
@@ -735,7 +634,7 @@ function RunStatusPage({ navigate }) {
           </label>
         </div>
         <div className="wide-table-wrap">
-          <table className="demo-table">
+          <table className="shell-table">
             <thead>
               <tr>
                 <th>job</th>
@@ -760,20 +659,20 @@ function RunStatusPage({ navigate }) {
         </div>
       </section>
       <div className="pipeline-strip">
-        {workflowDefinition.nodes.map(([type, label, detail], index) => (
+        {m1WorkflowPlaceholder.nodes.map(([type, label, detail], index) => (
           <div className="pipeline-node" key={type}>
             <span>{index + 1}</span>
             <strong>{type}</strong>
             <p>{label}</p>
             <small>{detail}</small>
-            {index < workflowDefinition.nodes.length - 1 ? <ChevronRight size={18} /> : null}
+            {index < m1WorkflowPlaceholder.nodes.length - 1 ? <ChevronRight size={18} /> : null}
           </div>
         ))}
       </div>
       <EmptyState
         icon={Loader2}
-        title="실행 버튼과 자동 완료 연출은 없습니다"
-        body="실제 run 상태는 M5 ExecutionResult가 붙은 뒤 queued, running, succeeded, failed 등으로 표시됩니다."
+        title="실행 버튼과 자동 결과 연출은 없습니다"
+        body="실제 run 상태는 M5 ExecutionResult가 붙은 뒤 대기, 실행 중, 실패 등으로 표시됩니다."
       />
     </div>
   );
@@ -808,27 +707,27 @@ function CatalogPage({ navigate }) {
         </div>
         <div>
           <div className="catalog-title-row">
-            <h3>{catalogMetadata.name}</h3>
-            <span>Gold</span>
+            <h3>{m1CatalogPlaceholder.name}</h3>
+            <span>placeholder</span>
             <span>품질 확인 대기</span>
           </div>
-          <p>타겟 데이터셋을 찾고 구조를 확인하는 demo3 카탈로그 카드 스타일을 M1 shell에 맞춰 보존했습니다.</p>
+          <p>타겟 데이터셋을 찾고 구조를 확인하는 카탈로그 카드 스타일을 M1 shell에 맞춰 보존했습니다.</p>
         </div>
         <button type="button" className="icon-link" onClick={() => navigate("/catalog-detail")} aria-label="catalog detail">
           <ArrowRight size={18} />
         </button>
       </section>
       <div className="grid three">
-        <InfoCard title="Dataset" value={catalogMetadata.dataset_id} detail={catalogMetadata.name} />
-        <InfoCard title="Layer" value={catalogMetadata.layer} detail="Trusted 전 gate 상태 표시 예정" />
-        <InfoCard title="Query table" value={catalogMetadata.query_table} detail="M6 allowlist context" />
+        <InfoCard title="Dataset" value={m1CatalogPlaceholder.dataset_id} detail={m1CatalogPlaceholder.name} />
+        <InfoCard title="Layer" value={m1CatalogPlaceholder.layer} detail="신뢰 게이트 연결 전 placeholder" />
+        <InfoCard title="Query table" value={m1CatalogPlaceholder.query_table} detail="M6 allowlist context" />
       </div>
       <section className="contract-panel">
         <div>
           <p className="eyebrow">Storage contract</p>
-          <code>{catalogMetadata.s3_uri}</code>
+          <code>{m1CatalogPlaceholder.s3_uri}</code>
         </div>
-        <p>{catalogMetadata.quality}</p>
+        <p>{m1CatalogPlaceholder.quality}</p>
       </section>
     </div>
   );
@@ -845,7 +744,7 @@ function CatalogDetailShell({ navigate }) {
   return (
     <div className="page-stack">
       <PageHeader
-        title="Amazon Reviews Gold"
+        title={m1CatalogPlaceholder.name}
         body="Catalog detail과 lineage/quality/governance tab shell입니다."
         actionLabel="목록으로"
         onAction={() => navigate("/catalog")}
@@ -883,11 +782,11 @@ function CatalogDetailShell({ navigate }) {
 function LineageShell() {
   return (
     <section className="lineage-shell">
-      {["Source", "Bronze", "Silver", "Quality Gate", "Gold Dataset"].map((item, index) => (
+      {["Source", "Raw placeholder", "Prepared placeholder", "Quality Gate", "Output placeholder"].map((item, index) => (
         <article key={item}>
           <span>{index + 1}</span>
           <strong>{item}</strong>
-          <p>{item === "Gold Dataset" ? "dataset_reviews_gold" : "M5 연결 대기"}</p>
+          <p>{item === "Output placeholder" ? m1CatalogPlaceholder.dataset_id : "M5 연결 대기"}</p>
         </article>
       ))}
     </section>
@@ -911,7 +810,7 @@ function AiQueryPage({ setNotice }) {
           <textarea
             value={queryText}
             onChange={(event) => setQueryText(event.target.value)}
-            placeholder={aiQueryResult.question}
+            placeholder={m1AiQueryPlaceholder.question}
           />
           <button
             type="button"
@@ -923,9 +822,9 @@ function AiQueryPage({ setNotice }) {
           </button>
         </div>
         <div className="contract-panel">
-          <p className="eyebrow">{aiQueryResult.contract}</p>
-          <h3>{aiQueryResult.status}</h3>
-          <code>{aiQueryResult.sql}</code>
+          <p className="eyebrow">{m1AiQueryPlaceholder.contract}</p>
+          <h3>{m1AiQueryPlaceholder.status}</h3>
+          <code>{m1AiQueryPlaceholder.sql}</code>
           <div className="segmented-control">
             {["table", "chart"].map((mode) => (
               <button
@@ -939,12 +838,12 @@ function AiQueryPage({ setNotice }) {
               </button>
             ))}
           </div>
-          <p>Chart spec: {aiQueryResult.chart_spec}</p>
+          <p>Chart spec: {m1AiQueryPlaceholder.chart_spec}</p>
         </div>
       </section>
       <DataTable
         columns={["module", "M1 surface", "contract"]}
-        rows={integrationRows}
+        rows={m1IntegrationRows}
       />
     </div>
   );
@@ -960,7 +859,7 @@ function DashboardPlaceholder() {
       />
       <EmptyState
         icon={Sparkles}
-        title="Dashboard demo surface"
+        title="Dashboard placeholder surface"
         body="현재 M1에서는 navigation shell만 보존하고 실제 dashboard query는 M6에서 연결합니다."
       />
     </div>
@@ -972,7 +871,7 @@ function AdminPlaceholder() {
     <div className="page-stack">
       <PageHeader
         title="사용자/권한"
-        body="demo3의 admin navigation 자리를 보존하되, 실제 권한 관리는 M1 범위 밖입니다."
+        body="기준 데모의 admin navigation 자리를 보존하되, 실제 권한 관리는 M1 범위 밖입니다."
         actionLabel="RBAC 연결 대기"
       />
       <EmptyState

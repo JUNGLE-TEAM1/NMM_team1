@@ -28,6 +28,8 @@
 | integrated route smoke | in-app browser | passed | `/dataset`, `/dataset?manage=connections`, `/etl/visual`, `/etl`, `/catalog`, `/catalog/dataset_reviews_gold`, `/query`, `/dashboard`, `/admin` expected text 확인 |
 | integrated interaction smoke | in-app browser | passed | source start modal open/proceed, connection management open/back, table row detail route, no console error |
 | IA smoke | in-app browser | passed | 메뉴 순서 `데이터 통합 -> 실행/모니터링 -> 데이터 카탈로그 -> AI Query -> Dashboard -> 사용자/권한`, schema preview 내부 step 확인 |
+| static data cleanup | `frontend/src/app/m1StaticShellData.js` review | passed | M1 placeholder data export boundary 생성 |
+| misleading completion wording scan | `rg -n "성공\|완료\|Trusted\|succeeded\|complete\|활성" frontend/src/app` | passed with context | 남은 항목은 `삭제 비활성` aria label이며 실제 삭제 미연결 안내 |
 | responsive smoke | in-app browser viewport `390x844`, `/runs` | passed | expected text 표시, horizontal overflow 없음 |
 | harness validation | `scripts/validate-harness.sh` | passed | `Harness validation passed.` |
 | strict harness validation | `scripts/validate-harness.sh --strict` | passed | `Harness validation passed.` |
