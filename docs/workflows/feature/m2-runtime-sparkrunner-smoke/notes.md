@@ -10,7 +10,8 @@
 
 - M2 구현은 데이터셋 독립 공통 실행기 방향으로 진행한다.
 - 데이터셋별 차이는 `RuntimeConfig`의 input format/path/options로 처리한다.
-- 첫 PR 이후 후속 PR 후보는 Taxi evidence, M5 runner integration, SQL smoke로 나눈다.
+- 첫 PR 이후 후속 후보는 Taxi evidence, M5 runner integration, SQL smoke로 나눈다. 다만 Taxi evidence가 반드시 두 번째 PR이라는 공식 근거는 없으므로, 후속 순서는 팀 dependency와 준비 상태를 보고 정한다.
+- 첫 smoke fixture는 가능하면 Amazon Reviews 우선 흐름과 맞게 JSON/JSONL을 먼저 검토한다. 구현 제약이 있으면 Parquet fixture로 최소 read/write smoke를 닫는다.
 
 ## 열린 질문
 

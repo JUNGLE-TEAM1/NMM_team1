@@ -16,7 +16,7 @@
 
 1. PR 1 진행: `RuntimeConfig` + `SparkRunner` smoke 구현.
 2. PR 1 범위 수정: 구현 전에 plan을 더 줄이거나 조정.
-3. 후속 PR 분리: Taxi evidence, M5 integration, SQL smoke를 별도 branch로 분리.
+3. 후속 후보 정리: Taxi evidence, M5 integration, SQL smoke 중 다음 branch를 팀 dependency 기준으로 고른다.
 4. 이 workspace를 멈춘다.
 
 ## Waiting On Human / 사람 응답 대기
@@ -31,5 +31,5 @@
 
 - option 1이면 `confirmations.md`를 업데이트하고 `RuntimeConfig`/`SparkRunner` 구현을 시작한다.
 - option 2이면 `plan.md`와 `shared-docs.md`를 업데이트한다.
-- option 3이면 후속 PR 후보를 별도 workspace로 분리한다.
+- option 3이면 후속 후보 중 하나를 별도 workspace로 분리한다. Taxi evidence가 반드시 두 번째 PR이라는 전제는 두지 않는다.
 - option 4이면 pause reason을 `notes.md`에 기록한다.

@@ -17,7 +17,7 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 
 | Checked At | Upstream Changes | Impacted Source of Truth | Action |
 | --- | --- | --- | --- |
-|  |  |  |  |
+| 2026-06-26 15:35 KST | `origin/main` advanced `04e8a84..58668a9`; local `main` fast-forward updated with `git fetch origin main:main` | `AGENTS.md`, `docs/00-layer-map.md`, `docs/04-development-guide.md`, `docs/09-collaboration-agreement.md`, `docs/11-git-sync-policy.md`, `docs/12-quality-gates.md`, `docs/13-human-command-flow.md`, `.github/workflows/*`, PR guardrail scripts | Current feature branch not merged/rebased because workspace has uncommitted M2 plan corrections. Reconcile before PR readiness. |
 
 ## Pre-Merge Sync
 
