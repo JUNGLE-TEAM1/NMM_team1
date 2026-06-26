@@ -1,0 +1,31 @@
+name: PR Size Hard Gate
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - synchronize
+      - reopened
+      - ready_for_review
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  pr-size-hard-gate:
+    runs-on: ubuntu-latest
+    env:
+      BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      PR_SIZE_MAX_FILES: "10"
+      PR_SIZE_MAX_LINES: "600"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Enforce PR size hard gate
+        run: node .github/scripts/check-pr-size-hard-gate.js

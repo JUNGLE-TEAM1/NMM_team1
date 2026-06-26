@@ -40,7 +40,8 @@
 | Branch start issue creation | `scripts/start-workflow.sh`; optional branch-push GitHub Action | partial | local workspace can start; PR readiness warns if linked issue is missing or closed | maintainer | GitHub는 local branch creation을 알 수 없으므로 시작 시점은 script-enforced protocol이다. |
 | Project status sync | GitHub Project automation / GitHub Action / `scripts/prepare-pr.sh` | partial | lifecycle drift reported; optional sync job updates status | maintainer | branch start = `In Progress`, PR open = `Review`, PR merge/finalize = `Done`. |
 | Lifecycle drift detection | `scripts/status-workflow.sh`, `scripts/audit-github-records.sh`, optional CI | partial | warning or PR readiness blocked | maintainer | active workspace의 linked issue가 closed인 경우를 감지한다. |
-| PR size/risk warning | `.github/workflows/pr-risk-warning.yml` | partial | advisory warning and step summary when size threshold or risky path is detected | maintainer | hard gate가 아니라 리뷰어 판단을 돕는 경고로 시작한다. |
+| PR size hard gate | `.github/workflows/pr-size-hard-gate.yml` + GitHub repository ruleset | enabled | non-evidence files > 10 또는 non-evidence changed lines > 600이면 required check 실패 | maintainer / repo admin | `docs/workflows/**`, `docs/reports/**` evidence 파일은 size 계산에서 제외한다. `Large PR Exception: approved`가 PR body에 있으면 명시 예외로 통과한다. |
+| PR risk warning | `.github/workflows/pr-risk-warning.yml` | partial | advisory warning and step summary when risky path is detected | maintainer | 위험 경로 변경은 아직 hard gate가 아니라 reviewer 판단을 돕는 경고로 유지한다. |
 | Migration/schema/security change detection | `.github/workflows/migration-schema-security-check.yml` + GitHub repository ruleset | enabled | sensitive path 변경 시 PR impact field가 비어 있으면 required check 실패 | maintainer / repo admin | `contracts/`, migration/schema/security/auth/policy 경로 변경은 PR body의 `API/schema`, `data/migration`, `security/privacy` 영향 기록을 요구한다. |
 | Harness validation required check | `.github/workflows/ci.yml` + GitHub repository ruleset | enabled | merge blocked when harness validation fails | repo admin / maintainer | `scripts/test-harness.sh`, `scripts/validate-harness.sh`, `--strict`가 `harness` required context에 포함된다. |
 
@@ -56,6 +57,7 @@
 | `main` direct push blocked | `main`은 PR 없이 직접 바꾸지 않는다. 작업은 branch -> PR -> checks -> merge 흐름을 탄다. |
 | PR required for `main` | `main` 반영은 PR을 통해서만 한다. 긴급 수정도 Hotfix branch와 PR 흐름을 기본으로 둔다. |
 | Required checks | `harness`, `container-smoke`, `manifest-smoke`, `linked-issue`, `migration-schema-security`가 통과해야 merge할 수 있다. |
+| PR size hard gate | evidence 파일을 제외한 변경 파일이 10개를 넘거나 변경 라인이 600줄을 넘으면 merge할 수 없다. 필요하면 PR body에 `Large PR Exception: approved`와 이유를 남긴다. |
 | Force push / branch deletion blocked on protected refs | 보호된 branch는 히스토리를 덮어쓰거나 삭제하지 못한다. |
 | Backup branch protection | `backup/main-*`은 복구 기준 branch다. 생성 후 delete/update/force push를 막는다. |
 | Secret scanning / push protection | token, API key, private key 같은 secret이 push되면 GitHub가 막거나 경고한다. |
@@ -65,7 +67,7 @@
 
 | Rule | What it means for people |
 | --- | --- |
-| PR size/risk warning | 큰 PR이나 위험 경로 변경은 warning을 낸다. 지금은 merge를 막지 않고 reviewer 판단을 돕는다. |
+| PR risk warning | 위험 경로 변경은 warning을 낸다. 지금은 위험 경로 자체만으로 merge를 막지 않고 reviewer 판단을 돕는다. |
 | PR/Issue template shape audit | 템플릿 drift는 status/audit에서 감지할 수 있지만 모든 경우를 hard gate로 막지는 않는다. |
 | Lifecycle drift audit | PR/issue/project/workspace 상태 mismatch는 읽기 전용 audit으로 드러낸다. 원격 보정은 evidence를 남긴다. |
 
@@ -74,7 +76,7 @@
 | Deferred item | Reason |
 | --- | --- |
 | CODEOWNERS review | ownership 기준이 안정되기 전까지 사람 책임 경계를 시스템에 고정하지 않는다. |
-| PR size/risk hard gate | 파일 수/라인 수는 사람 판단 요소가 커서 지금은 warning만 유지한다. |
+| PR risk hard gate | 위험 경로 변경 자체를 hard gate로 막는 것은 아직 보류한다. |
 | Remote-changing E2E rehearsal in CI | 실제 issue/PR/project/branch를 바꾸므로 normal CI에 넣지 않는다. 필요하면 human-approved rehearsal로 실행한다. |
 
 ### Common Failure And Fix
@@ -83,6 +85,7 @@
 | --- | --- |
 | `linked-issue` failed | PR body에 `Closes #123` 같은 closing keyword를 넣거나, 실제 이슈가 없는 경우 `연결된 Issue: 연결된 issue 없음`을 명시한다. |
 | `migration-schema-security` failed | PR body의 `API/schema 영향`, `data/migration 영향`, `security/privacy 영향` 중 해당 항목에 영향과 검증 결과를 적는다. |
+| `pr-size-hard-gate` failed | PR을 더 작은 Phase/PR로 쪼개거나, 정말 필요한 경우 PR body에 `Large PR Exception: approved`와 이유를 적는다. |
 | `harness` failed | workspace `quality.md`, `sync.md`, `report.md` evidence와 `scripts/validate-harness.sh --strict` 결과를 확인한다. |
 | `container-smoke` failed | Docker image build, backend health test, compose smoke failure log를 확인한다. |
 | `manifest-smoke` failed | `infra/k8s/base` manifest 파일과 `apiVersion`/`kind` shape를 확인한다. |
@@ -118,7 +121,7 @@ Scenario audit은 새 hard rule을 추가하는 절차가 아니다.
 | Test Layer | Runs By Default | Scope | Expected Result |
 | --- | --- | --- | --- |
 | CI unit / focused checks | yes, every PR | `tests/pr-linked-issue-check.test.js`, `tests/pr-risk-warning.test.js`, `scripts/test-harness.sh`, `scripts/validate-harness.sh --strict` | repo-local rule scripts and harness validation stay deterministic |
-| PR event checks | yes, on PR events | `.github/workflows/pr-linked-issue-check.yml`, `.github/workflows/pr-risk-warning.yml`, `.github/workflows/migration-schema-security-check.yml` | missing linked issue fails the check; migration/schema/security impact omissions fail the check; large/risky PR emits advisory warning and exits successfully |
+| PR event checks | yes, on PR events | `.github/workflows/pr-linked-issue-check.yml`, `.github/workflows/pr-size-hard-gate.yml`, `.github/workflows/pr-risk-warning.yml`, `.github/workflows/migration-schema-security-check.yml` | missing linked issue fails; oversize non-evidence PR fails unless explicitly approved; migration/schema/security impact omissions fail; risky paths emit advisory warning |
 | Read-only lifecycle audit | no, manual or scheduled | `scripts/status-workflow.sh`, `scripts/audit-github-records.sh`, GitHub issue/PR/project reads | drift is reported without changing remote state |
 | Admin setting audit | no, human-approved or read-only admin audit | branch protection, required checks, secret scanning, CODEOWNERS, Environment approval | actual repository settings match the inventory status or the gap is recorded |
 | External E2E rehearsal | no, human-approved only | throwaway branch/issue/PR/project lifecycle | expected remote changes, rollback, and stop conditions are stated before execution |
