@@ -12,7 +12,7 @@
 - Context omitted intentionally: M1 UI internals, M3 transform implementation internals, Airflow DAG implementation, Taxi benchmark implementation
 - Changed: `executor=spark_runner` API request support, `Week2WorkflowService` direct `Week2SparkRunner` execution path, spark `RuntimeConfig` derivation from `SourceConfig`/`WorkflowDefinition`, Docker-safe sample input fallback, Parquet catalog path evidence test, and related Week 2 contract docs.
 - Verified: failing test first (`spark_runner` rejected with 422), focused workflow test 16 passed, workflow+spark tests 18 passed, full backend tests 51 passed, Week 2 contract JSON validation passed, `git diff --check` passed, `scripts/validate-harness.sh` passed, `scripts/validate-harness.sh --strict` passed.
-- Remaining: PR #167 CI rerun must confirm container-smoke after the Docker sample fallback fix. Airflow DAG-internal Spark execution, real distributed Spark cluster, M3 TransformSpec execution, MinIO/S3 write, Taxi evidence remain follow-up work.
+- Remaining: Airflow DAG-internal Spark execution, real distributed Spark cluster, M3 TransformSpec execution, MinIO/S3 write, Taxi evidence remain follow-up work.
 - Next context: after commit/PR, M1 can call the existing Week 2 workflow route with `executor=spark_runner`; M5 can decide later whether Airflow invokes the same runner internally.
 - Risk: `spark_runner` output is local Parquet boundary evidence. It does not prove Airflow DAG execution or GB/TB distributed Spark scale.
 

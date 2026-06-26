@@ -29,7 +29,7 @@
 ## CI/CD Gate / CI-CD 게이트
 
 - CI required: yes, when PR opens
-- CI result: PR #167 initial `migration-schema-security` failed because PR body lacked `API/schema 영향`; PR body fixed and rerun passed. Initial `container-smoke` failed because Docker sample fixture path differed from local repo path; code fallback fix pushed after local regression passed.
+- CI result: PR #167 checks passed after PR body `API/schema 영향` 보강과 Docker sample fixture fallback fix.
 - Deploy/publish required: no
 - Deployment confirmation:
 - Rollback/smoke notes:
@@ -41,4 +41,4 @@
 | frontend build | frontend/UI 변경 없음 | n/a |
 | real Spark cluster smoke | 이번 PR은 local `pyarrow` Parquet runner boundary 연결이며 distributed Spark 실행은 후속 작업 | n/a |
 | Airflow DAG spark invocation | 이번 PR은 direct `executor=spark_runner` 경로만 연결하고 Airflow DAG 내부 실행은 후속 M5 작업 | n/a |
-| local Docker build | `docker build -f infra/docker/backend.Dockerfile ...`가 base image metadata 조회 단계에서 장시간 대기해 취소. GitHub Actions container-smoke rerun으로 확인한다. | n/a |
+| local Docker build | `docker build -f infra/docker/backend.Dockerfile ...`가 base image metadata 조회 단계에서 장시간 대기해 취소. 대신 GitHub Actions `container-smoke` 재실행이 통과했다. | n/a |
