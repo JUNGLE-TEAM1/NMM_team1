@@ -4,6 +4,7 @@ from pathlib import Path
 import pyarrow.parquet as pq
 
 from app.domain.runtime_config import RuntimeConfig
+from app.services import week2_spark_runner
 from app.services.week2_spark_runner import Week2SparkRunner
 
 
@@ -44,3 +45,29 @@ def test_week2_spark_runner_writes_parquet_and_returns_metrics(tmp_path: Path) -
     assert result.output_path == str(output_path)
     assert output_path.exists()
     assert pq.read_table(output_path).num_rows == 2
+
+
+def test_week2_spark_runner_resolves_container_sample_fallback(tmp_path: Path, monkeypatch) -> None:
+    """Docker image 안에서 backend/samples가 samples로 복사된 경우를 검증한다."""
+
+    samples_dir = tmp_path / "samples"
+    samples_dir.mkdir()
+    source_path = samples_dir / "reviews.jsonl"
+    output_path = tmp_path / "out" / "reviews.parquet"
+    write_jsonl(source_path, [{"review_id": "R1", "product_id": "B1", "rating": 5}])
+    monkeypatch.setattr(week2_spark_runner, "repo_root", lambda: tmp_path)
+
+    runtime_config = RuntimeConfig(
+        runner="spark_runner",
+        input_format="jsonl",
+        input_path="backend/samples/reviews.jsonl",
+        output_format="parquet",
+        output_path=str(output_path),
+    )
+
+    result = Week2SparkRunner().run(runtime_config, run_id="run_spark_smoke_001")
+
+    assert result.status == "succeeded"
+    assert result.row_count == 1
+    assert result.bytes == source_path.stat().st_size
+    assert output_path.exists()
