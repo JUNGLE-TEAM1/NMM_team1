@@ -4,20 +4,20 @@
 
 ## Current State / 현재 상태
 
-- State: PR open / checks passed
-- Summary: `PR linked issue required` guardrail을 repo-local GitHub Action, 검사 script, focused test로 적용했고 PR #136 remote checks가 모두 통과했다.
+- State: merged / finalized / closed
+- Summary: `PR linked issue required` guardrail 적용 PR #136은 merge/finalize 완료됐고 issue #135와 Project는 Done으로 정렬됐다.
 
 ## Recommended Next Action / 권장 다음 행동
 
-- PR #136을 리뷰하고 merge 여부를 결정한다.
-- Reason: branch push, PR 생성, remote CI/check 확인은 완료됐고, merge/finalize/cleanup은 사람 확인 후 진행해야 한다.
+- repo admin이 PR linked issue check를 required check로 지정할지 결정한다.
+- Reason: repo-local check는 동작하지만 실제 merge 차단은 branch protection required-check 설정이 필요하다.
 
 ## Options / 선택지
 
-1. PR #136 리뷰 후 merge 여부를 결정한다.
-2. merge 후 `scripts/prepare-pr.sh --finalize docs/workflows/docs/system-guardrail-application` 실행 여부를 사람 확인한다.
-3. branch protection required check 설정은 별도 admin follow-up으로 남긴다.
-4. CODEOWNERS/secret scanning/PR size warning은 후속 Phase로 분리한다.
+1. branch protection required check 설정 여부를 repo admin이 결정한다.
+2. CODEOWNERS 또는 secret scanning/gitleaks를 후속 Phase로 검토한다.
+3. PR size/risk warning hard gate 승격 여부는 별도 결정으로 남긴다.
+4. 이 workspace는 완료 상태로 보존한다.
 
 ## Waiting On Human / 사람 응답 대기
 
@@ -29,4 +29,4 @@
 
 ## Next AI Action / 다음 AI 행동
 
-- 사람 확인 전에는 merge/finalize/cleanup을 실행하지 않는다.
+- 이 workspace는 완료 상태다. 다음 작업은 별도 Phase에서 시작한다.

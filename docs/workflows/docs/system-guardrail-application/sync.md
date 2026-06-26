@@ -43,10 +43,11 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 - linked GitHub issue: #135
 - issue link: https://github.com/JUNGLE-TEAM1/NMM_team1/issues/135
 - issue creation result: created
-- issue project result: set to Review in JUNGLE-TEAM1 project 3
+- issue project result: set to Done in JUNGLE-TEAM1 project 3
 - issue reopen result: reopened closed issue before PR open
 - PR closing keyword: Closes #135
 - pushed branch: docs/system-guardrail-application
 - PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/136
-- merge status: open
-- issue close status: open
+- merge status: merged
+- issue close status: CLOSED
+- remote branch cleanup: deleted
