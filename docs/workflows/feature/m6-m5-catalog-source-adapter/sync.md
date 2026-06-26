@@ -45,7 +45,8 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 - issue creation result: created
 - issue project result: failed: error: your authentication token is missing required scopes [read:project] To request it, run:  gh auth refresh -s read:project
 - PR closing keyword: Closes #146
-- pushed branch:
-- PR link:
-- merge status:
-- issue close status:
+- pushed branch: feature/m6-m5-catalog-source-adapter
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/149
+- merge status: open
+- issue close status: open
+- issue reopen result: already open
