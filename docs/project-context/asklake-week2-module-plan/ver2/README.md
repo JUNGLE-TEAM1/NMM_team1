@@ -16,7 +16,8 @@
 6. `existing-implementation-anchor.md`
 7. `m3-json-main-path-decision.md`
 8. `runner-boundary-decision.md`
-9. 필요 시 상위 폴더의 `decisions.md`, `plan.md`, `meeting-summary.md`
+9. `m1-live-ui-phase-plan.md`
+10. 필요 시 상위 폴더의 `decisions.md`, `plan.md`, `meeting-summary.md`
 
 ## 현재 기준
 
@@ -73,5 +74,7 @@ Phase 4의 현재 기준은 [`existing-implementation-anchor.md`](existing-imple
 Phase 5의 현재 기준은 [`m3-json-main-path-decision.md`](m3-json-main-path-decision.md)에 둔다.
 
 Phase 6의 현재 기준은 [`runner-boundary-decision.md`](runner-boundary-decision.md)에 둔다.
+
+M1 live UI 후속 Phase 기준은 [`m1-live-ui-phase-plan.md`](m1-live-ui-phase-plan.md)에 둔다.
 
 팀원이 빠르게 현재 분업과 진행상황을 파악할 때는 [`team-handoff-summary.md`](team-handoff-summary.md)를 먼저 읽는다.

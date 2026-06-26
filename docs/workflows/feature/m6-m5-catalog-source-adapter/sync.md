@@ -21,11 +21,11 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 
 ## Pre-Merge Sync
 
-- main commit: not checked after implementation
-- conflicts: not checked
-- validation: local focused/backend/compile/json/diff/harness validation passed
-- result: deferred
-- deferral reason: PR 준비 전 pull/merge/rebase 또는 remote 상태 확인은 사람 확인 뒤 실행한다.
+- main commit: 5e46e32
+- conflicts: `docs/reports/README.md` report index concurrent edit resolved
+- validation: focused M6 test `7 passed`; backend tests `39 passed`; compileall passed; `jq -e . contracts/*.sample.json`; `git diff --check`; `scripts/validate-harness.sh --strict`
+- result: synced with origin/main and revalidated locally
+- deferral reason: n/a
 
 ## PR Conflict Resolution
 
@@ -33,10 +33,10 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 - conflict detection command: `gh pr view 149 --json mergeStateStatus`; `git fetch origin main`; `git merge-tree $(git merge-base HEAD origin/main) HEAD origin/main`
 - conflict type: report index concurrent edit
 - affected files: `docs/reports/README.md`
-- resolution path: needs human-confirmed main sync, then keep both M1 live UI Phase plan row and M6 M5 CatalogSource adapter row
-- resolved files:
-- revalidation:
-- remaining risk: PR #149 remains `mergeStateStatus: DIRTY` until the branch is synced with `origin/main`.
+- resolution path: user confirmed PR completion; merged `origin/main` into feature branch and kept M1 live UI Phase plan, M1 Week2 API Client, and M6 M5 CatalogSource adapter rows.
+- resolved files: `docs/reports/README.md`
+- revalidation: focused M6 test `7 passed`; backend tests `39 passed`; compileall passed; `jq -e . contracts/*.sample.json`; `git diff --check`; `scripts/validate-harness.sh --strict`
+- remaining risk: PR #149 remote merge state must be rechecked after merge commit push.
 
 ## Push / PR
 
