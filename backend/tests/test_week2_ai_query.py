@@ -14,6 +14,30 @@ class InMemoryCatalogSource:
         return self.catalogs
 
 
+def _review_catalog(dataset_id: str, name: str, run_id: str) -> dict[str, object]:
+    return {
+        "tenant_id": "tenant_demo",
+        "dataset_id": dataset_id,
+        "name": name,
+        "s3_uri": f"s3://asklake-demo/{dataset_id}/run_id={run_id}/",
+        "schema": {
+            "fields": [
+                {"name": "product_id", "type": "string", "nullable": False},
+                {"name": "review_count", "type": "integer", "nullable": False},
+                {"name": "average_rating", "type": "number", "nullable": True},
+            ]
+        },
+        "lineage": {"run_id": run_id},
+        "query": {
+            "table_name": "reviews_gold",
+            "allowed_columns": ["product_id", "review_count", "average_rating"],
+            "default_limit": 100,
+            "timeout_seconds": 30,
+        },
+        "updated_at": "2026-06-26T10:00:00+09:00",
+    }
+
+
 def test_week2_ai_query_returns_fixture_backed_ai_query_result() -> None:
     client = TestClient(create_app())
 
@@ -85,6 +109,31 @@ def test_week2_ai_query_uses_injected_catalog_source_for_evidence() -> None:
     assert result.status == "succeeded"
     assert result.query_result.sql == result.sql
     assert result.query_result.rows == result.rows
+
+
+def test_week2_ai_query_scores_catalog_metadata_terms_when_columns_tie() -> None:
+    generic_catalog = _review_catalog(
+        "dataset_generic_product_metrics",
+        "Generic Product Metrics",
+        "run_generic_001",
+    )
+    amazon_catalog = _review_catalog(
+        "dataset_amazon_reviews_gold",
+        "Amazon Reviews Gold",
+        "run_amazon_reviews_001",
+    )
+    service = Week2AIQueryService(
+        sql_engine=FakeSqlEngine(),
+        catalog_source=InMemoryCatalogSource(generic_catalog, amazon_catalog),
+    )
+
+    result = service.answer("Amazon reviews에서 평점 높은 상품 알려줘")
+
+    assert result.selected_datasets[0].dataset_id == "dataset_amazon_reviews_gold"
+    assert result.evidence[0].dataset_id == "dataset_amazon_reviews_gold"
+    assert result.evidence[0].run_id == "run_amazon_reviews_001"
+    assert "amazon" in result.selected_datasets[0].reason.lower()
+    assert "average_rating" in result.selected_datasets[0].reason
 
 
 def test_fake_sql_engine_blocks_non_select_sql() -> None:
