@@ -32,6 +32,7 @@ jobs:
       - name: PR linked issue check tests
         run: |
           node tests/pr-linked-issue-check.test.js
+          node tests/pr-risk-warning.test.js
 
       - name: Harness validation
         run: |
