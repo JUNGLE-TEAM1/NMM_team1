@@ -237,6 +237,10 @@ def generate(args: argparse.Namespace) -> dict[str, Any]:
     product_count = write_jsonl(product_path, products)
     behavior_count = write_jsonl(behavior_path, events)
 
+    selected_option = args.selected_option or (
+        "option_2_recommended_mvp_demo" if args.review_rows >= 100_000 and args.product_rows >= 10_000 else "option_1_minimum_start"
+    )
+
     manifest = {
         "dataset_name": "week2_mvp_demo_raw",
         "connector_type": "json",
@@ -247,7 +251,7 @@ def generate(args: argparse.Namespace) -> dict[str, Any]:
         "is_synthetic_source": True,
         "based_on": ["amazon_reviews_2023"],
         "purpose": "week2_demo_m3_bronze_input",
-        "selected_option": "option_1_minimum_start",
+        "selected_option": selected_option,
         "source_files": {
             "reviews": str(review_source),
             "metadata": str(meta_source),
@@ -285,10 +289,11 @@ def generate(args: argparse.Namespace) -> dict[str, Any]:
         "connector_type": "json",
         "logical_shape": "amazon_reviews_json",
         "data_origin": "demo_synthetic_raw",
+        "selected_option": selected_option,
         "synthetic_notice": "demo synthetic raw",
         "known_limitations": [
             "Behavior events are synthetic unless replaced by M4 Kafka output.",
-            "Taxi rows are not included in this minimum-start sample.",
+            "Taxi rows are not included in this Amazon Reviews demo sample.",
             "This data must not be presented as real production shopping behavior.",
         ],
     }
@@ -302,6 +307,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--review-rows", type=int, default=10_000)
     parser.add_argument("--product-rows", type=int, default=1_000)
     parser.add_argument("--events-per-product", type=int, default=3)
+    parser.add_argument("--selected-option")
     parser.add_argument("--external-root", type=Path, default=Path("data/external/amazon-reviews-2023"))
     parser.add_argument("--output-root", type=Path, default=Path("data/week2/mvp_synthesis"))
     return parser.parse_args(argv)

@@ -16,7 +16,32 @@
       "dataset_id": "dataset_reviews_gold",
       "run_id": "run_reviews_demo_001",
       "s3_uri": "s3://asklake-demo/reviews/gold/run_id=run_reviews_demo_001/",
-      "freshness": "2026-06-25T10:03:00+09:00"
+      "freshness": "2026-06-25T10:03:00+09:00",
+      "table_name": "reviews_gold",
+      "schema_fields": [
+        {"name": "product_id", "type": "string", "nullable": false},
+        {"name": "review_count", "type": "integer", "nullable": false},
+        {"name": "average_rating", "type": "number", "nullable": true}
+      ],
+      "metrics": {
+        "semantics": {
+          "row_count": "output_dataset_rows",
+          "bytes": "output_dataset_bytes"
+        },
+        "row_count": 3,
+        "bytes": 268,
+        "quality": {
+          "schema_match": "passed",
+          "row_count_checked": true
+        }
+      },
+      "lineage": {
+        "source_ids": ["source_amazon_reviews_demo"],
+        "pipeline_id": "pipeline_reviews_json_e2e",
+        "run_id": "run_reviews_demo_001",
+        "upstream_datasets": ["dataset_reviews_silver"]
+      },
+      "retrieval_terms": ["review_count", "average_rating"]
     }
   ],
   "status": "succeeded",
@@ -47,7 +72,7 @@
       "average_rating": null
     }
   ],
-  "summary": "TODO: generate after Day 4 question and actual SQL result are fixed.",
+  "summary": "B001 상품이 리뷰 42개로 가장 많습니다. 근거: dataset=dataset_reviews_gold; run_id=run_reviews_demo_001; row_count=3; schema=product_id, review_count, average_rating.",
   "chart_spec": {
     "type": "bar",
     "x": "product_id",
