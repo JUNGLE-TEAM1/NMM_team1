@@ -5,13 +5,15 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from app.domain.runtime_config import RuntimeConfig
 from app.services.week2_airflow_adapter import Week2AirflowAdapter, Week2AirflowError
 from app.services.week2_catalog_store import Week2CatalogStore
 from app.services.week2_local_runner import Week2LocalRunner, Week2RunnerResult
+from app.services.week2_spark_runner import Week2SparkRunner
 
 SUCCESSFUL_RUN_STATUSES = {"succeeded", "fallback_succeeded"}
 AIRFLOW_SUCCESS_STATUS = "succeeded"
-SUPPORTED_EXECUTORS = {"airflow", "local_runner"}
+SUPPORTED_EXECUTORS = {"airflow", "local_runner", "spark_runner"}
 
 
 class Week2WorkflowNotFoundError(ValueError):
@@ -28,6 +30,7 @@ class Week2WorkflowService:
         contracts_dir: Path | None = None,
         airflow_adapter: Week2AirflowAdapter | None = None,
         local_runner: Week2LocalRunner | None = None,
+        spark_runner: Week2SparkRunner | None = None,
         output_root: Path | None = None,
         catalog_store: Week2CatalogStore | None = None,
     ) -> None:
@@ -45,6 +48,7 @@ class Week2WorkflowService:
             schema_definition=self.schema_definition,
             output_root=self.output_root,
         )
+        self.spark_runner = spark_runner or Week2SparkRunner()
         self.runs = self.catalog_store.load_runs()
         self.catalog = self.catalog_store.load_catalog()
         self.sequence = self.catalog_store.sequence_start(self.runs)
@@ -102,6 +106,8 @@ class Week2WorkflowService:
     def _run_with_executor(self, executor: str, run_id: str) -> Week2RunnerResult:
         if executor == "local_runner":
             return self.local_runner.run(self.workflow_definition, run_id=run_id)
+        if executor == "spark_runner":
+            return self.spark_runner.run(self._spark_runtime_config(run_id), run_id=run_id)
 
         try:
             airflow_result = self.airflow_adapter.run(self.workflow_definition, run_id=run_id)
@@ -142,6 +148,32 @@ class Week2WorkflowService:
         updated_output["uri"] = replace_run_id(updated_output["uri"], run_id)
         return updated_output
 
+    def _spark_runtime_config(self, run_id: str) -> RuntimeConfig:
+        source_options = self.source_config.get("options", {})
+        source_ref = self.source_config.get("connection_ref", {})
+        target_dataset = self.workflow_definition.get("target_dataset") or self.catalog_template["dataset_id"]
+
+        return RuntimeConfig(
+            runner="spark_runner",
+            input_format=source_options.get("format", "jsonl"),
+            input_path=source_ref["path"],
+            output_format="parquet",
+            output_path=str(self._spark_output_path(run_id, target_dataset)),
+            options={"compression": self._parquet_compression()},
+        )
+
+    def _spark_output_path(self, run_id: str, target_dataset: str) -> Path:
+        prefix = replace_run_id(self.catalog_template["storage"]["prefix"], run_id)
+        return self.output_root / Path(prefix) / f"{target_dataset}.parquet"
+
+    def _parquet_compression(self) -> str:
+        runtime_config_path = self.contracts_dir / "runtime_config.sample.json"
+        if not runtime_config_path.exists():
+            return "snappy"
+        with runtime_config_path.open(encoding="utf-8") as runtime_config_file:
+            runtime_config = json.load(runtime_config_file)
+        return runtime_config.get("parquet", {}).get("compression", "snappy")
+
     def _catalog_for_run(self, run_id: str, timestamp: str, runner_result: Any) -> dict[str, Any]:
         catalog = deepcopy(self.catalog_template)
         catalog["s3_uri"] = replace_run_id(catalog["s3_uri"], run_id)
@@ -166,6 +198,8 @@ class Week2WorkflowService:
             logs.append({"level": "info", "message": "airflow adapter executed Week 2 workflow boundary"})
         elif executor == "airflow":
             logs.append({"level": "info", "message": "airflow adapter fell back to local runner"})
+        elif executor == "spark_runner":
+            logs.append({"level": "info", "message": "spark runner executed Week 2 workflow boundary"})
         else:
             logs.append({"level": "info", "message": "local runner executed Week 2 workflow boundary"})
         return logs
