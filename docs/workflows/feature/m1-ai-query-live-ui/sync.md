@@ -43,10 +43,11 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 - linked GitHub issue: #161
 - issue link: https://github.com/JUNGLE-TEAM1/NMM_team1/issues/161
 - issue creation result: created
-- issue project result: added to JUNGLE-TEAM1 project 3; status set to In Progress
+- issue project result: set to Review in JUNGLE-TEAM1 project 3
 - remote operations reconciliation: issue #161 was unexpectedly closed/Done after creation; reopened with comment and Project Status reset to In Progress before PR creation because implementation PR was not merged yet.
 - PR closing keyword: Closes #161
-- pushed branch:
-- PR link:
-- merge status:
-- issue close status:
+- pushed branch: feature/m1-ai-query-live-ui
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/162
+- merge status: open
+- issue close status: open
+- issue reopen result: reopened closed issue before PR open
