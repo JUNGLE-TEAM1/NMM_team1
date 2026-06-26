@@ -46,6 +46,6 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 - issue project result: added to JUNGLE-TEAM1 project 3; status set to Ready after In Progress automation conflict
 - PR closing keyword: Closes #166
 - pushed branch: `feature/m2-workflow-runner-integration`
-- PR link:
-- merge status:
-- issue close status:
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/167
+- merge status: draft PR opened; CI rerun pending after container sample fallback fix
+- issue close status: #166 remains open until PR merge because PR body uses `Closes #166`

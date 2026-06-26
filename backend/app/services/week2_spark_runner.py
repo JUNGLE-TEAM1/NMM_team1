@@ -25,7 +25,7 @@ class Week2SparkRunner:
         ]
 
         try:
-            input_path = resolve_path(config.input_path)
+            input_path = resolve_input_path(config.input_path)
             output_path = output_path_for_config(config, input_path, run_id)
             rows = read_rows(input_path, config.input_format)
             write_parquet(rows, output_path, config.options)
@@ -129,6 +129,25 @@ def output_path_for_config(config: RuntimeConfig, input_path: Path, run_id: str)
         raise Week2SparkRunnerError("Either output_path or output_root is required")
     output_root = resolve_path(config.output_root)
     return output_root / "spark_smoke" / f"run_id={run_id}" / f"{input_path.stem}.parquet"
+
+
+def resolve_input_path(path_value: str) -> Path:
+    """Docker smoke처럼 sample fixture 위치가 달라져도 입력 파일을 찾는다."""
+
+    path = Path(path_value)
+    if path.is_absolute():
+        return path
+
+    root = repo_root()
+    candidates = [
+        root / path,
+        root / path.name,
+        root / "samples" / path.name,
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return candidates[0]
 
 
 def resolve_path(path_value: str) -> Path:
