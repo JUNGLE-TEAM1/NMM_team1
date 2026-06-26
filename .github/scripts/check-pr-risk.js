@@ -32,9 +32,14 @@ function isRiskyPath(path) {
   return RISKY_PATH_PATTERNS.some((pattern) => pattern.test(path));
 }
 
+function parsePositiveInteger(value, fallback) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
 function evaluatePullRequestRisk(rows, options = {}) {
-  const maxFiles = Number(options.maxFiles || DEFAULT_MAX_FILES);
-  const maxLines = Number(options.maxLines || DEFAULT_MAX_LINES);
+  const maxFiles = parsePositiveInteger(options.maxFiles, DEFAULT_MAX_FILES);
+  const maxLines = parsePositiveInteger(options.maxLines, DEFAULT_MAX_LINES);
   const changedFiles = rows.length;
   const additions = rows.reduce((sum, row) => sum + row.additions, 0);
   const deletions = rows.reduce((sum, row) => sum + row.deletions, 0);
@@ -95,7 +100,10 @@ function readDiffRows(base, head) {
     throw new Error("Both base and head SHAs are required.");
   }
 
-  const output = execFileSync("git", ["diff", "--numstat", base, head], {
+  const mergeBase = execFileSync("git", ["merge-base", base, head], {
+    encoding: "utf8",
+  }).trim();
+  const output = execFileSync("git", ["diff", "--numstat", mergeBase, head], {
     encoding: "utf8",
   });
   return parseNumstat(output);
@@ -128,4 +136,5 @@ module.exports = {
   buildSummary,
   evaluatePullRequestRisk,
   parseNumstat,
+  parsePositiveInteger,
 };

@@ -7,19 +7,19 @@
 ## TDD Plan / TDD 계획
 
 - Applies: yes
-- Reason: PR risk warning은 threshold와 risky path 판정이 핵심이므로 focused test로 경계를 고정한다.
+- Reason: PR risk warning은 threshold, risky path, diff 기준 판정이 핵심이므로 focused test로 경계를 고정한다.
 - Failing test first: yes
 - Expected failure command/result: `node tests/pr-risk-warning.test.js` -> `MODULE_NOT_FOUND` for `../.github/scripts/check-pr-risk`
-- Pass command/result: `node tests/pr-risk-warning.test.js` -> passed
-- Refactor notes: warning logic은 CommonJS module export와 GitHub Action CLI entrypoint를 함께 제공한다.
+- Pass command/result: `node tests/pr-risk-warning.test.js` -> passed after adding threshold fallback coverage
+- Refactor notes: warning logic은 CommonJS module export와 GitHub Action CLI entrypoint를 함께 제공한다. diff 계산은 merge-base 기준으로 보정했다.
 
 ## Branch Checks / 브랜치 검증
 
 | Check | Command | Result | Evidence |
 | --- | --- | --- | --- |
 | lint | `bash -n scripts/start-workflow.sh scripts/status-workflow.sh scripts/validate-harness.sh scripts/prepare-pr.sh scripts/harness-flow-check.sh` | passed | shell syntax 유지 확인 |
-| unit/focused test | `node tests/pr-risk-warning.test.js`; `node tests/pr-linked-issue-check.test.js` | passed | PR risk warning, linked issue check 회귀 확인 |
-| integration/contract test | `BASE_SHA=origin/main HEAD_SHA=HEAD node .github/scripts/check-pr-risk.js` | passed | PR risk summary CLI 출력 확인 |
+| unit/focused test | `node tests/pr-risk-warning.test.js`; `node tests/pr-linked-issue-check.test.js` | passed | PR risk warning, threshold fallback, linked issue check 회귀 확인 |
+| integration/contract test | `BASE_SHA=origin/main HEAD_SHA=HEAD node .github/scripts/check-pr-risk.js` | passed | merge-base 기준 PR risk summary CLI 출력 확인 |
 | build/typecheck | n/a | not applicable | 문서/Node script 변경이며 build 대상 없음 |
 | harness validation | `scripts/validate-harness.sh` | passed | Harness validation passed |
 | strict harness validation | `scripts/validate-harness.sh --strict` | passed | Harness validation passed |

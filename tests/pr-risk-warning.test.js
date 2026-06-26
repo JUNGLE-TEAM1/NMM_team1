@@ -3,6 +3,7 @@ const assert = require("assert");
 const {
   evaluatePullRequestRisk,
   parseNumstat,
+  parsePositiveInteger,
 } = require("../.github/scripts/check-pr-risk");
 
 const smallRows = parseNumstat(["10\t2\tdocs/README.md"].join("\n"));
@@ -49,5 +50,22 @@ assert.ok(
 const binaryRows = parseNumstat("-\t-\tdocs/sample.png");
 assert.strictEqual(binaryRows[0].additions, 0);
 assert.strictEqual(binaryRows[0].deletions, 0);
+
+const invalidThreshold = evaluatePullRequestRisk(
+  parseNumstat("700\t0\tdocs/01-product-planning.md"),
+  {
+    maxFiles: "abc",
+    maxLines: "abc",
+  },
+);
+assert.ok(
+  invalidThreshold.warnings.some((warning) => warning.includes("line count")),
+  "invalid thresholds should fall back to defaults instead of disabling warnings",
+);
+
+assert.strictEqual(parsePositiveInteger("12", 20), 12);
+assert.strictEqual(parsePositiveInteger("0", 20), 20);
+assert.strictEqual(parsePositiveInteger("-1", 20), 20);
+assert.strictEqual(parsePositiveInteger("abc", 20), 20);
 
 console.log("pr-risk-warning tests passed");

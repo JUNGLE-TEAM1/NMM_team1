@@ -10,9 +10,9 @@
 - Primary context read: `AGENTS.md`, `docs/system-guardrails.md`, `.github/workflows/ci.yml`, `docs/05`, `docs/06`, `docs/07`
 - Escalated context read: 없음
 - Context omitted intentionally: 제품 기능/architecture/interface 세부 문서는 운영 guardrail 적용 범위가 아니므로 생략
-- Changed: PR risk warning script, GitHub Action workflow, focused test, CI test step, system guardrail inventory 갱신
-- Verified: `node tests/pr-risk-warning.test.js`, `node tests/pr-linked-issue-check.test.js`, `bash -n ...`, `scripts/validate-harness.sh`, `scripts/validate-harness.sh --strict`, `git fetch origin main`, PR #138 remote checks all passed
-- Remaining: 사람 확인 후 PR #138 merge 여부 결정, merge 후 finalize/cleanup 여부 확인, hard gate/override label 후속 결정
+- Changed: PR risk warning script, GitHub Action workflow, focused test, CI test step, system guardrail inventory 갱신; 보완으로 merge-base diff 기준과 threshold fallback 추가
+- Verified: `node tests/pr-risk-warning.test.js`, `node tests/pr-linked-issue-check.test.js`, `BASE_SHA=origin/main HEAD_SHA=HEAD node .github/scripts/check-pr-risk.js`, `scripts/validate-harness.sh --strict`; remote checks는 보완 커밋 push 후 재확인 필요
+- Remaining: 보완 커밋 push, PR #138 remote checks 재확인, 사람 확인 후 PR #138 merge 여부 결정
 - Next context: threshold/risky path 조정 또는 hard gate/override label 여부
 - Risk: warning-only check라 merge를 직접 차단하지 않는다. hard gate는 팀 합의와 repo admin 설정이 필요하다.
 
@@ -51,8 +51,9 @@
 
 ## Implementation Summary / 구현 요약
 
-- `git diff --numstat` 기반 changed files/additions/deletions 계산 script를 추가했다.
+- merge-base 기준 `git diff --numstat`으로 changed files/additions/deletions를 계산하는 script를 추가했다.
 - 기본 threshold는 `20 files`, `600 changed lines`이며, risky path 변경은 별도 warning으로 표시한다.
+- threshold env 값이 숫자가 아니거나 0 이하이면 기본값으로 fallback한다.
 - PR에서 실행되는 warning-only GitHub Action을 추가했다.
 - 기존 CI harness job에 focused test를 추가했다.
 - `docs/system-guardrails.md`에서 `PR size/risk warning` 상태를 `planned`에서 `partial`로 갱신했다.
@@ -89,7 +90,7 @@ gh pr view 138 --json statusCheckRollup,mergeStateStatus
 - Workspace file: `docs/workflows/docs/pr-risk-warning/quality.md`
 - Quality gate status: passed
 - TDD status: applied; first run failed with missing module, then focused test passed
-- CI/check result: PR #138 remote checks all passed (`linked-issue`, `risk-warning`, `harness`, `container-smoke`, `manifest-smoke`)
+- CI/check result: previous PR #138 remote checks passed; 보완 커밋 push 후 재확인 필요
 - Skipped checks: deploy/publish는 변경 없음
 - CD/deploy gate: not required
 
@@ -98,7 +99,7 @@ gh pr view 138 --json statusCheckRollup,mergeStateStatus
 - Workspace file: `docs/workflows/docs/pr-risk-warning/decisions.md`
 - Decision status: accepted
 - Accepted/deferred decisions: warning-only GitHub Action accepted; hard gate/override label deferred
-- Revisit/rollback condition: false positive가 많거나 실제 위험 PR을 놓치면 threshold/risky path를 재조정한다.
+- Revisit/rollback condition: false positive가 많거나 실제 위험 PR을 놓치면 threshold/risky path 또는 merge-base diff 기준을 재조정한다.
 
 ## Regression Guard / 회귀 보호
 
@@ -110,7 +111,7 @@ gh pr view 138 --json statusCheckRollup,mergeStateStatus
 
 - Reviewed failure: PR 크기 기준이 사람 판단 영역을 강제로 막아 개발 속도를 늦추는 경우
 - Expected behavior: warning-only check로 위험을 표시하고 리뷰어가 판단한다.
-- Verification: `check-pr-risk.js`는 warning을 출력하지만 non-zero exit로 merge를 막지 않는다.
+- Verification: `check-pr-risk.js`는 merge-base diff 기준으로 warning을 출력하지만 non-zero exit로 merge를 막지 않는다.
 - Result: passed
 
 ## Manual Verification / 수동 검증
@@ -149,5 +150,5 @@ gh pr view 138 --json statusCheckRollup,mergeStateStatus
 
 ## Final Judgment / 최종 판단
 
-- Done: implementation, local validation, PR #138 creation, and remote CI/check verification complete
-- Remaining risk: advisory warning은 merge를 직접 차단하지 않으며, hard gate/override label은 후속 결정이다.
+- Done: implementation, local validation, PR #138 creation, and first remote CI/check verification complete
+- Remaining risk: 보완 커밋 후 remote CI/check 재확인이 필요하다. advisory warning은 merge를 직접 차단하지 않으며, hard gate/override label은 후속 결정이다.

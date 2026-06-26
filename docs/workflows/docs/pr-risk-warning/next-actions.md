@@ -4,18 +4,18 @@
 
 ## Current State / 현재 상태
 
-- State: PR open / checks passed
-- Summary: PR size/risk warning script, workflow, focused test를 추가했고 PR #138 remote checks가 모두 통과했다.
+- State: PR open / supplement local checks passed
+- Summary: PR size/risk warning의 merge-base diff 기준과 threshold fallback 보완을 적용했고 local checks가 통과했다.
 
 ## Recommended Next Action / 권장 다음 행동
 
-- PR #138을 리뷰하고 merge 여부를 결정한다.
-- Reason: branch push, PR 생성, remote CI/check 확인은 완료됐고, merge/finalize/cleanup은 사람 확인 후 진행해야 한다.
+- 보완 커밋을 PR #138에 push하고 remote CI/check를 다시 확인한다.
+- Reason: local validation은 통과했고, remote checks는 push 후 다시 실행되어야 한다.
 
 ## Options / 선택지
 
-1. PR #138 리뷰 후 merge 여부를 결정한다.
-2. merge 후 `scripts/prepare-pr.sh --finalize docs/workflows/docs/pr-risk-warning` 실행 여부를 사람 확인한다.
+1. 보완 커밋 push 후 PR #138 remote checks 확인.
+2. PR #138 리뷰 후 merge 여부를 결정한다.
 3. hard gate/override label은 후속 Phase로 분리한다.
 4. 이 workspace를 멈춘다.
 
