@@ -11,8 +11,8 @@
 - Escalated context read: not needed
 - Context omitted intentionally: M3 Bronze implementation internals, M5 Workflow/Catalog adapter internals, SQL engine implementation, Taxi benchmark plan
 - Changed: added `scripts/week2_m2_amazon_reviews_runner_evidence.py`, `tests/test_week2_m2_amazon_reviews_runner_evidence.py`, and workspace evidence docs for Amazon Reviews JSONL runner proof.
-- Verified: focused unittest, existing `Week2SparkRunner` regression, sample evidence smoke, M1 synthetic raw 10,000행 generation, synthetic raw runner evidence, Parquet row count verification, `git diff --check`, `scripts/validate-harness.sh`, `scripts/validate-harness.sh --strict`
-- Remaining: PR push/open has not been done yet.
+- Verified: focused unittest, existing `Week2SparkRunner` regression, sample evidence smoke, M1 synthetic raw 10,000행 generation, synthetic raw runner evidence, Parquet row count verification, `origin/main` merge, `git diff --check`, `scripts/validate-harness.sh`, `scripts/validate-harness.sh --strict`
+- Remaining: PR #163 CI completion and merge decision.
 - Next context: after merge, choose M5 runner integration or SQL smoke as the next M2/M5/M6 handoff. M1 synthetic raw can be regenerated with the recorded command because generated `data/` artifacts stay ignored.
 - Risk: this is local `pyarrow` Parquet evidence, not distributed Spark execution. It proves the runner boundary and output evidence path, not GB/TB scale processing.
 
@@ -58,6 +58,6 @@ M1 synthetic raw가 로컬에 있는 경우 같은 명령을 아래처럼 확장
 - synthetic input bytes: `2264170`
 - synthetic output row count: `10000`
 - synthetic output bytes: `731455`
-- synthetic runner duration: `114ms`
+- synthetic runner duration: `119ms` after merging `origin/main`
 - synthetic output path: `data/results/m2_amazon_reviews_runner_evidence/spark_smoke/run_id=run_m2_amazon_reviews_synthetic_001/reviews_seed.parquet`
 - direct Parquet verification: actual rows `10000`, columns `review_id`, `product_id`, `rating`, `review_text`, `review_time`, `verified_purchase`, `run_id`
