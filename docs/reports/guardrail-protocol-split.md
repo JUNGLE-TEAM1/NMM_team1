@@ -6,8 +6,8 @@
 - Date: 2026-06-26
 - Changed: `docs/system-guardrails.md`를 신설하고, 강제 가능한 안전장치와 하네스 협업 프로토콜의 책임 경계를 Source of Truth 문서에 반영했다. `AGENTS.md`, `docs/00-layer-map.md`, `docs/04-development-guide.md`, `docs/09-collaboration-agreement.md`, `docs/11-git-sync-policy.md`, `docs/12-quality-gates.md`, `docs/13-human-command-flow.md`가 새 system guardrails 문서를 참조한다.
 - Verified: `scripts/validate-harness.sh`, `scripts/validate-harness.sh --strict`, guardrail keyword `rg` 검색, `scripts/status-workflow.sh docs/workflows/docs/guardrail-protocol-split` 실행.
-- Remaining: final validation rerun, branch push, PR 생성이 남아 있다. 실제 GitHub branch protection, required checks, secret scanning, CODEOWNERS, Environment approval, PR linked issue required check, Project automation은 적용하지 않았다. `docs/system-guardrails.md`에 `requires-admin`, `partial`, `planned` 상태로 남겼다.
-- Next context: final validation과 PR-ready 검사를 통과하면 PR을 생성한다. 이후 실제 system setting 적용 Phase를 만들 경우 `docs/system-guardrails.md`의 Guardrail Inventory를 시작점으로 삼는다.
+- Remaining: PR #134 CI/check 확인, merge/finalize/issue close/branch cleanup은 PR 생성 후 사람 확인 경로를 따른다. 실제 GitHub branch protection, required checks, secret scanning, CODEOWNERS, Environment approval, PR linked issue required check, Project automation은 적용하지 않았다. `docs/system-guardrails.md`에 `requires-admin`, `partial`, `planned` 상태로 남겼다.
+- Next context: PR #134 checks가 통과하면 merge/finalize 여부를 결정한다. 이후 실제 system setting 적용 Phase를 만들 경우 `docs/system-guardrails.md`의 Guardrail Inventory를 시작점으로 삼는다.
 - Risk: branch start issue creation은 GitHub가 local branch creation을 직접 감지할 수 없어 hard system gate가 아니라 `scripts/start-workflow.sh` 중심의 script-enforced protocol로 남는다.
 
 ---
@@ -149,4 +149,4 @@ scripts/status-workflow.sh docs/workflows/docs/guardrail-protocol-split
 ## Final Judgment / 최종 판단
 
 - Done: system guardrail / harness protocol 책임 분리 문서화와 local validation 완료
-- Remaining risk: final validation rerun과 PR 생성이 남아 있고, 실제 시스템 강제력은 아직 설정되지 않은 항목이 있다.
+- Remaining risk: PR #134 CI/check와 merge/finalize가 남아 있고, 실제 시스템 강제력은 아직 설정되지 않은 항목이 있다.

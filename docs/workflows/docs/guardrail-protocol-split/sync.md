@@ -23,7 +23,7 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 
 - main commit: `87e06d8c8ee8eae4d8ce02f74a03826bfd02f97a`
 - conflicts: `docs/project-context/asklake-week2-module-plan/ver2/README.md`, `docs/project-context/asklake-week2-module-plan/ver2/revised-nonoverlap-responsibility.md`; both outside this Phase scope and resolved with `origin/main`
-- validation: pending rerun after sync evidence update
+- validation: `scripts/validate-harness.sh` passed; `scripts/validate-harness.sh --strict` passed; `scripts/status-workflow.sh docs/workflows/docs/guardrail-protocol-split` reported PR checklist ready
 - result: `git fetch origin main`; `git merge --no-edit origin/main`; merge commit `8bf79c8`
 - deferral reason: n/a
 
@@ -43,11 +43,14 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 - linked GitHub issue: #133
 - issue link: https://github.com/JUNGLE-TEAM1/NMM_team1/issues/133
 - issue creation result: created
-- issue project result: added to JUNGLE-TEAM1 project 3; status set to In Progress
+- issue project result: set to Review in JUNGLE-TEAM1 project 3
 - remote issue check: `gh issue view 133 --json number,title,state,url,closed,projectItems` returned `CLOSED` / Project `Done` on 2026-06-26
 - remote issue follow-up: 2026-06-26에 `gh issue reopen 133` 재실행 후 issue `OPEN` 확인. `gh project item-edit --id PVTI_lADOEVx8xs4BbEjqzgw5zSM --project-id PVT_kwDOEVx8xs4BbEjq --field-id PVTSSF_lADOEVx8xs4BbEjqzhV3sIQ --single-select-option-id 98236657`로 Project Status `In Progress` 정렬.
 - PR closing keyword: Closes #133
-- pushed branch:
-- PR link:
-- merge status:
-- issue close status:
+- pushed branch: docs/guardrail-protocol-split
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/134
+- merge status: open
+- issue close status: open
+- issue reopen result: already open
+- issue project status: Review
+- PR CI/check status: in progress at PR creation
