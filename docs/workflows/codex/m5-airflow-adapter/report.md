@@ -8,7 +8,7 @@
 - Workspace state: complete
 - Context Budget mode: Lite Read with targeted implementation reads
 - Changed: `Week2AirflowAdapter`에 Airflow config/env/http client boundary, DAG trigger request, DAG run polling, `week2_result` to `Week2RunnerResult` conversion, missing-result failure guard를 추가했다.
-- Verified: adapter focused tests passed, 4 tests; existing M5/M6 focused suite passed, 26 tests; full backend tests passed, 48 tests; `git diff --check` passed; `scripts/validate-harness.sh --strict` passed.
+- Verified: adapter focused tests passed, 4 tests; existing M5/M6 focused suite passed, 26 tests; full backend tests passed, 48 tests; `git diff --check` passed; `scripts/validate-harness.sh --strict` passed. Remote CI pending for PR #157.
 - Remaining: 실제 Airflow runtime smoke, SparkRunner integration, M3 TransformSpec adapter
 - Next context: 실제 Airflow server/DAG smoke는 후속 slice에서 `week2_result` payload contract와 함께 확인한다.
 - Risk: Airflow API shape와 실제 DAG result payload는 후속 smoke에서 확인 필요.

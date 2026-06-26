@@ -2,7 +2,7 @@
 
 ## Recommended Next Action
 
-- Commit, push, and open a draft PR for the Airflow adapter slice.
+- Watch PR #157 remote checks, then present the Pre-PR Human Checkpoint before merge/finalize/cleanup.
 
 ## 후속 후보
 

@@ -23,7 +23,7 @@
 - issue creation result: skipped
 - issue project result: skipped
 - PR closing keyword: 연결된 Issue: 연결된 issue 없음
-- pushed branch:
-- PR link:
-- merge status: not created yet
+- pushed branch: codex/m5-airflow-adapter
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/157
+- merge status: open
 - issue close status: n/a
