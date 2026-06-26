@@ -17,6 +17,7 @@
 | Test tier split | Tier 1 PR CI, Tier 2 read-only audit, Tier 3 admin audit, Tier 4 human-approved E2E | 강제 가능한 단위와 사람 판단 흐름을 분리 | Phase execution / 2026-06-26 |
 | No PR size hard gate | PR size/risk hard gate 추가 없음 | 크기 기준은 사람 판단 요소가 커서 advisory warning으로 유지 | Phase execution / 2026-06-26 |
 | Main system guardrails | GitHub ruleset + secret scanning + migration/schema/security required check | 사용자가 시스템 강제 적용을 명시 지시했고, 기계가 안정적으로 감지/차단 가능한 항목이다. | User / 2026-06-26 |
+| Protected backup branch | `backup/main-*` branch ruleset + branch backup script | 백업 지점은 복구 기준이므로 삭제/update/force push를 제한하는 protected branch가 tag보다 운영 의도에 맞다. | User / 2026-06-26 |
 
 ## Deferred Decisions / 보류한 결정
 

@@ -4,8 +4,8 @@
 
 - Type: docs
 - Date: 2026-06-26
-- Changed: `docs/system-guardrails.md`에 Scenario Audit Plan과 Mock Scenario Matrix를 추가하고, `docs/12-quality-gates.md`에 PR CI/read-only audit/admin audit/external E2E tier를 연결했다. GitHub `main` ruleset, secret scanning/push protection, migration/schema/security hard detection workflow를 적용했다.
-- Verified: `node tests/migration-schema-security-check.test.js`, `node tests/pr-linked-issue-check.test.js`, `node tests/pr-risk-warning.test.js`, `scripts/test-harness.sh`, `scripts/validate-harness.sh --strict`, `scripts/status-workflow.sh docs/workflows/docs/guardrail-scenario-audit`, `gh api repos/JUNGLE-TEAM1/NMM_team1/rulesets/18157469`, `gh api repos/JUNGLE-TEAM1/NMM_team1 --jq '.security_and_analysis'`.
+- Changed: `docs/system-guardrails.md`에 Scenario Audit Plan과 Mock Scenario Matrix를 추가하고, `docs/12-quality-gates.md`에 PR CI/read-only audit/admin audit/external E2E tier를 연결했다. GitHub `main` ruleset, backup branch ruleset, secret scanning/push protection, migration/schema/security hard detection workflow를 적용했다.
+- Verified: `node tests/migration-schema-security-check.test.js`, `node tests/pr-linked-issue-check.test.js`, `node tests/pr-risk-warning.test.js`, `bash -n scripts/create-main-backup-branch.sh`, `scripts/create-main-backup-branch.sh --dry-run --date 2026-06-26`, `scripts/test-harness.sh`, `scripts/validate-harness.sh --strict`, `scripts/status-workflow.sh docs/workflows/docs/guardrail-scenario-audit`, `gh api repos/JUNGLE-TEAM1/NMM_team1/rulesets/18157469`, `gh api repos/JUNGLE-TEAM1/NMM_team1/rulesets/18157634`, `gh api repos/JUNGLE-TEAM1/NMM_team1 --jq '.security_and_analysis'`.
 - Remaining: CODEOWNERS review와 PR size/risk hard gate는 사용자 지시에 따라 보류했다. PR #141 checks 최종 통과 확인과 merge/finalize/cleanup은 사람 확인 후 진행한다. PR title drift는 `[문서/운영] Apply main system guardrails`로 보정했다. read-only scenario audit script는 이번 Phase에서 구현하지 않았다.
 - Next context: 다음에는 PR-ready 처리, read-only audit automation Phase, repository admin setting audit, 또는 제품 기능 Phase 중 하나를 선택한다.
 - Risk: `main` ruleset이 active라 앞으로 required checks가 통과해야 merge할 수 있다. PR #141에서 새 required check `migration-schema-security`가 check run으로 표시되는 것은 확인했고, 최종 conclusion은 CI 완료 후 확인해야 한다.
@@ -45,6 +45,9 @@
 - `.github/workflows/migration-schema-security-check.yml`
 - `.github/workflows/ci.yml`
 - `tests/migration-schema-security-check.test.js`
+- `scripts/create-main-backup-branch.sh`
+- `docs/project-context/ad-hoc-main-backup-tag-prompt.md`
+- `docs/project-context/README.md`
 - `docs/workflows/docs/guardrail-scenario-audit/*`
 - `docs/reports/guardrail-scenario-audit.md`
 
@@ -54,6 +57,8 @@
 - linked issue 누락, closing keyword 정상, PR risk warning, active workspace drift, merged PR issue/project mismatch, stale workspace evidence, report와 Source of Truth 충돌 시나리오를 정의했다.
 - PR size/risk warning은 advisory로 유지했다.
 - GitHub ruleset `AskLake main system guardrails`를 생성해 default branch PR required, deletion/non-fast-forward 제한, required status checks를 적용했다.
+- GitHub ruleset `AskLake backup branch guardrails`를 생성해 `refs/heads/backup/main-*` branch deletion/update/non-fast-forward를 제한했다.
+- `origin/main` 백업 생성 기본 경로를 protected backup branch로 전환했다.
 - GitHub secret scanning과 push protection을 enabled로 바꿨다.
 - migration/schema/security-sensitive path 변경 시 PR impact field가 비어 있으면 실패하는 required check를 추가했다.
 
@@ -77,10 +82,13 @@
 node tests/pr-linked-issue-check.test.js
 node tests/pr-risk-warning.test.js
 node tests/migration-schema-security-check.test.js
+bash -n scripts/create-main-backup-branch.sh
+scripts/create-main-backup-branch.sh --dry-run --date 2026-06-26
 scripts/test-harness.sh
 scripts/validate-harness.sh --strict
 scripts/status-workflow.sh docs/workflows/docs/guardrail-scenario-audit
 gh api repos/JUNGLE-TEAM1/NMM_team1/rulesets/18157469
+gh api repos/JUNGLE-TEAM1/NMM_team1/rulesets/18157634
 gh api repos/JUNGLE-TEAM1/NMM_team1 --jq '.security_and_analysis'
 ```
 
@@ -129,7 +137,7 @@ gh api repos/JUNGLE-TEAM1/NMM_team1 --jq '.security_and_analysis'
 
 ## Document Updates / 문서 업데이트
 
-- Updated: `docs/system-guardrails.md`, `docs/12-quality-gates.md`, `.github/scripts/check-migration-schema-security.js`, `.github/workflows/migration-schema-security-check.yml`, `.github/workflows/ci.yml`, `tests/migration-schema-security-check.test.js`, `docs/reports/README.md`, branch workspace, Phase report
+- Updated: `docs/system-guardrails.md`, `docs/12-quality-gates.md`, `.github/scripts/check-migration-schema-security.js`, `.github/workflows/migration-schema-security-check.yml`, `.github/workflows/ci.yml`, `tests/migration-schema-security-check.test.js`, `scripts/create-main-backup-branch.sh`, `docs/project-context/ad-hoc-main-backup-tag-prompt.md`, `docs/project-context/README.md`, `docs/reports/README.md`, branch workspace, Phase report
 - Not updated and why: `docs/08-development-workflow.md`는 workflow rule 자체 변경이 아니어서 보류했다. `docs/18-harness-regression-policy.md`는 새 script/fixture rule을 추가하지 않아 보류했다.
 
 ## Failed / Incomplete / Follow-Up TODO

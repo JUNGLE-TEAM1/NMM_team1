@@ -24,6 +24,8 @@
 | strict harness validation | `scripts/validate-harness.sh --strict` | passed | Source of Truth/workspace/report 일관성 확인 |
 | status summary | `scripts/status-workflow.sh docs/workflows/docs/guardrail-scenario-audit` | passed | workspace 상태 요약 확인 |
 | branch naming | `git branch --show-current` | passed | `docs/guardrail-scenario-audit` |
+| backup branch script syntax | `bash -n scripts/create-main-backup-branch.sh` | passed | shell syntax valid |
+| backup branch dry run | `scripts/create-main-backup-branch.sh --dry-run --date 2026-06-26` | passed | selected `origin/main` target and printed protected backup branch candidate without creating/pushing |
 
 ## CI/CD Gate / CI-CD 게이트
 
@@ -47,6 +49,7 @@
 | --- | --- | --- |
 | Secret scanning / push protection | `gh api repos/JUNGLE-TEAM1/NMM_team1 --jq '.security_and_analysis'` | `secret_scanning=enabled`, `secret_scanning_push_protection=enabled` |
 | Main ruleset | `gh api repos/JUNGLE-TEAM1/NMM_team1/rulesets/18157469` | active rules: `deletion`, `non_fast_forward`, `pull_request`, `required_status_checks` |
+| Backup branch ruleset | `gh api repos/JUNGLE-TEAM1/NMM_team1/rulesets/18157634` | active rules: `deletion`, `non_fast_forward`, `update` for `refs/heads/backup/main-*` |
 | Required contexts | `gh api repos/JUNGLE-TEAM1/NMM_team1/rulesets/18157469` | `harness`, `container-smoke`, `manifest-smoke`, `linked-issue`, `migration-schema-security` |
 
 ## Skipped Checks / 생략한 검증
