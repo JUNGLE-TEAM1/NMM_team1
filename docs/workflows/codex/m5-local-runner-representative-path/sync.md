@@ -31,7 +31,7 @@
 ## Push / PR
 
 - linked GitHub issue: n/a
-- PR closing keyword: n/a
+- PR closing keyword: 연결된 Issue: 연결된 issue 없음
 - pushed branch: codex/m5-local-runner-representative-path
 - PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/153
 - merge status: open
