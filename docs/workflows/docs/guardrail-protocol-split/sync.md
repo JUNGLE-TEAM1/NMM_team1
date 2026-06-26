@@ -17,15 +17,15 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 
 | Checked At | Upstream Changes | Impacted Source of Truth | Action |
 | --- | --- | --- | --- |
-|  |  |  |  |
+| 2026-06-26 | `origin/main` advanced from `5b76e8f` to `87e06d8` | Week2 contract/project-context docs, notion sync hotfix, reports/workspaces | Merged `origin/main` into `docs/guardrail-protocol-split`; conflicts in two Week2 project-context files resolved by taking `origin/main` because this Phase did not touch them |
 
 ## Pre-Merge Sync
 
-- main commit:
-- conflicts:
-- validation:
-- result:
-- deferral reason:
+- main commit: `87e06d8c8ee8eae4d8ce02f74a03826bfd02f97a`
+- conflicts: `docs/project-context/asklake-week2-module-plan/ver2/README.md`, `docs/project-context/asklake-week2-module-plan/ver2/revised-nonoverlap-responsibility.md`; both outside this Phase scope and resolved with `origin/main`
+- validation: pending rerun after sync evidence update
+- result: `git fetch origin main`; `git merge --no-edit origin/main`; merge commit `8bf79c8`
+- deferral reason: n/a
 
 ## PR Conflict Resolution
 
