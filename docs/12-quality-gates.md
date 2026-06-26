@@ -66,8 +66,10 @@ Project-specific CI should add stack-specific lint, test, typecheck, build, secu
 An optional harness-level CI example lives at `.github/workflows/harness-validation.example.yml`.
 Copy or adapt it when the target project wants provider-based CI.
 Required check status, branch protection, secret scanning, CODEOWNER review, PR linked issue checks, and Project lifecycle automation are tracked in `docs/system-guardrails.md`.
-The current `main` ruleset requires `harness`, `container-smoke`, `manifest-smoke`, `linked-issue`, and `migration-schema-security` checks before merge.
-`migration-schema-security` is a hard detection gate for migration/schema/security-sensitive path changes, while PR size/risk remains advisory.
+The current `main` ruleset requires `harness`, `container-smoke`, `manifest-smoke`, `linked-issue`, `migration-schema-security`, and `pr-size-hard-gate` checks before merge.
+`migration-schema-security` is a hard detection gate for migration/schema/security-sensitive path changes.
+`pr-size-hard-gate` blocks PRs over 10 non-evidence files or 600 non-evidence changed lines unless the PR body includes `Large PR Exception: approved`.
+Risky path detection remains advisory.
 
 During Existing Codebase Adoption:
 
@@ -129,7 +131,7 @@ Default split:
 
 | Tier | Default Frequency | Examples | Evidence |
 | --- | --- | --- | --- |
-| Tier 1: PR CI | every PR | linked issue unit tests, migration/schema/security focused tests, PR risk warning tests, `scripts/test-harness.sh`, `scripts/validate-harness.sh --strict` | `quality.md`, CI check result |
+| Tier 1: PR CI | every PR | linked issue unit tests, migration/schema/security focused tests, PR size hard gate tests, PR risk warning tests, `scripts/test-harness.sh`, `scripts/validate-harness.sh --strict` | `quality.md`, CI check result |
 | Tier 2: Read-only scenario audit | manual or scheduled | active workspace drift, merged PR with stale issue/project status, template drift | `sync.md`, `quality.md`, Phase report |
 | Tier 3: Admin setting audit | human-approved/read-only | branch protection, required checks, secret scanning, CODEOWNERS, Environment approval | `docs/system-guardrails.md` status update or follow-up |
 | Tier 4: External E2E rehearsal | human-approved only | throwaway issue/branch/PR/project lifecycle rehearsal | explicit rollback, stop condition, report evidence |
