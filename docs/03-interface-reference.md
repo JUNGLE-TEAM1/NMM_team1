@@ -325,6 +325,22 @@ Minimum `QueryResult` shape:
 `AIQueryResult.query_result` is the canonical SQL execution result for Week 2.
 Top-level `AIQueryResult.sql` and `AIQueryResult.rows` may remain as backward-compatible M1 display convenience fields, but they must mirror `query_result.sql` and `query_result.rows`.
 
+Minimum `AIQueryResult.evidence[]` grounding shape:
+
+| Field | Required | Notes |
+| --- | --- | --- |
+| `dataset_id` | yes | selected CatalogMetadata dataset id |
+| `run_id` | no | source M5 run id when available |
+| `s3_uri` | no | CatalogMetadata output URI |
+| `freshness` | no | CatalogMetadata update timestamp |
+| `table_name` | no | SQL table allowlist context from CatalogMetadata query section |
+| `schema_fields` | no | CatalogMetadata schema fields, preserving nullable/type facts for M1 evidence display |
+| `metrics` | no | CatalogMetadata metric facts such as output `row_count`, `bytes`, quality, and semantics |
+| `lineage` | no | CatalogMetadata source, pipeline, run, and upstream dataset lineage |
+| `retrieval_terms` | no | M6 retrieval/scoring terms that explain why the dataset was selected |
+
+The grounding fields are additive. Existing M1 consumers may continue reading `dataset_id`, `run_id`, `s3_uri`, and `freshness`, while richer Week 2 displays can show schema, metric, lineage, and retrieval evidence without recomputing M6 scoring.
+
 Minimum SQL guardrail failure shape:
 
 | Field | Values |
