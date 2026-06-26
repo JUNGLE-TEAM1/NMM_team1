@@ -1,6 +1,11 @@
+import tempfile
+from pathlib import Path
+
 from fastapi.testclient import TestClient
 
+from app.adapters.sqlite_metadata_store import SQLiteMetadataStore
 from app.core.app_factory import create_app
+from app.core.settings import Settings
 from app.domain.ai_query import SqlEngineContext
 from app.fakes.fake_sql_engine import FakeSqlEngine
 from app.services.ai_query import Week2AIQueryService
@@ -38,6 +43,18 @@ def _review_catalog(dataset_id: str, name: str, run_id: str) -> dict[str, object
     }
 
 
+def make_week2_client() -> TestClient:
+    temp_dir = tempfile.TemporaryDirectory()
+    settings = Settings(
+        metadata_url=f"sqlite:///{Path(temp_dir.name) / 'metadata.db'}",
+        result_store_path=str(Path(temp_dir.name) / "results"),
+    )
+    store = SQLiteMetadataStore(settings.metadata_url)
+    app = create_app(store, settings)
+    app.state.test_temp_dir = temp_dir
+    return TestClient(app)
+
+
 def test_week2_ai_query_returns_fixture_backed_ai_query_result() -> None:
     client = TestClient(create_app())
 
@@ -68,6 +85,29 @@ def test_week2_ai_query_returns_fixture_backed_ai_query_result() -> None:
     assert payload["chart_spec"]["type"] == "bar"
     assert payload["chart_spec"]["x"] == "product_id"
     assert payload["chart_spec"]["y"] == "review_count"
+
+
+def test_week2_ai_query_uses_latest_m5_catalog_after_workflow_runs() -> None:
+    client = make_week2_client()
+
+    first_run = client.post("/api/week2/workflows/pipeline_reviews_json_e2e/runs")
+    second_run = client.post("/api/week2/workflows/pipeline_reviews_json_e2e/runs")
+    response = client.post(
+        "/api/week2/ai/query",
+        json={"question": "리뷰가 가장 많은 상품 알려줘"},
+    )
+
+    assert first_run.status_code == 201
+    assert second_run.status_code == 201
+    assert first_run.json()["run_id"] == "run_reviews_demo_001"
+    assert second_run.json()["run_id"] == "run_reviews_demo_002"
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["selected_datasets"][0]["dataset_id"] == "dataset_reviews_gold"
+    assert payload["evidence"][0]["run_id"] == "run_reviews_demo_002"
+    assert payload["evidence"][0]["s3_uri"] == "s3://asklake-demo/reviews/gold/run_id=run_reviews_demo_002/"
+    assert payload["status"] == "succeeded"
+    assert payload["query_result"]["engine"] == "fake"
 
 
 def test_week2_ai_query_uses_injected_catalog_source_for_evidence() -> None:

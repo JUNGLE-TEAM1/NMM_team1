@@ -1,7 +1,10 @@
+from pathlib import Path
+
 from app.adapters.csv_source import CsvSourceConnector
 from app.adapters.fixture_catalog_source import FixtureCatalogSource
 from app.adapters.local_result_store import LocalResultStore
 from app.adapters.sqlite_metadata_store import SQLiteMetadataStore
+from app.adapters.week2_catalog_store_source import Week2CatalogStoreSource
 from app.core.settings import Settings
 from app.fakes.fake_sql_engine import FakeSqlEngine
 from app.ports.catalog_source import CatalogSource
@@ -13,6 +16,7 @@ from app.services.ai_query import Week2AIQueryService
 from app.services.catalog_trust import CatalogTrustService
 from app.services.pipeline import PipelineService
 from app.services.source_catalog import SourceCatalogService
+from app.services.week2_catalog_store import Week2CatalogStore
 from app.services.week2_workflow import Week2WorkflowService
 
 
@@ -22,6 +26,7 @@ class AppContainer:
         self.metadata_store = metadata_store or self.create_metadata_store()
         self.source_connectors = self.create_source_connectors()
         self.result_store = self.create_result_store()
+        self.week2_catalog_store = self.create_week2_catalog_store()
         self.catalog_source = self.create_catalog_source()
         self.sql_engine = self.create_sql_engine()
         self.catalog_trust_service = self.create_catalog_trust_service()
@@ -39,8 +44,14 @@ class AppContainer:
     def create_result_store(self) -> ResultStore:
         return LocalResultStore(self.settings.result_store_path)
 
+    def create_week2_catalog_store(self) -> Week2CatalogStore:
+        return Week2CatalogStore(self.week2_output_root() / "_metadata")
+
     def create_catalog_source(self) -> CatalogSource:
-        return FixtureCatalogSource()
+        return Week2CatalogStoreSource(
+            self.week2_catalog_store,
+            fallback_source=FixtureCatalogSource(),
+        )
 
     def create_sql_engine(self) -> SqlEngineAdapter:
         return FakeSqlEngine()
@@ -55,7 +66,13 @@ class AppContainer:
         return PipelineService(self.metadata_store, self.source_connectors, self.result_store)
 
     def create_week2_workflow_service(self) -> Week2WorkflowService:
-        return Week2WorkflowService(output_root=self.result_store.base_path / "week2")
+        return Week2WorkflowService(
+            output_root=self.week2_output_root(),
+            catalog_store=self.week2_catalog_store,
+        )
 
     def create_ai_query_service(self) -> Week2AIQueryService:
         return Week2AIQueryService(self.sql_engine, catalog_source=self.catalog_source)
+
+    def week2_output_root(self) -> Path:
+        return Path(self.settings.result_store_path) / "week2"
