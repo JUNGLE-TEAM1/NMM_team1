@@ -22,7 +22,7 @@ ver2는 rewrite 계획이 아니다. 이미 main에 들어간 M1 UI shell, M4 Ka
 | M1 UI | `frontend/src/app/*`, catalog/source/pipeline 화면 | 발표 클릭 흐름과 UI shell이 이미 있다. | M5/M6 API 상태를 표시하는 쪽으로 확장 |
 | M4 Kafka | `scripts/kafka_replay_to_parquet_demo.py`, `docs/manual-verification/08-kafka-replay-parquet-demo.md` | Kafka raw replay와 Parquet evidence가 있다. | raw event contract/evidence로 유지 |
 | M5 Workflow/Catalog | `Week2WorkflowService`, `Week2LocalRunner`, `Week2CatalogStore`, `/api/week2/*` | 실행, fallback, Catalog 저장/API가 가장 많이 구현되어 있다. | runner boundary를 넓혀 M3/M2를 붙임 |
-| M6 AI Query | `Week2AIQueryService`, `SqlEngineAdapter`, fake SQL engine | query skeleton과 guardrail shape가 있다. | Catalog source를 fixture에서 M5 Catalog로 전환 |
+| M6 Semantic/RAG-lite/AI Query | `Week2AIQueryService`, `SqlEngineAdapter`, fake SQL engine | query skeleton과 guardrail shape가 있다. | Catalog source를 fixture에서 M5 Catalog로 전환 |
 | Contracts | `contracts/*.sample.json` | M5/M6 테스트와 demo fixture가 의존한다. | 후속 interface/contracts PR에서만 조정 |
 
 ## 버리지 말 것
@@ -50,7 +50,7 @@ Week2WorkflowService
       -> M3 TransformSpec/JobLogic adapter
       -> M2 SparkRunner adapter
   -> Week2CatalogStore
-  -> M6 Catalog-backed AI Query
+  -> M6 Catalog-backed Semantic/RAG-lite/AI Query
 ```
 
 ## 단계별 전환 순서
@@ -58,7 +58,7 @@ Week2WorkflowService
 | 순서 | 작업 | 책임 | 완료 기준 |
 | --- | --- | --- | --- |
 | 1 | M5 existing implementation anchor 확인 | M5 | `Week2WorkflowService`, `Week2LocalRunner`, `Week2CatalogStore` 유지 선언 |
-| 2 | Analysis representative E2E path 고정 | M1/M3/M5/M6 | Amazon Reviews JSON path를 AI Query/분석 대표 경로로 확정 |
+| 2 | Analysis representative E2E path 고정 | M1/M3/M5/M6 | Amazon Reviews JSON path를 Semantic/RAG-lite/AI Query 분석 대표 경로로 확정 |
 | 3 | M3 JSON analysis path decision | M3 | PR #105 회수/재구현 범위와 `TransformSpec` 최소 shape 결정 |
 | 4 | Runner boundary decision | M2/M3/M5 | local runner, M3 job logic, SparkRunner가 공유할 호출 계약 결정 |
 | 5 | M2 RuntimeConfig/SparkRunner smoke | M2 | Spark read/write smoke가 row_count/bytes/duration을 반환 |
@@ -68,14 +68,14 @@ Week2WorkflowService
 
 ## 분석 대표 E2E 후보
 
-병렬 구현 시작 전 AI Query/분석 대표 경로는 다음 Phase에서 확정하지만, 현재 추천 후보는 아래와 같다.
+병렬 구현 시작 전 Semantic/RAG-lite/AI Query 분석 대표 경로는 다음 Phase에서 확정하지만, 현재 추천 후보는 아래와 같다.
 
 ```text
 Amazon Reviews JSON
 -> M3 profile/schema/transform spec
 -> M5 workflow/local runner
 -> M5 Catalog
--> M6 AI Query
+-> M6 Semantic/RAG-lite/AI Query
 -> M1 UI
 ```
 
@@ -105,4 +105,4 @@ Taxi와 Kafka는 선택 사항이 아니다. 각각 정형 batch와 streaming in
 - 기존 구현 중 유지할 anchor가 명시되어 있다.
 - ver2가 rewrite 계획이 아님을 명시한다.
 - adapter-first 전환 순서가 명시되어 있다.
-- 다음 Phase인 AI Query/분석 대표 path 확정의 입력이 준비되어 있다.
+- 다음 Phase인 Semantic/RAG-lite/AI Query 분석 대표 path 확정의 입력이 준비되어 있다.

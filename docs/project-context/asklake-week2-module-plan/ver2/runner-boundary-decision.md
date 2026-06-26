@@ -88,7 +88,7 @@ Phase 6 merge 후 다음 병렬 구현을 시작할 수 있다.
 | M2 RuntimeConfig/SparkRunner smoke | 이 runner boundary 문서 merge | Spark read/write smoke가 `Week2RunnerResult` 호환 metrics를 반환 |
 | M3 JSON TransformSpec | Phase 5/6 문서 merge | Amazon Reviews JSON sample에서 profile/schema facts와 minimal `TransformSpec` 생성 |
 | M5 runner selection | M2/M3 initial smoke branch 준비 | local runner baseline 유지, 선택형 runner adapter 선택 가능 |
-| M6 Catalog-backed query | M5 Catalog source shape 확인 | fixture-only query에서 Catalog metadata source로 점진 전환 |
+| M6 Catalog-backed Semantic/RAG-lite query | M5 Catalog source shape 확인 | fixture-only query에서 Catalog metadata source로 점진 전환 |
 | M1 analysis path UI | M5/M6 API 상태 shape 확인 | run/catalog/query/evidence 상태 표시 |
 
 ## Phase 6 완료 기준
