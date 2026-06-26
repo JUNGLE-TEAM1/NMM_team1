@@ -44,13 +44,14 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 - issue link:
 - issue creation result: not created in this local Phase step
 - issue project result:
-- PR closing keyword:
-- pushed branch:
-- PR link:
-- merge status:
-- issue close status:
+- PR closing keyword: explicit no-issue exception in PR body
+- pushed branch: docs/guardrail-scenario-audit
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/141
+- PR title correction: `gh pr edit 141 --title "[문서/운영] Apply main system guardrails"`; GitHub record drift audit passed after correction
+- merge status: open
+- issue close status: n/a
 - issue project status:
-- PR CI/check status:
+- PR CI/check status: in progress at PR creation; `harness`, `container-smoke`, `manifest-smoke`, `linked-issue`, `migration-schema-security`, `risk-warning` check runs appeared on PR #141
 
 ## Automation Notes
 

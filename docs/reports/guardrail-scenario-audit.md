@@ -6,9 +6,9 @@
 - Date: 2026-06-26
 - Changed: `docs/system-guardrails.md`에 Scenario Audit Plan과 Mock Scenario Matrix를 추가하고, `docs/12-quality-gates.md`에 PR CI/read-only audit/admin audit/external E2E tier를 연결했다. GitHub `main` ruleset, secret scanning/push protection, migration/schema/security hard detection workflow를 적용했다.
 - Verified: `node tests/migration-schema-security-check.test.js`, `node tests/pr-linked-issue-check.test.js`, `node tests/pr-risk-warning.test.js`, `scripts/test-harness.sh`, `scripts/validate-harness.sh --strict`, `scripts/status-workflow.sh docs/workflows/docs/guardrail-scenario-audit`, `gh api repos/JUNGLE-TEAM1/NMM_team1/rulesets/18157469`, `gh api repos/JUNGLE-TEAM1/NMM_team1 --jq '.security_and_analysis'`.
-- Remaining: CODEOWNERS review와 PR size/risk hard gate는 사용자 지시에 따라 보류했다. 새 required check `migration-schema-security`는 PR 생성 후 실제 GitHub check 표시를 확인해야 한다. read-only scenario audit script는 이번 Phase에서 구현하지 않았다.
+- Remaining: CODEOWNERS review와 PR size/risk hard gate는 사용자 지시에 따라 보류했다. PR #141 checks 최종 통과 확인과 merge/finalize/cleanup은 사람 확인 후 진행한다. PR title drift는 `[문서/운영] Apply main system guardrails`로 보정했다. read-only scenario audit script는 이번 Phase에서 구현하지 않았다.
 - Next context: 다음에는 PR-ready 처리, read-only audit automation Phase, repository admin setting audit, 또는 제품 기능 Phase 중 하나를 선택한다.
-- Risk: `main` ruleset이 active라 앞으로 required checks가 통과해야 merge할 수 있다. 새 required check workflow는 이 branch가 PR로 올라간 뒤 실제 동작을 확인해야 한다.
+- Risk: `main` ruleset이 active라 앞으로 required checks가 통과해야 merge할 수 있다. PR #141에서 새 required check `migration-schema-security`가 check run으로 표시되는 것은 확인했고, 최종 conclusion은 CI 완료 후 확인해야 한다.
 
 ---
 
@@ -134,7 +134,7 @@ gh api repos/JUNGLE-TEAM1/NMM_team1 --jq '.security_and_analysis'
 
 ## Failed / Incomplete / Follow-Up TODO
 
-- PR 생성 후 `harness`, `container-smoke`, `manifest-smoke`, `linked-issue`, `migration-schema-security` required checks가 실제로 표시되는지 확인.
+- PR #141에서 `harness`, `container-smoke`, `manifest-smoke`, `linked-issue`, `migration-schema-security` required checks가 실제로 표시되는 것은 확인. 최종 통과 확인은 CI 완료 후 필요.
 - CODEOWNERS review와 PR size/risk hard gate는 사용자 지시에 따라 보류.
 - read-only scenario audit script 또는 manual `workflow_dispatch` 추가 여부 결정.
 
