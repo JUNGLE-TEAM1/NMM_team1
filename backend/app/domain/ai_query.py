@@ -15,16 +15,21 @@ class SelectedDataset(BaseModel):
     reason: str
 
 
+class QueryColumn(BaseModel):
+    name: str
+    type: str
+
+
 class QueryEvidence(BaseModel):
     dataset_id: str
     run_id: str | None = None
     s3_uri: str | None = None
     freshness: str | None = None
-
-
-class QueryColumn(BaseModel):
-    name: str
-    type: str
+    table_name: str | None = None
+    schema_fields: list[dict[str, Any]] = Field(default_factory=list)
+    metrics: dict[str, Any] = Field(default_factory=dict)
+    lineage: dict[str, Any] = Field(default_factory=dict)
+    retrieval_terms: list[str] = Field(default_factory=list)
 
 
 class QueryResult(BaseModel):
