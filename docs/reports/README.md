@@ -63,6 +63,7 @@ report가 늘어나면 영역별 최신 report index를 작게 유지한다. 이
 | PR 템플릿 문단형 설명 보강 | [`pr-template-readable-narrative.md`](pr-template-readable-narrative.md) | PR body가 7섹션 문단형 review handoff로 생성되는지 확인 |
 | GitHub record drift audit | [`github-record-drift-audit.md`](github-record-drift-audit.md) | GitHub issue/PR이 템플릿 생성 경로를 우회했는지 읽기 전용으로 감지하고 PR-ready 전에 막는지 확인 |
 | System Guardrails / Harness Protocol 분리 | [`guardrail-protocol-split.md`](guardrail-protocol-split.md) | 강제 가능한 안전장치는 GitHub/CI/platform 인벤토리로 분리하고 하네스는 협업 프로토콜로 유지하는 기준 확인 |
+| Guardrail Scenario Audit | [`guardrail-scenario-audit.md`](guardrail-scenario-audit.md) | 시스템 가드레일과 협업 하네스 경계가 CI 기본 단위, 읽기 전용 audit, human-approved E2E로 나뉘는지 확인 |
 | Week2 responsibility ver2 | [`week2-responsibility-ver2.md`](week2-responsibility-ver2.md) | 초기 회의안 이후 M1~M6 책임 분리를 ver2 기준으로 재정리하고 Spark/Parquet/Catalog 중복 책임을 제거 |
 | Week2 main E2E path | [`week2-main-e2e-path.md`](week2-main-e2e-path.md) | Amazon Reviews JSON -> M5 Workflow/Catalog -> M6 AI Query -> M1 UI 발표 필수 경로 확인 |
 | Week2 existing implementation anchor | [`week2-existing-implementation-anchor.md`](week2-existing-implementation-anchor.md) | 기존 M1 shell, M4 Kafka demo, M5 workflow/catalog, M6 skeleton을 ver2 후속 구현의 보존 anchor로 확인 |

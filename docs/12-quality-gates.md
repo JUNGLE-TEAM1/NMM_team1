@@ -66,6 +66,8 @@ Project-specific CI should add stack-specific lint, test, typecheck, build, secu
 An optional harness-level CI example lives at `.github/workflows/harness-validation.example.yml`.
 Copy or adapt it when the target project wants provider-based CI.
 Required check status, branch protection, secret scanning, CODEOWNER review, PR linked issue checks, and Project lifecycle automation are tracked in `docs/system-guardrails.md`.
+The current `main` ruleset requires `harness`, `container-smoke`, `manifest-smoke`, `linked-issue`, and `migration-schema-security` checks before merge.
+`migration-schema-security` is a hard detection gate for migration/schema/security-sensitive path changes, while PR size/risk remains advisory.
 
 During Existing Codebase Adoption:
 
@@ -116,6 +118,23 @@ Harness behavior is tested with lightweight fixture regression tests.
 The detailed Source of Truth for the Harness Test Update Gate, fixture expectations, `scripts/test-harness.sh`, and external E2E boundaries is `docs/18-harness-regression-policy.md`.
 
 Reports summarize the result; `quality.md` keeps the working detail.
+
+## 8) Guardrail Scenario Audit
+
+System guardrail scenario audit is separate from every-PR CI.
+Every PR should keep deterministic focused checks, harness regression tests, and strict validation.
+Lifecycle, repository setting, Project status, and external E2E rehearsal checks run only as read-only manual/scheduled audit or human-approved rehearsal because they depend on remote state and team tolerance for noise.
+
+Default split:
+
+| Tier | Default Frequency | Examples | Evidence |
+| --- | --- | --- | --- |
+| Tier 1: PR CI | every PR | linked issue unit tests, migration/schema/security focused tests, PR risk warning tests, `scripts/test-harness.sh`, `scripts/validate-harness.sh --strict` | `quality.md`, CI check result |
+| Tier 2: Read-only scenario audit | manual or scheduled | active workspace drift, merged PR with stale issue/project status, template drift | `sync.md`, `quality.md`, Phase report |
+| Tier 3: Admin setting audit | human-approved/read-only | branch protection, required checks, secret scanning, CODEOWNERS, Environment approval | `docs/system-guardrails.md` status update or follow-up |
+| Tier 4: External E2E rehearsal | human-approved only | throwaway issue/branch/PR/project lifecycle rehearsal | explicit rollback, stop condition, report evidence |
+
+The canonical scenario matrix is maintained in `docs/system-guardrails.md`.
 
 Quality gate statuses:
 
