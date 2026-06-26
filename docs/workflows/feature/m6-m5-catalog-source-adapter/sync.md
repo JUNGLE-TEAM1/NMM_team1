@@ -29,14 +29,14 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 
 ## PR Conflict Resolution
 
-- conflict detected at:
-- conflict detection command:
-- conflict type:
-- affected files:
-- resolution path:
+- conflict detected at: 2026-06-26 after PR #149 creation
+- conflict detection command: `gh pr view 149 --json mergeStateStatus`; `git fetch origin main`; `git merge-tree $(git merge-base HEAD origin/main) HEAD origin/main`
+- conflict type: report index concurrent edit
+- affected files: `docs/reports/README.md`
+- resolution path: needs human-confirmed main sync, then keep both M1 live UI Phase plan row and M6 M5 CatalogSource adapter row
 - resolved files:
 - revalidation:
-- remaining risk:
+- remaining risk: PR #149 remains `mergeStateStatus: DIRTY` until the branch is synced with `origin/main`.
 
 ## Push / PR
 
