@@ -27,6 +27,6 @@
 ## CI/CD Gate
 
 - CI required: yes before PR/merge
-- CI result: local backend tests and strict harness passed; remote CI pending for PR #157
+- CI result: local backend tests and strict harness passed; PR #157 remote checks passed: `container-smoke`, `harness`, `linked-issue`, `manifest-smoke`, `migration-schema-security`, `pr-size-hard-gate`, `risk-warning`
 - Deploy/publish required: no
 - Rollback/smoke notes: adapter-only change. 실제 Airflow runtime smoke는 후속 작업.
