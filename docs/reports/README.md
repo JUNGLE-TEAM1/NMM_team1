@@ -74,6 +74,7 @@ report가 늘어나면 영역별 최신 report index를 작게 유지한다. 이
 | Week2 data path scope clarity | [`week2-data-path-scope-clarity.md`](week2-data-path-scope-clarity.md) | 세 데이터 경로는 모두 구현하되 Amazon Reviews는 분석 대표 경로, Taxi/Kafka는 필수 처리/evidence 경로라는 기준 확인 |
 | Week2 M6 RAG scope | [`week2-m6-rag-scope.md`](week2-m6-rag-scope.md) | M6의 RAG 책임을 CatalogMetadata 기반 Semantic/RAG-lite/AI Query로 보강하고 full RAG/vector DB는 후속으로 유지한 기준 확인 |
 | M6 M5 CatalogSource adapter | [`m6-m5-catalog-source-adapter.md`](m6-m5-catalog-source-adapter.md) | M6 AI Query가 M5 `Week2CatalogStore`의 최신 CatalogMetadata를 evidence source로 소비하는 adapter 연결 확인 |
+| M6 answer evidence grounding | [`m6-answer-evidence-grounding.md`](m6-answer-evidence-grounding.md) | M6 `AIQueryResult.evidence`가 CatalogMetadata schema/metrics/lineage/retrieval terms를 포함하고 summary가 같은 근거를 말하는지 확인 |
 | M1 live UI Phase plan | [`m1-live-ui-phase-plan.md`](m1-live-ui-phase-plan.md) | M1 shell 이후 Week2 M5/M6 API 연결과 발표 클릭 흐름을 5개 작은 Phase로 나눈 기준 확인 |
 | M1 Week2 API Client 연결 | [`m1-week2-api-client.md`](m1-week2-api-client.md) | M1 live UI Phase 1에서 Week2 M5/M6 API client와 frontend export를 추가한 결과 확인 |
 | M1 Run Status Live UI | [`m1-run-status-live-ui.md`](m1-run-status-live-ui.md) | M1 live UI Phase 2에서 `/runs` 화면이 M5 workflow 실행/refresh와 ExecutionResult 표시를 소비하는지 확인 |
