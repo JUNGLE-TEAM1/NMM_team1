@@ -22,6 +22,7 @@
 | scale generation | `python3 scripts/week2_m1_synthetic_raw.py --category Health_and_Personal_Care --review-rows 100000 --product-rows 10000 --events-per-product 3 --selected-option option_2_recommended_mvp_demo` | passed | review 100,000; product 10,000; behavior 30,000 |
 | integration/contract test | JSONL field validation + manifest/summary check | passed | `bad_rows=[]`; selected option `option_2_recommended_mvp_demo` |
 | local runner smoke | `PYTHONPATH=backend python3 ... Week2LocalRunner ... contracts/workflow_definition.sample.json` | passed | `fallback_succeeded`, `row_count=100000`, `output_row_count=28190` |
+| post-main-sync local runner smoke | `PYTHONPATH=backend python3 ... Week2LocalRunner ... contracts/workflow_definition.sample.json` | passed | after merging latest `origin/main`: `fallback_succeeded`, `row_count=100000`, `output_row_count=28190` |
 | build/typecheck | not applicable | skipped | frontend/backend runtime code not changed |
 | harness validation | covered by strict run | passed | `scripts/validate-harness.sh --strict` includes normal harness validation |
 | strict harness validation | `scripts/validate-harness.sh --strict` | passed | `Harness validation passed.` |

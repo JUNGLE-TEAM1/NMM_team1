@@ -11,7 +11,7 @@
 - Escalated context read: `docs/03-interface-reference.md`, `contracts/schema_definition.sample.json`, `contracts/transform_spec.sample.json`, `contracts/workflow_definition.sample.json`
 - Context omitted intentionally: Taxi delivery seed, M3 Bronze implementation internals, M5/M6 integration implementation
 - Changed: generator manifest/summary selected option recording was improved; local ignored `data/` was regenerated from `Health_and_Personal_Care` at 100,000 review rows, 10,000 product rows, 30,000 behavior events.
-- Verified: focused unittest, JSONL 100,000 row parse/6-field validation, manifest/summary JSON validation, Week2LocalRunner smoke, strict harness validation.
+- Verified: focused unittest, JSONL 100,000 row parse/6-field validation, manifest/summary JSON validation, Week2LocalRunner smoke, strict harness validation. During PR finalization, merged latest `origin/main` and reran focused unittest, Week2LocalRunner smoke, and strict harness validation.
 - Remaining: M3 handoff and decision whether to use 10k minimum-start sample or 100k demo_sample first; Taxi delivery seed remains follow-up.
 - Next context: scale sample is local ignored data; regenerate with the command in `quality.md` if another worktree needs it.
 - Risk: `Health_and_Personal_Care` is a pragmatic moderate-size category, not necessarily the final presentation category.
