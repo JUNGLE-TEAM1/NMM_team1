@@ -618,6 +618,7 @@ if [[ "$pr_ready" == "yes" ]] && git rev-parse --is-inside-work-tree >/dev/null 
 fi
 if [[ "$pr_ready" == "yes" && "${record_drift_status:-}" == "drift detected" ]]; then
   auto_pr_blockers+=("GitHub issue/PR record drift detected")
+  pr_ready="no (record drift)"
 fi
 
 echo "  - missing required files: ${missing_files}"
@@ -655,6 +656,8 @@ elif [[ "$closing_keyword_recorded" == "no" ]]; then
   recommendation="Record the PR closing keyword in sync.md so the linked issue closes after merge."
 elif [[ "${source_of_truth_state:-none}" == "unresolved" ]]; then
   recommendation="Resolve Source of Truth proposals before PR: update the proposed docs or record deferred decisions with revisit trigger and target phase/branch."
+elif [[ "${record_drift_status:-}" == "drift detected" ]]; then
+  recommendation="GitHub issue/PR record drift가 감지됐습니다. PR 제목/본문 템플릿 또는 closing keyword 오탐 여부를 먼저 보정하거나 사람 확인을 받은 뒤 PR 진행을 재개합니다."
 elif [[ -n "${pr_conflict_detected_at:-}${pr_conflict_command:-}${pr_conflict_type:-}${pr_conflict_affected_files:-}" && ( -z "${pr_conflict_resolution_path:-}" || -z "${pr_conflict_revalidation:-}" ) ]]; then
   recommendation="PR conflict evidence is present but resolution or revalidation is missing. Ask for PR Conflict Confirm before PR progression: choose current-branch resolution, Source of Truth decision, split work, hold PR, or human manual resolution."
 elif [[ "$decision_status" == "none" && -f "$shared_docs" ]] && awk -F '|' '

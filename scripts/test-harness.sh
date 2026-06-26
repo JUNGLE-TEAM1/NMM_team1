@@ -400,6 +400,12 @@ case "${1:-}" in
         ;;
       view)
         if [[ "$*" == *"--json number,title,state,body,url"* ]]; then
+          if [[ "${FAKE_GH_PR_RECORD_DRIFT:-0}" == "1" ]]; then
+            cat <<'EOF_PR_DRIFT'
+{"number":99,"title":"Add Kafka replay Parquet demo","state":"OPEN","url":"https://github.com/JUNGLE-TEAM1/NMM_team1/pull/99","body":"## Summary\n- add Kafka replay demo\n\n## Verification\n- tests passed"}
+EOF_PR_DRIFT
+            exit 0
+          fi
           cat <<'EOF_PR'
 {"number":99,"title":"하네스 fixture PR","state":"MERGED","url":"https://github.com/JUNGLE-TEAM1/NMM_team1/pull/99","body":"## 1. PR 요약\n\n하네스 fixture PR입니다. Closes #1.\n\n## 2. 변경 내용\n\n하네스 검증 fixture를 정리했습니다.\n\n## 3. 검증\n\nscripts/test-harness.sh\n\n## 4. 영향 범위\n\n하네스 테스트 fixture에 한정됩니다.\n\n## 5. 리뷰어에게 부탁할 부분\n\n상태 요약이 의도대로 보이는지 확인해주세요.\n\n## 6. 남은 일 / 제외한 일\n\n없습니다.\n\n## 7. Merge 전 확인\n\nCI 통과 후 merge합니다."}
 EOF_PR
@@ -697,6 +703,39 @@ case_existing_pr_status_does_not_recommend_auto_pr() {
   )
 }
 
+case_status_blocks_pr_ready_on_record_drift() {
+  local repo="${tmp_root}/record-drift-status"
+  copy_repo "$repo"
+  (
+    cd "$repo"
+    local fake_bin
+    fake_bin="$(install_fake_gh "$repo")"
+    PATH="${fake_bin}:$PATH"
+    FAKE_GH_PR_RECORD_DRIFT="1"
+    FAKE_GH_PR_STATE="OPEN"
+    export FAKE_GH_PR_RECORD_DRIFT FAKE_GH_PR_STATE
+    local base
+    base="$(base_commit)"
+    local workspace="docs/workflows/test/harness-record-drift-status"
+    write_common_workspace "$workspace" "complete" "passed" "accepted" "$base"
+    awk '
+      /^- pushed branch:/ { print "- pushed branch: test/harness-record-drift-status"; next }
+      /^- PR link:/ { print "- PR link: https://example.invalid/pull/99"; next }
+      /^- merge status:/ { print "- merge status: open"; next }
+      /^- issue close status:/ { print "- issue close status: open"; next }
+      { print }
+    ' "${workspace}/sync.md" > "${workspace}/sync.md.tmp"
+    mv "${workspace}/sync.md.tmp" "${workspace}/sync.md"
+    git add "$workspace"
+    git commit -q -m "record drift status fixture"
+    scripts/status-workflow.sh "$workspace" > /tmp/harness-record-drift-status.out
+    rg -q "GitHub record drift audit: drift detected" /tmp/harness-record-drift-status.out
+    rg -q "PR checklist ready: no (record drift)" /tmp/harness-record-drift-status.out
+    rg -q "record drift가 감지" /tmp/harness-record-drift-status.out
+    ! rg -q "자동 PR 생성 대상입니다" /tmp/harness-record-drift-status.out
+  )
+}
+
 case_status_uses_remote_pr_state_for_stale_sync() {
   local repo="${tmp_root}/remote-pr-status"
   copy_repo "$repo"
@@ -886,6 +925,9 @@ case_remote_reconciliation_status_recommends_auto_pr() {
   copy_repo "$repo"
   (
     cd "$repo"
+    local fake_bin
+    fake_bin="$(install_fake_gh "$repo")"
+    PATH="${fake_bin}:$PATH"
     git checkout -q -b test/remote-reconciliation-auto-pr
     local base
     base="$(base_commit)"
@@ -912,6 +954,9 @@ case_status_reports_pr_conflict_priority() {
   copy_repo "$repo"
   (
     cd "$repo"
+    local fake_bin
+    fake_bin="$(install_fake_gh "$repo")"
+    PATH="${fake_bin}:$PATH"
     local base
     base="$(base_commit)"
     local workspace="docs/workflows/test/harness-pr-conflict"
@@ -1094,6 +1139,13 @@ case_github_record_drift_audit_detects_bypass() {
       "state": "OPEN",
       "url": "https://github.com/JUNGLE-TEAM1/NMM_team1/pull/105",
       "body": "## Summary\\n- add JSON recommendations\\n\\n## Issue\\n#104\\n\\n## Checklist\\n- tests passed"
+    },
+    {
+      "number": 106,
+      "title": "Add Kafka replay Parquet demo",
+      "state": "OPEN",
+      "url": "https://github.com/JUNGLE-TEAM1/NMM_team1/pull/106",
+      "body": "## 1. PR 요약\\n\\n## 2. 변경 내용\\n\\n## 3. 검증\\n\\n## 4. 영향 범위\\n\\n## 5. 리뷰어에게 부탁할 부분\\n\\n## 6. 남은 일 / 제외한 일\\n\\n## 7. Merge 전 확인"
     }
   ]
 }
@@ -1102,6 +1154,8 @@ EOF_JSON
     rg -q "issue #112: title-prefix-missing, body-template-missing, literal-newline-escape, label-missing:feature" /tmp/harness-github-record-drift-bad.out
     rg -q "suggested title: \\[기능\\] M5 local UI demo panel" /tmp/harness-github-record-drift-bad.out
     rg -q "pr #105: title-prefix-or-korean-title-missing, readable-pr-handoff-missing, stale-pr-summary-checklist, closing-keyword-missing" /tmp/harness-github-record-drift-bad.out
+    rg -q "pr #106: title-prefix-or-korean-title-missing" /tmp/harness-github-record-drift-bad.out
+    rg -q "suggested title: \\[문서/운영\\] Add Kafka replay Parquet demo 작업" /tmp/harness-github-record-drift-bad.out
   )
 }
 
@@ -1129,6 +1183,13 @@ case_github_record_drift_audit_passes_clean_records() {
       "state": "OPEN",
       "url": "https://github.com/JUNGLE-TEAM1/NMM_team1/pull/114",
       "body": "## 1. PR 요약\n\n## 2. 변경 내용\n\n## 3. 검증\n\n## 4. 영향 범위\n\n## 5. 리뷰어에게 부탁할 부분\n\n## 6. 남은 일 / 제외한 일\n\n## 7. Merge 전 확인\n\nCloses #111"
+    },
+    {
+      "number": 124,
+      "title": "Week2 M3 JSON main path decision 보고서",
+      "state": "MERGED",
+      "url": "https://github.com/JUNGLE-TEAM1/NMM_team1/pull/124",
+      "body": "## 1. PR 요약\n\n## 2. 변경 내용\n\nPR #105 read-only inspection 결과를 반영했다.\n\n## 3. 검증\n\n## 4. 영향 범위\n\n## 5. 리뷰어에게 부탁할 부분\n\n## 6. 남은 일 / 제외한 일\n\n## 7. Merge 전 확인"
     }
   ]
 }
@@ -1348,6 +1409,7 @@ run_expect_failure "complete workspace with missing pre-merge sync fails" case_m
 run_expect_success "status workflow reports Source of Truth proposal status" case_status_reports_sot
 run_expect_success "existing PR status does not recommend auto PR" case_existing_pr_status_does_not_recommend_auto_pr
 run_expect_success "status workflow uses remote PR state for stale sync" case_status_uses_remote_pr_state_for_stale_sync
+run_expect_success "status workflow blocks PR-ready on record drift" case_status_blocks_pr_ready_on_record_drift
 run_expect_success "status workflow ignores state case-only differences" case_status_does_not_warn_on_state_case_only_difference
 run_expect_success "status workflow reports open PR closed issue mismatch" case_status_reports_open_pr_closed_issue_mismatch
 run_expect_success "status workflow reports closed merged Project status mismatch" case_status_reports_closed_merged_project_status_mismatch

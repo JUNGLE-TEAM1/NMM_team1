@@ -162,6 +162,39 @@ emptyish() {
   esac
 }
 
+pr_title_prefix() {
+  case "$1" in
+    feature) printf '[기능]' ;;
+    fix) printf '[버그]' ;;
+    docs|chore) printf '[문서/운영]' ;;
+    hotfix) printf '[긴급수정]' ;;
+    test) printf '[검증]' ;;
+    *) printf '[작업]' ;;
+  esac
+}
+
+title_has_korean() {
+  printf '%s\n' "$1" | grep -q '[가-힣]'
+}
+
+normalize_pr_title() {
+  local workspace_type="$1"
+  local raw_title="$2"
+  local prefix
+  local normalized
+
+  prefix="$(pr_title_prefix "$workspace_type")"
+  normalized="$raw_title"
+  normalized="$(printf '%s\n' "$normalized" | sed -E 's/^[[:space:]]*(feat|fix|docs|test|chore|hotfix):[[:space:]]*//I')"
+
+  if [[ "$raw_title" =~ ^\[(기능|버그|문서/운영|긴급수정|검증)\] ]] || title_has_korean "$raw_title"; then
+    printf '%s\n' "$raw_title"
+    return
+  fi
+
+  printf '%s %s 작업\n' "$prefix" "$normalized"
+}
+
 set_issue_project_status() {
   local issue_url="$1"
   local status_name="$2"
@@ -330,6 +363,13 @@ fi
 
 workspace_type="${workspace#docs/workflows/}"
 workspace_type="${workspace_type%%/*}"
+raw_title="$title"
+title="$(normalize_pr_title "$workspace_type" "$title")"
+title_normalization="unchanged"
+if [[ "$title" != "$raw_title" ]]; then
+  title_normalization="normalized from '${raw_title}' to '${title}'"
+fi
+
 phase_or_hotfix="$workspace_type"
 case "$workspace_type" in
   feature) phase_or_hotfix="기능 Phase" ;;
@@ -446,6 +486,8 @@ echo "=========="
 echo
 echo "Workspace: ${workspace}"
 echo "Branch: ${branch}"
+echo "PR title: ${title}"
+echo "Title normalization: ${title_normalization}"
 echo "Linked issue: ${linked_issue:-none}"
 echo "Closing keyword: ${closing_keyword:-none}"
 echo "PR link: ${pr_link:-none}"
