@@ -9,6 +9,14 @@
     "allowed": ["local_runner", "spark_runner"],
     "spark_select_rule": "M5 selects spark_runner only when runtime_config.runner is spark and Spark smoke has passed"
   },
+  "spark_runner_smoke": {
+    "runner": "spark_runner",
+    "input_format": "jsonl",
+    "input_path": "backend/samples/amazon_reviews_demo.jsonl",
+    "output_format": "parquet",
+    "output_root": "data/week2",
+    "result_fields": ["status", "row_count", "bytes", "duration_ms", "output_path"]
+  },
   "storage": {
     "profile": "minio",
     "bucket": "asklake-demo",

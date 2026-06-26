@@ -4,32 +4,32 @@
 
 ## Current State / 현재 상태
 
-- State: workspace created
-- Summary: branch workspace와 GitHub issue #131이 생성되었다. 첫 PR 범위는 M2 전체 구현이 아니라 `RuntimeConfig` + `SparkRunner` smoke로 제한한다.
+- State: implementation validated locally
+- Summary: `RuntimeConfig`와 `Week2SparkRunner` local Parquet smoke 구현이 끝났고 backend/harness 검증을 통과했다. 첫 PR 범위는 M2 전체 구현이 아니라 공통 runner smoke로 유지한다.
 
 ## Recommended Next Action / 권장 다음 행동
 
-- `RuntimeConfig` 최소 shape와 `SparkRunner` read/write smoke부터 구현한다.
-- Reason: M2 구현을 Taxi 전용 ETL로 키우지 않고 데이터셋 독립 공통 실행기부터 검증해야 한다.
+- 구현 변경을 검토한 뒤 커밋한다.
+- Reason: code/test/contract sample/workspace evidence가 같은 PR 1 범위로 닫혔다.
 
 ## Options / 선택지
 
-1. PR 1 진행: `RuntimeConfig` + `SparkRunner` smoke 구현.
-2. PR 1 범위 수정: 구현 전에 plan을 더 줄이거나 조정.
+1. 현재 변경 커밋: M2 runner smoke 구현과 검증 증거를 한 커밋으로 묶는다.
+2. PR 준비: 커밋 후 push/PR 전에 Pre-PR Human Checkpoint를 제시한다.
 3. 후속 후보 정리: Taxi evidence, M5 integration, SQL smoke 중 다음 branch를 팀 dependency 기준으로 고른다.
 4. 이 workspace를 멈춘다.
 
 ## Waiting On Human / 사람 응답 대기
 
-- 구현 시작 전 최종 Scope Confirm이 필요하다.
+- 커밋/PR/push 여부는 사람 확인이 필요하다.
 
 ## Last User Choice / 마지막 사용자 선택
 
-- 사용자가 새 이슈/브랜치/workspace 생성을 지시함 / 2026-06-26
+- 사용자가 `pyarrow` local smoke와 Spark 교체 가능 interface 설명을 이해한 뒤 구현 진행을 지시함 / 2026-06-26
 
 ## Next AI Action / 다음 AI 행동
 
-- option 1이면 `confirmations.md`를 업데이트하고 `RuntimeConfig`/`SparkRunner` 구현을 시작한다.
-- option 2이면 `plan.md`와 `shared-docs.md`를 업데이트한다.
+- option 1이면 M2 구현 파일만 stage하고 커밋한다. untracked `pm/docs/*`는 제외한다.
+- option 2이면 sync 상태 확인 후 PR 준비를 진행한다.
 - option 3이면 후속 후보 중 하나를 별도 workspace로 분리한다. Taxi evidence가 반드시 두 번째 PR이라는 전제는 두지 않는다.
 - option 4이면 pause reason을 `notes.md`에 기록한다.
