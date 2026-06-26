@@ -173,10 +173,6 @@ pr_title_prefix() {
   esac
 }
 
-title_has_korean() {
-  printf '%s\n' "$1" | grep -q '[가-힣]'
-}
-
 normalize_pr_title() {
   local workspace_type="$1"
   local raw_title="$2"
@@ -187,12 +183,12 @@ normalize_pr_title() {
   normalized="$raw_title"
   normalized="$(printf '%s\n' "$normalized" | sed -E 's/^[[:space:]]*(feat|fix|docs|test|chore|hotfix):[[:space:]]*//I')"
 
-  if [[ "$raw_title" =~ ^\[(기능|버그|문서/운영|긴급수정|검증)\] ]] || title_has_korean "$raw_title"; then
+  if [[ "$raw_title" =~ ^\[(기능|버그|문서/운영|긴급수정|검증)\] ]]; then
     printf '%s\n' "$raw_title"
     return
   fi
 
-  printf '%s %s 작업\n' "$prefix" "$normalized"
+  printf '%s %s\n' "$prefix" "$normalized"
 }
 
 set_issue_project_status() {

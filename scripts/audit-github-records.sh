@@ -109,7 +109,6 @@ const input = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
 const issueTitleRe = /^\[(기능|버그|문서\/운영|긴급수정|검증|M[0-9][^\]]*)\]/;
 const conventionalPrefixRe = /^(feat|fix|docs|test|chore|hotfix):/i;
 const prKoreanPrefixRe = /^\[(기능|버그|문서\/운영|긴급수정|검증)\]/;
-const koreanCharRe = /[가-힣]/;
 const prSectionNames = [
   "## 1. PR 요약",
   "## 2. 변경 내용",
@@ -151,7 +150,7 @@ function issueDrift(issue) {
 
 function prTitleOk(title) {
   if (conventionalPrefixRe.test(title)) return false;
-  return prKoreanPrefixRe.test(title) || koreanCharRe.test(title);
+  return prKoreanPrefixRe.test(title);
 }
 
 function suggestedPrTitle(title) {
@@ -163,7 +162,7 @@ function suggestedPrTitle(title) {
     .replace(/^hotfix:/i, "[긴급수정]")
     .trim();
   if (prTitleOk(cleaned)) return cleaned;
-  return `[문서/운영] ${cleaned} 작업`.trim();
+  return `[문서/운영] ${cleaned}`.trim();
 }
 
 function needsClosingKeyword(body) {

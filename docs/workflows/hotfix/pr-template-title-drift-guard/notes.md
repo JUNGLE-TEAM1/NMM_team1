@@ -3,8 +3,8 @@
 ## 진행 메모
 
 - 2026-06-26: `#121/#123` PR 템플릿 우회와 `#124` closing keyword 오탐을 근거로 Hotfix 시작.
-- `prepare-pr.sh`는 English-only/conventional PR 제목을 workspace type 기반 한국어 prefix 제목으로 보정한다.
-- `audit-github-records.sh`는 PR 제목에 한국어 prefix 또는 한국어 설명이 없으면 drift로 보고, 단순 `PR #N` 참조는 closing keyword 누락으로 보지 않는다.
+- `prepare-pr.sh`는 모든 PR 제목을 workspace type 기반 한국어 prefix 제목으로 보정한다.
+- `audit-github-records.sh`는 PR 제목이 `[기능]`, `[버그]`, `[문서/운영]`, `[긴급수정]`, `[검증]` 중 하나로 시작하지 않으면 drift로 보고, 단순 `PR #N` 참조는 closing keyword 누락으로 보지 않는다.
 - `status-workflow.sh`는 record drift가 있으면 `PR checklist ready: no (record drift)`로 표시한다.
 
 ## 결정

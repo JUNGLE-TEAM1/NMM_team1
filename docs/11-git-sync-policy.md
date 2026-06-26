@@ -106,7 +106,7 @@ Issue body는 literal newline escape가 남지 않도록 `--body-file` 경로로
 
 GitHub issue/PR이 UI, `gh`, 외부 자동화, 또는 오래된 스크립트 경로로 생성되면 하네스 템플릿을 우회할 수 있다.
 이 경우 `scripts/audit-github-records.sh`를 먼저 실행해 한국어 issue title/body/label, PR 제목, 읽기 쉬운 PR handoff body, closing keyword 누락을 읽기 전용으로 확인한다.
-PR 제목은 한국어 중심이어야 한다. `[기능]`, `[버그]`, `[문서/운영]`, `[긴급수정]`, `[검증]` prefix를 쓰거나 제목에 한국어 설명을 포함한다. 영어 기술명, branch name, API/schema 이름은 제목 안에 포함할 수 있지만, `docs:`, `feat:`, `fix:`, `chore:`, `test:`, `hotfix:` 같은 conventional prefix 제목이나 영어-only 제목은 drift로 본다.
+PR 제목은 한국어 prefix 양식을 따라야 한다. `[기능]`, `[버그]`, `[문서/운영]`, `[긴급수정]`, `[검증]` 중 하나로 시작해야 하며, 영어 기술명, branch name, API/schema 이름은 prefix 뒤 제목 안에 포함할 수 있다. `docs:`, `feat:`, `fix:`, `chore:`, `test:`, `hotfix:` 같은 conventional prefix 제목, 영어-only 제목, 또는 한국어가 있더라도 하네스 prefix가 없는 제목은 drift로 본다.
 
 ```bash
 scripts/audit-github-records.sh --issue 112
@@ -241,7 +241,7 @@ Stop and report back if CI fails, merge conflicts exist, required review is miss
 Deploy and AWS resource creation still require separate explicit human approval.
 
 Use `.github/pull_request_template.md` as the readable handoff shape when the project uses PRs. The expected PR body has seven sections: PR summary, narrative change explanation, validation, impact scope, reviewer focus, remaining/excluded work, and pre-merge checks. `scripts/prepare-pr.sh` fills this shape from workspace `report.md` fields such as `Changed`, `Verified`, `Remaining`, and `Risk`, so the PR body should read like a review handoff rather than a long audit checklist.
-`scripts/prepare-pr.sh` also normalizes English-only or conventional-prefix PR titles into Korean-centered titles before calling `gh pr create --title`. If a PR body merely references another PR number such as `PR #105`, that reference is not a linked issue and must not be treated as a missing closing keyword.
+`scripts/prepare-pr.sh` also normalizes PR titles into the Korean prefix format before calling `gh pr create --title`. If a PR body merely references another PR number such as `PR #105`, that reference is not a linked issue and must not be treated as a missing closing keyword.
 
 ## 6) PR Conflict Resolution Protocol
 

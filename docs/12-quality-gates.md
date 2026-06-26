@@ -100,7 +100,7 @@ Each workspace uses `quality.md` to record:
 - Source of Truth validation command/result when `shared-docs.md` proposes shared document changes
 - Harness test impact: `none`, `required`, `updated`, `skipped`, or `deferred`
 - Harness regression command/result, usually `scripts/test-harness.sh`, when harness behavior changes
-- GitHub record drift audit command/result when GitHub issue/PR template, Korean-centered PR title policy, closing keyword detection, or lifecycle guard behavior changes; live audit commands are read-only and fixture tests cover CI-safe regression cases
+- GitHub record drift audit command/result when GitHub issue/PR template, Korean prefix PR title policy, closing keyword detection, or lifecycle guard behavior changes; live audit commands are read-only and fixture tests cover CI-safe regression cases
 - skipped checks and reasons
 - deployment or publish gate when relevant
 

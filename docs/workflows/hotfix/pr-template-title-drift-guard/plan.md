@@ -8,7 +8,7 @@
 
 ## 목표
 
-- PR 생성 경로와 GitHub record audit이 한국어 중심 PR 제목과 7섹션 PR handoff 본문을 일관되게 요구하게 한다.
+- PR 생성 경로와 GitHub record audit이 한국어 prefix PR 제목과 7섹션 PR handoff 본문을 일관되게 요구하게 한다.
 - `PR #105` 같은 단순 PR 번호 참조를 linked issue closing keyword 누락으로 오탐하지 않게 한다.
 - drift가 감지된 workspace는 `PR checklist ready`가 clear로 보이지 않게 한다.
 

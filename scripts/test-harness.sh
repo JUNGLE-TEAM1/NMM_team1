@@ -407,7 +407,7 @@ EOF_PR_DRIFT
             exit 0
           fi
           cat <<'EOF_PR'
-{"number":99,"title":"하네스 fixture PR","state":"MERGED","url":"https://github.com/JUNGLE-TEAM1/NMM_team1/pull/99","body":"## 1. PR 요약\n\n하네스 fixture PR입니다. Closes #1.\n\n## 2. 변경 내용\n\n하네스 검증 fixture를 정리했습니다.\n\n## 3. 검증\n\nscripts/test-harness.sh\n\n## 4. 영향 범위\n\n하네스 테스트 fixture에 한정됩니다.\n\n## 5. 리뷰어에게 부탁할 부분\n\n상태 요약이 의도대로 보이는지 확인해주세요.\n\n## 6. 남은 일 / 제외한 일\n\n없습니다.\n\n## 7. Merge 전 확인\n\nCI 통과 후 merge합니다."}
+{"number":99,"title":"[문서/운영] 하네스 fixture PR","state":"MERGED","url":"https://github.com/JUNGLE-TEAM1/NMM_team1/pull/99","body":"## 1. PR 요약\n\n하네스 fixture PR입니다. Closes #1.\n\n## 2. 변경 내용\n\n하네스 검증 fixture를 정리했습니다.\n\n## 3. 검증\n\nscripts/test-harness.sh\n\n## 4. 영향 범위\n\n하네스 테스트 fixture에 한정됩니다.\n\n## 5. 리뷰어에게 부탁할 부분\n\n상태 요약이 의도대로 보이는지 확인해주세요.\n\n## 6. 남은 일 / 제외한 일\n\n없습니다.\n\n## 7. Merge 전 확인\n\nCI 통과 후 merge합니다."}
 EOF_PR
         elif [[ "$*" == *"--json url"* ]]; then
           if [[ "${*: -2:1}" == "--jq" ]]; then
@@ -1155,7 +1155,7 @@ EOF_JSON
     rg -q "suggested title: \\[기능\\] M5 local UI demo panel" /tmp/harness-github-record-drift-bad.out
     rg -q "pr #105: title-prefix-or-korean-title-missing, readable-pr-handoff-missing, stale-pr-summary-checklist, closing-keyword-missing" /tmp/harness-github-record-drift-bad.out
     rg -q "pr #106: title-prefix-or-korean-title-missing" /tmp/harness-github-record-drift-bad.out
-    rg -q "suggested title: \\[문서/운영\\] Add Kafka replay Parquet demo 작업" /tmp/harness-github-record-drift-bad.out
+    rg -q "suggested title: \\[문서/운영\\] Add Kafka replay Parquet demo" /tmp/harness-github-record-drift-bad.out
   )
 }
 
@@ -1179,14 +1179,14 @@ case_github_record_drift_audit_passes_clean_records() {
   "prs": [
     {
       "number": 114,
-      "title": "PR 템플릿 문단형 설명 보강 보고서",
+      "title": "[문서/운영] PR 템플릿 문단형 설명 보강 보고서",
       "state": "OPEN",
       "url": "https://github.com/JUNGLE-TEAM1/NMM_team1/pull/114",
       "body": "## 1. PR 요약\n\n## 2. 변경 내용\n\n## 3. 검증\n\n## 4. 영향 범위\n\n## 5. 리뷰어에게 부탁할 부분\n\n## 6. 남은 일 / 제외한 일\n\n## 7. Merge 전 확인\n\nCloses #111"
     },
     {
       "number": 124,
-      "title": "Week2 M3 JSON main path decision 보고서",
+      "title": "[문서/운영] Week2 M3 JSON main path decision 보고서",
       "state": "MERGED",
       "url": "https://github.com/JUNGLE-TEAM1/NMM_team1/pull/124",
       "body": "## 1. PR 요약\n\n## 2. 변경 내용\n\nPR #105 read-only inspection 결과를 반영했다.\n\n## 3. 검증\n\n## 4. 영향 범위\n\n## 5. 리뷰어에게 부탁할 부분\n\n## 6. 남은 일 / 제외한 일\n\n## 7. Merge 전 확인"

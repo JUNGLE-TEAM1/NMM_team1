@@ -13,7 +13,7 @@
 
 | Decision | Selected Option | Reason | Confirmed By / At |
 | --- | --- | --- | --- |
-| PR 제목 정책 | 한국어 prefix 또는 한국어 설명을 요구하고 conventional/English-only 제목은 drift로 처리 | 사용자가 PR 제목을 한글로 보고 싶다고 명시했고, 팀원/수동 PR의 template bypass를 merge 전 감지해야 함 | user request / 2026-06-26 |
+| PR 제목 정책 | `[기능]`, `[버그]`, `[문서/운영]`, `[긴급수정]`, `[검증]` prefix를 요구하고 prefix 없는 제목은 drift로 처리 | 사용자가 PR 제목을 일관된 양식으로 맞추라고 명시했고, 팀원/수동 PR의 template bypass를 merge 전 감지해야 함 | user request / 2026-06-26 |
 | closing keyword 판정 | 단순 `PR #N` 참조는 closing keyword 누락으로 보지 않고, linked issue가 명확한 경우에만 검사 | `#124`처럼 PR 번호 참고가 false positive가 되는 edge case 제거 | local audit / 2026-06-26 |
 
 ## Deferred Decisions / 보류한 결정
@@ -26,4 +26,4 @@
 
 | Decision | Condition | Action |
 | --- | --- | --- |
-| PR 제목 정책 | 팀이 영어-only 제목 허용으로 되돌리기로 명시 결정 | `audit-github-records.sh` PR title rule과 docs/11 정책 수정 |
+| PR 제목 정책 | 팀이 prefix 없는 제목 허용으로 되돌리기로 명시 결정 | `audit-github-records.sh` PR title rule과 docs/11 정책 수정 |
