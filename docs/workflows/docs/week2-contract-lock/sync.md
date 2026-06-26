@@ -18,14 +18,14 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 | Checked At | Upstream Changes | Impacted Source of Truth | Action |
 | --- | --- | --- | --- |
 | 2026-06-26 | `origin/main` advanced from `e11ff8b` to `b448b38`; local `main` is ahead 1, behind 8 | remote changed Week2 ver2 docs and harness docs; local changed contract fixtures and `docs/03`, `docs/05~07` | push rejected; stop before pull/merge/rebase and request sync decision |
-| 2026-06-26 | 사용자가 "그렇게 해주세요"로 권장 `rebase 후 push` 승인 | 계약 commit applies cleanly on `origin/main` | `git rebase origin/main` 성공; current HEAD is `8c39a36` on `codex/m5-runner-selection-catalog-guard`, target push is `HEAD:main` |
+| 2026-06-26 | 사용자가 "그렇게 해주세요"로 권장 `rebase 후 push` 승인 | 계약 commit applies cleanly on `origin/main` | `git rebase origin/main` 성공; pushed `2985717` to `origin/main` via `git push origin HEAD:main` |
 
 ## Pre-Merge Sync
 
 - main commit: b448b38
 - conflicts: none detected in local worktree
-- validation: `git status --short --branch`, `git diff --check`, JSON validity, focused Week2 tests
-- result: rebase onto `origin/main` completed after user approval
+- validation: `git status --short --branch`, `git diff --check`, JSON validity, focused Week2 tests, strict harness validation
+- result: rebase onto `origin/main` completed after user approval; direct `HEAD:main` push succeeded
 - deferral reason: PR path deferred because user explicitly requested main update
 
 ## PR Conflict Resolution
@@ -46,7 +46,7 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 - issue creation result: not requested
 - issue project result: not requested
 - PR closing keyword: n/a
-- pushed branch: pending `HEAD:main`
+- pushed branch: `HEAD -> main` (`2985717`)
 - PR link: n/a
 - merge status:
 - issue close status: n/a

@@ -14,4 +14,4 @@
 - Verified: JSON 유효성 pass, `git diff --check` pass, Week2 focused tests 18 passed, `scripts/validate-harness.sh` pass, `scripts/validate-harness.sh --strict` pass
 - Remaining: 실제 MinIO endpoint, fixed/extended row count, M4 replay rate는 담당 모듈 smoke 후 TODO 교체
 - Next context: 후속 구현은 `contracts/*.sample.json`을 먼저 읽고, M2/M3/M5는 runner boundary를 유지해야 함
-- Risk: direct push는 rejected 됐지만, 사용자 승인 후 계약 commit을 최신 `origin/main` 위로 rebase했다. final push 전 remote가 다시 바뀌면 재확인이 필요하다.
+- Risk: 낮음. 계약은 remote `main`에 반영됨. 남은 TODO 값은 담당 모듈 smoke 후 교체해야 한다.

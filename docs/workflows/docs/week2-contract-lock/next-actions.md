@@ -4,19 +4,19 @@
 
 ## Current State / 현재 상태
 
-- State: rebased, final push pending
-- Summary: 추천안 기준 Week2 계약 commit은 최신 `origin/main` 위로 rebase됐다. 현재 HEAD를 `origin/main`으로 push하면 된다.
+- State: pushed to main
+- Summary: 추천안 기준 Week2 계약 commit이 최신 `origin/main` 위로 rebase된 뒤 remote main에 반영됐다.
 
 ## Recommended Next Action / 권장 다음 행동
 
-- `git push origin HEAD:main`을 실행한다.
-- Reason: 사용자가 rebase 후 push를 승인했고, 계약 commit이 최신 remote main 위에 있다.
+- 후속 구현 branch에서 M2/M3/M5 병렬 구현을 시작한다.
+- Reason: 계약 fixture와 Source of Truth가 main에 올라갔고, 구현자가 따라야 할 입력/반환 형식이 잠겼다.
 
 ## Options / 선택지
 
-1. `HEAD:main` push 진행.
-2. push rejected 시 sync decision으로 재전환.
-3. push 성공 시 후속 구현 branch에서 M2/M3/M5 병렬 구현 시작.
+1. M2 `RuntimeConfig`/SparkRunner smoke 시작.
+2. M3 `TransformSpec`/JSON profile 구현 시작.
+3. M5 runner selection/Catalog guard 구현 시작.
 
 ## Waiting On Human / 사람 응답 대기
 
@@ -28,4 +28,4 @@
 
 ## Next AI Action / 다음 AI 행동
 
-- final validation 후 `git push origin HEAD:main`.
+- 후속 구현 요청이 오면 `contracts/*.sample.json`과 `docs/03`을 첫 컨텍스트로 사용한다.
