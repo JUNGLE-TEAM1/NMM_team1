@@ -27,7 +27,7 @@
 ## CI/CD Gate / CI-CD 게이트
 
 - CI required: yes
-- CI result: local equivalent passed; remote CI는 PR 생성 후 확인 필요
+- CI result: PR #136 remote checks all passed (`linked-issue`, `harness`, `container-smoke`, `manifest-smoke`)
 - Deploy/publish required: no
 - Deployment confirmation: 
 - Rollback/smoke notes: 

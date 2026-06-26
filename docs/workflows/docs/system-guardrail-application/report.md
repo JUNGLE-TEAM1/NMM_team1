@@ -11,8 +11,8 @@
 - Escalated context read: 없음
 - Context omitted intentionally: 제품 기능/architecture/interface 문서는 이번 운영 guardrail 적용 범위가 아니므로 생략
 - Changed: PR linked issue 검사 script, GitHub Action workflow, focused test, CI test step, system guardrail inventory 갱신
-- Verified: `node tests/pr-linked-issue-check.test.js`, `bash -n ...`, `scripts/validate-harness.sh`, `scripts/validate-harness.sh --strict`, `git fetch origin main`
-- Remaining: branch push, PR 생성, remote CI/check 확인
+- Verified: `node tests/pr-linked-issue-check.test.js`, `bash -n ...`, `scripts/validate-harness.sh`, `scripts/validate-harness.sh --strict`, `git fetch origin main`, PR #136 remote checks all passed
+- Remaining: 사람 확인 후 PR #136 merge 여부 결정, merge 후 finalize/cleanup 여부 확인, repo admin required-check 설정 여부 결정
 - Next context: repository admin이 새 check를 required check로 지정할지 여부
 - Risk: GitHub Action은 추가됐지만 branch protection required check 설정은 repo admin 권한이 필요하다.
 
@@ -61,7 +61,7 @@
 
 - Used skill/plugin/tool: default coding workflow, GitHub CLI
 - Reason: repository 문서/CI 변경과 issue lifecycle 확인
-- Impact: GitHub issue `#135` drift를 확인했다. Project `In Progress` 변경이 자동 close를 다시 유발해 PR 생성 시 `prepare-pr.sh` reopen check에 맡기는 것으로 기록했다.
+- Impact: GitHub issue `#135` drift를 확인했고, PR 생성 시 `prepare-pr.sh`가 issue를 reopen한 뒤 Project status를 `Review`로 맞췄다.
 - Not used because: 별도 specialized skill이 필요한 문서/프레젠테이션/브라우저 작업이 아니었다.
 
 ## Context Budget Evidence / 컨텍스트 예산 증거
@@ -80,6 +80,7 @@ scripts/validate-harness.sh
 scripts/validate-harness.sh --strict
 git fetch origin main
 scripts/status-workflow.sh docs/workflows/docs/system-guardrail-application
+gh pr view 136 --json statusCheckRollup,mergeStateStatus
 ```
 
 ## Quality Gate Evidence / 품질 게이트 증거
@@ -87,7 +88,7 @@ scripts/status-workflow.sh docs/workflows/docs/system-guardrail-application
 - Workspace file: `docs/workflows/docs/system-guardrail-application/quality.md`
 - Quality gate status: passed
 - TDD status: applied; first run failed with missing module, then focused test passed
-- CI/check result: local equivalent passed; remote CI는 PR 생성 후 확인 필요
+- CI/check result: PR #136 remote checks all passed (`linked-issue`, `harness`, `container-smoke`, `manifest-smoke`)
 - Skipped checks: deploy/publish는 변경 없음
 - CD/deploy gate: not required
 
@@ -116,7 +117,7 @@ scripts/status-workflow.sh docs/workflows/docs/system-guardrail-application
 - Document executed: `docs/07-manual-verification-playbook.md`의 Phase report 기록 규칙과 PR lifecycle 수동 확인
 - Environment: local macOS shell, GitHub CLI authenticated
 - Result: linked issue `#135`, branch workspace, closing keyword 기록 확인
-- Failure/limitation: `#135`는 Project `Done` 상태 변경과 함께 자동 close되는 drift가 있어 PR 생성 시 reopen check가 필요하다. remote GitHub Action 결과는 PR 생성 후 확인 가능하다.
+- Failure/limitation: `#135`는 PR 생성 전 Project `Done` 상태 변경과 함께 자동 close되는 drift가 있었으나, PR 생성 시 reopen/Review 상태로 복구됐다. required-check 지정은 repo admin 후속 작업이다.
 - Evidence: `scripts/status-workflow.sh docs/workflows/docs/system-guardrail-application`
 
 ## docs/05 Acceptance Link / 수용 기준 연결
@@ -147,5 +148,5 @@ scripts/status-workflow.sh docs/workflows/docs/system-guardrail-application
 
 ## Final Judgment / 최종 판단
 
-- Done: local implementation and validation complete
-- Remaining risk: remote CI와 required-check 설정은 PR 생성 후/repo admin 설정 후 확인해야 한다.
+- Done: implementation, local validation, PR #136 creation, and remote CI/check verification complete
+- Remaining risk: required-check 설정은 repo admin 권한이 필요하며, merge/finalize/cleanup은 사람 확인 후 진행해야 한다.
