@@ -16,6 +16,15 @@
 - Next context: first implementation Phase should be `M1 Week2 API Client 연결`.
 - Risk: docs-only plan; actual frontend live integration remains follow-up implementation work.
 
+## Follow-up Update / 후속 보강
+
+- Date: 2026-06-26
+- Branch/work location: `codex/m1-ai-query-phase-plan`, `docs/workflows/docs/m1-live-ui-phase-plan`
+- Context read: `contracts/ai_query_result.sample.json`, `docs/03-interface-reference.md`, M1 Phase 4 section, PR #156/#152 GitHub state
+- Changed: Phase 4를 M6 PR #152 merge 이후의 `AIQueryResult.query_result`와 `evidence[]` grounding fields 기준으로 갱신했다.
+- Verified: M6 관련 PR merge 상태 확인, PR #156 merge 확인, Phase 4 grounding keyword check, `git diff --check`, `scripts/validate-harness.sh --strict`
+- Next context: `M1 AI Query Live UI`는 최신 `origin/main` 기준 새 feature branch에서 시작한다.
+
 ## Changed Files / 변경 파일
 
 - `docs/project-context/asklake-week2-module-plan/ver2/m1-live-ui-phase-plan.md`
