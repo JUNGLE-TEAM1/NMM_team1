@@ -15,6 +15,7 @@
 | --- | --- | --- | --- |
 | phase keyword check | `rg -n "Phase 1|Phase 2|Phase 3|Phase 4|Phase 5|M1 Week2 API Client|M1 Run Status Live UI|M1 Catalog Live UI|M1 AI Query Live UI|M1 Demo Click Flow Polish" docs/project-context/asklake-week2-module-plan/ver2/m1-live-ui-phase-plan.md` | passed | 5개 Phase 모두 확인 |
 | responsibility boundary check | `rg -n "schema inference|SparkRunner|runner selection|Catalog 저장소|retrieval/scoring|SQL 로직|M5 PR #132|PR #145" docs/project-context/asklake-week2-module-plan/ver2/m1-live-ui-phase-plan.md` | passed | M1 제외 책임과 PR 경계 확인 |
+| phase 4 M6 grounding update check | `rg -n "PR #152|query_result|schema_fields|metrics|lineage|retrieval_terms|방어적으로" docs/project-context/asklake-week2-module-plan/ver2/m1-live-ui-phase-plan.md docs/workflows/docs/m1-live-ui-phase-plan/next-actions.md` | passed | M6 #152 merge 이후 Phase 4 소비 계약 확인 |
 | lint | `git diff --check` | passed | whitespace check passed |
 | strict harness validation | `scripts/validate-harness.sh --strict` | passed | strict harness validation passed |
 

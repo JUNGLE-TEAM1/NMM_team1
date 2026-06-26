@@ -12,6 +12,7 @@
 | Checked At | Upstream Changes | Impacted Source of Truth | Action |
 | --- | --- | --- | --- |
 | 2026-06-26 | PR #143까지 `origin/main` fetch 확인 | Week2 M6 CatalogSource boundary | M1 계획 문서에 M6 API 소비와 PR #145 경계만 반영 |
+| 2026-06-26 | PR #152 M6 answer evidence grounding merge, PR #156 M1 Catalog Live UI merge 확인 | M1 Phase 4 AI Query Live UI | Phase 4 기준을 `AIQueryResult.query_result`와 `evidence[]` grounding fields 소비로 갱신 |
 
 ## Pre-Merge Sync
 
