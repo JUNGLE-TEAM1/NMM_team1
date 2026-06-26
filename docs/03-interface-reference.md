@@ -243,10 +243,21 @@ The fixture package lives in `contracts/` and is a thin consumer/producer contra
 | --- | --- | --- | --- |
 | `contracts/source_config.sample.json` | M1 | M2, M3, M4, M5 | Demo tenant source identity, source type, connection reference, and source options |
 | `contracts/schema_definition.sample.json` | M3 | M1, M5, M6 | Amazon Reviews inferred/overridden schema shape used by workflow, catalog, and SQL planning |
+| `contracts/transform_spec.sample.json` | M3 | M5 | Select/flatten/normalize/aggregate/load intent and catalog facts without owning runner or catalog persistence |
+| `contracts/runtime_config.sample.json` | M2 | M3, M4, M5, M6 | MinIO/S3-compatible storage, Spark/local runner, Parquet, and SQL runtime settings |
+| `contracts/kafka_topic_contract.sample.json` | M4 | M3, M5 | Kafka raw event shape, replay evidence, and non-blocking streaming handoff |
 | `contracts/workflow_definition.sample.json` | M1/M5 | M5 | Source -> Select/Filter -> Cast/Normalize -> Aggregate -> Load workflow shape |
 | `contracts/execution_result.sample.json` | M2, M3, M4, M5 | M1, M5, M6 | Airflow and local runner compatible execution result shape |
 | `contracts/catalog_metadata.sample.json` | M2, M3, M4, M5 | M1, M6 | Dataset metadata, location, schema, metrics, lineage, and SQL allowlist context |
 | `contracts/ai_query_result.sample.json` | M6 | M1 | Dataset selection, evidence, SELECT-only SQL, rows, summary, and chart result shape |
+
+Locked Week 2 contract decisions:
+
+- `SourceConfig` is not owned by M1 alone. M1 owns demo tenant, source id, and UI input shell; M3 owns CSV/JSON/JSONL source-specific options; M4 owns Kafka source-specific options.
+- `TransformSpec` is the M3-owned intent contract. It does not create Spark sessions, choose runner implementation, or write Catalog state directly.
+- `RuntimeConfig` is the M2-owned runtime contract. M5 consumes it for runner selection and M6 consumes its SQL runtime profile, but M2 does not define transform semantics.
+- `KafkaTopicContract` is evidence and raw-event handoff for Week 2. Kafka is not a blocker for the Amazon Reviews main E2E path unless a later Phase explicitly changes the main path.
+- `ExecutionResult.duration_ms` is part of the locked execution evidence and comes from `Week2RunnerResult.duration_ms`.
 
 Week 2 shared IDs:
 
@@ -270,6 +281,7 @@ Week 2 draft API/UI route contract:
 | AI query | `POST /api/week2/ai/query` / `/ask` | M6 + M1 | `AIQueryResult` |
 
 These are Week 2 draft routes, not final product API routes. If an implementation uses existing baseline `/api/sources`, `/api/pipelines`, or `/api/catalog/datasets` routes, it must either adapt to these fixture names at the boundary or update this section before module work continues.
+Locked for this contract pass: Source register and schema preview routes remain fixture-first until a later implementation PR adds them. The currently executable Week 2 routes are workflow run, run status, catalog detail, and AI query. M1 may replace placeholders with fixture/API state, but placeholder identifiers must converge on the shared Week 2 IDs in this section.
 
 Week 2 storage path pattern:
 
@@ -295,7 +307,7 @@ Minimum `SqlEngineAdapter` methods:
 | --- | --- |
 | `validate(sql, context)` | enforce SELECT-only, table allowlist, timeout, and limit rules before execution |
 | `execute(sql, context)` | run SQL through the selected engine and return `QueryResult` |
-| `explain_schema(dataset)` | expose dataset columns/types to SQL generation and validation |
+| `explain_schema(context)` | expose dataset columns/types from `SqlEngineContext` to SQL generation and validation |
 | `health_check()` | report whether the selected engine is ready for the current profile |
 
 Minimum `QueryResult` shape:
@@ -334,6 +346,7 @@ Week 2 execution metric semantics:
 | --- | --- |
 | `ExecutionResult.row_count` | Primary input rows processed by the workflow run |
 | `ExecutionResult.bytes` | Primary input bytes read by the workflow run |
+| `ExecutionResult.duration_ms` | Runner execution duration in milliseconds |
 | `ExecutionResult.task_results[].row_count` | Node-level row count, using the node's most useful available boundary; `Load` nodes record output dataset rows |
 | `ExecutionResult.task_results[].bytes` | Node-level bytes, using the node's most useful available boundary; `Source` nodes record input bytes and `Load` nodes record output bytes |
 | `CatalogMetadata.metrics.row_count` | Output dataset row count |
@@ -352,6 +365,7 @@ Consumer module, Blocked issue, Next first action
 
 M6 must not import DuckDB, Trino, or Athena directly. The MVP implementation may use `DuckDBSqlEngine` behind the adapter.
 Unconfirmed values such as real sample file path, row count, and final MinIO path remain TODO in fixture files until the responsible module verifies them.
+M1 static shell placeholders are not source of truth. When real API state is connected, M1 must display `tenant_demo`, `pipeline_reviews_json_e2e`, `dataset_reviews_gold`, and other shared fixture identifiers unless this section is updated first.
 
 ### Workstream Ownership
 

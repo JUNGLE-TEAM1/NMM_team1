@@ -1,0 +1,43 @@
+{
+  "contract": "RuntimeConfig",
+  "producer": "M2",
+  "consumers": ["M3", "M4", "M5", "M6"],
+  "tenant_id": "tenant_demo",
+  "profile": "local_minio_spark_smoke",
+  "runner": {
+    "default": "local_runner",
+    "allowed": ["local_runner", "spark_runner"],
+    "spark_select_rule": "M5 selects spark_runner only when runtime_config.runner is spark and Spark smoke has passed"
+  },
+  "storage": {
+    "profile": "minio",
+    "bucket": "asklake-demo",
+    "endpoint": "TODO: confirm local MinIO endpoint before M2/M5 handoff",
+    "path_pattern": "s3://<bucket>/<domain>/<layer>/[dataset_path/]run_id=<run_id>/",
+    "local_fallback_root": "data/week2",
+    "path_contract_status": "locked_pattern_endpoint_pending"
+  },
+  "spark": {
+    "enabled_for_main_path": false,
+    "app_name": "asklake-week2",
+    "master": "local[*]",
+    "smoke_required_before_runner": true,
+    "config": {}
+  },
+  "parquet": {
+    "format": "parquet",
+    "compression": "snappy",
+    "partitioning": ["run_id"]
+  },
+  "sql": {
+    "engine": "duckdb",
+    "default_limit": 100,
+    "timeout_seconds": 30,
+    "allow_tables": ["reviews_gold"]
+  },
+  "secrets": {
+    "uses_secret_values": false,
+    "secret_refs": []
+  },
+  "updated_at": "2026-06-26T00:00:00+09:00"
+}

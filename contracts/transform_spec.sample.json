@@ -1,0 +1,65 @@
+{
+  "contract": "TransformSpec",
+  "producer": "M3",
+  "consumers": ["M5"],
+  "tenant_id": "tenant_demo",
+  "source_id": "source_amazon_reviews_demo",
+  "pipeline_id": "pipeline_reviews_json_e2e",
+  "schema_version": "schema_reviews_v1",
+  "version": "transform_reviews_v1",
+  "target_dataset": "dataset_reviews_gold",
+  "operations": [
+    {
+      "id": "select_reviews",
+      "type": "select",
+      "input": "artifact_reviews_raw",
+      "output": "artifact_reviews_selected",
+      "columns": ["review_id", "product_id", "rating", "review_text", "review_time", "verified_purchase"]
+    },
+    {
+      "id": "normalize_reviews",
+      "type": "normalize",
+      "input": "artifact_reviews_selected",
+      "output": "artifact_reviews_silver",
+      "casts": [
+        {"field": "rating", "target_type": "number"},
+        {"field": "review_time", "target_type": "timestamp"}
+      ]
+    },
+    {
+      "id": "aggregate_reviews",
+      "type": "aggregate",
+      "input": "artifact_reviews_silver",
+      "output": "artifact_reviews_gold",
+      "group_by": ["product_id"],
+      "metrics": [
+        {"name": "review_count", "operation": "count"},
+        {"name": "average_rating", "operation": "avg", "field": "rating"}
+      ]
+    },
+    {
+      "id": "load_reviews",
+      "type": "load",
+      "input": "artifact_reviews_gold",
+      "target_dataset": "dataset_reviews_gold",
+      "layer": "gold",
+      "query_table": "reviews_gold"
+    }
+  ],
+  "quality_rules": [
+    {"id": "schema_match", "type": "schema_match", "severity": "blocking"},
+    {"id": "row_count_nonzero", "type": "row_count_min", "min": 1, "severity": "blocking"}
+  ],
+  "catalog_facts": {
+    "layer": "gold",
+    "query_table": "reviews_gold",
+    "source_lineage": ["source_amazon_reviews_demo"],
+    "output_columns": ["product_id", "review_count", "average_rating"]
+  },
+  "ownership_constraints": {
+    "m3_does_not_create_spark_session": true,
+    "m3_does_not_write_catalog": true,
+    "m5_owns_runner_selection": true
+  },
+  "updated_at": "2026-06-26T00:00:00+09:00"
+}
