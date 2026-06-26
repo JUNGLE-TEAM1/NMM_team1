@@ -28,7 +28,7 @@
 - issue creation result: not created for this local Phase step
 - issue project result:
 - PR closing keyword: explicit no-issue exception planned in PR body
-- pushed branch:
-- PR link:
-- merge status:
-- issue close status:
+- pushed branch: `feature/m1-run-status-live-ui`
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/150
+- merge status: open
+- issue close status: no linked issue
