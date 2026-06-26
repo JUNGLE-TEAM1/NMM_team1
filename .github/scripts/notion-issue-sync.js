@@ -1,7 +1,7 @@
 const NOTION_API_BASE = "https://api.notion.com/v1";
 const NOTION_VERSION = process.env.NOTION_VERSION || "2022-06-28";
 const SYNC_GRACE_MS = Number(process.env.SYNC_GRACE_MS || 30_000);
-const DEFAULT_RECENT_GITHUB_CHANGE_MS = 15 * 60 * 1000;
+const CLOSED_PROJECT_STATUS = "Done";
 const NOTION_SYNC_MARKER_RE = /<!--\s*notion-sync:page-id=([a-zA-Z0-9-]+)\s*-->/i;
 
 module.exports = async function sync({ github, context, core }) {
@@ -9,17 +9,14 @@ module.exports = async function sync({ github, context, core }) {
   const notion = createNotionClient(config);
 
   core.info(`Syncing ${config.repoFullName} with GitHub Project ${config.projectOwner}/${config.projectNumber}`);
+  if (config.dryRun) {
+    core.info("Dry run enabled. Planned mutations will be logged without writing to GitHub or Notion.");
+  }
 
   const project = await fetchProject({ github, config });
   const projectIssues = normalizeProjectIssues(project, config);
   const notionRows = await fetchNotionRows({ notion, config });
-  const notionByIssueUrl = new Map();
-
-  for (const row of notionRows) {
-    if (row.issueUrl) {
-      notionByIssueUrl.set(row.issueUrl, row);
-    }
-  }
+  const notionIndex = buildNotionIndex(notionRows, config);
 
   const seenNotionPages = new Set();
   let createdNotion = 0;
@@ -30,21 +27,38 @@ module.exports = async function sync({ github, context, core }) {
   let reopenedProjectItems = 0;
   let removedProjectItems = 0;
   let archivedNotion = 0;
+  let restoredNotion = 0;
+  let conflicts = 0;
   let updatedMarkers = 0;
 
   const deletedIssue = issueFromDeletedEvent(context, config);
   if (deletedIssue) {
-    const row = notionByIssueUrl.get(deletedIssue.issueUrl);
-    if (row) {
-      await archiveNotionPage({ notion, pageId: row.pageId });
+    const rows = notionIndex.rowsByIssueUrl.get(deletedIssue.issueUrl) || [];
+    for (const row of rows) {
+      if (!isDeletedNotionRow(row) && (await archiveNotionPage({ notion, config, pageId: row.pageId }))) {
+        archivedNotion += 1;
+      }
       seenNotionPages.add(row.pageId);
-      archivedNotion += 1;
+    }
+  }
+
+  for (const [issueUrl, rows] of notionIndex.duplicateRowsByIssueUrl) {
+    if (deletedIssue?.issueUrl === issueUrl) {
+      continue;
+    }
+    const message = `Conflict: duplicate Notion rows share Issue URL ${issueUrl}. Refusing to choose one row automatically.`;
+    for (const row of rows) {
+      seenNotionPages.add(row.pageId);
+      if (await markNotionConflict({ notion, config, row, message })) {
+        conflicts += 1;
+      }
     }
   }
 
   const reopenedIssue = issueFromReopenedEvent(context, config);
   if (reopenedIssue && !projectIssues.some((issue) => issue.issueUrl === reopenedIssue.issueUrl)) {
-    const row = notionByIssueUrl.get(reopenedIssue.issueUrl);
+    const match = await findNotionMatchForIssue({ notion, config, index: notionIndex, issue: reopenedIssue });
+    const row = match.row;
     const projectIssue = await ensureProjectItem({
       github,
       config,
@@ -53,78 +67,129 @@ module.exports = async function sync({ github, context, core }) {
       wantedStatus: config.reopenedProjectStatus,
     });
     reopenedProjectItems += 1;
+    if (projectIssue.wasAddedToProject || projectIssue.projectStatusUpdated) {
+      updatedGitHub += 1;
+    }
 
-    if (row && !isDeletedNotionRow(row)) {
+    if (row) {
       seenNotionPages.add(row.pageId);
-      if (await ensureGitHubIssueHasNotionMarker({ github, config, issue: projectIssue, pageId: row.pageId })) {
+      const activeRow = await restoreRowIfArchived({ notion, config, row });
+      if (activeRow.restored) {
+        restoredNotion += 1;
+      }
+      if (await ensureGitHubIssueHasNotionMarker({ github, config, issue: projectIssue, pageId: activeRow.row.pageId })) {
         updatedMarkers += 1;
       }
-      await updateNotionIssuePage({ notion, config, pageId: row.pageId, issue: projectIssue, source: "GitHub" });
-      updatedNotion += 1;
+      if (
+        await updateNotionIssuePage({
+          notion,
+          config,
+          pageId: activeRow.row.pageId,
+          row: activeRow.row,
+          issue: projectIssue,
+          source: "GitHub",
+        })
+      ) {
+        updatedNotion += 1;
+      }
     }
   }
 
   for (const issue of projectIssues) {
-    const row = notionByIssueUrl.get(issue.issueUrl);
+    const match = await findNotionMatchForIssue({ notion, config, index: notionIndex, issue });
 
-    if (issue.state === "closed") {
-      if (row) {
+    if (match.conflictRows) {
+      const rowsToMark = match.conflictRows.filter((row) => !seenNotionPages.has(row.pageId));
+      if (!rowsToMark.length) {
+        continue;
+      }
+      const message = `Conflict: multiple Notion rows match ${issue.issueUrl}. githubChangedAt=${issue.githubUpdatedAt}`;
+      for (const row of rowsToMark) {
         seenNotionPages.add(row.pageId);
-        if (!isDeletedNotionRow(row)) {
-          await archiveNotionPage({ notion, pageId: row.pageId });
-          archivedNotion += 1;
+        if (await markNotionConflict({ notion, config, row, message })) {
+          conflicts += 1;
         }
-      }
-      if (await removeProjectItem({ github, project, projectItemId: issue.projectItemId })) {
-        removedProjectItems += 1;
-      }
-      if (await removeGitHubIssueNotionMarker({ github, config, issue })) {
-        updatedMarkers += 1;
       }
       continue;
     }
 
+    let row = match.row;
+    let githubIssue = issueForGitHubSource(issue);
+
     if (!row) {
-      if (issue.notionPageId || !isRecentGitHubProjectChange(issue, config)) {
-        if (await removeProjectItem({ github, project, projectItemId: issue.projectItemId })) {
-          removedProjectItems += 1;
-        }
-        if (await removeGitHubIssueNotionMarker({ github, config, issue })) {
-          updatedMarkers += 1;
-        }
-        continue;
+      githubIssue = await ensureClosedProjectStatus({ github, config, project, issue: githubIssue });
+      if (githubIssue.projectStatusUpdated) {
+        updatedGitHub += 1;
       }
 
-      const page = await createNotionIssuePage({ notion, config, issue, source: "GitHub" });
-      if (await ensureGitHubIssueHasNotionMarker({ github, config, issue, pageId: page.id })) {
+      const page = await createNotionIssuePage({ notion, config, issue: githubIssue, source: "GitHub" });
+      if (await ensureGitHubIssueHasNotionMarker({ github, config, issue: githubIssue, pageId: page.id })) {
         updatedMarkers += 1;
+        if (
+          await updateNotionIssuePage({
+            notion,
+            config,
+            pageId: page.id,
+            issue: githubIssue,
+            source: "GitHub",
+          })
+        ) {
+          updatedNotion += 1;
+        }
       }
       createdNotion += 1;
       continue;
     }
 
     seenNotionPages.add(row.pageId);
-    if (await ensureGitHubIssueHasNotionMarker({ github, config, issue, pageId: row.pageId })) {
-      updatedMarkers += 1;
+    const activeRow = await restoreRowIfArchived({ notion, config, row });
+    row = activeRow.row;
+    if (activeRow.restored) {
+      restoredNotion += 1;
     }
-
-    if (isDeletedNotionRow(row)) {
-      if (await removeProjectItem({ github, project, projectItemId: issue.projectItemId })) {
-        removedProjectItems += 1;
-      }
-      if (await removeGitHubIssueNotionMarker({ github, config, issue })) {
-        updatedMarkers += 1;
+    if (row.inTrash) {
+      const message = `Conflict: Notion row ${row.pageId} is in trash while GitHub Project item ${issue.issueUrl} still exists. Keeping the Project item.`;
+      if (await markNotionConflict({ notion, config, row, message })) {
+        conflicts += 1;
       }
       continue;
     }
 
-    const direction = chooseSyncDirection({ row, issue });
-    if (direction === "notion") {
-      await syncNotionToGitHub({ github, notion, config, project, row, issue });
-      updatedGitHub += 1;
-    } else if (direction === "github") {
-      await updateNotionIssuePage({ notion, config, pageId: row.pageId, issue, source: "GitHub" });
-      updatedNotion += 1;
+    const markerUpdated = await ensureGitHubIssueHasNotionMarker({ github, config, issue: githubIssue, pageId: row.pageId });
+    if (markerUpdated) {
+      updatedMarkers += 1;
+    }
+
+    const decision = chooseSyncDirection({ row, issue: githubIssue });
+    core.info(`Sync decision for ${githubIssue.issueUrl}: ${decision.direction} (${decision.reason})`);
+
+    if (decision.direction === "conflict") {
+      if (await markSyncConflict({ notion, config, row, issue: githubIssue, decision })) {
+        conflicts += 1;
+      }
+      continue;
+    }
+
+    if (decision.direction === "notion") {
+      const result = await syncNotionToGitHub({ github, notion, config, project, row, issue: githubIssue });
+      if (result.updatedGitHub) {
+        updatedGitHub += 1;
+      }
+      if (result.updatedNotion) {
+        updatedNotion += 1;
+      }
+    } else if (decision.direction === "github") {
+      githubIssue = await ensureClosedProjectStatus({ github, config, project, issue: githubIssue });
+      if (githubIssue.projectStatusUpdated) {
+        updatedGitHub += 1;
+      }
+      if (await updateNotionIssuePage({ notion, config, pageId: row.pageId, row, issue: githubIssue, source: "GitHub" })) {
+        updatedNotion += 1;
+      }
+    } else if (markerUpdated) {
+      if (await updateNotionIssuePage({ notion, config, pageId: row.pageId, row, issue: githubIssue, source: "GitHub" })) {
+        updatedNotion += 1;
+      }
     }
   }
 
@@ -141,46 +206,77 @@ module.exports = async function sync({ github, context, core }) {
 
       const issue = await fetchGitHubIssueOrNull({ github, config, issueNumber: parsed.number });
       if (!issue) {
-        await archiveNotionPage({ notion, pageId: row.pageId });
-        archivedNotion += 1;
-        continue;
-      }
-
-      if (issue.state === "closed") {
-        if (!isDeletedNotionRow(row)) {
-          await archiveNotionPage({ notion, pageId: row.pageId });
-          archivedNotion += 1;
-        }
-        if (await removeGitHubIssueNotionMarker({ github, config, issue })) {
-          updatedMarkers += 1;
+        const message = `Conflict: GitHub issue ${row.issueUrl} was not found during sync. Not archiving Notion without an explicit GitHub issues.deleted event.`;
+        if (await markNotionConflict({ notion, config, row, message })) {
+          conflicts += 1;
         }
         continue;
       }
 
-      if (shouldArchiveNotionMissingFromProject(row)) {
-        if (!isDeletedNotionRow(row)) {
-          await archiveNotionPage({ notion, pageId: row.pageId });
-          archivedNotion += 1;
-        }
-        if (await removeGitHubIssueNotionMarker({ github, config, issue })) {
-          updatedMarkers += 1;
+      const activeRow = await restoreRowIfArchived({ notion, config, row });
+      const restoredRow = activeRow.row;
+      if (activeRow.restored) {
+        restoredNotion += 1;
+      }
+      if (restoredRow.inTrash) {
+        const message = `Conflict: Notion row ${restoredRow.pageId} is in trash while GitHub issue ${row.issueUrl} still exists.`;
+        if (await markNotionConflict({ notion, config, row: restoredRow, message })) {
+          conflicts += 1;
         }
         continue;
       }
 
-      const projectIssue = await ensureProjectItem({ github, config, project, issue, wantedStatus: row.projectStatus });
-      if (await ensureGitHubIssueHasNotionMarker({ github, config, issue: projectIssue, pageId: row.pageId })) {
+      const githubIssue = issueForGitHubSource(issue);
+      const decision = chooseSyncDirection({ row: restoredRow, issue: githubIssue });
+      const wantedStatus = wantedProjectStatusForMissingProjectItem({ row: restoredRow, issue: githubIssue, decision });
+      const projectIssue = await ensureProjectItem({ github, config, project, issue: githubIssue, wantedStatus });
+      if (projectIssue.wasAddedToProject) {
+        addedToProject += 1;
+      }
+      if (projectIssue.wasAddedToProject || projectIssue.projectStatusUpdated) {
+        updatedGitHub += 1;
+      }
+      if (await ensureGitHubIssueHasNotionMarker({ github, config, issue: projectIssue, pageId: restoredRow.pageId })) {
         updatedMarkers += 1;
       }
-      await updateNotionIssuePage({ notion, config, pageId: row.pageId, issue: projectIssue, source: "GitHub" });
-      addedToProject += 1;
+      if (decision.direction === "conflict") {
+        if (await markSyncConflict({ notion, config, row: restoredRow, issue: projectIssue, decision })) {
+          conflicts += 1;
+        }
+        continue;
+      }
+      if (decision.direction === "notion") {
+        const result = await syncNotionToGitHub({ github, notion, config, project, row: restoredRow, issue: projectIssue });
+        if (result.updatedGitHub) {
+          updatedGitHub += 1;
+        }
+        if (result.updatedNotion) {
+          updatedNotion += 1;
+        }
+      } else if (
+        await updateNotionIssuePage({
+          notion,
+          config,
+          pageId: restoredRow.pageId,
+          row: restoredRow,
+          issue: projectIssue,
+          source: "GitHub",
+        })
+      ) {
+        updatedNotion += 1;
+      }
       continue;
     }
 
-    if (row.repoUrl === config.repoUrl && row.notionTitle) {
+    if (row.repoUrl === config.repoUrl && row.notionTitle && !isDeletedNotionRow(row)) {
       const issue = await createGitHubIssueFromNotion({ github, config, row });
       const projectIssue = await ensureProjectItem({ github, config, project, issue, wantedStatus: row.projectStatus });
-      await updateNotionIssuePage({ notion, config, pageId: row.pageId, issue: projectIssue, source: "Notion" });
+      if (projectIssue.wasAddedToProject) {
+        addedToProject += 1;
+      }
+      if (await updateNotionIssuePage({ notion, config, pageId: row.pageId, row, issue: projectIssue, source: "Notion" })) {
+        updatedNotion += 1;
+      }
       createdIssues += 1;
     }
   }
@@ -195,6 +291,8 @@ module.exports = async function sync({ github, context, core }) {
       `Reopened GitHub issues re-added to project: ${reopenedProjectItems}`,
       `Removed GitHub Project items: ${removedProjectItems}`,
       `Archived Notion pages: ${archivedNotion}`,
+      `Restored Notion pages: ${restoredNotion}`,
+      `Conflicts recorded: ${conflicts}`,
       `Updated GitHub sync markers: ${updatedMarkers}`,
     ].join("\n"),
   );
@@ -230,9 +328,9 @@ function buildConfig(context) {
     repoUrl: `https://github.com/${owner}/${repo}`,
     projectOwner,
     projectNumber,
+    dryRun: parseBoolean(process.env.DRY_RUN),
     githubStatusField: process.env.GITHUB_PROJECT_STATUS_FIELD || "Status",
     reopenedProjectStatus: process.env.GITHUB_PROJECT_REOPENED_STATUS || "Ready",
-    recentGitHubChangeMs: parsePositiveNumber(process.env.GITHUB_RECENT_CHANGE_MS, DEFAULT_RECENT_GITHUB_CHANGE_MS),
     fallbackStatusOptionIds: parseStatusOptionIds(process.env.GITHUB_PROJECT_STATUS_OPTION_IDS),
     projectStatusAliases: parseStatusAliases(process.env.GITHUB_PROJECT_STATUS_ALIASES),
     props: {
@@ -268,7 +366,9 @@ function createNotionClient(config) {
 
     if (!response.ok) {
       const text = await response.text();
-      throw new Error(`Notion API ${response.status} ${response.statusText}: ${text}`);
+      const error = new Error(`Notion API ${response.status} ${response.statusText}: ${text}`);
+      error.status = response.status;
+      throw error;
     }
 
     return response.json();
@@ -501,73 +601,310 @@ function normalizeNotionRow(page, config) {
     labels: splitList(readText(page, props.labels)),
     assignees: splitList(readText(page, props.assignees)),
     projectStatus: readSelect(page, props.projectStatus),
+    createdAt: readDate(page, props.created),
+    updatedAt: readDate(page, props.updated),
     lastGitHubUpdatedAt: readDate(page, props.lastGitHubUpdated),
     lastSyncedAt: readDate(page, props.lastSyncedAt),
     lastSyncSource: readSelect(page, props.lastSyncSource),
+    syncError: readText(page, props.syncError),
     archived: Boolean(page.archived),
     inTrash: Boolean(page.in_trash),
   };
 }
 
-function chooseSyncDirection({ row, issue }) {
-  const githubChanged = !row.lastGitHubUpdatedAt || isAfter(issue.githubUpdatedAt, row.lastGitHubUpdatedAt);
-  const notionChanged = row.lastSyncedAt && isAfter(row.lastEditedAt, row.lastSyncedAt);
+function buildNotionIndex(rows, config) {
+  const rowsByIssueUrl = new Map();
+  const rowByPageId = new Map();
+  const rowsByRepoNumber = new Map();
 
-  if (githubChanged && notionChanged) {
-    return new Date(row.lastEditedAt).getTime() > new Date(issue.githubUpdatedAt).getTime() ? "notion" : "github";
+  for (const row of rows) {
+    rowByPageId.set(normalizePageId(row.pageId), row);
+
+    if (row.issueUrl) {
+      addMapList(rowsByIssueUrl, row.issueUrl, row);
+    }
+
+    const repoNumberKey = notionRepoNumberKey(row, config);
+    if (repoNumberKey) {
+      addMapList(rowsByRepoNumber, repoNumberKey, row);
+    }
   }
 
-  if (notionChanged) {
-    return "notion";
+  return {
+    rows,
+    rowsByIssueUrl,
+    rowByPageId,
+    rowsByRepoNumber,
+    duplicateRowsByIssueUrl: duplicateMapEntries(rowsByIssueUrl),
+    duplicateRowsByRepoNumber: duplicateMapEntries(rowsByRepoNumber),
+  };
+}
+
+async function findNotionMatchForIssue({ notion, config, index, issue }) {
+  const urlRows = index.rowsByIssueUrl.get(issue.issueUrl) || [];
+  if (urlRows.length > 1) {
+    return { conflictRows: urlRows };
+  }
+
+  if (urlRows.length === 1) {
+    return { row: urlRows[0] };
+  }
+
+  if (issue.notionPageId) {
+    const markerPageId = normalizePageId(issue.notionPageId);
+    const indexedRow = index.rowByPageId.get(markerPageId);
+    if (indexedRow) {
+      return { row: indexedRow };
+    }
+
+    const fetchedRow = await fetchNotionPageByIdOrNull({ notion, config, pageId: issue.notionPageId });
+    if (fetchedRow) {
+      index.rowByPageId.set(normalizePageId(fetchedRow.pageId), fetchedRow);
+      if (fetchedRow.issueUrl) {
+        addMapList(index.rowsByIssueUrl, fetchedRow.issueUrl, fetchedRow);
+      }
+      return { row: fetchedRow };
+    }
+  }
+
+  const repoNumberRows = index.rowsByRepoNumber.get(issueRepoNumberKey(issue)) || [];
+  if (repoNumberRows.length > 1) {
+    return { conflictRows: repoNumberRows };
+  }
+
+  return { row: repoNumberRows[0] || null };
+}
+
+async function fetchNotionPageByIdOrNull({ notion, config, pageId }) {
+  try {
+    const page = await notion(`/pages/${pageId}`);
+    return normalizeNotionRow(page, config);
+  } catch (error) {
+    if (isNotFoundError(error)) {
+      return null;
+    }
+
+    throw error;
+  }
+}
+
+function addMapList(map, key, value) {
+  if (!key) {
+    return;
+  }
+
+  const values = map.get(key) || [];
+  values.push(value);
+  map.set(key, values);
+}
+
+function duplicateMapEntries(map) {
+  return new Map([...map.entries()].filter(([, values]) => values.length > 1));
+}
+
+function notionRepoNumberKey(row, config) {
+  if (!row.number) {
+    return null;
+  }
+
+  if (row.repoUrl && row.repoUrl !== config.repoUrl) {
+    return null;
+  }
+
+  return `${config.repoUrl}#${row.number}`;
+}
+
+function issueRepoNumberKey(issue) {
+  return `${issue.repoUrl}#${issue.number}`;
+}
+
+function normalizePageId(pageId) {
+  return String(pageId || "").replace(/-/g, "").toLowerCase();
+}
+
+function chooseSyncDirection({ row, issue }) {
+  const githubChangedAt = issue.githubUpdatedAt || issue.updatedAt;
+  const notionChangedAt = row.lastEditedAt;
+  const diffFields = diffIssueAndRow({ row, issue });
+  const hasDiff = diffFields.length > 0;
+  const githubChanged = hasGitHubChangedSinceLastSync({ row, issue });
+  const notionChanged = hasNotionChangedSinceLastSync(row);
+  const base = {
+    direction: "none",
+    githubChangedAt,
+    notionChangedAt,
+    reason: "already in sync",
+    diffFields,
+  };
+
+  if (!hasDiff) {
+    return base;
+  }
+
+  if (githubChanged && notionChanged) {
+    const comparison = compareIsoWithGrace(githubChangedAt, notionChangedAt);
+    if (comparison > 0) {
+      return { ...base, direction: "github", reason: "both changed; GitHub is newer" };
+    }
+    if (comparison < 0) {
+      return { ...base, direction: "notion", reason: "both changed; Notion is newer" };
+    }
+
+    return { ...base, direction: "conflict", reason: "both changed within sync grace window" };
   }
 
   if (githubChanged) {
-    return "github";
+    return { ...base, direction: "github", reason: "GitHub changed since last sync" };
   }
 
-  return "none";
+  if (notionChanged) {
+    return { ...base, direction: "notion", reason: "Notion changed since last sync" };
+  }
+
+  return { ...base, reason: "data differs, but neither side changed since last sync" };
+}
+
+function hasGitHubChangedSinceLastSync({ row, issue }) {
+  if (!row.lastGitHubUpdatedAt) {
+    return true;
+  }
+
+  return isAfter(issue.githubUpdatedAt, row.lastGitHubUpdatedAt);
+}
+
+function hasNotionChangedSinceLastSync(row) {
+  if (!row.lastEditedAt) {
+    return false;
+  }
+
+  if (!row.lastSyncedAt) {
+    return true;
+  }
+
+  return isAfter(row.lastEditedAt, row.lastSyncedAt);
+}
+
+function diffIssueAndRow({ row, issue }) {
+  const fields = [];
+  const rowTitle = stripIssuePrefix(row.notionTitle, issue.number);
+
+  if ((rowTitle || "") !== (issue.title || "")) {
+    fields.push("title");
+  }
+  if (row.issueUrl !== issue.issueUrl) {
+    fields.push("issueUrl");
+  }
+  if ((row.repoUrl || "") !== (issue.repoUrl || "")) {
+    fields.push("repo");
+  }
+  if (row.state !== issue.state) {
+    fields.push("state");
+  }
+  if (row.number !== issue.number) {
+    fields.push("number");
+  }
+  if (!sameList(row.labels, issue.labels)) {
+    fields.push("labels");
+  }
+  if (!sameList(row.assignees, issue.assignees)) {
+    fields.push("assignees");
+  }
+  if (!sameProjectStatus(row.projectStatus, issue.projectStatus)) {
+    fields.push("projectStatus");
+  }
+
+  return fields;
 }
 
 async function syncNotionToGitHub({ github, notion, config, project, row, issue }) {
   const title = stripIssuePrefix(row.notionTitle, issue.number);
   const labels = row.labels;
   const assignees = row.assignees;
+  const issuePatch = {};
 
-  const { data } = await github.rest.issues.update({
-    owner: config.owner,
-    repo: config.repo,
-    issue_number: issue.number,
-    title: title || issue.title,
-    labels,
-    assignees,
-  });
+  if (title && title !== issue.title) {
+    issuePatch.title = title;
+  }
+  if (row.state && row.state !== issue.state) {
+    issuePatch.state = row.state;
+  }
+  if (!sameList(labels, issue.labels)) {
+    issuePatch.labels = sortUnique(labels);
+  }
+  if (!sameList(assignees, issue.assignees)) {
+    issuePatch.assignees = sortUnique(assignees);
+  }
+
+  let data = null;
+  let updatedGitHub = false;
+
+  if (Object.keys(issuePatch).length > 0) {
+    if (config.dryRun) {
+      console.log(`[dry-run] Would update GitHub issue ${issue.issueUrl}: ${Object.keys(issuePatch).join(", ")}`);
+      data = {
+        title: issuePatch.title || issue.title,
+        state: issuePatch.state || issue.state,
+        labels: (issuePatch.labels || issue.labels).map((name) => ({ name })),
+        assignees: (issuePatch.assignees || issue.assignees).map((login) => ({ login })),
+        updated_at: new Date().toISOString(),
+      };
+    } else {
+      const response = await github.rest.issues.update({
+        owner: config.owner,
+        repo: config.repo,
+        issue_number: issue.number,
+        ...issuePatch,
+      });
+      data = response.data;
+    }
+    updatedGitHub = true;
+  }
 
   let projectStatus = issue.projectStatus;
-  if (row.projectStatus && row.projectStatus !== issue.projectStatus) {
+  if (row.projectStatus && !sameProjectStatus(row.projectStatus, issue.projectStatus)) {
     const syncedStatus = await updateProjectStatus({
       github,
+      config,
       project,
       projectItemId: issue.projectItemId,
+      currentStatusName: issue.projectStatus,
       statusName: row.projectStatus,
     });
     projectStatus = syncedStatus || row.projectStatus;
+    updatedGitHub = Boolean(syncedStatus) || updatedGitHub;
   }
 
   const updatedIssue = {
     ...issue,
-    title: data.title,
-    state: data.state,
-    labels: data.labels.map((label) => label.name),
-    assignees: data.assignees.map((assignee) => assignee.login),
-    updatedAt: data.updated_at,
-    githubUpdatedAt: new Date().toISOString(),
+    title: data?.title || issue.title,
+    state: data?.state || issue.state,
+    labels: data?.labels?.map((label) => label.name) || issue.labels,
+    assignees: data?.assignees?.map((assignee) => assignee.login) || issue.assignees,
+    updatedAt: data?.updated_at || issue.updatedAt,
+    githubUpdatedAt: updatedGitHub ? new Date().toISOString() : issue.githubUpdatedAt,
     projectStatus,
   };
 
-  await updateNotionIssuePage({ notion, config, pageId: row.pageId, issue: updatedIssue, source: "Notion" });
+  const updatedNotion = await updateNotionIssuePage({
+    notion,
+    config,
+    pageId: row.pageId,
+    row,
+    issue: updatedIssue,
+    source: "Notion",
+  });
+
+  return {
+    updatedGitHub,
+    updatedNotion,
+  };
 }
 
-async function updateProjectStatus({ github, project, projectItemId, statusName }) {
+async function updateProjectStatus({ github, config, project, projectItemId, currentStatusName, statusName }) {
+  if (!projectItemId || !statusName || sameProjectStatus(currentStatusName, statusName)) {
+    return null;
+  }
+
   const normalizedStatusName = normalizeProjectStatusName(statusName);
   const aliasedStatusName = project.projectStatusAliases.get(normalizedStatusName) || statusName;
   const normalizedAliasedStatusName = normalizeProjectStatusName(aliasedStatusName);
@@ -583,6 +920,11 @@ async function updateProjectStatus({ github, project, projectItemId, statusName 
 
   if (!option) {
     console.warn(`Using fallback option id for project status "${aliasedStatusName}".`);
+  }
+
+  if (config.dryRun) {
+    console.log(`[dry-run] Would update Project status for item ${projectItemId} to "${aliasedStatusName}".`);
+    return aliasedStatusName;
   }
 
   await github.graphql(
@@ -636,6 +978,25 @@ async function fetchGitHubIssueOrNull({ github, config, issueNumber }) {
 }
 
 async function createGitHubIssueFromNotion({ github, config, row }) {
+  if (config.dryRun) {
+    console.log(`[dry-run] Would create GitHub issue from Notion page ${row.pageId}.`);
+    return issueFromRest(
+      {
+        node_id: `dry-run-issue-${row.pageId}`,
+        number: row.number || 0,
+        title: stripIssuePrefix(row.notionTitle, row.number),
+        state: row.state || "open",
+        html_url: `${config.repoUrl}/issues/dry-run-${row.pageId}`,
+        body: buildNotionSyncMarker(row.pageId),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        labels: row.labels.map((name) => ({ name })),
+        assignees: row.assignees.map((login) => ({ login })),
+      },
+      config,
+    );
+  }
+
   const { data } = await github.rest.issues.create({
     owner: config.owner,
     repo: config.repo,
@@ -651,64 +1012,115 @@ async function createGitHubIssueFromNotion({ github, config, row }) {
 async function ensureProjectItem({ github, config, project, issue, wantedStatus }) {
   const existing = project.items.find((item) => item.content?.url === issue.issueUrl);
   let projectItemId = existing?.id;
+  let wasAddedToProject = false;
 
   if (!projectItemId) {
-    const result = await github.graphql(
-      `
-        mutation($projectId: ID!, $contentId: ID!) {
-          addProjectV2ItemById(input: { projectId: $projectId, contentId: $contentId }) {
-            item {
-              id
+    if (config.dryRun) {
+      console.log(`[dry-run] Would add GitHub issue ${issue.issueUrl} to Project ${config.projectOwner}/${config.projectNumber}.`);
+      projectItemId = `dry-run-project-item-${issue.number}`;
+    } else {
+      const result = await github.graphql(
+        `
+          mutation($projectId: ID!, $contentId: ID!) {
+            addProjectV2ItemById(input: { projectId: $projectId, contentId: $contentId }) {
+              item {
+                id
+              }
             }
           }
-        }
-      `,
-      {
-        projectId: project.id,
-        contentId: issue.nodeId,
-      },
-    );
+        `,
+        {
+          projectId: project.id,
+          contentId: issue.nodeId,
+        },
+      );
 
-    projectItemId = result.addProjectV2ItemById.item.id;
+      projectItemId = result.addProjectV2ItemById.item.id;
+    }
+
+    wasAddedToProject = true;
+    project.items.push({
+      id: projectItemId,
+      content: {
+        url: issue.issueUrl,
+      },
+    });
   }
 
+  let projectStatusUpdated = false;
+  let projectStatus = issue.projectStatus || null;
   if (wantedStatus) {
-    await updateProjectStatus({
+    const syncedStatus = await updateProjectStatus({
       github,
+      config,
       project,
       projectItemId,
+      currentStatusName: wasAddedToProject ? null : issue.originalProjectStatus ?? issue.projectStatus,
       statusName: wantedStatus,
     });
+    projectStatus = syncedStatus || wantedStatus;
+    projectStatusUpdated = Boolean(syncedStatus);
   }
 
   return {
     ...issue,
     projectItemId,
-    projectStatus: wantedStatus || issue.projectStatus || null,
-    githubUpdatedAt: new Date().toISOString(),
+    projectStatus,
+    githubUpdatedAt: wasAddedToProject || projectStatusUpdated ? new Date().toISOString() : issue.githubUpdatedAt,
+    wasAddedToProject,
+    projectStatusUpdated,
   };
 }
 
-async function removeProjectItem({ github, project, projectItemId }) {
-  if (!projectItemId) {
-    return false;
+function issueForGitHubSource(issue) {
+  if (issue.state !== "closed") {
+    return issue;
   }
 
-  await github.graphql(
-    `
-      mutation($projectId: ID!, $itemId: ID!) {
-        deleteProjectV2Item(input: { projectId: $projectId, itemId: $itemId }) {
-          deletedItemId
-        }
-      }
-    `,
-    {
-      projectId: project.id,
-      itemId: projectItemId,
-    },
-  );
+  return {
+    ...issue,
+    originalProjectStatus: issue.projectStatus,
+    projectStatus: CLOSED_PROJECT_STATUS,
+  };
+}
 
-  return true;
+async function ensureClosedProjectStatus({ github, config, project, issue }) {
+  const currentStatusName = issue.originalProjectStatus ?? issue.projectStatus;
+  if (issue.state !== "closed" || sameProjectStatus(currentStatusName, CLOSED_PROJECT_STATUS)) {
+    return issue;
+  }
+
+  const syncedStatus = await updateProjectStatus({
+    github,
+    config,
+    project,
+    projectItemId: issue.projectItemId,
+    currentStatusName,
+    statusName: CLOSED_PROJECT_STATUS,
+  });
+
+  if (!syncedStatus) {
+    return issue;
+  }
+
+  return {
+    ...issue,
+    projectStatus: syncedStatus,
+    githubUpdatedAt: new Date().toISOString(),
+    projectStatusUpdated: true,
+  };
+}
+
+function wantedProjectStatusForMissingProjectItem({ row, issue, decision }) {
+  if (decision.direction === "notion") {
+    return row.projectStatus || (row.state === "closed" ? CLOSED_PROJECT_STATUS : null);
+  }
+
+  if (issue.state === "closed") {
+    return CLOSED_PROJECT_STATUS;
+  }
+
+  return issue.projectStatus || row.projectStatus || null;
 }
 
 function issueFromRest(issue, config) {
@@ -725,8 +1137,8 @@ function issueFromRest(issue, config) {
     createdAt: issue.created_at,
     updatedAt: issue.updated_at,
     githubUpdatedAt: issue.updated_at,
-    labels: issue.labels.map((label) => label.name),
-    assignees: issue.assignees.map((assignee) => assignee.login),
+    labels: (issue.labels || []).map((label) => (typeof label === "string" ? label : label.name)).filter(Boolean),
+    assignees: (issue.assignees || []).map((assignee) => assignee.login).filter(Boolean),
     projectStatus: null,
     projectStatusOptionId: null,
   };
@@ -773,14 +1185,6 @@ function isDeletedNotionRow(row) {
   return Boolean(row.archived || row.inTrash);
 }
 
-function shouldArchiveNotionMissingFromProject(row) {
-  return Boolean(row.lastSyncedAt && !isAfter(row.lastEditedAt, row.lastSyncedAt));
-}
-
-function isRecentGitHubProjectChange(issue, config) {
-  return isWithinMs(issue.projectItemCreatedAt, new Date().toISOString(), config.recentGitHubChangeMs);
-}
-
 async function ensureGitHubIssueHasNotionMarker({ github, config, issue, pageId }) {
   if (!pageId || issue.notionPageId === pageId) {
     return false;
@@ -789,6 +1193,14 @@ async function ensureGitHubIssueHasNotionMarker({ github, config, issue, pageId 
   const body = upsertNotionSyncMarker(issue.body, pageId);
   if (body === issue.body) {
     return false;
+  }
+
+  if (config.dryRun) {
+    console.log(`[dry-run] Would update Notion sync marker on GitHub issue ${issue.issueUrl}.`);
+    issue.body = body;
+    issue.notionPageId = pageId;
+    issue.githubUpdatedAt = new Date().toISOString();
+    return true;
   }
 
   await github.rest.issues.update({
@@ -800,29 +1212,7 @@ async function ensureGitHubIssueHasNotionMarker({ github, config, issue, pageId 
 
   issue.body = body;
   issue.notionPageId = pageId;
-  return true;
-}
-
-async function removeGitHubIssueNotionMarker({ github, config, issue }) {
-  if (!issue.notionPageId) {
-    return false;
-  }
-
-  const body = removeNotionSyncMarker(issue.body);
-  if (body === issue.body) {
-    issue.notionPageId = null;
-    return false;
-  }
-
-  await github.rest.issues.update({
-    owner: config.owner,
-    repo: config.repo,
-    issue_number: issue.number,
-    body,
-  });
-
-  issue.body = body;
-  issue.notionPageId = null;
+  issue.githubUpdatedAt = new Date().toISOString();
   return true;
 }
 
@@ -845,14 +1235,14 @@ function upsertNotionSyncMarker(body, pageId) {
   return content ? `${content.trimEnd()}\n\n${marker}` : marker;
 }
 
-function removeNotionSyncMarker(body) {
-  return (body || "")
-    .replace(NOTION_SYNC_MARKER_RE, "")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
-}
-
 async function createNotionIssuePage({ notion, config, issue, source }) {
+  if (config.dryRun) {
+    console.log(`[dry-run] Would create Notion page for GitHub issue ${issue.issueUrl}.`);
+    return {
+      id: issue.notionPageId || `dry-run-notion-page-${issue.number}`,
+    };
+  }
+
   return notion("/pages", {
     method: "POST",
     body: {
@@ -864,22 +1254,112 @@ async function createNotionIssuePage({ notion, config, issue, source }) {
   });
 }
 
-async function archiveNotionPage({ notion, pageId }) {
-  return notion(`/pages/${pageId}`, {
+async function archiveNotionPage({ notion, config, pageId }) {
+  if (config.dryRun) {
+    console.log(`[dry-run] Would archive Notion page ${pageId}.`);
+    return true;
+  }
+
+  await notion(`/pages/${pageId}`, {
     method: "PATCH",
     body: {
       archived: true,
     },
   });
+
+  return true;
 }
 
-async function updateNotionIssuePage({ notion, config, pageId, issue, source }) {
-  return notion(`/pages/${pageId}`, {
+async function restoreNotionPage({ notion, config, pageId }) {
+  if (config.dryRun) {
+    console.log(`[dry-run] Would restore archived Notion page ${pageId}.`);
+    return true;
+  }
+
+  await notion(`/pages/${pageId}`, {
+    method: "PATCH",
+    body: {
+      archived: false,
+    },
+  });
+
+  return true;
+}
+
+async function restoreRowIfArchived({ notion, config, row }) {
+  if (!row.archived || row.inTrash) {
+    return { row, restored: false };
+  }
+
+  await restoreNotionPage({ notion, config, pageId: row.pageId });
+  return {
+    row: {
+      ...row,
+      archived: false,
+    },
+    restored: true,
+  };
+}
+
+async function markSyncConflict({ notion, config, row, issue, decision }) {
+  const message = [
+    `Conflict: ${decision.reason}`,
+    `githubChangedAt=${decision.githubChangedAt || "unknown"}`,
+    `notionChangedAt=${decision.notionChangedAt || "unknown"}`,
+    `fields=${decision.diffFields.join(", ") || "unknown"}`,
+    `issue=${issue.issueUrl}`,
+  ].join("; ");
+
+  return markNotionConflict({ notion, config, row, message });
+}
+
+async function markNotionConflict({ notion, config, row, message }) {
+  if (!row || row.inTrash) {
+    console.warn(`Cannot write sync conflict to missing or trashed Notion row: ${message}`);
+    return false;
+  }
+
+  const nextMessage = message.slice(0, 2000);
+  if (row.lastSyncSource === "Conflict" && row.syncError === nextMessage) {
+    return false;
+  }
+
+  if (config.dryRun) {
+    console.log(`[dry-run] Would mark Notion page ${row.pageId} as Conflict: ${nextMessage}`);
+    return true;
+  }
+
+  await notion(`/pages/${row.pageId}`, {
+    method: "PATCH",
+    body: {
+      properties: {
+        [config.props.lastSyncSource]: selectValue("Conflict"),
+        [config.props.syncError]: richTextValue(nextMessage),
+      },
+    },
+  });
+
+  return true;
+}
+
+async function updateNotionIssuePage({ notion, config, pageId, row, issue, source }) {
+  if (row && !notionIssuePageNeedsUpdate({ config, row, issue, source })) {
+    return false;
+  }
+
+  if (config.dryRun) {
+    console.log(`[dry-run] Would update Notion page ${pageId} from ${source} for ${issue.issueUrl}.`);
+    return true;
+  }
+
+  await notion(`/pages/${pageId}`, {
     method: "PATCH",
     body: {
       properties: buildNotionProperties({ config, issue, source }),
     },
   });
+
+  return true;
 }
 
 function buildNotionProperties({ config, issue, source }) {
@@ -891,8 +1371,8 @@ function buildNotionProperties({ config, issue, source }) {
     [props.repo]: urlValue(issue.repoUrl || config.repoUrl),
     [props.state]: selectValue(issue.state),
     [props.number]: numberValue(issue.number),
-    [props.labels]: richTextValue(issue.labels.join(", ")),
-    [props.assignees]: richTextValue(issue.assignees.join(", ")),
+    [props.labels]: richTextValue(formatList(issue.labels)),
+    [props.assignees]: richTextValue(formatList(issue.assignees)),
     [props.created]: dateValue(issue.createdAt),
     [props.updated]: dateValue(issue.updatedAt),
     [props.lastGitHubUpdated]: dateValue(issue.githubUpdatedAt),
@@ -906,6 +1386,30 @@ function buildNotionProperties({ config, issue, source }) {
   }
 
   return properties;
+}
+
+function notionIssuePageNeedsUpdate({ row, issue, source }) {
+  if (row.inTrash) {
+    return false;
+  }
+
+  const expectedTitle = `#${issue.number} ${issue.title}`;
+  return (
+    row.archived ||
+    row.notionTitle !== expectedTitle ||
+    row.issueUrl !== issue.issueUrl ||
+    (row.repoUrl || "") !== (issue.repoUrl || "") ||
+    row.state !== issue.state ||
+    row.number !== issue.number ||
+    !sameList(row.labels, issue.labels) ||
+    !sameList(row.assignees, issue.assignees) ||
+    !sameProjectStatus(row.projectStatus, issue.projectStatus) ||
+    !sameIso(row.createdAt, issue.createdAt) ||
+    !sameIso(row.updatedAt, issue.updatedAt) ||
+    !sameIso(row.lastGitHubUpdatedAt, issue.githubUpdatedAt) ||
+    row.lastSyncSource !== source ||
+    Boolean(row.syncError)
+  );
 }
 
 function titleValue(content) {
@@ -991,6 +1495,40 @@ function splitList(value) {
     .filter(Boolean);
 }
 
+function formatList(values) {
+  return sortUnique(values).join(", ");
+}
+
+function sortUnique(values) {
+  return [...new Set((values || []).map((value) => String(value || "").trim()).filter(Boolean))].sort((a, b) =>
+    a.localeCompare(b),
+  );
+}
+
+function sameList(left, right) {
+  const leftValues = sortUnique(left);
+  const rightValues = sortUnique(right);
+  return leftValues.length === rightValues.length && leftValues.every((value, index) => value === rightValues[index]);
+}
+
+function sameProjectStatus(left, right) {
+  if (!left && !right) {
+    return true;
+  }
+
+  return normalizeProjectStatusName(left) === normalizeProjectStatusName(right);
+}
+
+function sameIso(left, right) {
+  if (!left && !right) {
+    return true;
+  }
+
+  const leftTime = new Date(left).getTime();
+  const rightTime = new Date(right).getTime();
+  return Number.isFinite(leftTime) && Number.isFinite(rightTime) && leftTime === rightTime;
+}
+
 function stripIssuePrefix(title, number) {
   const escapedNumber = number ? String(number).replace(/[.*+?^${}()|[\]\\]/g, "\\$&") : "\\d+";
   return (title || "").replace(new RegExp(`^#${escapedNumber}\\s+`), "").trim();
@@ -1062,18 +1600,23 @@ function isAfter(left, right) {
   return new Date(left).getTime() > new Date(right).getTime() + SYNC_GRACE_MS;
 }
 
-function isWithinMs(left, right, windowMs) {
+function compareIsoWithGrace(left, right) {
   if (!left || !right) {
-    return false;
+    return 0;
   }
 
   const leftTime = new Date(left).getTime();
   const rightTime = new Date(right).getTime();
   if (!Number.isFinite(leftTime) || !Number.isFinite(rightTime)) {
-    return false;
+    return 0;
   }
 
-  return Math.abs(rightTime - leftTime) <= windowMs;
+  const diff = leftTime - rightTime;
+  if (Math.abs(diff) <= SYNC_GRACE_MS) {
+    return 0;
+  }
+
+  return diff > 0 ? 1 : -1;
 }
 
 function maxIso(...values) {
@@ -1089,7 +1632,17 @@ function maxIso(...values) {
   return new Date(Math.max(...times)).toISOString();
 }
 
-function parsePositiveNumber(value, fallback) {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+function isNotFoundError(error) {
+  return error?.status === 404 || error?.status === 410;
 }
+
+function parseBoolean(value) {
+  return ["1", "true", "yes", "on"].includes(String(value || "").trim().toLowerCase());
+}
+
+module.exports._private = {
+  chooseSyncDirection,
+  diffIssueAndRow,
+  issueForGitHubSource,
+  sameList,
+};

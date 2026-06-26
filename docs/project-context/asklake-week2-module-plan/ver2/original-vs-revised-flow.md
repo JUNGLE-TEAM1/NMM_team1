@@ -101,7 +101,7 @@ M1 UI/API Gateway
 | 모듈 | 원래 역할 | ver2 역할 | 핵심 변화 |
 | --- | --- | --- | --- |
 | M1 | 플랫폼 코어, 공통 계약, UI Shell, Demo Tenant, E2E Smoke | UI/API Gateway, demo tenant, 발표 클릭 흐름 | 공통 계약 최종 소유를 내려놓고 화면과 호출 흐름에 집중한다. |
-| M2 | Taxi 정형 Batch, PostgreSQL, Bronze/Gold Parquet, 성능 증거 | Lakehouse Runtime Platform | 정형 처리에서 공통 execution runtime 제공으로 이동한다. |
+| M2 | Taxi 정형 Batch, PostgreSQL, Bronze/Gold Parquet, 성능 증거 | Lakehouse Runtime Platform | Taxi 전용 ETL에서 데이터셋 독립 공통 execution runtime 제공으로 이동한다. TLC NYC Taxi Dataset은 정형 빅데이터 ETL 가능성 evidence로 유지한다. |
 | M3 | Amazon Reviews JSON Schema, Override, Normalize, Silver/Gold | Data Processing Spec + ETL Logic | JSON 중심에서 CSV/JSON/JSONL transformation spec과 facts 생성으로 확대한다. |
 | M4 | Kafka Streaming, Producer, Consumer, Micro-batch Parquet | Kafka Ingestion | Kafka raw input 안정화만 소유하고 transform/Catalog 책임은 넘긴다. |
 | M5 | WorkflowDefinition, Airflow Adapter, fallback runner, Catalog/Lineage | Workflow Runtime + Catalog Store/API + Lineage | 실행과 Catalog 저장/API 최종 소유자로 명확화한다. |
@@ -122,7 +122,7 @@ M1 UI/API Gateway
 
 ## 발표 일정에 반영할 결정
 
-1. M2 역할 변경을 팀에 공유한다. M2는 Taxi Batch만의 독립 ETL 소유자가 아니라 runtime provider이며, Taxi/정형 batch 필수 처리 evidence를 남긴다.
+1. M2 역할 변경을 팀에 공유한다. M2는 Taxi Batch만의 독립 ETL 소유자가 아니라 runtime provider이며, TLC NYC Taxi Dataset은 예전 M2 계획과 정형 빅데이터 ETL 가능성을 보여주는 필수 처리 evidence로 사용한다.
 2. M3 범위를 과도하게 키우지 않는다. Amazon Reviews JSON 분석 대표 path를 우선하고, Taxi/Kafka는 각각 M2/M4의 필수 처리/evidence 경로로 유지한다.
 3. Iceberg는 이번 발표 범위에서 제외한다.
 4. `SourceConfig`는 M1 shell과 M3/M4 source-specific provider 구조로 나눈다.

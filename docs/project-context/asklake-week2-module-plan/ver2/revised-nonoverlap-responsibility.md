@@ -58,6 +58,8 @@ flowchart LR
 - Parquet path convention과 `RuntimeConfig`를 정리한다.
 - `SparkRunner` 또는 동등한 runtime boundary를 제공한다.
 - SQL runtime smoke를 제공한다.
+- `SparkRunner`는 데이터셋별 runner가 아니라 입력 format/path/options를 `RuntimeConfig`로 받는 공통 실행기로 둔다.
+- TLC NYC Taxi Dataset은 예전 M2 계획과 정형 빅데이터 ETL 가능성을 보여주는 대표 evidence로 사용한다.
 - Taxi Batch 또는 정형 batch 처리 경로에서 row_count, bytes, duration, output_path 같은 실행 evidence를 남긴다.
 
 ### 하지 않는 것
@@ -108,10 +110,10 @@ M3가 모든 데이터 ETL을 맡으면 병목이 될 수 있다. 발표 전 AI 
 | 데이터 경로 | 담당 | 필수 완료 기준 | 이번 기본 범위에서 제외 |
 | --- | --- | --- | --- |
 | Amazon Reviews JSON / JSONL | M3, M5, M6, M1 | profile/schema/TransformSpec, M5 Workflow/Catalog, M6 Semantic/RAG-lite/AI Query/Evidence, M1 표시까지 연결 | real LLM, 외부 vector DB, full document RAG |
-| Taxi Batch 또는 정형 batch | M2, M5, M1 | batch 처리 또는 runtime/local equivalent, row_count, bytes, duration, output_path, run evidence 확인 | M6 분석 연결 필수화 |
+| Taxi Batch 또는 정형 batch | M2, M5, M1 | 데이터셋 독립 SparkRunner/RuntimeConfig로 batch 처리 또는 runtime/local equivalent를 실행하고, TLC NYC Taxi Dataset으로 row_count, bytes, duration, output_path, run evidence 확인 | Taxi 전용 runner 구현, M6 분석 연결 필수화 |
 | Kafka Event / streaming ingestion | M4, M5, M1 | replay/ingestion, throughput, lag, restart/replay, output_path, run evidence 확인 | streaming Gold ETL과 M6 분석 연결 필수화 |
 
-세 경로 모두 Week2 구현 대상이다. 다만 발표 분석 질문과 M6 evidence의 대표 경로는 Amazon Reviews JSON으로 먼저 닫는다.
+세 경로 모두 Week2 구현 대상이다. 다만 발표 분석 질문과 M6 evidence의 대표 경로는 Amazon Reviews JSON으로 먼저 닫는다. Taxi는 M2의 예전 계획을 이어받되, 목적은 Taxi 전용 ETL이 아니라 정형 빅데이터 ETL을 수행할 수 있는 공통 runtime evidence를 남기는 것이다.
 
 ## 후속 리서치: synthetic companion dataset
 

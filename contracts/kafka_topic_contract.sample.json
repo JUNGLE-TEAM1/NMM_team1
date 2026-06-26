@@ -1,0 +1,31 @@
+{
+  "contract": "KafkaTopicContract",
+  "producer": "M4",
+  "consumers": ["M3", "M5"],
+  "tenant_id": "tenant_demo",
+  "source_id": "source_kafka_reviews_events_demo",
+  "topic": "asklake.reviews.raw_events",
+  "event_key": "event_id",
+  "event_time_column": "event_time",
+  "event_shape": {
+    "event_id": "string",
+    "event_time": "timestamp",
+    "event_type": "string",
+    "payload": "object"
+  },
+  "replay": {
+    "command": "python scripts/kafka_replay_to_parquet_demo.py",
+    "rate_per_second": "TODO: confirm M4 replay rate",
+    "source_file": "TODO: confirm M4 replay source file"
+  },
+  "evidence": {
+    "metrics": ["message_count", "throughput_per_second", "consumer_lag", "error_count", "restart_result"],
+    "output_path": "TODO: confirm raw event evidence output path",
+    "main_path_blocker": false
+  },
+  "handoff": {
+    "m3_uses_raw_event_contract": true,
+    "m5_records_evidence_only_until_gold_path_exists": true
+  },
+  "updated_at": "2026-06-26T00:00:00+09:00"
+}

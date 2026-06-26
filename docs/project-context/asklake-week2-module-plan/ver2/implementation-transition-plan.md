@@ -12,6 +12,7 @@ ver2는 rewrite 계획이 아니다. 이미 main에 들어간 M1 UI shell, M4 Ka
 - M5 `Week2WorkflowService`를 중심 통합점으로 유지한다.
 - M3 transformation spec/job logic은 기존 `Week2LocalRunner`를 한 번에 대체하지 않는다.
 - M2 Spark runtime은 M3/M4 내부로 들어가지 않고 `SparkRunner` 또는 runtime adapter 뒤에 붙는다.
+- M2 `SparkRunner`는 Taxi 전용 구현이 아니다. 입력 format/path/options를 `RuntimeConfig`로 받고, Amazon Reviews JSON이든 TLC NYC Taxi Parquet이든 같은 result shape를 반환하는 공통 실행기로 둔다.
 - M6는 fixture catalog 기반 skeleton을 유지하되, 후속 작업에서 M5 Catalog store/API를 소비하도록 전환한다.
 - M4 Kafka replay demo는 버리지 않고 raw event contract/evidence로 흡수한다.
 
@@ -61,7 +62,7 @@ Week2WorkflowService
 | 2 | Analysis representative E2E path 고정 | M1/M3/M5/M6 | Amazon Reviews JSON path를 Semantic/RAG-lite/AI Query 분석 대표 경로로 확정 |
 | 3 | M3 JSON analysis path decision | M3 | PR #105 회수/재구현 범위와 `TransformSpec` 최소 shape 결정 |
 | 4 | Runner boundary decision | M2/M3/M5 | local runner, M3 job logic, SparkRunner가 공유할 호출 계약 결정 |
-| 5 | M2 RuntimeConfig/SparkRunner smoke | M2 | Spark read/write smoke가 row_count/bytes/duration을 반환 |
+| 5 | M2 RuntimeConfig/SparkRunner smoke | M2 | dataset-independent Spark read/write smoke가 row_count/bytes/duration/output_path를 같은 result shape로 반환 |
 | 6 | M5 runner selection | M5 | local runner와 SparkRunner를 선택/호출할 수 있음 |
 | 7 | M6 Catalog source 전환 | M6/M5 | fixture catalog 대신 M5 Catalog store/API를 소비 |
 | 8 | M1 UI 연결 | M1 | run/catalog/query/evidence 상태 표시 |
@@ -86,7 +87,7 @@ Taxi와 Kafka는 선택 사항이 아니다. 각각 정형 batch와 streaming in
 | 모듈 | 다음 작업 | 병렬 가능 조건 |
 | --- | --- | --- |
 | M1 | M5/M6 API 상태 표시 준비 | 분석 대표 path와 API shape 확정 후 |
-| M2 | `RuntimeConfig`와 SparkRunner smoke, Taxi/정형 batch evidence 설계 | runner boundary 결정 후 |
+| M2 | 데이터셋 독립 `RuntimeConfig`와 SparkRunner smoke, TLC NYC Taxi 기반 정형 빅데이터 ETL 가능성 evidence 설계 | runner boundary 결정 후 |
 | M3 | Amazon Reviews JSON 분석 대표 path와 PR #105 회수 여부 결정 | 분석 대표 path 확정 후 |
 | M4 | Kafka raw event contract와 streaming ingestion evidence 정리 | M3가 필요한 raw event shape를 확정한 뒤 |
 | M5 | runner boundary와 Catalog handoff 유지 | Phase 6 runner boundary 결정 후 |
@@ -95,6 +96,7 @@ Taxi와 Kafka는 선택 사항이 아니다. 각각 정형 batch와 streaming in
 ## 하지 말 것
 
 - M2/M3/M4가 각자 Spark session/config/output convention을 만들지 않는다.
+- M2가 `TaxiRunner`, `AmazonReviewRunner`처럼 데이터셋별 실행기를 따로 만들지 않는다. 차이는 code branch가 아니라 `RuntimeConfig`의 입력 format/path/options로 처리한다.
 - M3가 Taxi/Kafka까지 완전한 ETL을 한 번에 떠안지 않는다.
 - M5를 전면 rewrite하지 않는다.
 - `contracts/*.sample.json`을 ver2 문서 작업만으로 즉시 바꾸지 않는다.
