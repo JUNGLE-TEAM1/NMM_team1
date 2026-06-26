@@ -1,3 +1,4 @@
+from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
@@ -53,7 +54,7 @@ class Week2AIQueryService:
             status = "blocked"
             guardrail = validation.guardrail
 
-        evidence = self._evidence_from_catalog(catalog)
+        evidence = self._evidence_from_catalog(catalog, retrieval.reason_terms)
         chart_spec = self._chart_spec(question)
 
         return AIQueryResult(
@@ -65,7 +66,7 @@ class Week2AIQueryService:
             sql=query_result.sql,
             query_result=query_result,
             rows=query_result.rows,
-            summary=self._summary(question, query_result, guardrail),
+            summary=self._summary(question, query_result, guardrail, evidence[0]),
             chart_spec=chart_spec,
             guardrail=guardrail,
             executed_at=now_iso(),
@@ -104,14 +105,28 @@ class Week2AIQueryService:
             "ORDER BY review_count DESC LIMIT 10"
         )
 
-    def _evidence_from_catalog(self, catalog: dict[str, Any]) -> list[QueryEvidence]:
+    def _evidence_from_catalog(self, catalog: dict[str, Any], reason_terms: list[str]) -> list[QueryEvidence]:
         lineage = catalog.get("lineage", {})
+        metrics = catalog.get("metrics", {})
+        query = catalog.get("query", {})
         return [
             QueryEvidence(
                 dataset_id=catalog["dataset_id"],
                 run_id=lineage.get("run_id"),
                 s3_uri=catalog.get("s3_uri"),
                 freshness=catalog.get("updated_at"),
+                table_name=query.get("table_name"),
+                schema_fields=deepcopy(catalog.get("schema", {}).get("fields", [])),
+                metrics=deepcopy(
+                    {
+                        "row_count": metrics.get("row_count"),
+                        "bytes": metrics.get("bytes"),
+                        "quality": metrics.get("quality", {}),
+                        "semantics": metrics.get("semantics", {}),
+                    }
+                ),
+                lineage=deepcopy(lineage),
+                retrieval_terms=list(reason_terms),
             )
         ]
 
@@ -132,7 +147,13 @@ class Week2AIQueryService:
             title="Top products by review count",
         )
 
-    def _summary(self, question: str, query_result: QueryResult, guardrail: GuardrailResult) -> str:
+    def _summary(
+        self,
+        question: str,
+        query_result: QueryResult,
+        guardrail: GuardrailResult,
+        evidence: QueryEvidence,
+    ) -> str:
         if guardrail.validation_status != "passed":
             return f"질문을 SQL로 실행하지 못했습니다: {guardrail.failure_message}"
 
@@ -141,6 +162,23 @@ class Week2AIQueryService:
 
         first_row = query_result.rows[0]
         if "average_rating" in first_row and ("평점" in question or "별점" in question or "rating" in question.lower()):
-            return f"{first_row.get('product_id')} 상품이 평균 평점 {first_row.get('average_rating')}로 가장 높습니다."
+            answer = f"{first_row.get('product_id')} 상품이 평균 평점 {first_row.get('average_rating')}로 가장 높습니다."
+            return self._grounded_summary(answer, evidence)
 
-        return f"{first_row.get('product_id')} 상품이 리뷰 {first_row.get('review_count')}개로 가장 많습니다."
+        answer = f"{first_row.get('product_id')} 상품이 리뷰 {first_row.get('review_count')}개로 가장 많습니다."
+        return self._grounded_summary(answer, evidence)
+
+    def _grounded_summary(self, answer: str, evidence: QueryEvidence) -> str:
+        schema_names = [
+            str(field.get("name"))
+            for field in evidence.schema_fields
+            if field.get("name")
+        ]
+        evidence_parts = [f"dataset={evidence.dataset_id}"]
+        if evidence.run_id:
+            evidence_parts.append(f"run_id={evidence.run_id}")
+        if evidence.metrics.get("row_count") is not None:
+            evidence_parts.append(f"row_count={evidence.metrics['row_count']}")
+        if schema_names:
+            evidence_parts.append(f"schema={', '.join(schema_names)}")
+        return f"{answer} 근거: {'; '.join(evidence_parts)}."
