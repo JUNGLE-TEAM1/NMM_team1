@@ -28,7 +28,7 @@
 ## CI/CD Gate / CI-CD 게이트
 
 - CI required: yes
-- CI result: local harness validation passed; PR CI pending after PR creation
+- CI result: PR #127 `container-smoke`, `harness`, `manifest-smoke` passed
 - Deploy/publish required: no
 - Deployment confirmation: 
 - Rollback/smoke notes: 
