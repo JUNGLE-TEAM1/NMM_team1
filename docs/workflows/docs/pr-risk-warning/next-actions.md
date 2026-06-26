@@ -4,18 +4,18 @@
 
 ## Current State / 현재 상태
 
-- State: PR-ready locally
-- Summary: PR size/risk warning script, workflow, focused test를 추가했고 local validation이 통과했다.
+- State: PR open / checks passed
+- Summary: PR size/risk warning script, workflow, focused test를 추가했고 PR #138 remote checks가 모두 통과했다.
 
 ## Recommended Next Action / 권장 다음 행동
 
-- branch를 push하고 PR을 생성해 remote CI와 새 PR Risk Warning workflow를 확인한다.
-- Reason: local validation은 통과했고, GitHub Action은 PR에서 실제 실행되어야 한다.
+- PR #138을 리뷰하고 merge 여부를 결정한다.
+- Reason: branch push, PR 생성, remote CI/check 확인은 완료됐고, merge/finalize/cleanup은 사람 확인 후 진행해야 한다.
 
 ## Options / 선택지
 
-1. branch push 및 PR 생성.
-2. PR 생성 후 remote CI/check 확인.
+1. PR #138 리뷰 후 merge 여부를 결정한다.
+2. merge 후 `scripts/prepare-pr.sh --finalize docs/workflows/docs/pr-risk-warning` 실행 여부를 사람 확인한다.
 3. hard gate/override label은 후속 Phase로 분리한다.
 4. 이 workspace를 멈춘다.
 
@@ -29,4 +29,4 @@
 
 ## Next AI Action / 다음 AI 행동
 
-- option 1 실행 예정: `scripts/prepare-pr.sh --auto-pr docs/workflows/docs/pr-risk-warning`
+- 사람 확인 전에는 merge/finalize/cleanup을 실행하지 않는다.

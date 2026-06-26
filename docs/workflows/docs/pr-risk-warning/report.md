@@ -11,8 +11,8 @@
 - Escalated context read: 없음
 - Context omitted intentionally: 제품 기능/architecture/interface 세부 문서는 운영 guardrail 적용 범위가 아니므로 생략
 - Changed: PR risk warning script, GitHub Action workflow, focused test, CI test step, system guardrail inventory 갱신
-- Verified: `node tests/pr-risk-warning.test.js`, `node tests/pr-linked-issue-check.test.js`, `bash -n ...`, `scripts/validate-harness.sh`, `scripts/validate-harness.sh --strict`, `git fetch origin main`
-- Remaining: branch push, PR 생성, remote CI/check 확인
+- Verified: `node tests/pr-risk-warning.test.js`, `node tests/pr-linked-issue-check.test.js`, `bash -n ...`, `scripts/validate-harness.sh`, `scripts/validate-harness.sh --strict`, `git fetch origin main`, PR #138 remote checks all passed
+- Remaining: 사람 확인 후 PR #138 merge 여부 결정, merge 후 finalize/cleanup 여부 확인, hard gate/override label 후속 결정
 - Next context: threshold/risky path 조정 또는 hard gate/override label 여부
 - Risk: warning-only check라 merge를 직접 차단하지 않는다. hard gate는 팀 합의와 repo admin 설정이 필요하다.
 
@@ -81,6 +81,7 @@ bash -n scripts/start-workflow.sh scripts/status-workflow.sh scripts/validate-ha
 scripts/validate-harness.sh
 scripts/validate-harness.sh --strict
 git fetch origin main
+gh pr view 138 --json statusCheckRollup,mergeStateStatus
 ```
 
 ## Quality Gate Evidence / 품질 게이트 증거
@@ -88,7 +89,7 @@ git fetch origin main
 - Workspace file: `docs/workflows/docs/pr-risk-warning/quality.md`
 - Quality gate status: passed
 - TDD status: applied; first run failed with missing module, then focused test passed
-- CI/check result: local equivalent passed; remote CI는 PR 생성 후 확인 필요
+- CI/check result: PR #138 remote checks all passed (`linked-issue`, `risk-warning`, `harness`, `container-smoke`, `manifest-smoke`)
 - Skipped checks: deploy/publish는 변경 없음
 - CD/deploy gate: not required
 
@@ -117,7 +118,7 @@ git fetch origin main
 - Document executed: `docs/07-manual-verification-playbook.md`의 Phase report 기록 규칙과 PR lifecycle 수동 확인
 - Environment: local macOS shell, GitHub CLI authenticated
 - Result: linked issue `#137`, branch workspace, closing keyword 기록 확인
-- Failure/limitation: remote GitHub Action 결과는 PR 생성 후 확인 가능
+- Failure/limitation: advisory warning은 merge를 직접 차단하지 않는다. hard gate와 override label은 후속 결정이다.
 - Evidence: `docs/workflows/docs/pr-risk-warning/sync.md`
 
 ## docs/05 Acceptance Link / 수용 기준 연결
@@ -148,5 +149,5 @@ git fetch origin main
 
 ## Final Judgment / 최종 판단
 
-- Done: local implementation and validation complete
-- Remaining risk: remote CI와 advisory warning 출력은 PR 생성 후 확인해야 한다.
+- Done: implementation, local validation, PR #138 creation, and remote CI/check verification complete
+- Remaining risk: advisory warning은 merge를 직접 차단하지 않으며, hard gate/override label은 후속 결정이다.
