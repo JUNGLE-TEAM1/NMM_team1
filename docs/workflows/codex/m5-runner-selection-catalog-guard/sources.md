@@ -12,6 +12,7 @@
 | `backend/app/services/week2_workflow.py` | current M5 workflow implementation |
 | `backend/app/services/week2_airflow_adapter.py` | current Airflow adapter boundary |
 | `backend/tests/test_week2_workflow_catalog.py` | focused workflow/catalog behavior tests |
+| `docs/workflows/codex/m5-runner-selection-catalog-guard/decisions.md` | workspace decision handoff |
 
 ## Context Budget Mode
 

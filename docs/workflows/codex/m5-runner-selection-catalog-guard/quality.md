@@ -2,7 +2,8 @@
 
 이 파일은 이 branch의 TDD, check, CI/CD 증거를 기록한다.
 
-- Quality gate status: local passed after rebase onto `origin/main`
+- Quality gate status: passed
+- Quality gate detail: local checks passed after rebase onto `origin/main`
 - Source Of Truth impact: none. 이번 변경은 M5 service guard와 workspace 운영 문서에 한정된다.
 - Harness test impact: none
 
@@ -38,12 +39,12 @@
 - Full backend tests: not run. 이번 변경은 M5 workflow/API/service guard와 workspace 문서에 한정되어 focused tests로 검증했다.
 - Frontend build: not run. UI 변경 없음.
 - Docker/container smoke: not run. 실제 Airflow/Spark/MinIO 연결 범위 아님.
-- Harness strict validation: not run. 이번 변경은 focused backend guard와 workspace 기록에 한정되어 실행하지 않았다.
+- Harness strict validation: `scripts/test-harness.sh` passed locally after documentation contract fix, 31 regression cases.
 
 ## CI/CD Gate / CI-CD 게이트
 
 - CI required: yes before PR
-- CI result: local focused checks passed after rebase; remote CI/push/PR은 아직 실행하지 않음.
+- CI result: local focused checks passed after rebase; local harness regression passed after PR CI documentation contract fix; remote CI rerun pending after push.
 - Deploy/publish required: no
 - Deployment confirmation: not applicable
 - Rollback/smoke notes: additive service guard. Rollback은 `Week2WorkflowInvalidExecutorError` guard와 관련 tests 제거.
