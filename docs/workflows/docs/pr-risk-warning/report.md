@@ -5,14 +5,14 @@
 - Type: docs
 - Branch/work location: `docs/pr-risk-warning`, `docs/workflows/docs/pr-risk-warning`
 - Date: 2026-06-26
-- Workspace state: ready-for-review
+- Workspace state: complete
 - Context Budget mode: Lite Read
 - Primary context read: `AGENTS.md`, `docs/system-guardrails.md`, `.github/workflows/ci.yml`, `docs/05`, `docs/06`, `docs/07`
 - Escalated context read: 없음
 - Context omitted intentionally: 제품 기능/architecture/interface 세부 문서는 운영 guardrail 적용 범위가 아니므로 생략
 - Changed: PR risk warning script, GitHub Action workflow, focused test, CI test step, system guardrail inventory 갱신; 보완으로 merge-base diff 기준과 threshold fallback 추가
-- Verified: `node tests/pr-risk-warning.test.js`, `node tests/pr-linked-issue-check.test.js`, `BASE_SHA=origin/main HEAD_SHA=HEAD node .github/scripts/check-pr-risk.js`, `scripts/validate-harness.sh --strict`; remote checks는 보완 커밋 push 후 재확인 필요
-- Remaining: 보완 커밋 push, PR #138 remote checks 재확인, 사람 확인 후 PR #138 merge 여부 결정
+- Verified: `node tests/pr-risk-warning.test.js`, `node tests/pr-linked-issue-check.test.js`, `BASE_SHA=origin/main HEAD_SHA=HEAD node .github/scripts/check-pr-risk.js`, `scripts/validate-harness.sh --strict`, PR #138 remote checks all passed
+- Remaining: hard gate/override label 후속 결정
 - Next context: threshold/risky path 조정 또는 hard gate/override label 여부
 - Risk: warning-only check라 merge를 직접 차단하지 않는다. hard gate는 팀 합의와 repo admin 설정이 필요하다.
 
@@ -23,7 +23,7 @@
 - Type: docs
 - Branch/work location: `docs/pr-risk-warning`, `docs/workflows/docs/pr-risk-warning`
 - Date: 2026-06-26
-- Workspace state: ready-for-review
+- Workspace state: complete
 
 ## Reference Docs / 참고 문서
 
@@ -90,7 +90,7 @@ gh pr view 138 --json statusCheckRollup,mergeStateStatus
 - Workspace file: `docs/workflows/docs/pr-risk-warning/quality.md`
 - Quality gate status: passed
 - TDD status: applied; first run failed with missing module, then focused test passed
-- CI/check result: previous PR #138 remote checks passed; 보완 커밋 push 후 재확인 필요
+- CI/check result: PR #138 remote checks all passed (`linked-issue`, `risk-warning`, `harness`, `container-smoke`, `manifest-smoke`)
 - Skipped checks: deploy/publish는 변경 없음
 - CD/deploy gate: not required
 
@@ -150,5 +150,5 @@ gh pr view 138 --json statusCheckRollup,mergeStateStatus
 
 ## Final Judgment / 최종 판단
 
-- Done: implementation, local validation, PR #138 creation, and first remote CI/check verification complete
-- Remaining risk: 보완 커밋 후 remote CI/check 재확인이 필요하다. advisory warning은 merge를 직접 차단하지 않으며, hard gate/override label은 후속 결정이다.
+- Done: implementation, local validation, PR #138 merge/finalize, issue close, Project Done, remote branch cleanup complete
+- Remaining risk: advisory warning은 merge를 직접 차단하지 않으며, hard gate/override label은 후속 결정이다.

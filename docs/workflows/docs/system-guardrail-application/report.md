@@ -5,14 +5,14 @@
 - Type: docs
 - Branch/work location: `docs/system-guardrail-application`, `docs/workflows/docs/system-guardrail-application`
 - Date: 2026-06-26
-- Workspace state: ready-for-review
+- Workspace state: complete
 - Context Budget mode: Lite Read
 - Primary context read: `AGENTS.md`, `docs/system-guardrails.md`, `.github/pull_request_template.md`, `.github/workflows/ci.yml`, `docs/05`, `docs/06`, `docs/07`
 - Escalated context read: 없음
 - Context omitted intentionally: 제품 기능/architecture/interface 문서는 이번 운영 guardrail 적용 범위가 아니므로 생략
 - Changed: PR linked issue 검사 script, GitHub Action workflow, focused test, CI test step, system guardrail inventory 갱신
 - Verified: `node tests/pr-linked-issue-check.test.js`, `bash -n ...`, `scripts/validate-harness.sh`, `scripts/validate-harness.sh --strict`, `git fetch origin main`, PR #136 remote checks all passed
-- Remaining: 사람 확인 후 PR #136 merge 여부 결정, merge 후 finalize/cleanup 여부 확인, repo admin required-check 설정 여부 결정
+- Remaining: repo admin required-check 설정 여부 결정
 - Next context: repository admin이 새 check를 required check로 지정할지 여부
 - Risk: GitHub Action은 추가됐지만 branch protection required check 설정은 repo admin 권한이 필요하다.
 
@@ -23,7 +23,7 @@
 - Type: docs
 - Branch/work location: `docs/system-guardrail-application`, `docs/workflows/docs/system-guardrail-application`
 - Date: 2026-06-26
-- Workspace state: ready-for-review
+- Workspace state: complete
 
 ## Reference Docs / 참고 문서
 
@@ -117,7 +117,7 @@ gh pr view 136 --json statusCheckRollup,mergeStateStatus
 - Document executed: `docs/07-manual-verification-playbook.md`의 Phase report 기록 규칙과 PR lifecycle 수동 확인
 - Environment: local macOS shell, GitHub CLI authenticated
 - Result: linked issue `#135`, branch workspace, closing keyword 기록 확인
-- Failure/limitation: `#135`는 PR 생성 전 Project `Done` 상태 변경과 함께 자동 close되는 drift가 있었으나, PR 생성 시 reopen/Review 상태로 복구됐다. required-check 지정은 repo admin 후속 작업이다.
+- Failure/limitation: `#135`는 PR 생성 전 Project `Done` 상태 변경과 함께 자동 close되는 drift가 있었으나, PR 생성 시 reopen/Review 상태로 복구됐고 finalize 후 `CLOSED`/Project `Done`으로 정렬됐다. required-check 지정은 repo admin 후속 작업이다.
 - Evidence: `scripts/status-workflow.sh docs/workflows/docs/system-guardrail-application`
 
 ## docs/05 Acceptance Link / 수용 기준 연결
@@ -148,5 +148,5 @@ gh pr view 136 --json statusCheckRollup,mergeStateStatus
 
 ## Final Judgment / 최종 판단
 
-- Done: implementation, local validation, PR #136 creation, and remote CI/check verification complete
-- Remaining risk: required-check 설정은 repo admin 권한이 필요하며, merge/finalize/cleanup은 사람 확인 후 진행해야 한다.
+- Done: implementation, local validation, PR #136 merge/finalize, issue close, Project Done, remote branch cleanup complete
+- Remaining risk: required-check 설정은 repo admin 권한이 필요하다.
