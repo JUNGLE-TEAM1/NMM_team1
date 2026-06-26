@@ -29,6 +29,6 @@
 - issue project result:
 - PR closing keyword: explicit no-issue exception planned in PR body
 - pushed branch: `feature/m1-catalog-live-ui`
-- PR link:
-- merge status:
-- issue close status:
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/156
+- merge status: open
+- issue close status: no linked issue
