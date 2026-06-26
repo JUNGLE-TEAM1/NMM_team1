@@ -4,7 +4,7 @@
 
 - Type: docs
 - Date: 2026-06-26
-- Changed: `docs/system-guardrails.md`에 Scenario Audit Plan과 Mock Scenario Matrix를 추가하고, `docs/12-quality-gates.md`에 PR CI/read-only audit/admin audit/external E2E tier를 연결했다. GitHub `main` ruleset, backup branch ruleset, secret scanning/push protection, migration/schema/security hard detection workflow를 적용했다.
+- Changed: `docs/system-guardrails.md`에 Scenario Audit Plan, Mock Scenario Matrix, 팀용 시스템 룰 설명 섹션을 추가하고, `docs/12-quality-gates.md`에 PR CI/read-only audit/admin audit/external E2E tier를 연결했다. GitHub `main` ruleset, backup branch ruleset, secret scanning/push protection, migration/schema/security hard detection workflow를 적용했다.
 - Verified: `node tests/migration-schema-security-check.test.js`, `node tests/pr-linked-issue-check.test.js`, `node tests/pr-risk-warning.test.js`, `bash -n scripts/create-main-backup-branch.sh`, `scripts/create-main-backup-branch.sh --dry-run --date 2026-06-26`, `scripts/test-harness.sh`, `scripts/validate-harness.sh --strict`, `scripts/status-workflow.sh docs/workflows/docs/guardrail-scenario-audit`, `gh api repos/JUNGLE-TEAM1/NMM_team1/rulesets/18157469`, `gh api repos/JUNGLE-TEAM1/NMM_team1/rulesets/18157634`, `gh api repos/JUNGLE-TEAM1/NMM_team1 --jq '.security_and_analysis'`.
 - Remaining: CODEOWNERS review와 PR size/risk hard gate는 사용자 지시에 따라 보류했다. PR #141 checks 최종 통과 확인과 merge/finalize/cleanup은 사람 확인 후 진행한다. PR title drift는 `[문서/운영] Apply main system guardrails`로 보정했다. read-only scenario audit script는 이번 Phase에서 구현하지 않았다.
 - Next context: 다음에는 PR-ready 처리, read-only audit automation Phase, repository admin setting audit, 또는 제품 기능 Phase 중 하나를 선택한다.
@@ -137,7 +137,7 @@ gh api repos/JUNGLE-TEAM1/NMM_team1 --jq '.security_and_analysis'
 
 ## Document Updates / 문서 업데이트
 
-- Updated: `docs/system-guardrails.md`, `docs/12-quality-gates.md`, `.github/scripts/check-migration-schema-security.js`, `.github/workflows/migration-schema-security-check.yml`, `.github/workflows/ci.yml`, `tests/migration-schema-security-check.test.js`, `scripts/create-main-backup-branch.sh`, `docs/project-context/ad-hoc-main-backup-tag-prompt.md`, `docs/project-context/README.md`, `docs/reports/README.md`, branch workspace, Phase report
+- Updated: `docs/system-guardrails.md`, `docs/12-quality-gates.md`, `.github/scripts/check-migration-schema-security.js`, `.github/workflows/migration-schema-security-check.yml`, `.github/workflows/ci.yml`, `tests/migration-schema-security-check.test.js`, `scripts/create-main-backup-branch.sh`, `docs/project-context/ad-hoc-main-backup-tag-prompt.md`, `docs/project-context/README.md`, `docs/reports/README.md`, branch workspace, Phase report. `docs/system-guardrails.md` now includes a team guide for blocked, warning-only, and deferred rules.
 - Not updated and why: `docs/08-development-workflow.md`는 workflow rule 자체 변경이 아니어서 보류했다. `docs/18-harness-regression-policy.md`는 새 script/fixture rule을 추가하지 않아 보류했다.
 
 ## Failed / Incomplete / Follow-Up TODO
