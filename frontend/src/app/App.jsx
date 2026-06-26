@@ -33,6 +33,7 @@ import {
 import {
   WEEK2_DEFAULT_DATASET_ID,
   WEEK2_DEFAULT_PIPELINE_ID,
+  askWeek2AiQuery,
   getHealth,
   getWeek2Catalog,
   getWeek2Run,
@@ -1109,15 +1110,48 @@ function LineageShell({ catalog }) {
 }
 
 function AiQueryPage({ setNotice }) {
-  const [queryText, setQueryText] = useState("");
+  const [queryText, setQueryText] = useState("Amazon reviews에서 평점 높은 상품 알려줘");
+  const [queryState, setQueryState] = useState({
+    result: null,
+    error: "",
+    loading: false,
+  });
   const [viewMode, setViewMode] = useState("table");
+  const queryResult = queryState.result?.query_result;
+  const rows = queryResult?.rows || queryState.result?.rows || [];
+  const columns = queryResult?.columns?.length
+    ? queryResult.columns.map((column) => column.name)
+    : Object.keys(rows[0] || {});
+  const evidence = queryState.result?.evidence || [];
+
+  async function submitQuery() {
+    const question = queryText.trim();
+    if (!question) {
+      setQueryState((previous) => ({ ...previous, error: "질문을 입력해야 합니다." }));
+      setNotice("질문을 입력한 뒤 실행할 수 있습니다.");
+      return;
+    }
+
+    setQueryState((previous) => ({ ...previous, error: "", loading: true }));
+    try {
+      const result = await askWeek2AiQuery(question);
+      setQueryState({ result, error: "", loading: false });
+    } catch (error) {
+      setQueryState((previous) => ({
+        result: previous.result,
+        error: error.message,
+        loading: false,
+      }));
+    }
+  }
 
   return (
     <div className="page-stack">
       <PageHeader
         title="AI Query"
-        body="검증 질문, selected dataset, evidence, SQL, chart spec을 표시할 위치입니다."
-        actionLabel="M6 연결 대기"
+        body="M6 AIQueryResult를 받아 SQL 실행 결과와 근거를 표시합니다."
+        actionLabel={queryState.loading ? "실행 중" : "샘플 질문 실행"}
+        onAction={submitQuery}
       />
       <section className="ask-layout">
         <div className="question-box query-editor">
@@ -1130,16 +1164,29 @@ function AiQueryPage({ setNotice }) {
           <button
             type="button"
             className="primary-action"
-            onClick={() => setNotice("M6 AI Query 연결 전에는 SQL 실행 결과를 생성하지 않습니다.")}
+            onClick={submitQuery}
+            disabled={queryState.loading}
           >
-            <Play size={16} />
-            실행 대기
+            {queryState.loading ? <Loader2 size={16} className="spin" /> : <Play size={16} />}
+            {queryState.loading ? "실행 중" : "질문 실행"}
           </button>
+          {queryState.error ? <p className="form-error">{queryState.error}</p> : null}
         </div>
-        <div className="contract-panel">
-          <p className="eyebrow">{m1AiQueryPlaceholder.contract}</p>
-          <h3>{m1AiQueryPlaceholder.status}</h3>
-          <code>{m1AiQueryPlaceholder.sql}</code>
+        <div className="contract-panel query-summary-panel">
+          <p className="eyebrow">{queryState.result?.contract || m1AiQueryPlaceholder.contract}</p>
+          <div className="query-status-row">
+            <h3>{queryState.result?.status || "질문 대기"}</h3>
+            {queryState.result?.guardrail ? (
+              <span className={`badge ${queryStatusBadgeClass(queryState.result)}`}>
+                {queryState.result.guardrail.validation_status}
+              </span>
+            ) : null}
+          </div>
+          <p>{queryState.result?.summary || "아직 실행된 질문이 없습니다."}</p>
+          {queryState.result?.guardrail?.failure_message ? (
+            <p className="form-error">{queryState.result.guardrail.failure_message}</p>
+          ) : null}
+          <code>{queryResult?.sql || queryState.result?.sql || m1AiQueryPlaceholder.sql}</code>
           <div className="segmented-control">
             {["table", "chart"].map((mode) => (
               <button
@@ -1153,15 +1200,122 @@ function AiQueryPage({ setNotice }) {
               </button>
             ))}
           </div>
-          <p>Chart spec: {m1AiQueryPlaceholder.chart_spec}</p>
+          <p>Chart spec: {formatChartSpec(queryState.result?.chart_spec)}</p>
         </div>
       </section>
-      <DataTable
-        columns={["module", "M1 surface", "contract"]}
-        rows={m1IntegrationRows}
-      />
+      {queryState.result ? (
+        <section className="ask-result-stack">
+          <div className="grid three">
+            <InfoCard
+              title="Dataset"
+              value={queryState.result.selected_datasets?.[0]?.dataset_id}
+              detail={queryState.result.selected_datasets?.[0]?.reason}
+            />
+            <InfoCard title="Engine" value={queryResult?.engine} detail="M6 SqlEngineAdapter" />
+            <InfoCard
+              title="Rows"
+              value={formatMetric(queryResult?.row_count ?? rows.length)}
+              detail={`${formatMetric(queryResult?.duration_ms)} ms / ${formatMetric(queryResult?.executed_at)}`}
+            />
+          </div>
+
+          {viewMode === "table" ? (
+            <DataTable
+              columns={columns.length ? columns : ["result"]}
+              rows={rows.length ? queryRows(rows, columns) : [["반환된 row가 없습니다."]]}
+            />
+          ) : (
+            <section className="chart-spec-panel">
+              <BarChart3 size={22} />
+              <div>
+                <strong>{queryState.result.chart_spec?.title || "Chart spec"}</strong>
+                <p>
+                  {formatMetric(queryState.result.chart_spec?.type)} / x:{" "}
+                  {formatMetric(queryState.result.chart_spec?.x)} / y:{" "}
+                  {formatMetric(queryState.result.chart_spec?.y)}
+                </p>
+              </div>
+            </section>
+          )}
+
+          <section className="evidence-grid">
+            {evidence.map((item) => (
+              <EvidenceCard key={`${item.dataset_id}:${item.run_id || item.s3_uri || item.table_name}`} evidence={item} />
+            ))}
+          </section>
+        </section>
+      ) : (
+        <EmptyState
+          icon={MessageSquareText}
+          title="질문을 실행하면 결과가 표시됩니다"
+          body="M1은 M6 응답을 표시하고 SQL, 요약, evidence를 직접 생성하지 않습니다."
+        />
+      )}
     </div>
   );
+}
+
+function queryStatusBadgeClass(result) {
+  if (result.status === "succeeded" && result.guardrail?.validation_status === "passed") return "green";
+  if (result.status === "blocked" || result.guardrail?.validation_status === "blocked") return "orange";
+  if (result.status === "failed" || result.guardrail?.validation_status === "failed") return "red";
+  return "blue";
+}
+
+function formatChartSpec(chartSpec) {
+  if (!chartSpec) return m1AiQueryPlaceholder.chart_spec;
+  return `${formatMetric(chartSpec.type)} / ${formatMetric(chartSpec.x)} -> ${formatMetric(chartSpec.y)}`;
+}
+
+function queryRows(rows, columns) {
+  return rows.map((row) => columns.map((column) => formatMetric(row[column])));
+}
+
+function EvidenceCard({ evidence }) {
+  const schemaRows = (evidence.schema_fields || []).map((field) => [
+    field.name,
+    field.type,
+    formatMetric(field.nullable),
+  ]);
+  const metricRows = Object.entries(evidence.metrics || {}).map(([key, value]) => [
+    key,
+    formatEvidenceValue(value),
+  ]);
+  const lineageRows = Object.entries(evidence.lineage || {}).map(([key, value]) => [
+    key,
+    formatEvidenceValue(value),
+  ]);
+
+  return (
+    <article className="evidence-card">
+      <header>
+        <div>
+          <p className="eyebrow">Evidence</p>
+          <h3>{evidence.dataset_id}</h3>
+        </div>
+        {evidence.table_name ? <span className="badge blue">{evidence.table_name}</span> : null}
+      </header>
+      <div className="evidence-facts">
+        <span>run: {formatMetric(evidence.run_id)}</span>
+        <span>freshness: {formatMetric(evidence.freshness)}</span>
+        <span>terms: {(evidence.retrieval_terms || []).join(", ") || "-"}</span>
+      </div>
+      {evidence.s3_uri ? <code>{evidence.s3_uri}</code> : null}
+      {schemaRows.length ? <DataTable columns={["field", "type", "nullable"]} rows={schemaRows} /> : null}
+      {metricRows.length || lineageRows.length ? (
+        <div className="grid two evidence-tables">
+          {metricRows.length ? <DataTable columns={["metric", "value"]} rows={metricRows} /> : null}
+          {lineageRows.length ? <DataTable columns={["lineage", "value"]} rows={lineageRows} /> : null}
+        </div>
+      ) : null}
+    </article>
+  );
+}
+
+function formatEvidenceValue(value) {
+  if (Array.isArray(value)) return value.join(", ") || "-";
+  if (value && typeof value === "object") return JSON.stringify(value);
+  return formatMetric(value);
 }
 
 function DashboardPlaceholder() {
