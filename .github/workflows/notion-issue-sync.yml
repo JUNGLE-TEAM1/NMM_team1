@@ -2,6 +2,28 @@ name: Notion Issue Sync
 
 on:
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "API write 없이 동기화 계획만 출력"
+        required: false
+        type: boolean
+        default: false
+  schedule:
+    - cron: "*/5 * * * *"
+  issues:
+    types:
+      - opened
+      - edited
+      - closed
+      - reopened
+      - assigned
+      - unassigned
+      - labeled
+      - unlabeled
+      - deleted
+  repository_dispatch:
+    types:
+      - notion-issue-sync
 
 permissions:
   contents: read
@@ -29,6 +51,7 @@ jobs:
           GITHUB_PROJECT_NUMBER: "3"
           GITHUB_PROJECT_STATUS_FIELD: Status
           NOTION_PROJECT_STATUS_PROPERTY: Project Status
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
         with:
           github-token: ${{ secrets.ISSUE_SYNC_PAT || github.token }}
           script: |

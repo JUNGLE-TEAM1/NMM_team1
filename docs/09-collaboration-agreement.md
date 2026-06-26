@@ -9,6 +9,7 @@ This document records shared collaboration agreements that should not change per
 - `docs/reports/` stores durable evidence after Phase or Hotfix completion.
 - `docs/11-git-sync-policy.md` defines main freshness, PR, and Git safety rules.
 - `docs/12-quality-gates.md` defines TDD, branch checks, CI, and CD/deploy gates.
+- `docs/system-guardrails.md` tracks safety controls that should be enforced by GitHub, CI, repository settings, Project automation, or platform settings.
 - `docs/15-context-budget-rule.md` defines Lite/Escalate/Audit context loading.
 - Source of Truth docs win over reports when they conflict.
 
@@ -208,6 +209,7 @@ These can usually proceed inside the current branch workspace:
 
 ## 12) Automation Safety Agreement
 
+- System-enforceable safety controls should be implemented or tracked through `docs/system-guardrails.md`; this agreement explains how humans and AI operate around those controls.
 - `scripts/start-workflow.sh` must preserve existing workspace files.
 - When switching branch workspaces, `scripts/start-workflow.sh` may create a checkpoint commit for tracked modifications/deletions on the current branch.
 - Automatic checkpoint commits do not include untracked files, `.DS_Store`, personal drafts, editor artifacts, or unrelated workstream files.

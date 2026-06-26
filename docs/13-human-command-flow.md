@@ -260,6 +260,7 @@ AI does:
 - Creates the issue with Korean title prefix/body sections, type labels, and `--body-file`; the human-provided title content is not force-translated.
 - If GitHub CLI is unavailable or unauthenticated, creates the local workspace and records the failure reason instead of blocking all work.
 - Uses `--no-issue` only for an intentional exception and records the reason in the workspace.
+- Records that branch start issue creation is script-enforced protocol; PR linked issue required checks and Project lifecycle automation are tracked in `docs/system-guardrails.md`.
 
 Human says:
 
