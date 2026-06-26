@@ -20,13 +20,16 @@
 | lint | `git diff --check` | passed | whitespace/check diff clean |
 | unit/focused test | `PYTHONPATH=backend .venv/bin/python -m pytest backend/tests/test_week2_spark_runner.py -q` | passed | 1 passed |
 | integration/contract test | `PYTHONPATH=backend .venv/bin/python -m pytest backend/tests/test_week2_local_runner.py backend/tests/test_week2_workflow_catalog.py backend/tests/test_week2_spark_runner.py -q` | passed | 15 passed |
-| backend regression | `PYTHONPATH=backend .venv/bin/python -m pytest backend/tests -q` | passed | 37 passed |
+| backend regression | `PYTHONPATH=backend .venv/bin/python -m pytest backend/tests -q` | passed | 45 passed after `origin/main` sync |
+| PR guardrail tests | `node tests/pr-linked-issue-check.test.js`; `node tests/pr-risk-warning.test.js`; `node tests/migration-schema-security-check.test.js`; `node tests/pr-size-hard-gate.test.js` | passed | all PR guardrail tests passed after `origin/main` sync |
+| shell syntax | `bash -n scripts/start-workflow.sh scripts/status-workflow.sh scripts/validate-harness.sh scripts/prepare-pr.sh scripts/harness-flow-check.sh` | passed | no syntax errors |
 | contract JSON parse | `python3 -m json.tool contracts/runtime_config.sample.json` | passed | valid JSON |
 | manual verification review | `rg -n "Week 2|RuntimeConfig|SparkRunner|runner|Parquet|row count|bytes|duration|output path|수동|Manual" docs/07-manual-verification-playbook.md docs/manual-verification -S` | passed | relevant `docs/07` Target MVP item maps to output path, row count, bytes, duration evidence; no UI manual run in this PR |
 | backend container build | `docker build -f infra/docker/backend.Dockerfile -t asklake-backend:m2-spark-runner-smoke .` | passed | Python 3.12 image installed `pyarrow==18.1.0` successfully |
 | backend container smoke test | `docker run --rm asklake-backend:m2-spark-runner-smoke python -m pytest tests/test_week2_spark_runner.py -q` | passed | 1 passed |
 | harness validation | `scripts/validate-harness.sh` | passed | Harness validation passed |
 | strict harness validation | `scripts/validate-harness.sh --strict` | passed | Harness validation passed; current workspace skipped completion-only semantic checks because state is draft |
+| harness regression | `scripts/test-harness.sh` | passed | Harness regression tests passed: 31 |
 
 ## CI/CD Gate / CI-CD 게이트
 

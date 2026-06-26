@@ -22,11 +22,11 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 
 ## Pre-Merge Sync
 
-- main commit:
-- conflicts:
-- validation:
-- result:
-- deferral reason:
+- main commit: `5dd413c`
+- conflicts: none
+- validation: `PYTHONPATH=backend .venv/bin/python -m pytest backend/tests -q` -> 45 passed; node PR guardrail tests -> passed; `bash -n` shell scripts -> passed; `scripts/validate-harness.sh` -> passed; `scripts/validate-harness.sh --strict` -> passed; `scripts/test-harness.sh` -> 31 passed; `git diff --check` -> passed
+- result: `origin/main` merged into `feature/m2-runtime-sparkrunner-smoke` without conflicts; merge commit `e099344`
+- deferral reason: none
 
 ## PR Conflict Resolution
 
