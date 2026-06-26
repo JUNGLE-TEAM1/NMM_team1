@@ -512,7 +512,9 @@ code {
 
 .start-actions,
 .toolbar-actions,
-.management-header {
+.management-header,
+.handoff-actions,
+.demo-question-list {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
@@ -1181,15 +1183,63 @@ tbody tr:hover {
   line-height: 1.6;
 }
 
+.catalog-feature .ghost-action {
+  justify-self: end;
+}
+
 .catalog-feature > svg {
   margin-top: 4px;
   color: #9ca3af;
+}
+
+.demo-handoff-panel {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 18px;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+}
+
+.demo-handoff-panel h3 {
+  margin-top: 4px;
+  color: #111827;
+  font-size: 17px;
+}
+
+.demo-handoff-panel p:last-child {
+  margin-top: 5px;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.handoff-actions {
+  flex: 0 0 auto;
+  justify-content: flex-end;
 }
 
 .ask-layout {
   display: grid;
   grid-template-columns: minmax(260px, 0.8fr) minmax(0, 1.2fr);
   gap: 16px;
+}
+
+.demo-question-list {
+  width: 100%;
+}
+
+.demo-question-list .ghost-action {
+  min-height: 34px;
+  max-width: 100%;
+  justify-content: flex-start;
+  overflow-wrap: anywhere;
+  padding: 0 10px;
+  font-size: 12px;
 }
 
 .ask-result-stack {
@@ -1928,6 +1978,15 @@ tbody tr:hover {
 
   .pipeline-node svg {
     display: none;
+  }
+
+  .demo-handoff-panel {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .handoff-actions {
+    justify-content: flex-start;
   }
 }
 

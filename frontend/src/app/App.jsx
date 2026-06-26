@@ -99,6 +99,12 @@ const stepIcons = {
   workflow: GitBranch,
 };
 
+const demoQuestions = [
+  "Amazon reviews에서 평점 높은 상품 알려줘",
+  "리뷰가 가장 많은 상품 알려줘",
+  "Amazon reviews의 product_id별 review_count를 보여줘",
+];
+
 function normalizePath(pathname) {
   if (pathname === "/" || pathname === "" || pathname === "/dataset") return "/sources";
   if (pathname === "/schema-preview") return "/sources";
@@ -237,7 +243,7 @@ export function App() {
           {activePath === "/runs" ? <RunStatusPage navigate={navigate} /> : null}
           {activePath === "/catalog" ? <CatalogPage navigate={navigate} /> : null}
           {activePath === "/catalog-detail" ? <CatalogDetailShell navigate={navigate} /> : null}
-          {activePath === "/ask" ? <AiQueryPage setNotice={setNotice} /> : null}
+          {activePath === "/ask" ? <AiQueryPage navigate={navigate} setNotice={setNotice} /> : null}
           {activePath === "/dashboard" ? <DashboardPlaceholder /> : null}
           {activePath === "/admin" ? <AdminPlaceholder /> : null}
         </section>
@@ -334,6 +340,10 @@ function SourcesPage({ navigate, setNotice }) {
           <button type="button" className="ghost-action" onClick={openConnectionManager} aria-label="새 파이프라인 영역에서 연결 관리 열기">
             <Database size={16} />
             연결 관리
+          </button>
+          <button type="button" className="ghost-action" onClick={() => navigate("/runs")}>
+            <Play size={16} />
+            Workflow 실행으로 이동
           </button>
         </div>
       </section>
@@ -780,6 +790,23 @@ function RunStatusPage({ navigate }) {
             <InfoCard title="Input Bytes" value={formatMetric(currentRun.bytes)} detail="primary input bytes read" />
             <InfoCard title="Triggered By" value={formatMetric(currentRun.triggered_by)} detail="demo tenant context" />
           </div>
+          <section className="demo-handoff-panel">
+            <div>
+              <p className="eyebrow">Next demo step</p>
+              <h3>CatalogMetadata 확인으로 이동</h3>
+              <p>{currentRun.run_id} 실행 결과가 만든 dataset metadata를 확인한 뒤 AI Query로 이어갑니다.</p>
+            </div>
+            <div className="handoff-actions">
+              <button type="button" className="primary-action" onClick={() => navigate("/catalog-detail")}>
+                Catalog detail
+                <ArrowRight size={16} />
+              </button>
+              <button type="button" className="ghost-action" onClick={() => navigate("/ask")}>
+                AI Query
+                <MessageSquareText size={16} />
+              </button>
+            </div>
+          </section>
         </>
       ) : null}
       <section className="pipeline-table-card">
@@ -973,6 +1000,10 @@ function CatalogPage({ navigate }) {
             <button type="button" className="icon-link" onClick={() => navigate("/catalog-detail")} aria-label="catalog detail">
               <ArrowRight size={18} />
             </button>
+            <button type="button" className="ghost-action" onClick={() => navigate("/ask")}>
+              AI Query
+              <MessageSquareText size={16} />
+            </button>
           </section>
           <div className="grid three">
             <InfoCard title="Dataset" value={catalog.dataset_id} detail={catalog.name} />
@@ -1035,6 +1066,25 @@ function CatalogDetailShell({ navigate }) {
           <InfoCard title="Storage" value={catalog.storage?.profile} detail={catalog.storage?.prefix} />
           <InfoCard title="Updated" value={catalog.updated_at} detail={catalog.version} />
         </div>
+      ) : null}
+      {catalog ? (
+        <section className="demo-handoff-panel">
+          <div>
+            <p className="eyebrow">Next demo step</p>
+            <h3>M6 AI Query로 근거 확인</h3>
+            <p>{catalog.dataset_id}의 schema, metrics, lineage를 evidence로 사용해 질문 결과를 확인합니다.</p>
+          </div>
+          <div className="handoff-actions">
+            <button type="button" className="primary-action" onClick={() => navigate("/ask")}>
+              AI Query 실행
+              <ArrowRight size={16} />
+            </button>
+            <button type="button" className="ghost-action" onClick={() => navigate("/runs")}>
+              Run으로 돌아가기
+              <ListChecks size={16} />
+            </button>
+          </div>
+        </section>
       ) : null}
       <section className="detail-tabs">
         {tabs.map(([id, label, Icon]) => (
@@ -1109,7 +1159,7 @@ function LineageShell({ catalog }) {
   );
 }
 
-function AiQueryPage({ setNotice }) {
+function AiQueryPage({ navigate, setNotice }) {
   const [queryText, setQueryText] = useState("Amazon reviews에서 평점 높은 상품 알려줘");
   const [queryState, setQueryState] = useState({
     result: null,
@@ -1124,14 +1174,15 @@ function AiQueryPage({ setNotice }) {
     : Object.keys(rows[0] || {});
   const evidence = queryState.result?.evidence || [];
 
-  async function submitQuery() {
-    const question = queryText.trim();
+  async function submitQuery(nextQuestion = queryText) {
+    const question = nextQuestion.trim();
     if (!question) {
       setQueryState((previous) => ({ ...previous, error: "질문을 입력해야 합니다." }));
       setNotice("질문을 입력한 뒤 실행할 수 있습니다.");
       return;
     }
 
+    setQueryText(question);
     setQueryState((previous) => ({ ...previous, error: "", loading: true }));
     try {
       const result = await askWeek2AiQuery(question);
@@ -1151,7 +1202,7 @@ function AiQueryPage({ setNotice }) {
         title="AI Query"
         body="M6 AIQueryResult를 받아 SQL 실행 결과와 근거를 표시합니다."
         actionLabel={queryState.loading ? "실행 중" : "샘플 질문 실행"}
-        onAction={submitQuery}
+        onAction={() => submitQuery()}
       />
       <section className="ask-layout">
         <div className="question-box query-editor">
@@ -1164,13 +1215,27 @@ function AiQueryPage({ setNotice }) {
           <button
             type="button"
             className="primary-action"
-            onClick={submitQuery}
+            onClick={() => submitQuery()}
             disabled={queryState.loading}
           >
             {queryState.loading ? <Loader2 size={16} className="spin" /> : <Play size={16} />}
             {queryState.loading ? "실행 중" : "질문 실행"}
           </button>
           {queryState.error ? <p className="form-error">{queryState.error}</p> : null}
+          <div className="demo-question-list" aria-label="Demo question candidates">
+            {demoQuestions.map((question) => (
+              <button
+                key={question}
+                type="button"
+                className="ghost-action"
+                onClick={() => submitQuery(question)}
+                disabled={queryState.loading}
+              >
+                <Sparkles size={14} />
+                {question}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="contract-panel query-summary-panel">
           <p className="eyebrow">{queryState.result?.contract || m1AiQueryPlaceholder.contract}</p>
@@ -1218,6 +1283,23 @@ function AiQueryPage({ setNotice }) {
               detail={`${formatMetric(queryResult?.duration_ms)} ms / ${formatMetric(queryResult?.executed_at)}`}
             />
           </div>
+          <section className="demo-handoff-panel">
+            <div>
+              <p className="eyebrow">Review loop</p>
+              <h3>근거에서 run과 catalog로 돌아가기</h3>
+              <p>AI Query 결과를 확인한 뒤 같은 세션에서 실행 결과와 CatalogMetadata를 다시 볼 수 있습니다.</p>
+            </div>
+            <div className="handoff-actions">
+              <button type="button" className="ghost-action" onClick={() => navigate("/runs")}>
+                Run Status
+                <ListChecks size={16} />
+              </button>
+              <button type="button" className="primary-action" onClick={() => navigate("/catalog-detail")}>
+                Catalog detail
+                <ArrowRight size={16} />
+              </button>
+            </div>
+          </section>
 
           {viewMode === "table" ? (
             <DataTable
