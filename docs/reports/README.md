@@ -73,6 +73,7 @@ report가 늘어나면 영역별 최신 report index를 작게 유지한다. 이
 | Week2 team handoff summary | [`week2-team-handoff-summary.md`](week2-team-handoff-summary.md) | Phase 1~6 이후 팀원이 읽을 현재 분업/진행상황/다음 병렬 구현 순서 확인 |
 | Week2 data path scope clarity | [`week2-data-path-scope-clarity.md`](week2-data-path-scope-clarity.md) | 세 데이터 경로는 모두 구현하되 Amazon Reviews는 분석 대표 경로, Taxi/Kafka는 필수 처리/evidence 경로라는 기준 확인 |
 | Week2 M6 RAG scope | [`week2-m6-rag-scope.md`](week2-m6-rag-scope.md) | M6의 RAG 책임을 CatalogMetadata 기반 Semantic/RAG-lite/AI Query로 보강하고 full RAG/vector DB는 후속으로 유지한 기준 확인 |
+| M6 M5 CatalogSource adapter | [`m6-m5-catalog-source-adapter.md`](m6-m5-catalog-source-adapter.md) | M6 AI Query가 M5 `Week2CatalogStore`의 최신 CatalogMetadata를 evidence source로 소비하는 adapter 연결 확인 |
 | PR Conflict Resolution Protocol | [`pr-conflict-resolution-protocol.md`](pr-conflict-resolution-protocol.md) | PR conflict 감지, 분류, 사람 확인, 해결 후 재검증과 evidence 기록 규칙 확인 |
 | Harness 변경사항 병합 후 점검 | [`harness-post-merge-change-audit.md`](harness-post-merge-change-audit.md) | PR #45~#47 병합 뒤 Pre-PR checkpoint, Product Rebaseline, validation/script 충돌 여부 확인 |
 | Mid-Phase Steering 하네스 보강 | [`mid-phase-steering-harness.md`](mid-phase-steering-harness.md) | 작업 중 사람의 잦은 조향을 현재 Phase detail, scope change, Hotfix, 다음 Phase 후보, 보류 아이디어, 고영향 결정으로 분류하는 규칙 확인 |
