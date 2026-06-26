@@ -1,0 +1,34 @@
+# M1 Week2 API Client 연결 Git Sync
+
+## Start Sync / 시작 sync
+
+- main branch: main
+- current branch: feature/m1-week2-api-client
+- base commit: c1a65ae
+- result: 최신 `origin/main` merge commit 기준 detached state에서 새 branch 생성. 자동 pull/merge/rebase는 실행하지 않음.
+
+## Mid-Phase Sync Checks / 진행 중 sync 확인
+
+| Checked At | Upstream Changes | Impacted Source of Truth | Action |
+| --- | --- | --- | --- |
+| 2026-06-26 | none checked after branch creation | none | continue local Phase |
+
+## Pre-Merge Sync
+
+- main commit: c1a65ae
+- conflicts: none detected locally
+- validation: API symbol scan, frontend build, `git diff --check`, `scripts/validate-harness.sh --strict`
+- result: ready for PR preparation
+- deferral reason: none
+
+## Push / PR
+
+- linked GitHub issue:
+- issue link:
+- issue creation result: not created for this local Phase step
+- issue project result:
+- PR closing keyword: explicit no-issue exception planned in PR body
+- pushed branch:
+- PR link:
+- merge status:
+- issue close status:
