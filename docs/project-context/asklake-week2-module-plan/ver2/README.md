@@ -37,7 +37,7 @@ Week2는 세 데이터 경로를 모두 구현 대상으로 둔다.
 | Taxi Batch 또는 정형 batch | M2 중심 | 필수 처리/evidence 경로. row_count, bytes, duration, output_path 같은 처리 증거를 남긴다. |
 | Kafka Event / streaming ingestion | M4 중심 | 필수 처리/evidence 경로. replay/ingestion, throughput, lag, restart evidence를 남긴다. |
 
-분석 대표 경로는 Amazon Reviews JSON으로 고정한다. Taxi/Kafka는 optional이 아니라 필수 처리/evidence 경로이며, M6 분석 연결은 이번 기본 범위가 아니라 후속 확장으로 둔다.
+분석 대표 경로는 Amazon Reviews JSON으로 고정한다. Taxi/Kafka는 선택 사항이 아니라 필수 처리/evidence 경로이며, M6 분석 연결은 이번 기본 범위가 아니라 후속 확장으로 둔다.
 
 ## 핵심 guardrail
 
@@ -55,10 +55,10 @@ Week2는 세 데이터 경로를 모두 구현 대상으로 둔다.
 | Phase | 이름 | 목적 | 완료 기준 |
 | --- | --- | --- | --- |
 | 1 | Responsibility ver2 고정 | 현재 M1~M6 책임 기준을 팀 문서로 고정 | `ver2/` 기준 문서와 workspace evidence가 PR-ready |
-| 2 | Implementation transition plan | 기존 구현을 버리지 않고 ver2로 전환하는 순서 작성 | 유지할 구현, main E2E path, adapter-first 원칙 확정 |
-| 3 | Main E2E path 확정 | AI Query/분석 대표 경로를 하나로 고정 | Amazon Reviews JSON -> M5 Workflow/Catalog -> M6 AI Query -> M1 UI 경로 확정 |
+| 2 | Implementation transition plan | 기존 구현을 버리지 않고 ver2로 전환하는 순서 작성 | 유지할 구현, 분석 대표 path, adapter-first 원칙 확정 |
+| 3 | Analysis representative path 확정 | AI Query/분석 대표 경로를 하나로 고정 | Amazon Reviews JSON -> M5 Workflow/Catalog -> M6 AI Query -> M1 UI 경로 확정 |
 | 4 | Existing implementation anchor 선언 | 기존 구현 중 유지/흡수할 범위 확정 | M5 workflow/catalog, M4 Kafka demo, M6 skeleton, M1 shell 유지 선언 |
-| 5 | M3 JSON main path decision | M3가 먼저 맡을 JSON path와 PR #105 회수 여부 결정 | source profile/schema/transform spec/Catalog facts 범위 확정 |
+| 5 | M3 JSON analysis path decision | M3가 먼저 맡을 JSON 분석 대표 path와 PR #105 회수 여부 결정 | source profile/schema/transform spec/Catalog facts 범위 확정 |
 | 6 | M5 runner boundary decision | M2 SparkRunner와 M3 job logic이 붙을 실행 경계 확정 | `Week2WorkflowService` 중심 runner boundary와 호출 계약 확정 |
 
 Phase 2의 현재 기준은 [`implementation-transition-plan.md`](implementation-transition-plan.md)에 둔다.

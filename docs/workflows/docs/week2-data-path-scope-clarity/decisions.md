@@ -13,7 +13,7 @@
 
 | Decision | Selected Option | Reason | Confirmed By / At |
 | --- | --- | --- | --- |
-| Week2 data path scope | 세 데이터 경로 모두 구현, AI Query/분석 대표 경로는 Amazon Reviews | Taxi/Kafka를 optional로 낮추지 않으면서도 M6 분석 범위를 지금 당장 세 데이터셋 전체로 넓히지 않기 위해 | user discussion / 2026-06-26 |
+| Week2 data path scope | 세 데이터 경로 모두 구현, AI Query/분석 대표 경로는 Amazon Reviews | Taxi/Kafka를 선택 사항으로 낮추지 않으면서도 M6 분석 범위를 지금 당장 세 데이터셋 전체로 넓히지 않기 위해 | user discussion / 2026-06-26 |
 | Synthetic companion dataset | 후속 리서치로 분리 | 공통 entity key 없는 데이터셋을 억지로 결합하면 분석 의미가 약해지고, 현재 기본 구현 범위를 흔들 수 있기 때문 | user discussion / 2026-06-26 |
 
 ## Deferred Decisions / 보류한 결정

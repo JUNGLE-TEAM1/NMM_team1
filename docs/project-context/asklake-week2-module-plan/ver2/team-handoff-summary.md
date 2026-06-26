@@ -14,7 +14,7 @@ Amazon Reviews JSON
 -> M1 UI
 ```
 
-Week2 데이터 경로는 세 가지다. Amazon Reviews JSON은 AI Query/분석 대표 경로이고, Taxi Batch와 Kafka Event도 필수 처리/evidence 경로다. Taxi/Kafka는 optional이 아니지만, M6 분석 연결의 선행 조건으로 두지는 않는다.
+Week2 데이터 경로는 세 가지다. Amazon Reviews JSON은 AI Query/분석 대표 경로이고, Taxi Batch와 Kafka Event도 필수 처리/evidence 경로다. Taxi/Kafka는 선택 사항이 아니지만, M6 분석 연결의 선행 조건으로 두지는 않는다.
 
 먼저 기존 M5 local runner로 Amazon Reviews 분석 E2E를 닫고, M2/M4는 각각 정형 batch와 streaming ingestion의 처리 증거를 완성한다. SparkRunner는 runner boundary 뒤에 붙인다.
 
@@ -26,7 +26,7 @@ Week2 데이터 경로는 세 가지다. Amazon Reviews JSON은 AI Query/분석 
 | --- | --- | --- |
 | 책임 분리 ver2 | 완료 | M1~M6 소유권을 다시 나눴고, Spark/Catalog/ETL 중복 구현을 금지했다. |
 | 기존 구현 전환 계획 | 완료 | rewrite가 아니라 기존 M1/M4/M5/M6 구현 위에 adapter-first로 얹는다. |
-| main E2E path | 완료 | AI Query/분석 대표 경로는 Amazon Reviews JSON 중심이다. Taxi/Kafka는 필수 처리/evidence 경로로 별도 완료한다. |
+| 분석 대표 path | 완료 | AI Query/분석 대표 경로는 Amazon Reviews JSON 중심이다. Taxi/Kafka는 필수 처리/evidence 경로로 별도 완료한다. |
 | 기존 구현 anchor | 완료 | M5 workflow/catalog, M4 Kafka demo, M6 skeleton, M1 shell은 보존한다. |
 | M3 JSON path | 완료 | PR #105는 바로 merge하지 않고 JSON inspect/profile 로직만 source material로 회수한다. |
 | runner boundary | 완료 | M2 SparkRunner, M3 TransformSpec, M5 runner selection이 공유할 input/output 기준을 정했다. |
@@ -41,7 +41,7 @@ Week2 데이터 경로는 세 가지다. Amazon Reviews JSON은 AI Query/분석 
 | M2 | `RuntimeConfig`와 `SparkRunner` smoke를 만들고 Taxi Batch 또는 정형 batch 처리 evidence를 남긴다. `Week2RunnerResult` 호환 metrics를 반환한다. | M5 runner boundary, M3 `TransformSpec` 요구사항 | Spark/local equivalent가 `status`, `row_count`, `bytes`, `duration_ms`, `output_path`를 반환하고 run evidence에서 확인된다. | transformation semantics를 정의하지 않는다. |
 | M3 | Amazon Reviews JSON inspect/profile/schema facts와 최소 `TransformSpec`를 만든다. | M5 runner boundary, M2 runtime 제약, PR #105 source material | JSON sample에서 field facts와 minimal `TransformSpec`가 나오고, M5에 넘길 Catalog facts가 정리된다. | Spark session/config/output convention을 직접 만들지 않는다. |
 | M4 | Kafka replay demo와 raw event evidence를 유지하고, 필요 시 M3가 읽을 raw event contract를 정리한다. | M3 raw event 요구사항, M5 evidence 저장 방식 | replay command, raw event shape, throughput/lag/restart evidence, output_path가 문서와 실행 로그로 남는다. | M6 분석 연결의 선행 조건으로 Kafka streaming to Gold를 만들지 않는다. |
-| M5 | `Week2WorkflowService` 중심 runner selection과 Catalog persistence를 유지/확장한다. | M2 `SparkRunner`, M3 `TransformSpec`, M6 Catalog 소비 요구 | local runner baseline을 유지하면서 optional runner adapter를 선택하고 successful result만 Catalog에 반영한다. | ETL 내부 변환 로직이나 Spark runtime을 소유하지 않는다. |
+| M5 | `Week2WorkflowService` 중심 runner selection과 Catalog persistence를 유지/확장한다. | M2 `SparkRunner`, M3 `TransformSpec`, M6 Catalog 소비 요구 | local runner baseline을 유지하면서 선택형 runner adapter를 선택하고 successful result만 Catalog에 반영한다. | ETL 내부 변환 로직이나 Spark runtime을 소유하지 않는다. |
 | M6 | fixture-only query에서 M5 Catalog-backed query로 전환한다. | M5 Catalog store/API, M3 schema/profile facts, M2 SQL runtime smoke | AI Query 응답이 Catalog metadata를 evidence로 사용하고 selected dataset 근거를 보여준다. | Catalog 저장소/API나 원본 ETL을 소유하지 않는다. |
 
 ## 보존할 기존 구현
@@ -131,7 +131,7 @@ PR #105는 닫힌 PR이고 그대로 merge하지 않는다. 이유는 JSON inspe
 - target column name 충돌 해소
 - sample value 제한
 
-이번 main path에서 제외:
+이번 분석 대표 path에서 제외:
 
 - broad source catalog registration UI
 - recommendation bundle UI polish
@@ -139,7 +139,7 @@ PR #105는 닫힌 PR이고 그대로 merge하지 않는다. 이유는 JSON inspe
 - M5 workflow code와 직접 결합한 JSON runner 변경
 - Taxi/Kafka까지 포함하는 범용 ETL framework
 
-회수 방식은 작게 가져오는 것이다. 먼저 M3 쪽에서 JSON inspection/profile 테스트를 만들고, 필요한 함수만 adapter로 옮긴다. UI와 source catalog 확장은 main path가 한 번 닫힌 뒤 별도 slice로 다룬다.
+회수 방식은 작게 가져오는 것이다. 먼저 M3 쪽에서 JSON inspection/profile 테스트를 만들고, 필요한 함수만 adapter로 옮긴다. UI와 source catalog 확장은 분석 대표 path가 한 번 닫힌 뒤 별도 slice로 다룬다.
 
 ## 다음 병렬 구현 순서
 
@@ -147,9 +147,9 @@ PR #105는 닫힌 PR이고 그대로 merge하지 않는다. 이유는 JSON inspe
 | --- | --- | --- |
 | 1 | M3 JSON TransformSpec | Amazon Reviews JSON sample에서 profile/schema facts와 minimal `TransformSpec` 생성 |
 | 2 | M2 RuntimeConfig/SparkRunner smoke | Spark read/write smoke가 `Week2RunnerResult` 호환 metrics 반환 |
-| 3 | M5 runner selection | local runner baseline 유지, optional SparkRunner adapter 선택 가능 |
+| 3 | M5 runner selection | local runner baseline 유지, 선택형 SparkRunner adapter 선택 가능 |
 | 4 | M6 Catalog-backed query | fixture catalog 대신 M5 Catalog metadata를 evidence source로 사용 |
-| 5 | M1 main path UI | run/catalog/query/evidence 상태를 한 흐름으로 표시 |
+| 5 | M1 analysis path UI | run/catalog/query/evidence 상태를 한 흐름으로 표시 |
 
 M3와 M2는 병렬로 시작할 수 있다. M5 runner selection은 M2/M3의 첫 smoke 결과를 보고 연결한다. M6와 M1은 M5의 API/result shape가 안정된 뒤 붙이는 것이 좋다.
 
@@ -167,7 +167,7 @@ M3와 M2는 병렬로 시작할 수 있다. M5 runner selection은 M2/M3의 첫 
 | --- | --- |
 | 전체 책임 분리 | `revised-nonoverlap-responsibility.md` |
 | 기존 구현 위 전환 순서 | `implementation-transition-plan.md` |
-| 발표 필수 E2E path | `main-e2e-path.md` |
+| AI Query/분석 대표 path | `main-e2e-path.md` |
 | 보존할 기존 구현 | `existing-implementation-anchor.md` |
 | M3 JSON/PR #105 처리 | `m3-json-main-path-decision.md` |
 | M2/M3/M5 runner boundary | `runner-boundary-decision.md` |

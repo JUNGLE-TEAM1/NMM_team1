@@ -3,7 +3,7 @@
 ## 진행 메모
 
 - 사용자와 논의 결과, Week2는 세 데이터 경로를 모두 구현하되 M6 분석 대표 경로는 Amazon Reviews JSON으로 우선 고정한다.
-- Taxi/Kafka는 optional이 아니라 필수 처리/evidence 경로다.
+- Taxi/Kafka는 선택 사항이 아니라 필수 처리/evidence 경로다.
 - 정형/반정형/이벤트를 함께 분석하려면 공통 entity key가 필요하므로 synthetic companion dataset은 후속 리서치로 분리한다.
 
 ## 결정

@@ -58,17 +58,17 @@ Week2WorkflowService
 | 순서 | 작업 | 책임 | 완료 기준 |
 | --- | --- | --- | --- |
 | 1 | M5 existing implementation anchor 확인 | M5 | `Week2WorkflowService`, `Week2LocalRunner`, `Week2CatalogStore` 유지 선언 |
-| 2 | Main E2E path 고정 | M1/M3/M5/M6 | Amazon Reviews JSON path를 AI Query/분석 대표 경로로 확정 |
-| 3 | M3 JSON main path decision | M3 | PR #105 회수/재구현 범위와 `TransformSpec` 최소 shape 결정 |
+| 2 | Analysis representative E2E path 고정 | M1/M3/M5/M6 | Amazon Reviews JSON path를 AI Query/분석 대표 경로로 확정 |
+| 3 | M3 JSON analysis path decision | M3 | PR #105 회수/재구현 범위와 `TransformSpec` 최소 shape 결정 |
 | 4 | Runner boundary decision | M2/M3/M5 | local runner, M3 job logic, SparkRunner가 공유할 호출 계약 결정 |
 | 5 | M2 RuntimeConfig/SparkRunner smoke | M2 | Spark read/write smoke가 row_count/bytes/duration을 반환 |
 | 6 | M5 runner selection | M5 | local runner와 SparkRunner를 선택/호출할 수 있음 |
 | 7 | M6 Catalog source 전환 | M6/M5 | fixture catalog 대신 M5 Catalog store/API를 소비 |
 | 8 | M1 UI 연결 | M1 | run/catalog/query/evidence 상태 표시 |
 
-## Main E2E 후보
+## 분석 대표 E2E 후보
 
-병렬 구현 시작 전 main E2E path는 다음 Phase에서 확정하지만, 현재 추천 후보는 아래와 같다.
+병렬 구현 시작 전 AI Query/분석 대표 경로는 다음 Phase에서 확정하지만, 현재 추천 후보는 아래와 같다.
 
 ```text
 Amazon Reviews JSON
@@ -79,15 +79,15 @@ Amazon Reviews JSON
 -> M1 UI
 ```
 
-Taxi와 Kafka는 optional이 아니다. 각각 정형 batch와 streaming ingestion의 필수 처리/evidence 경로로 완료하되, M6 분석 대표 경로의 필수 선행 조건으로 두지는 않는다.
+Taxi와 Kafka는 선택 사항이 아니다. 각각 정형 batch와 streaming ingestion의 필수 처리/evidence 경로로 완료하되, M6 분석 대표 경로의 필수 선행 조건으로 두지는 않는다.
 
 ## 모듈별 다음 작업
 
 | 모듈 | 다음 작업 | 병렬 가능 조건 |
 | --- | --- | --- |
-| M1 | M5/M6 API 상태 표시 준비 | main E2E path와 API shape 확정 후 |
+| M1 | M5/M6 API 상태 표시 준비 | 분석 대표 path와 API shape 확정 후 |
 | M2 | `RuntimeConfig`와 SparkRunner smoke, Taxi/정형 batch evidence 설계 | runner boundary 결정 후 |
-| M3 | Amazon Reviews JSON main path와 PR #105 회수 여부 결정 | main E2E path 확정 후 |
+| M3 | Amazon Reviews JSON 분석 대표 path와 PR #105 회수 여부 결정 | 분석 대표 path 확정 후 |
 | M4 | Kafka raw event contract와 streaming ingestion evidence 정리 | M3가 필요한 raw event shape를 확정한 뒤 |
 | M5 | runner boundary와 Catalog handoff 유지 | Phase 6 runner boundary 결정 후 |
 | M6 | M5 Catalog store/API 소비 계획 | Catalog source boundary 확인 후 |
@@ -105,4 +105,4 @@ Taxi와 Kafka는 optional이 아니다. 각각 정형 batch와 streaming ingesti
 - 기존 구현 중 유지할 anchor가 명시되어 있다.
 - ver2가 rewrite 계획이 아님을 명시한다.
 - adapter-first 전환 순서가 명시되어 있다.
-- 다음 Phase인 main E2E path 확정의 입력이 준비되어 있다.
+- 다음 Phase인 AI Query/분석 대표 path 확정의 입력이 준비되어 있다.

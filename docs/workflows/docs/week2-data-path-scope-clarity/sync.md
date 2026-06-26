@@ -23,7 +23,7 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 
 - main commit: e11ff8b
 - conflicts: none detected
-- validation: `rg -n "Amazon Reviews|Taxi|Kafka|필수 처리/evidence|synthetic|공통 entity|M6 분석" docs/project-context/asklake-week2-module-plan/ver2`; `git diff --check`; `scripts/validate-harness.sh --strict`
+- validation: `rg -n "Amazon Reviews|Taxi|Kafka|필수 처리/evidence|synthetic|공통 entity|M6 분석" docs/project-context/asklake-week2-module-plan/ver2`; `rg -in "main path|main e2e|amazon reviews만|보조|optional|발표 필수 e2e|M3 JSON main path" docs/project-context/asklake-week2-module-plan/ver2`; `git diff --check`; `scripts/validate-harness.sh --strict`
 - result: ready for PR preparation
 - deferral reason: none
 
