@@ -11,7 +11,7 @@
 - Escalated context read: `docs/project-context/asklake-week2-module-plan/README.md`, `docs/project-context/asklake-week2-module-plan/decisions.md`, `docs/03-interface-reference.md` Week 2 Contract Package, `contracts/source_config.sample.json`, `contracts/schema_definition.sample.json`, `contracts/transform_spec.sample.json`, `contracts/workflow_definition.sample.json`, 관련 `docs/05`, `docs/06`, `docs/07` Week 2 항목
 - Context omitted intentionally: 전체 report archive, 실제 M3 Bronze 구현 내부, M5 Airflow/MinIO 구현, M6 AI Query 구현, Taxi delivery seed
 - Changed: `scripts/week2_m1_synthetic_raw.py`와 focused `unittest`를 추가하고, local ignored `data/` 아래 M1 최소 synthetic raw seed를 생성했다.
-- Verified: `python3 -m unittest tests/test_week2_m1_synthetic_raw.py`; JSONL 10,000행 parse/6필드 검증; manifest/summary JSON validation; `Week2LocalRunner` smoke with existing `contracts/workflow_definition.sample.json`; `scripts/validate-harness.sh`; `scripts/validate-harness.sh --strict`
+- Verified: `python3 -m unittest tests/test_week2_m1_synthetic_raw.py`; JSONL 10,000행 parse/6필드 검증; manifest/summary JSON validation; `Week2LocalRunner` smoke with existing `contracts/workflow_definition.sample.json`; `scripts/validate-harness.sh`; `scripts/validate-harness.sh --strict`; after merging `origin/main` `de261e5`, reran focused unittest, local runner smoke, and strict harness validation
 - Remaining: M3 handoff, Option 2 100,000행 확장 여부, Taxi delivery seed 후속 여부
 - Next context: M3에는 `data/week2/mvp_synthesis/raw_demo/reviews_seed.jsonl`, manifest/summary path, sample 3줄, known limitation을 전달한다.
 - Risk: generated data is local and ignored by git; 다른 worktree/팀원에게 전달하려면 재생성 명령 또는 별도 파일 전달이 필요하다.

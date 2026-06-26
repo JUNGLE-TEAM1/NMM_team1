@@ -21,6 +21,7 @@
 | unit/focused test | `python3 -m unittest tests/test_week2_m1_synthetic_raw.py` | passed | `Ran 3 tests in 0.000s`, `OK` |
 | integration/contract test | JSONL required-field validation command in report | passed | `row_count=10000`, `bad_rows=[]`, fields match M3 contract |
 | local runner smoke | `PYTHONPATH=backend python3 ... Week2LocalRunner ... contracts/workflow_definition.sample.json` | passed | `status=fallback_succeeded`, `row_count=10000`, `output_row_count=539` |
+| post-main-sync local runner smoke | `PYTHONPATH=backend python3 ... Week2LocalRunner ... contracts/workflow_definition.sample.json` | passed | after merging `origin/main` `de261e5`: `status=fallback_succeeded`, `row_count=10000`, `output_row_count=539` |
 | build/typecheck | not applicable | skipped | no frontend/backend build changed |
 | harness validation | `scripts/validate-harness.sh` | passed | `Harness validation passed.` |
 | strict harness validation | `scripts/validate-harness.sh --strict` | passed | `Harness validation passed.`; unrelated in-progress workspaces skipped by strict completion-only checks |

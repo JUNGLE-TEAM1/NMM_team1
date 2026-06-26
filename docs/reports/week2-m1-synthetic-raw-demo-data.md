@@ -5,7 +5,7 @@
 - Type: Feature / Data seed
 - Date: 2026-06-26
 - Changed: M1 전용 worktree `feature/week2-m1-synthetic-raw`에서 Amazon Reviews 2023 `Gift_Cards` 기반 synthetic raw 생성 스크립트와 focused `unittest`를 추가했다. local ignored `data/` 아래 `reviews_seed.jsonl` 10,000행, `product_master_seed.jsonl` 1,000행, `behavior_events_seed.jsonl` 3,000행, manifest/summary를 생성했다.
-- Verified: `python3 -m unittest tests/test_week2_m1_synthetic_raw.py`; JSONL 10,000행 parse/6필드 검증; manifest/summary JSON validation; existing `contracts/workflow_definition.sample.json` + `Week2LocalRunner` smoke -> `fallback_succeeded`, input `row_count=10000`, output `output_row_count=539`; `scripts/validate-harness.sh`; `scripts/validate-harness.sh --strict`.
+- Verified: `python3 -m unittest tests/test_week2_m1_synthetic_raw.py`; JSONL 10,000행 parse/6필드 검증; manifest/summary JSON validation; existing `contracts/workflow_definition.sample.json` + `Week2LocalRunner` smoke -> `fallback_succeeded`, input `row_count=10000`, output `output_row_count=539`; `scripts/validate-harness.sh`; `scripts/validate-harness.sh --strict`. PR finalization 중 `origin/main` `de261e5`를 병합한 뒤 focused unittest, local runner smoke, strict harness validation을 재실행해 통과했다.
 - Remaining: M3 handoff, Option 2 100,000행 확장 여부, Taxi delivery seed 후속 여부.
 - Next context: M3 입력 shape는 `amazon_reviews_json` 호환, 앱/커넥터 타입은 `json`, manifest/summary에는 `data_origin=demo_synthetic_raw`와 `logical_shape=amazon_reviews_json`을 분리 기록한다.
 - Risk: generated data is local and ignored by git. 다른 환경에서 필요하면 `python3 scripts/week2_m1_synthetic_raw.py --category Gift_Cards --review-rows 10000 --product-rows 1000 --events-per-product 3`로 재생성한다.

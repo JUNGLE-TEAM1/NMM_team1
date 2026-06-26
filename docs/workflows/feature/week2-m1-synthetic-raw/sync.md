@@ -18,14 +18,15 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 | Checked At | Upstream Changes | Impacted Source of Truth | Action |
 | --- | --- | --- | --- |
 | 2026-06-26 | not checked after worktree creation | none known | branch-local generation and validation only |
+| 2026-06-26 | `origin/main` advanced from `11b746e` to `de261e5` | M5 local runner/workflow catalog files, no M1 seed contract conflict | user requested PR finalization; merged `origin/main` with no conflicts and reran focused test, Week2LocalRunner smoke, strict harness validation |
 
 ## Pre-Merge Sync
 
-- main commit:
-- conflicts:
-- validation: `python3 -m unittest tests/test_week2_m1_synthetic_raw.py`; JSONL required-field validation; manifest/summary `json.tool`; `PYTHONPATH=backend python3` Week2LocalRunner smoke; harness validation pending final run
-- result: local validation passed before final harness run
-- deferral reason: PR/push/pre-merge sync not requested yet; generated data is local ignored `data/`
+- main commit: `de261e5`
+- conflicts: none
+- validation: `python3 -m unittest tests/test_week2_m1_synthetic_raw.py`; `PYTHONPATH=backend python3` Week2LocalRunner smoke after sync; `scripts/validate-harness.sh --strict`
+- result: local validation passed after merging latest `origin/main`
+- deferral reason: none; PR finalization requested by user
 
 ## PR Conflict Resolution
 
