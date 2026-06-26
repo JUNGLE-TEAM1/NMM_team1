@@ -1,0 +1,25 @@
+name: PR Linked Issue Check
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - synchronize
+      - reopened
+      - ready_for_review
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  linked-issue:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check PR linked issue
+        run: node .github/scripts/check-pr-linked-issue.js "$GITHUB_EVENT_PATH"
