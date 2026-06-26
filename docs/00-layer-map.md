@@ -20,6 +20,7 @@ Project-specific files may change, but the layer roles should stay stable.
 | Next Action Menu | state-based conversational menu protocol for guiding human choices | `docs/10-next-action-menu.md` |
 | Git Sync Policy | main synchronization, branch freshness, PR, and Git safety rules | `docs/11-git-sync-policy.md` |
 | Quality Gates | TDD, branch checks, CI, CD, and verification evidence rules | `docs/12-quality-gates.md` |
+| System Guardrails | system-enforced repository, CI, PR, issue/project, secret, review, and deploy controls | `docs/system-guardrails.md` |
 | Human Command Flow | practical human prompts and AI responsibilities for operating the harness | `docs/13-human-command-flow.md` |
 | Decision Option Brief | high-impact choice classification, candidate comparison, exclusion reasons, and recommendation format | `docs/14-decision-option-brief.md` |
 | Context Budget Rule | Lite/Escalate/Audit read modes for reducing token waste without skipping required context | `docs/15-context-budget-rule.md` |
@@ -44,6 +45,7 @@ Use the earliest impacted layer as the start point, then review/update only the 
 | Development operations change | Development Operations -> Manual Verification -> Workflow |
 | Git sync policy change | Development Operations -> Workflow -> Collaboration Agreement -> Next Action Menu |
 | Quality gate change | Development Operations -> Acceptance -> Regression -> Manual Verification -> Workflow -> Collaboration Agreement -> Next Action Menu |
+| System guardrail change | Development Operations -> System Guardrails -> Quality Gates -> Workflow -> Collaboration Agreement -> Human Command Flow |
 | Human command flow change | Workflow -> Collaboration Agreement -> Next Action Menu |
 | Decision option brief change | Workflow -> Collaboration Agreement -> Next Action Menu |
 | Parallel milestone protocol change | Workflow -> Parallel Milestone Protocol -> Collaboration Agreement -> Next Action Menu |
@@ -67,6 +69,7 @@ Load context by layer, not by reading every document.
 | Interface or schema change | Interface and impacted Acceptance/Regression/Verification/Workflow sections |
 | UI/UX or user-flow change | Acceptance, Manual Verification, current Workflow Phase, and 1-2 relevant Evidence reports |
 | Core feature or integration change | Architecture, Interface, Acceptance, Regression, Manual Verification, current Workflow Phase, and 1-2 relevant Evidence reports |
+| Repository/CI/system guardrail change | Development Operations, System Guardrails, Quality Gates, current Workflow Phase, and related GitHub/CI evidence |
 | Hotfix | Current Workflow Phase, related Regression scenario, related Manual Verification playbook, and previous/relevant Evidence report |
 | Project-context-backed task or PR | Related `docs/project-context/<name>/README.md`, its canonical decision log when present, then the Source of Truth layers directly impacted by the requested work |
 | Whole-project audit or retrospective | Layer Map, Source of Truth layers, Evidence index, and selected reports as needed |
@@ -123,6 +126,9 @@ layers:
   quality_gates:
     files:
       - "docs/12-quality-gates.md"
+  system_guardrails:
+    files:
+      - "docs/system-guardrails.md"
   human_command_flow:
     files:
       - "docs/13-human-command-flow.md"
