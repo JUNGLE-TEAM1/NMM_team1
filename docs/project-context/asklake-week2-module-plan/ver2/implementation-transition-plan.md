@@ -58,7 +58,7 @@ Week2WorkflowService
 | 순서 | 작업 | 책임 | 완료 기준 |
 | --- | --- | --- | --- |
 | 1 | M5 existing implementation anchor 확인 | M5 | `Week2WorkflowService`, `Week2LocalRunner`, `Week2CatalogStore` 유지 선언 |
-| 2 | Main E2E path 고정 | M1/M3/M5/M6 | Amazon Reviews JSON path를 발표 필수 경로로 확정 |
+| 2 | Main E2E path 고정 | M1/M3/M5/M6 | Amazon Reviews JSON path를 AI Query/분석 대표 경로로 확정 |
 | 3 | M3 JSON main path decision | M3 | PR #105 회수/재구현 범위와 `TransformSpec` 최소 shape 결정 |
 | 4 | Runner boundary decision | M2/M3/M5 | local runner, M3 job logic, SparkRunner가 공유할 호출 계약 결정 |
 | 5 | M2 RuntimeConfig/SparkRunner smoke | M2 | Spark read/write smoke가 row_count/bytes/duration을 반환 |
@@ -79,16 +79,16 @@ Amazon Reviews JSON
 -> M1 UI
 ```
 
-Taxi와 Kafka는 main path의 필수 선행 조건이 아니라 대용량/스트리밍 evidence로 둔다.
+Taxi와 Kafka는 optional이 아니다. 각각 정형 batch와 streaming ingestion의 필수 처리/evidence 경로로 완료하되, M6 분석 대표 경로의 필수 선행 조건으로 두지는 않는다.
 
 ## 모듈별 다음 작업
 
 | 모듈 | 다음 작업 | 병렬 가능 조건 |
 | --- | --- | --- |
 | M1 | M5/M6 API 상태 표시 준비 | main E2E path와 API shape 확정 후 |
-| M2 | `RuntimeConfig`와 SparkRunner smoke 설계 | runner boundary 결정 후 |
+| M2 | `RuntimeConfig`와 SparkRunner smoke, Taxi/정형 batch evidence 설계 | runner boundary 결정 후 |
 | M3 | Amazon Reviews JSON main path와 PR #105 회수 여부 결정 | main E2E path 확정 후 |
-| M4 | Kafka raw event contract/evidence 정리 | M3가 필요한 raw event shape를 확정한 뒤 |
+| M4 | Kafka raw event contract와 streaming ingestion evidence 정리 | M3가 필요한 raw event shape를 확정한 뒤 |
 | M5 | runner boundary와 Catalog handoff 유지 | Phase 6 runner boundary 결정 후 |
 | M6 | M5 Catalog store/API 소비 계획 | Catalog source boundary 확인 후 |
 
