@@ -28,8 +28,7 @@
 - issue creation result: not created for this local Phase step
 - issue project result:
 - PR closing keyword: explicit no-issue exception planned in PR body
-- pushed branch:
+- pushed branch: `feature/m1-catalog-live-ui`
 - PR link:
 - merge status:
 - issue close status:
-
