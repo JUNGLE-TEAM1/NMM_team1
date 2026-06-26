@@ -110,6 +110,39 @@ def test_week2_ai_query_uses_latest_m5_catalog_after_workflow_runs() -> None:
     assert payload["query_result"]["engine"] == "fake"
 
 
+def test_week2_ai_query_evidence_grounding_includes_catalog_schema_metrics_and_lineage() -> None:
+    client = make_week2_client()
+
+    run_response = client.post("/api/week2/workflows/pipeline_reviews_json_e2e/runs")
+    catalog_response = client.get("/api/week2/catalog/dataset_reviews_gold")
+    response = client.post(
+        "/api/week2/ai/query",
+        json={"question": "Amazon reviews에서 평점 높은 상품 알려줘"},
+    )
+
+    assert run_response.status_code == 201
+    assert catalog_response.status_code == 200
+    assert response.status_code == 200
+    run = run_response.json()
+    catalog = catalog_response.json()
+    payload = response.json()
+    evidence = payload["evidence"][0]
+
+    assert evidence["dataset_id"] == "dataset_reviews_gold"
+    assert evidence["run_id"] == run["run_id"]
+    assert evidence["schema_fields"] == catalog["schema"]["fields"]
+    assert evidence["metrics"]["row_count"] == catalog["metrics"]["row_count"]
+    assert evidence["metrics"]["bytes"] == catalog["metrics"]["bytes"]
+    assert evidence["metrics"]["quality"] == catalog["metrics"]["quality"]
+    assert evidence["lineage"]["pipeline_id"] == "pipeline_reviews_json_e2e"
+    assert evidence["lineage"]["run_id"] == run["run_id"]
+    assert evidence["lineage"]["source_ids"] == ["source_amazon_reviews_demo"]
+    assert "average_rating" in evidence["retrieval_terms"]
+    assert run["run_id"] in payload["summary"]
+    assert f"row_count={catalog['metrics']['row_count']}" in payload["summary"]
+    assert "schema=product_id, review_count, average_rating" in payload["summary"]
+
+
 def test_week2_ai_query_uses_injected_catalog_source_for_evidence() -> None:
     catalog = {
         "tenant_id": "tenant_demo",
