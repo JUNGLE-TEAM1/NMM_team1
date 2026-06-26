@@ -1,8 +1,10 @@
 from app.adapters.csv_source import CsvSourceConnector
+from app.adapters.fixture_catalog_source import FixtureCatalogSource
 from app.adapters.local_result_store import LocalResultStore
 from app.adapters.sqlite_metadata_store import SQLiteMetadataStore
 from app.core.settings import Settings
 from app.fakes.fake_sql_engine import FakeSqlEngine
+from app.ports.catalog_source import CatalogSource
 from app.ports.metadata_store import MetadataStore
 from app.ports.result_store import ResultStore
 from app.ports.sql_engine import SqlEngineAdapter
@@ -20,6 +22,7 @@ class AppContainer:
         self.metadata_store = metadata_store or self.create_metadata_store()
         self.source_connectors = self.create_source_connectors()
         self.result_store = self.create_result_store()
+        self.catalog_source = self.create_catalog_source()
         self.sql_engine = self.create_sql_engine()
         self.catalog_trust_service = self.create_catalog_trust_service()
         self.source_catalog_service = self.create_source_catalog_service()
@@ -35,6 +38,9 @@ class AppContainer:
 
     def create_result_store(self) -> ResultStore:
         return LocalResultStore(self.settings.result_store_path)
+
+    def create_catalog_source(self) -> CatalogSource:
+        return FixtureCatalogSource()
 
     def create_sql_engine(self) -> SqlEngineAdapter:
         return FakeSqlEngine()
@@ -52,4 +58,4 @@ class AppContainer:
         return Week2WorkflowService(output_root=self.result_store.base_path / "week2")
 
     def create_ai_query_service(self) -> Week2AIQueryService:
-        return Week2AIQueryService(self.sql_engine)
+        return Week2AIQueryService(self.sql_engine, catalog_source=self.catalog_source)

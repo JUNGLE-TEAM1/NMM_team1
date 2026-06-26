@@ -1,7 +1,7 @@
-import json
 from pathlib import Path
 from typing import Any
 
+from app.adapters.fixture_catalog_source import FixtureCatalogSource
 from app.domain.ai_query import (
     AIQueryResult,
     ChartSpec,
@@ -12,6 +12,7 @@ from app.domain.ai_query import (
     SqlEngineContext,
 )
 from app.domain.target_contracts import now_iso
+from app.ports.catalog_source import CatalogSource
 from app.ports.sql_engine import SqlEngineAdapter
 
 
@@ -19,13 +20,14 @@ class Week2AIQueryService:
     def __init__(
         self,
         sql_engine: SqlEngineAdapter,
+        catalog_source: CatalogSource | None = None,
         catalog_path: Path | None = None,
     ) -> None:
         self.sql_engine = sql_engine
-        self.catalog_path = catalog_path or self._default_catalog_path()
+        self.catalog_source = catalog_source or FixtureCatalogSource(catalog_path)
 
     def answer(self, question: str) -> AIQueryResult:
-        catalog = self._load_catalog()
+        catalog = self._select_catalog(question, self.catalog_source.list_catalogs())
         context = self._context_from_catalog(catalog)
         selected_dataset = self._select_dataset(question, catalog)
         sql = self._build_template_sql(question, context)
@@ -65,16 +67,10 @@ class Week2AIQueryService:
             executed_at=now_iso(),
         )
 
-    def _default_catalog_path(self) -> Path:
-        filename = Path("contracts") / "catalog_metadata.sample.json"
-        for parent in Path(__file__).resolve().parents:
-            candidate = parent / filename
-            if candidate.exists():
-                return candidate
-        return Path.cwd() / filename
-
-    def _load_catalog(self) -> dict[str, Any]:
-        return json.loads(self.catalog_path.read_text(encoding="utf-8"))
+    def _select_catalog(self, question: str, catalogs: list[dict[str, Any]]) -> dict[str, Any]:
+        if not catalogs:
+            raise ValueError("No CatalogMetadata entries are available for AI query.")
+        return max(catalogs, key=lambda catalog: len(self._matched_reason_terms(question, catalog)))
 
     def _context_from_catalog(self, catalog: dict[str, Any]) -> SqlEngineContext:
         fields = catalog["schema"]["fields"]
@@ -96,6 +92,9 @@ class Week2AIQueryService:
         )
 
     def _reason_terms(self, question: str, catalog: dict[str, Any]) -> list[str]:
+        return self._matched_reason_terms(question, catalog) or catalog["query"]["allowed_columns"][:2]
+
+    def _matched_reason_terms(self, question: str, catalog: dict[str, Any]) -> list[str]:
         allowed_columns = catalog["query"]["allowed_columns"]
         normalized = question.lower()
         terms: list[str] = []
@@ -107,7 +106,7 @@ class Week2AIQueryService:
         if ("평점" in normalized or "별점" in normalized or "rating" in normalized) and "average_rating" in allowed_columns:
             terms.append("average_rating")
 
-        return terms or allowed_columns[:2]
+        return terms
 
     def _build_template_sql(self, question: str, context: SqlEngineContext) -> str:
         normalized = question.lower()
