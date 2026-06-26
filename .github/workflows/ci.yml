@@ -33,6 +33,8 @@ jobs:
         run: |
           node tests/pr-linked-issue-check.test.js
           node tests/pr-risk-warning.test.js
+          node tests/migration-schema-security-check.test.js
+          node tests/pr-size-hard-gate.test.js
 
       - name: Harness validation
         run: |

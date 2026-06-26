@@ -25,6 +25,11 @@ button {
   cursor: pointer;
 }
 
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
 h1,
 h2,
 h3,
@@ -944,6 +949,89 @@ tbody tr:hover {
   display: grid;
   grid-template-columns: repeat(5, minmax(150px, 1fr));
   gap: 12px;
+}
+
+.run-live-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 18px;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+}
+
+.run-live-copy {
+  min-width: 0;
+}
+
+.run-live-copy h3 {
+  margin-top: 6px;
+  overflow-wrap: anywhere;
+  color: #111827;
+  font-size: 18px;
+}
+
+.run-live-copy p:last-child {
+  margin-top: 6px;
+  color: #6b7280;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.run-live-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.run-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+
+.detail-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  color: #374151;
+}
+
+.detail-section-title svg {
+  color: #2563eb;
+}
+
+.run-log-list {
+  display: grid;
+  gap: 10px;
+}
+
+.run-log-list p {
+  display: grid;
+  grid-template-columns: 80px minmax(0, 1fr);
+  gap: 12px;
+  border-radius: 6px;
+  background: #f8fafc;
+  padding: 10px 12px;
+}
+
+.run-log-list strong {
+  color: #1e40af;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.run-log-list span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: #374151;
+  font-size: 13px;
+  line-height: 1.45;
 }
 
 .pipeline-node {
