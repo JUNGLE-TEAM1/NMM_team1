@@ -4,7 +4,7 @@
 
 이 문서는 M3가 먼저 맡을 JSON 분석 대표 path와 닫힌 PR #105의 회수 범위를 결정한다.
 
-Phase 3에서 M6 AI Query/분석 대표 경로는 Amazon Reviews JSON -> M3 profile/schema/transform spec -> M5 Workflow/Catalog -> M6 AI Query -> M1 UI로 확정했다. Phase 5는 M3가 이 경로에서 만들 최소 산출물과 PR #105를 어떻게 다룰지 정한다.
+Phase 3에서 M6 Semantic/RAG-lite/AI Query 분석 대표 경로는 Amazon Reviews JSON -> M3 profile/schema/transform spec -> M5 Workflow/Catalog -> M6 Semantic/RAG-lite/AI Query -> M1 UI로 확정했다. Phase 5는 M3가 이 경로에서 만들 최소 산출물과 PR #105를 어떻게 다룰지 정한다.
 
 Week2의 데이터 경로는 Amazon Reviews JSON, Taxi Batch, Kafka Event 세 가지다. M3는 Amazon Reviews 분석 대표 경로를 우선 완성하되, Taxi/Kafka까지 포함하는 범용 ETL framework를 이번 slice에서 떠안지 않는다.
 
@@ -52,7 +52,7 @@ M3의 첫 구현 slice는 아래 네 가지를 만든다.
 | 산출물 | 내용 | 넘기는 대상 |
 | --- | --- | --- |
 | JSON inspection | file format, record path, sampled row count, sample rows | M3 내부 test와 M5 runner input |
-| schema/profile facts | field path, target column name, inferred type, nullable, nested/array flag, sample values | M5 Catalog metadata와 M6 query evidence |
+| schema/profile facts | field path, target column name, inferred type, nullable, nested/array flag, sample values | M5 Catalog metadata와 M6 Semantic/RAG-lite query evidence |
 | `TransformSpec` minimal shape | select/flatten/normalize 대상과 output dataset hint | Phase 6 runner boundary |
 | Catalog metadata facts | dataset id, source id/path/type, profile summary, output convention hint | M5 Catalog store/API |
 
