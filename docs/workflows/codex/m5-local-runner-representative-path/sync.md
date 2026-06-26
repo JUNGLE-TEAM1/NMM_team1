@@ -18,18 +18,21 @@
 
 - Local branch tracks `origin/main`.
 - No pull/merge/rebase performed in this slice.
-- Remote PR not created yet.
+- Remote PR created as draft: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/153
 
 ## Pre-Merge Sync
 
-- result:
-- deferral reason: PR not created yet; run pre-merge sync check before PR-ready handoff.
+- main commit: `62861ea`
+- conflicts: none
+- validation: focused pytest passed, `git diff --check` passed, `scripts/validate-harness.sh --strict` passed.
+- result: Branch pushed and draft PR #153 opened from `origin/main` base `62861ea`.
+- deferral reason: n/a
 
 ## Push / PR
 
 - linked GitHub issue: n/a
 - PR closing keyword: n/a
-- pushed branch:
-- PR link:
-- merge status: not created yet
+- pushed branch: codex/m5-local-runner-representative-path
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/153
+- merge status: open
 - issue close status: n/a

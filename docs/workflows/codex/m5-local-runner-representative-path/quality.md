@@ -27,10 +27,11 @@
 - Full backend tests: not run. 변경 범위가 `backend/tests/test_week2_workflow_catalog.py`의 focused characterization test로 제한된다.
 - Frontend build: not run. UI 변경 없음.
 - Docker/container smoke: not run. 실제 Airflow/Spark/MinIO 연결 범위 아님.
-- Remote CI: not run yet.
+- Remote CI: pending for draft PR #153.
 
 ## CI/CD Gate
 
 - CI required: yes before PR/merge
+- CI result: pending for draft PR #153
 - Deploy/publish required: no
 - Rollback/smoke notes: test-only code change와 workspace/report 문서 변경이다.

@@ -9,7 +9,7 @@
 - Verified: `PYTHONPATH=backend ./.venv/bin/python -m pytest backend/tests/test_week2_workflow_catalog.py -q` -> 16 passed; M5/M6 focused suite -> 26 passed; `git diff --check` passed; `scripts/validate-harness.sh --strict` passed.
 - Remaining: 실제 Airflow trigger, SparkRunner integration, M3 `TransformSpec` adapter.
 - Next context: 후속 runner는 `Week2RunnerResult`를 반환할 뿐 아니라 이번 test가 확인하는 output/Catalog/run lineage 연결을 만족해야 한다.
-- Risk: test-only 변경이라 런타임 위험은 낮다. 다만 실제 Airflow/Spark 환경 smoke는 아직 별도 작업이 필요하다.
+- Risk: test-only 변경이라 런타임 위험은 낮다. 다만 실제 Airflow/Spark 환경 smoke는 아직 별도 작업이 필요하고, PR #153 remote checks는 GitHub에서 확인한다.
 
 ## Regression Guard / 회귀 보호
 

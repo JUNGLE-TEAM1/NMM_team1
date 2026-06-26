@@ -1,5 +1,19 @@
 # M5 Local Runner Representative Path shared docs
 
+## Proposed Source Of Truth Changes
+
+| File | Proposed change | Reason | Priority |
+| --- | --- | --- | --- |
+| n/a | 현재 없음 | 이번 slice는 기존 M5 local runner 대표 경로를 test evidence로 고정하는 작업이며 shared contract를 바꾸지 않는다. | 낮음 |
+
+## Deferred Source Of Truth Considerations
+
+| File | Deferred item | Revisit trigger |
+| --- | --- | --- |
+| `docs/03-interface-reference.md` | 실제 Airflow trigger/polling contract | Airflow URL/auth/DAG/run status API를 구현할 때 |
+| `contracts/runtime_config.sample.json` | 실제 SparkRunner selection fields 확정 | M2 SparkRunner smoke가 M5에 연결될 때 |
+| `contracts/transform_spec.sample.json` | M3 TransformSpec adapter input 확정 | M3 JSON TransformSpec 구현이 M5 runner input으로 붙을 때 |
+
 ## 읽은 주요 문서
 
 - `AGENTS.md`

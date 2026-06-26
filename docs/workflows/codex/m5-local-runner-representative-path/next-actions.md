@@ -2,7 +2,7 @@
 
 ## Recommended Next Action
 
-- Commit/push/PR 준비 전에 `scripts/validate-harness.sh --strict`를 다시 실행하고, 가능하면 PR을 생성한다.
+- PR #153 remote checks를 확인한 뒤, 사람이 merge/finalize/cleanup 여부를 선택한다.
 
 ## 바로 다음 후보
 
