@@ -3,7 +3,7 @@
 이 파일은 이 branch의 TDD, check, CI/CD 증거를 기록한다.
 
 - Quality gate status: passed
-- Quality gate detail: local checks passed after rebase onto `origin/main`
+- Quality gate detail: local checks passed after rebase onto `origin/main` `11b746e`
 - Source Of Truth impact: none. 이번 변경은 M5 service guard와 workspace 운영 문서에 한정된다.
 - Harness test impact: none
 
@@ -32,7 +32,7 @@
 | Slice 3 future runner defer | `PYTHONPATH=backend python3 -m pytest backend/tests/test_week2_workflow_catalog.py backend/tests/test_week2_local_runner.py backend/tests/test_week2_ai_query.py -q` | passed, 20 passed in 0.38s | `spark` is rejected/deferred instead of silently using Airflow fallback |
 | Slice 4 final | `git diff --check`; `PYTHONPATH=backend python3 -m pytest backend/tests/test_week2_workflow_catalog.py backend/tests/test_week2_local_runner.py backend/tests/test_week2_ai_query.py -q` | passed; passed, 20 passed in 0.44s | Phase 종료 경량 검증 |
 | Slice 5 runtime_config future runner guard | `PYTHONPATH=backend python3 -m pytest backend/tests/test_week2_workflow_catalog.py -q`; `PYTHONPATH=backend python3 -m pytest backend/tests/test_week2_workflow_catalog.py backend/tests/test_week2_local_runner.py backend/tests/test_week2_ai_query.py -q` | passed, 15 passed in 0.38s; passed, 22 passed in 0.34s | `spark_runner` and typo executors rejected before run creation |
-| Post-rebase validation | `git diff --check`; `PYTHONPATH=backend python3 -m pytest backend/tests/test_week2_workflow_catalog.py backend/tests/test_week2_local_runner.py backend/tests/test_week2_ai_query.py -q` | passed; passed, 22 passed in 0.45s | `origin/main` `04e8a84` 위로 rebase 후 재검증 |
+| Post-rebase validation | `git diff --check`; `scripts/validate-harness.sh --strict`; `PYTHONPATH=backend ./.venv/bin/python -m pytest backend/tests/test_week2_workflow_catalog.py backend/tests/test_week2_local_runner.py backend/tests/test_week2_ai_query.py -q` | passed; passed; passed, 25 passed in 0.52s | `origin/main` `11b746e` 위로 rebase 후 재검증 |
 
 ## CI / Broader Validation
 
@@ -44,7 +44,7 @@
 ## CI/CD Gate / CI-CD 게이트
 
 - CI required: yes before PR
-- CI result: local focused checks passed after rebase; local harness regression passed after PR CI documentation contract fix; remote CI rerun pending after push.
+- CI result: local focused checks and strict harness passed after rebase onto `origin/main` `11b746e`; remote CI rerun pending after force-with-lease push.
 - Deploy/publish required: no
 - Deployment confirmation: not applicable
 - Rollback/smoke notes: additive service guard. Rollback은 `Week2WorkflowInvalidExecutorError` guard와 관련 tests 제거.

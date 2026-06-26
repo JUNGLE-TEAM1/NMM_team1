@@ -31,12 +31,13 @@ main 동기화와 integration readiness를 기록한다.
 - 2026-06-26: no pull/merge/rebase executed. Current work continues on local branch with recorded divergence.
 - 2026-06-26: human approved continuing sync strategy. Ran `git fetch origin`; `origin/main` advanced to `04e8a84`.
 - 2026-06-26: committed local work first, then rebased `codex/m5-runner-selection-catalog-guard` onto `origin/main`.
+- 2026-06-26: human approved next action. Ran `git fetch origin`; `origin/main` advanced to `11b746e`. Rebased `codex/m5-runner-selection-catalog-guard` onto latest `origin/main` without conflicts.
 
 ## Pre-Merge Sync
 
-- main commit: `04e8a84`
+- main commit: `11b746e`
 - conflicts: none
-- validation: `git diff --check` passed; `PYTHONPATH=backend python3 -m pytest backend/tests/test_week2_workflow_catalog.py backend/tests/test_week2_local_runner.py backend/tests/test_week2_ai_query.py -q` passed, 22 tests.
+- validation: `git diff --check` passed; `scripts/validate-harness.sh --strict` passed; `PYTHONPATH=backend ./.venv/bin/python -m pytest backend/tests/test_week2_workflow_catalog.py backend/tests/test_week2_local_runner.py backend/tests/test_week2_ai_query.py -q` passed, 25 tests.
 - result: `git rebase origin/main` completed successfully.
 - deferral reason: n/a
 
@@ -51,4 +52,4 @@ main 동기화와 integration readiness를 기록한다.
 - PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/132
 - merge status: open
 - issue close status: n/a
-- result: PR opened; merge/finalize pending human checkpoint.
+- result: PR opened; latest-main rebase complete locally; force-with-lease push and remote CI rerun pending.

@@ -9,7 +9,7 @@
 - Context Budget mode: Lite Read with targeted implementation reads
 - Primary context read: `AGENTS.md`, `docs/00-layer-map.md`, `docs/08-development-workflow.md`, Week2 ver2 handoff/boundary docs
 - Changed: M5 workspace slice process를 문서화했고, unknown/future executor가 Airflow fallback으로 조용히 흘러가지 않도록 service-level executor guard를 추가했다.
-- Verified: Slice 1 baseline focused tests passed; Slice 2 workflow/catalog tests passed; final `git diff --check` passed; M5/M6 focused suite passed, 22 tests after Slice 5; post-rebase `git diff --check` and focused pytest passed.
+- Verified: Slice 1 baseline focused tests passed; Slice 2 workflow/catalog tests passed; final `git diff --check` passed; M5/M6 focused suite passed, 22 tests after Slice 5; latest-main post-rebase `git diff --check`, strict harness, and focused pytest passed.
 - Remaining: 실제 Airflow trigger, SparkRunner integration, M3 TransformSpec adapter는 후속 slice로 남긴다.
 - Next context: actual Airflow trigger, SparkRunner integration, and M3 TransformSpec adapter remain follow-up slices.
 
@@ -22,4 +22,4 @@
 | Slice 3 future runner defer | done | `spark` deferred/unsupported until actual SparkRunner slice |
 | Slice 4 final | done | `git diff --check` clean and focused tests passed |
 | Slice 5 runtime_config future runner guard | done | `spark_runner` and typo executors rejected before run creation |
-| Post-rebase validation | done | rebased onto `origin/main` `04e8a84`; `git diff --check` clean; focused pytest 22 passed |
+| Post-rebase validation | done | rebased onto `origin/main` `11b746e`; `git diff --check` clean; strict harness passed; focused pytest 25 passed |
