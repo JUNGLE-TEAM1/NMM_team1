@@ -18,6 +18,8 @@ Week2 데이터 경로는 세 가지다. Amazon Reviews JSON은 Semantic/RAG-lit
 
 먼저 기존 M5 local runner로 Amazon Reviews 분석 E2E를 닫고, M2/M4는 각각 정형 batch와 streaming ingestion의 처리 증거를 완성한다. SparkRunner는 runner boundary 뒤에 붙인다.
 
+M2 구현은 Taxi 전용 ETL이 아니다. M2는 데이터셋 독립적인 `RuntimeConfig`/`SparkRunner` 공통 실행기를 만들고, TLC NYC Taxi Dataset은 예전 M2 계획과 정형 빅데이터 ETL 가능성을 보여주는 대표 evidence로 사용한다.
+
 팀원이 지금부터 해야 할 일은 새 구조를 다시 설계하는 것이 아니라, 아래 기준 위에 각자 맡은 작은 구현 slice를 올리는 것이다.
 
 ## 현재 진행 상태
@@ -38,7 +40,7 @@ Week2 데이터 경로는 세 가지다. Amazon Reviews JSON은 Semantic/RAG-lit
 | 모듈 | 지금 할 일 | 의존하는 모듈 | 완료 기준 | 하지 말 것 |
 | --- | --- | --- | --- | --- |
 | M1 | M5/M6 API 결과를 run/catalog/query/evidence 화면에 연결한다. | M5 run/catalog API, M6 query API | demo 화면에서 run 상태, Catalog metadata, AI Query evidence를 한 흐름으로 볼 수 있다. | schema, ETL, runner 선택을 결정하지 않는다. |
-| M2 | `RuntimeConfig`와 `SparkRunner` smoke를 만들고 Taxi Batch 또는 정형 batch 처리 evidence를 남긴다. `Week2RunnerResult` 호환 metrics를 반환한다. | M5 runner boundary, M3 `TransformSpec` 요구사항 | Spark/local equivalent가 `status`, `row_count`, `bytes`, `duration_ms`, `output_path`를 반환하고 run evidence에서 확인된다. | transformation semantics를 정의하지 않는다. |
+| M2 | 데이터셋 독립 `RuntimeConfig`와 `SparkRunner` smoke를 만들고, TLC NYC Taxi Dataset으로 정형 빅데이터 ETL 가능성 evidence를 남긴다. `Week2RunnerResult` 호환 metrics를 반환한다. | M5 runner boundary, M3 `TransformSpec` 요구사항 | JSON/Parquet 같은 입력 차이를 config로 받고, Spark/local equivalent가 `status`, `row_count`, `bytes`, `duration_ms`, `output_path`를 같은 result shape로 반환한다. | transformation semantics를 정의하거나 Taxi 전용 runner를 만들지 않는다. |
 | M3 | Amazon Reviews JSON inspect/profile/schema facts와 최소 `TransformSpec`를 만든다. | M5 runner boundary, M2 runtime 제약, PR #105 source material | JSON sample에서 field facts와 minimal `TransformSpec`가 나오고, M5에 넘길 Catalog facts가 정리된다. | Spark session/config/output convention을 직접 만들지 않는다. |
 | M4 | Kafka replay demo와 raw event evidence를 유지하고, 필요 시 M3가 읽을 raw event contract를 정리한다. | M3 raw event 요구사항, M5 evidence 저장 방식 | replay command, raw event shape, throughput/lag/restart evidence, output_path가 문서와 실행 로그로 남는다. | M6 분석 연결의 선행 조건으로 Kafka streaming to Gold를 만들지 않는다. |
 | M5 | `Week2WorkflowService` 중심 runner selection과 Catalog persistence를 유지/확장한다. | M2 `SparkRunner`, M3 `TransformSpec`, M6 Catalog 소비 요구 | local runner baseline을 유지하면서 선택형 runner adapter를 선택하고 successful result만 Catalog에 반영한다. | ETL 내부 변환 로직이나 Spark runtime을 소유하지 않는다. |
@@ -66,6 +68,8 @@ Week2 데이터 경로는 세 가지다. Amazon Reviews JSON은 Semantic/RAG-lit
 ## Runner boundary
 
 M2/M3/M5는 아래 boundary를 공유한다.
+
+이 boundary의 핵심은 dataset별 실행기를 여러 개 만드는 것이 아니라, M2 공통 실행기가 입력 format/path/options만 바꿔도 같은 output 형식을 반환하게 하는 것이다.
 
 ### Runner input
 
@@ -146,7 +150,7 @@ PR #105는 닫힌 PR이고 그대로 merge하지 않는다. 이유는 JSON inspe
 | 순서 | workstream | 완료 기준 |
 | --- | --- | --- |
 | 1 | M3 JSON TransformSpec | Amazon Reviews JSON sample에서 profile/schema facts와 minimal `TransformSpec` 생성 |
-| 2 | M2 RuntimeConfig/SparkRunner smoke | Spark read/write smoke가 `Week2RunnerResult` 호환 metrics 반환 |
+| 2 | M2 RuntimeConfig/SparkRunner smoke | dataset-independent Spark read/write smoke가 `Week2RunnerResult` 호환 metrics 반환 |
 | 3 | M5 runner selection | local runner baseline 유지, 선택형 SparkRunner adapter 선택 가능 |
 | 4 | M6 Catalog-backed Semantic/RAG-lite query | fixture catalog 대신 M5 Catalog metadata를 semantic retrieval/evidence source로 사용 |
 | 5 | M1 analysis path UI | run/catalog/query/evidence 상태를 한 흐름으로 표시 |
@@ -156,7 +160,7 @@ M3와 M2는 병렬로 시작할 수 있다. M5 runner selection은 M2/M3의 첫 
 ## 병렬 구현 시작 조건
 
 - M3 branch는 JSON sample, profile/schema facts, minimal `TransformSpec` 테스트부터 시작한다.
-- M2 branch는 Spark read/write smoke와 `RuntimeConfig` fixture부터 시작한다.
+- M2 branch는 dataset-independent Spark read/write smoke와 `RuntimeConfig` fixture부터 시작한다. TLC NYC Taxi Dataset은 정형 빅데이터 ETL 가능성 evidence로 사용하되 runner 자체를 Taxi 전용으로 만들지 않는다.
 - M5 branch는 local runner baseline을 깨지 않는 adapter selection 테스트부터 시작한다.
 - shared contract를 바꾸려면 `docs/03-interface-reference.md` 또는 `contracts/*.sample.json` 변경을 별도 PR로 분리한다.
 - 병렬 branch는 서로 직접 merge하지 않고, M5 integration point에서 result shape를 맞춘다.

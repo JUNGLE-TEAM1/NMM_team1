@@ -21,7 +21,7 @@
 ## 현재 기준
 
 - M1은 UI/API Gateway와 발표 클릭 흐름을 맡는다.
-- M2는 Lakehouse Runtime Platform을 맡는다.
+- M2는 Lakehouse Runtime Platform을 맡는다. M2의 구현 책임은 Taxi 전용 ETL이 아니라 데이터셋 독립적인 `RuntimeConfig`/`SparkRunner` 공통 실행기다.
 - M3는 Data Processing Spec + ETL Logic을 맡는다.
 - M4는 Kafka Ingestion을 맡는다.
 - M5는 Workflow Runtime + Catalog Store/API + Lineage를 맡는다.
@@ -36,7 +36,7 @@ Week2는 세 데이터 경로를 모두 구현 대상으로 둔다.
 | 데이터 경로 | 담당 | Week2 기준 |
 | --- | --- | --- |
 | Amazon Reviews JSON / JSONL | M3 중심 | AI Query/분석 대표 경로. M5 Catalog와 M6 Semantic/RAG-lite evidence까지 우선 연결한다. |
-| Taxi Batch 또는 정형 batch | M2 중심 | 필수 처리/evidence 경로. row_count, bytes, duration, output_path 같은 처리 증거를 남긴다. |
+| Taxi Batch 또는 정형 batch | M2 중심 | 필수 처리/evidence 경로. TLC NYC Taxi Dataset은 기존 M2 계획과 정형 빅데이터 ETL 가능성을 보여주는 대표 데이터셋이며, M2 구현은 Taxi 전용 runner가 아니라 row_count, bytes, duration, output_path를 공통 반환하는 실행기다. |
 | Kafka Event / streaming ingestion | M4 중심 | 필수 처리/evidence 경로. replay/ingestion, throughput, lag, restart evidence를 남긴다. |
 
 분석 대표 경로는 Amazon Reviews JSON으로 고정한다. Taxi/Kafka는 선택 사항이 아니라 필수 처리/evidence 경로이며, M6 분석 연결은 이번 기본 범위가 아니라 후속 확장으로 둔다.
@@ -44,6 +44,7 @@ Week2는 세 데이터 경로를 모두 구현 대상으로 둔다.
 ## 핵심 guardrail
 
 - Spark는 M2가 제공하는 공통 runtime이다.
+- M2 `SparkRunner`는 dataset별 runner로 쪼개지 않는다. 입력 format/path/options를 `RuntimeConfig`로 받아 JSON/Parquet 등 source를 읽고 같은 result shape를 반환한다.
 - M3는 transformation spec/job logic을 제공한다.
 - M5는 `WorkflowDefinition`으로 `SparkRunner` 또는 local runner를 호출한다.
 - M2/M3/M4가 각자 Spark session, config, output convention을 따로 만들지 않는다.
