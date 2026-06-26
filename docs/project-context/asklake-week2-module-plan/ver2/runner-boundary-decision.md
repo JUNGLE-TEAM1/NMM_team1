@@ -24,8 +24,8 @@ runner implementation은 아래 입력을 받는 형태로 수렴한다.
 | `workflow_definition` | M5 | required | 기존 `WorkflowDefinition` contract. pipeline/nodes/edges/target dataset 기준 |
 | `source_config` | M1/M3/M4/M5 shared | required for source read | source id/type/path/options. M1 단독 소유가 아니다. |
 | `schema_definition` | M3/M5 shared | required for normalize/catalog | inferred schema 또는 curated schema |
-| `transform_spec` | M3 | optional initially, required for M3 runner | select/flatten/normalize/aggregate/load 의도 |
-| `runtime_config` | M2 | optional initially, required for SparkRunner | Spark session/app/local resource/output settings |
+| `transform_spec` | M3 | initially nullable, required for M3 runner | select/flatten/normalize/aggregate/load 의도 |
+| `runtime_config` | M2 | initially nullable, required for SparkRunner | Spark session/app/local resource/output settings |
 | `run_id` | M5 | required | run, output path, lineage 연결 키 |
 | `output_root` | M5/M2 shared | required | local/minio/s3 prefix convention의 기준 |
 
@@ -53,7 +53,7 @@ runner는 현재 `Week2RunnerResult`와 호환되는 결과를 반환한다.
 
 | implementation | 단계 | 역할 |
 | --- | --- | --- |
-| `Week2LocalRunner` | 현재 baseline | Amazon Reviews JSON main path를 local JSONL로 실행하고 Catalog update에 필요한 metrics를 반환 |
+| `Week2LocalRunner` | 현재 baseline | Amazon Reviews JSON 분석 대표 path를 local JSONL로 실행하고 Catalog update에 필요한 metrics를 반환 |
 | `M3TransformRunner` 또는 adapter | 후속 M3 | `TransformSpec`를 해석해 local runner 또는 SparkRunner 입력으로 바꾸는 job logic |
 | `SparkRunner` | 후속 M2 | `RuntimeConfig`를 사용해 Spark read/write smoke와 batch execution을 수행 |
 
@@ -65,7 +65,7 @@ M5는 runner selection의 최종 진입점이다.
 
 초기 selection 규칙:
 
-1. demo/main E2E path 기본값은 `local_runner`다.
+1. demo/분석 대표 path 기본값은 `local_runner`다.
 2. `runtime_config.runner = "spark"` 또는 명시적 executor가 있고 Spark smoke가 통과한 경우에만 `spark_runner`를 선택한다.
 3. SparkRunner가 실패하거나 준비되지 않았으면 local fallback 정책을 유지한다.
 4. runner가 성공 상태를 반환한 경우에만 Catalog metadata를 update한다.
@@ -87,9 +87,9 @@ Phase 6 merge 후 다음 병렬 구현을 시작할 수 있다.
 | --- | --- | --- |
 | M2 RuntimeConfig/SparkRunner smoke | 이 runner boundary 문서 merge | Spark read/write smoke가 `Week2RunnerResult` 호환 metrics를 반환 |
 | M3 JSON TransformSpec | Phase 5/6 문서 merge | Amazon Reviews JSON sample에서 profile/schema facts와 minimal `TransformSpec` 생성 |
-| M5 runner selection | M2/M3 initial smoke branch 준비 | local runner baseline 유지, optional runner adapter 선택 가능 |
+| M5 runner selection | M2/M3 initial smoke branch 준비 | local runner baseline 유지, 선택형 runner adapter 선택 가능 |
 | M6 Catalog-backed query | M5 Catalog source shape 확인 | fixture-only query에서 Catalog metadata source로 점진 전환 |
-| M1 main path UI | M5/M6 API 상태 shape 확인 | run/catalog/query/evidence 상태 표시 |
+| M1 analysis path UI | M5/M6 API 상태 shape 확인 | run/catalog/query/evidence 상태 표시 |
 
 ## Phase 6 완료 기준
 

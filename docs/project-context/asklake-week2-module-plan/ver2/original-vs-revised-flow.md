@@ -122,9 +122,8 @@ M1 UI/API Gateway
 
 ## 발표 일정에 반영할 결정
 
-1. M2 역할 변경을 팀에 공유한다. M2는 Taxi Batch 구현자가 아니라 runtime provider다.
-2. M3 범위를 과도하게 키우지 않는다. Amazon Reviews JSON main path를 우선하고 Taxi/Kafka는 최소 contract/evidence로 제한한다.
+1. M2 역할 변경을 팀에 공유한다. M2는 Taxi Batch만의 독립 ETL 소유자가 아니라 runtime provider이며, Taxi/정형 batch 필수 처리 evidence를 남긴다.
+2. M3 범위를 과도하게 키우지 않는다. Amazon Reviews JSON 분석 대표 path를 우선하고, Taxi/Kafka는 각각 M2/M4의 필수 처리/evidence 경로로 유지한다.
 3. Iceberg는 이번 발표 범위에서 제외한다.
 4. `SourceConfig`는 M1 shell과 M3/M4 source-specific provider 구조로 나눈다.
 5. M5의 기존 workflow/catalog 구현을 중심 통합 지점으로 사용한다.
-
