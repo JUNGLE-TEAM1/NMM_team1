@@ -30,7 +30,12 @@ import {
   X,
 } from "lucide-react";
 
-import { getHealth } from "../api/asklakeClient";
+import {
+  WEEK2_DEFAULT_PIPELINE_ID,
+  getHealth,
+  getWeek2Run,
+  triggerWeek2Run,
+} from "../api/asklakeClient";
 import asklakeLogo from "../assets/asklake-logo.png";
 import { StatusPill } from "../components/StatusPill";
 import {
@@ -608,17 +613,104 @@ function VisualEditorPage({ navigate, setNotice }) {
   );
 }
 
+function formatMetric(value, fallback = "-") {
+  return value === null || value === undefined || value === "" ? fallback : String(value);
+}
+
+function runBadgeClass(status) {
+  if (status === "succeeded" || status === "fallback_succeeded") return "green";
+  if (status === "failed" || status === "fallback_failed") return "orange";
+  return "blue";
+}
+
 function RunStatusPage({ navigate }) {
   const [query, setQuery] = useState("");
+  const [runState, setRunState] = useState({
+    error: "",
+    loading: false,
+    run: null,
+  });
   const rows = m1PipelinePlaceholders.filter((row) => row.name.toLowerCase().includes(query.toLowerCase()));
+  const currentRun = runState.run;
+  const currentTaskResults = currentRun?.task_results || [];
+  const currentOutputs = currentRun?.outputs || [];
+
+  async function executeWeek2Run() {
+    setRunState({ error: "", loading: true, run: currentRun });
+    try {
+      const run = await triggerWeek2Run();
+      setRunState({ error: "", loading: false, run });
+    } catch (error) {
+      setRunState({ error: error.message, loading: false, run: currentRun });
+    }
+  }
+
+  async function refreshWeek2Run() {
+    if (!currentRun?.run_id) return;
+    setRunState({ error: "", loading: true, run: currentRun });
+    try {
+      const run = await getWeek2Run(currentRun.run_id);
+      setRunState({ error: "", loading: false, run });
+    } catch (error) {
+      setRunState({ error: error.message, loading: false, run: currentRun });
+    }
+  }
 
   return (
     <div className="page-stack">
       <PageHeader
         title="실행/모니터링"
-        body="M5가 WorkflowDefinition, ExecutionResult, 로그, retry 상태를 연결할 화면입니다."
-        actionLabel="실행 결과 없음"
+        body="M5 WorkflowDefinition을 실행하고 ExecutionResult, task 결과, log를 확인합니다."
+        actionLabel="M5 live API"
       />
+      <section className="run-live-panel">
+        <div className="run-live-copy">
+          <p className="eyebrow">Week2 Workflow</p>
+          <h3>{WEEK2_DEFAULT_PIPELINE_ID}</h3>
+          <p>기본 executor는 M5 local runner이며, 실행 결과는 이 화면에만 표시합니다.</p>
+        </div>
+        <div className="run-live-actions">
+          <button
+            type="button"
+            className="primary-action"
+            onClick={executeWeek2Run}
+            disabled={runState.loading}
+          >
+            {runState.loading ? <Loader2 size={16} /> : <Play size={16} />}
+            {runState.loading ? "실행 중" : "로컬 runner 실행"}
+          </button>
+          <button
+            type="button"
+            className="ghost-action"
+            onClick={refreshWeek2Run}
+            disabled={runState.loading || !currentRun?.run_id}
+          >
+            <RefreshCw size={16} />
+            결과 새로고침
+          </button>
+        </div>
+      </section>
+      {runState.error ? (
+        <EmptyState
+          icon={AlertCircle}
+          title="실행 결과를 불러오지 못했습니다"
+          body={runState.error}
+        />
+      ) : null}
+      {currentRun ? (
+        <>
+          <div className="grid three">
+            <InfoCard title="Run ID" value={currentRun.run_id} detail={currentRun.pipeline_id} />
+            <InfoCard title="Status" value={currentRun.status} detail={`executor: ${currentRun.executor}`} />
+            <InfoCard title="Duration" value={`${formatMetric(currentRun.duration_ms)} ms`} detail="M5 ExecutionResult" />
+          </div>
+          <div className="grid three">
+            <InfoCard title="Input Rows" value={formatMetric(currentRun.row_count)} detail="primary input rows processed" />
+            <InfoCard title="Input Bytes" value={formatMetric(currentRun.bytes)} detail="primary input bytes read" />
+            <InfoCard title="Triggered By" value={formatMetric(currentRun.triggered_by)} detail="demo tenant context" />
+          </div>
+        </>
+      ) : null}
       <section className="pipeline-table-card">
         <div className="table-card-header">
           <div className="table-title-line">
@@ -645,6 +737,15 @@ function RunStatusPage({ navigate }) {
               </tr>
             </thead>
             <tbody>
+              {currentRun ? (
+                <tr>
+                  <td className="table-link" onClick={() => navigate("/etl-visual")}>{currentRun.pipeline_id}</td>
+                  <td><span className={`badge ${runBadgeClass(currentRun.status)}`}>{currentRun.status}</span></td>
+                  <td><span className="badge blue">{currentRun.executor}</span></td>
+                  <td>{currentRun.timestamps?.finished_at || currentRun.timestamps?.started_at || "-"}</td>
+                  <td>{currentRun.run_id}</td>
+                </tr>
+              ) : null}
               {rows.map((row) => (
                 <tr key={row.name}>
                   <td className="table-link" onClick={() => navigate("/etl-visual")}>{row.name}</td>
@@ -658,6 +759,62 @@ function RunStatusPage({ navigate }) {
           </table>
         </div>
       </section>
+      {currentTaskResults.length || currentOutputs.length ? (
+        <section className="run-detail-grid">
+          {currentTaskResults.length ? (
+            <div>
+              <div className="detail-section-title">
+                <ListChecks size={18} />
+                <strong>Task Results</strong>
+              </div>
+              <DataTable
+                columns={["node", "status", "attempt", "rows", "bytes", "error"]}
+                rows={currentTaskResults.map((task) => [
+                  task.node_id,
+                  task.status,
+                  formatMetric(task.attempt),
+                  formatMetric(task.row_count),
+                  formatMetric(task.bytes),
+                  formatMetric(task.error),
+                ])}
+              />
+            </div>
+          ) : null}
+          {currentOutputs.length ? (
+            <div>
+              <div className="detail-section-title">
+                <FileJson size={18} />
+                <strong>Outputs</strong>
+              </div>
+              <DataTable
+                columns={["dataset", "layer", "uri", "status"]}
+                rows={currentOutputs.map((output) => [
+                  output.dataset_id,
+                  output.layer,
+                  output.uri,
+                  formatMetric(output.uri_status),
+                ])}
+              />
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+      {currentRun?.logs?.length ? (
+        <section className="contract-panel">
+          <div>
+            <p className="eyebrow">Run Logs</p>
+            <h3>{currentRun.run_id}</h3>
+          </div>
+          <div className="run-log-list">
+            {currentRun.logs.map((log, index) => (
+              <p key={`${log.level}-${index}`}>
+                <strong>{formatMetric(log.level, "info")}</strong>
+                <span>{formatMetric(log.message)}</span>
+              </p>
+            ))}
+          </div>
+        </section>
+      ) : null}
       <div className="pipeline-strip">
         {m1WorkflowPlaceholder.nodes.map(([type, label, detail], index) => (
           <div className="pipeline-node" key={type}>
@@ -671,8 +828,8 @@ function RunStatusPage({ navigate }) {
       </div>
       <EmptyState
         icon={Loader2}
-        title="실행 버튼과 자동 결과 연출은 없습니다"
-        body="실제 run 상태는 M5 ExecutionResult가 붙은 뒤 대기, 실행 중, 실패 등으로 표시됩니다."
+        title={currentRun ? "자동 polling은 아직 없습니다" : "아직 실행된 Week2 run이 없습니다"}
+        body={currentRun ? "필요할 때 결과 새로고침을 눌러 현재 run 상태를 다시 조회합니다." : "로컬 runner 실행을 누르면 M5 ExecutionResult가 이 화면에 표시됩니다."}
       />
     </div>
   );
