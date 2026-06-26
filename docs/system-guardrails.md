@@ -38,7 +38,7 @@
 | Branch start issue creation | `scripts/start-workflow.sh`; optional branch-push GitHub Action | partial | local workspace can start; PR readiness warns if linked issue is missing or closed | maintainer | GitHub는 local branch creation을 알 수 없으므로 시작 시점은 script-enforced protocol이다. |
 | Project status sync | GitHub Project automation / GitHub Action / `scripts/prepare-pr.sh` | partial | lifecycle drift reported; optional sync job updates status | maintainer | branch start = `In Progress`, PR open = `Review`, PR merge/finalize = `Done`. |
 | Lifecycle drift detection | `scripts/status-workflow.sh`, `scripts/audit-github-records.sh`, optional CI | partial | warning or PR readiness blocked | maintainer | active workspace의 linked issue가 closed인 경우를 감지한다. |
-| PR size/risk warning | GitHub Action / Danger / reviewdog | planned | warning, failed check, or override label required | maintainer | line/file count보다 위험 경로 조합을 우선한다. |
+| PR size/risk warning | `.github/workflows/pr-risk-warning.yml` | partial | advisory warning and step summary when size threshold or risky path is detected | maintainer | hard gate가 아니라 리뷰어 판단을 돕는 경고로 시작한다. |
 | Migration/schema/security change detection | CI path filters, CODEOWNERS, PR template, focused checks | planned | required review/check or warning | maintainer / code owners | API/schema/data/security 영향은 하네스 기록과 시스템 감지를 함께 사용한다. |
 | Harness validation required check | `.github/workflows/ci.yml` + branch protection | partial | merge blocked when harness validation fails | repo admin / maintainer | `scripts/test-harness.sh`, `scripts/validate-harness.sh`, `--strict`는 CI에 있음. |
 
@@ -61,4 +61,4 @@ Issue, PR, Project lifecycle은 시작 단계와 통합 단계의 책임이 다�
 - 위험 경로용 `CODEOWNERS` 후보를 만든다.
 - PR linked issue check를 branch protection required check로 지정할지 repo admin이 결정한다.
 - Project status sync를 GitHub Project automation으로 둘지 GitHub Action으로 둘지 결정한다.
-- PR size/risk warning의 기준과 override label을 결정한다.
+- PR size/risk warning을 hard gate로 승격할지와 override label이 필요한지 결정한다.
