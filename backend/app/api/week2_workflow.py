@@ -3,7 +3,11 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, status
 
 from app.domain.schemas import Week2WorkflowRunRequest
-from app.services.week2_workflow import Week2WorkflowNotFoundError, Week2WorkflowService
+from app.services.week2_workflow import (
+    Week2WorkflowInvalidExecutorError,
+    Week2WorkflowNotFoundError,
+    Week2WorkflowService,
+)
 
 
 def create_week2_workflow_router(week2_workflow_service: Week2WorkflowService) -> APIRouter:
@@ -23,6 +27,8 @@ def create_week2_workflow_router(week2_workflow_service: Week2WorkflowService) -
             )
         except Week2WorkflowNotFoundError as error:
             raise HTTPException(status_code=404, detail=str(error)) from error
+        except Week2WorkflowInvalidExecutorError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
 
     @router.get("/runs/{run_id}")
     def get_workflow_run(run_id: str) -> dict[str, Any]:
