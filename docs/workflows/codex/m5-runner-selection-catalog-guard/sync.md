@@ -47,8 +47,8 @@ main 동기화와 integration readiness를 기록한다.
 - issue creation result: skipped
 - issue project result: skipped
 - PR closing keyword: n/a
-- pushed branch:
-- PR link:
-- merge status:
-- issue close status:
-- result: pending push and PR
+- pushed branch: codex/m5-runner-selection-catalog-guard
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/132
+- merge status: open
+- issue close status: n/a
+- result: PR opened; merge/finalize pending human checkpoint.
