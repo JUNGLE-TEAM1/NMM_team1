@@ -19,13 +19,14 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 | --- | --- | --- | --- |
 | 2026-06-26 | not checked after worktree creation | none known | branch-local scale generation and validation only |
 | 2026-06-26 | `origin/main` advanced after PR #159 opened | M1/M2/M5/M6 runtime/docs, no M1 scale generator conflict | user requested finalization; merged `origin/main` with no conflicts and reran focused unittest, Week2LocalRunner smoke, strict harness validation |
+| 2026-06-26 | `origin/main` advanced again during PR #159 finalization | M1 live UI phase-plan docs, no M1 scale generator conflict | merged `origin/main` with no conflicts and reran focused unittest, Week2LocalRunner smoke, strict harness validation |
 
 ## Pre-Merge Sync
 
 - main commit: latest `origin/main` after PR #159 opened
 - conflicts: none
 - validation: focused unittest, 100k JSONL validation, manifest/summary JSON validation, Week2LocalRunner smoke, `scripts/validate-harness.sh --strict`
-- result: local validation passed after merging latest `origin/main`
+- result: local validation passed after merging latest `origin/main` twice during PR finalization
 - deferral reason: none; PR finalization requested by user
 
 ## PR Conflict Resolution
