@@ -11,9 +11,14 @@ from app.services.week2_local_runner import Week2LocalRunner, Week2RunnerResult
 
 SUCCESSFUL_RUN_STATUSES = {"succeeded", "fallback_succeeded"}
 AIRFLOW_SUCCESS_STATUS = "succeeded"
+SUPPORTED_EXECUTORS = {"airflow", "local_runner"}
 
 
 class Week2WorkflowNotFoundError(ValueError):
+    pass
+
+
+class Week2WorkflowInvalidExecutorError(ValueError):
     pass
 
 
@@ -47,6 +52,9 @@ class Week2WorkflowService:
     def trigger_run(self, pipeline_id: str, executor: str, triggered_by: str) -> dict[str, Any]:
         if pipeline_id != self.workflow_definition["pipeline_id"]:
             raise Week2WorkflowNotFoundError("Week 2 workflow not found")
+        if executor not in SUPPORTED_EXECUTORS:
+            supported = ", ".join(sorted(SUPPORTED_EXECUTORS))
+            raise Week2WorkflowInvalidExecutorError(f"Unsupported Week 2 executor: {executor}. Supported: {supported}")
 
         self.sequence += 1
         run_id = f"run_reviews_demo_{self.sequence:03d}"

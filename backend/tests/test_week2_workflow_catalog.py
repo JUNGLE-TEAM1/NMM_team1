@@ -8,7 +8,11 @@ from app.adapters.sqlite_metadata_store import SQLiteMetadataStore
 from app.core.app_factory import create_app
 from app.core.settings import Settings
 from app.services.week2_local_runner import Week2RunnerResult
-from app.services.week2_workflow import Week2WorkflowNotFoundError, Week2WorkflowService
+from app.services.week2_workflow import (
+    Week2WorkflowInvalidExecutorError,
+    Week2WorkflowNotFoundError,
+    Week2WorkflowService,
+)
 
 
 def make_client() -> TestClient:
@@ -238,6 +242,34 @@ def test_week2_airflow_and_local_failure_do_not_update_catalog(tmp_path: Path) -
     assert any("Airflow returned failed; falling back to local runner" in log["message"] for log in run["logs"])
     with pytest.raises(Week2WorkflowNotFoundError):
         service.get_catalog_metadata("dataset_reviews_gold")
+
+
+@pytest.mark.parametrize("executor", ["spark", "spark_runner", "typo_runner"])
+def test_week2_workflow_service_rejects_unknown_executor_without_creating_run(
+    tmp_path: Path, executor: str
+) -> None:
+    service = Week2WorkflowService(output_root=tmp_path / "out")
+
+    with pytest.raises(Week2WorkflowInvalidExecutorError, match="Unsupported Week 2 executor"):
+        service.trigger_run("pipeline_reviews_json_e2e", executor=executor, triggered_by="m5_owner")
+
+    with pytest.raises(Week2WorkflowNotFoundError):
+        service.get_run("run_reviews_demo_001")
+
+    run = service.trigger_run("pipeline_reviews_json_e2e", executor="local_runner", triggered_by="m5_owner")
+
+    assert run["run_id"] == "run_reviews_demo_001"
+
+
+def test_week2_workflow_route_rejects_unknown_executor() -> None:
+    client = make_client()
+
+    response = client.post(
+        "/api/week2/workflows/pipeline_reviews_json_e2e/runs",
+        json={"executor": "spark", "triggered_by": "m5_owner"},
+    )
+
+    assert response.status_code == 422
 
 
 def test_week2_workflow_routes_return_not_found_for_unknown_ids() -> None:
