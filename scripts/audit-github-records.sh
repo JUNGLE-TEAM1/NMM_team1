@@ -108,6 +108,7 @@ const fs = require("fs");
 const input = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
 const issueTitleRe = /^\[(기능|버그|문서\/운영|긴급수정|검증|M[0-9][^\]]*)\]/;
 const conventionalPrefixRe = /^(feat|fix|docs|test|chore|hotfix):/i;
+const prKoreanPrefixRe = /^\[(기능|버그|문서\/운영|긴급수정|검증)\]/;
 const prSectionNames = [
   "## 1. PR 요약",
   "## 2. 변경 내용",
@@ -148,8 +149,28 @@ function issueDrift(issue) {
 }
 
 function prTitleOk(title) {
-  if (/^\[(기능|버그|문서\/운영|긴급수정|검증)\]/.test(title)) return true;
-  return !conventionalPrefixRe.test(title);
+  if (conventionalPrefixRe.test(title)) return false;
+  return prKoreanPrefixRe.test(title);
+}
+
+function suggestedPrTitle(title) {
+  const cleaned = (title || "")
+    .replace(/^feat:/i, "[기능]")
+    .replace(/^fix:/i, "[버그]")
+    .replace(/^docs:|^chore:/i, "[문서/운영]")
+    .replace(/^test:/i, "[검증]")
+    .replace(/^hotfix:/i, "[긴급수정]")
+    .trim();
+  if (prTitleOk(cleaned)) return cleaned;
+  return `[문서/운영] ${cleaned}`.trim();
+}
+
+function needsClosingKeyword(body) {
+  if (/(Closes|Fixes|Resolves) #[0-9]+/i.test(body)) return false;
+  if (/연결된 Issue:\s*(?!연결된 issue 없음|없음|n\/a|N\/A)(?!.*(Closes|Fixes|Resolves) #[0-9]+).*#[0-9]+/i.test(body)) return true;
+  if (/(^|\n)## Issue\s*\n\s*#[0-9]+/i.test(body)) return true;
+  if (/(^|\n)(Linked issue|Linked Issue):\s*#[0-9]+/i.test(body)) return true;
+  return false;
 }
 
 function prDrift(pr) {
@@ -159,7 +180,7 @@ function prDrift(pr) {
   if (!prTitleOk(title)) reasons.push("title-prefix-or-korean-title-missing");
   if (!prSectionNames.every((section) => body.includes(section))) reasons.push("readable-pr-handoff-missing");
   if (/## Summary|## Issue|## Checklist/.test(body)) reasons.push("stale-pr-summary-checklist");
-  if (/#[0-9]+/.test(body) && !/(Closes|Fixes|Resolves) #[0-9]+/.test(body)) reasons.push("closing-keyword-missing");
+  if (needsClosingKeyword(body)) reasons.push("closing-keyword-missing");
   return { reasons };
 }
 
@@ -193,7 +214,7 @@ for (const pr of input.prs || []) {
       url: pr.url,
       title: pr.title,
       reasons,
-      suggestedTitle: prTitleOk(pr.title || "") ? pr.title : (pr.title || "").replace(/^feat:/i, "[기능]").replace(/^fix:/i, "[버그]").replace(/^docs:|^chore:/i, "[문서/운영]").replace(/^test:/i, "[검증]").replace(/^hotfix:/i, "[긴급수정]").trim(),
+      suggestedTitle: prTitleOk(pr.title || "") ? pr.title : suggestedPrTitle(pr.title || ""),
     });
   }
 }

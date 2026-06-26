@@ -151,6 +151,7 @@ AI does:
 - Updates `report.md`.
 - If checks fail, presents Verification Failed next-action menu.
 - If checks pass, asks for Pre-Merge Sync Required or Completion Confirm.
+- If GitHub record drift audit finds a PR title without the Korean harness prefix, missing readable PR handoff body, or a real linked issue without closing keyword, AI stops PR progression until the record is corrected or the human explicitly confirms the exception.
 
 When reporting local runtime readiness, AI separates:
 
