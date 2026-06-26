@@ -6,7 +6,8 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      "/api": "http://localhost:8000",
+      // Use IPv4 loopback to avoid localhost resolving to another :8000 listener.
+      "/api": "http://127.0.0.1:8000",
     },
   },
 });
