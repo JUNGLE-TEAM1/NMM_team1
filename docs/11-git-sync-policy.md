@@ -4,6 +4,13 @@
 branch workspace 생성은 팀 규칙상 GitHub issue 생성을 포함한다.
 feature branch push와 PR 생성은 PR-ready 조건을 통과하면 자동화할 수 있다.
 pull, merge, rebase, PR merge, finalize, issue close, branch cleanup, deploy 같은 추가 원격/통합 변경은 사람이 명시한 명령으로만 실행한다.
+GitHub, CI, Project, repository setting이 실제로 강제해야 하는 항목은 `docs/system-guardrails.md`에서 별도 인벤토리로 추적한다.
+
+## 0) Role Split
+
+- `docs/11-git-sync-policy.md`: branch/workspace sync 기록, PR handoff, conflict recovery, lifecycle evidence protocol.
+- `docs/system-guardrails.md`: branch protection, required checks, linked issue required check, Project status automation, secret/review/deploy enforcement inventory.
+- `.github/` and repository settings: 가능한 경우 실제 차단 또는 자동화를 수행하는 위치.
 
 ## 1) Core Policy
 
@@ -16,6 +23,7 @@ pull, merge, rebase, PR merge, finalize, issue close, branch cleanup, deploy 같
 - After PR creation, run `Pre-PR Human Checkpoint` before merge, finalize, issue close, branch cleanup, integration handoff, or next Phase handoff.
 - Branch workspace를 만들 때 GitHub issue도 생성한다. 예외가 필요하면 `--no-issue`를 명시하고 이유를 `sync.md`에 기록한다.
 - Prefer feature branch push and PR review over direct push to `main`.
+- System-enforced `main` protection and required PR settings are tracked in `docs/system-guardrails.md`.
 - 다른 branch workspace로 이동하기 전에 worktree가 dirty이면 `scripts/start-workflow.sh`가 현재 branch에 checkpoint commit을 만든 뒤 이동한다.
 - checkpoint commit은 tracked file의 수정/삭제만 자동으로 stage한다.
 - untracked file, `.DS_Store`, 개인 초안, editor artifact, unrelated workstream file은 자동 checkpoint에 포함하지 않고 제외 목록으로 보고한다.
@@ -97,6 +105,7 @@ Before merge, `sync.md` may also hold local handoff values such as `merge status
 After merge, GitHub PR/issue state is the authoritative status source because local finalization edits can happen after the PR has already been merged into `main`.
 
 GitHub issue는 branch 생성 시 기본으로 만든다. 이 동작은 팀 규칙이며, `scripts/start-workflow.sh` 실행이 issue 생성까지 포함하는 시작 절차다.
+local branch creation은 GitHub가 직접 감지할 수 없으므로 이 단계는 branch protection 같은 hard system gate가 아니라 script-enforced protocol이다.
 기본 생성된 issue는 `JUNGLE-TEAM1` organization Project `3`에도 추가하고 Status를 `In Progress`로 설정한다.
 Project 추가와 Status 설정의 성공 또는 실패 이유는 workspace `sync.md`의 `issue project result`에 기록한다.
 `scripts/start-workflow.sh`가 만든 issue는 GitHub UI issue template을 자동으로 타지 않으므로, 스크립트가 직접 한국어 title prefix, body sections, 작업 type별 label을 생성한다.
@@ -118,6 +127,7 @@ scripts/audit-github-records.sh --pr 114
 이 감사는 GitHub record를 수정하지 않는다. 기존 issue/PR 보정은 별도 사람 지시 후 수행한다.
 
 Linked issue와 Project Status lifecycle은 아래 순서가 기준이다.
+시스템 강제/자동화 후보와 현재 상태는 `docs/system-guardrails.md`의 Lifecycle Guardrails와 Guardrail Inventory를 따른다.
 
 ```text
 branch start -> issue + Project In Progress

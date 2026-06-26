@@ -1,12 +1,14 @@
 # 12. Quality Gates
 
 This document defines how TDD and CI/CD fit into the collaboration harness without forcing heavyweight infrastructure on every project.
+System-enforced repository, CI, PR, issue/project, secret, review, and deploy controls are inventoried in `docs/system-guardrails.md`.
 
 ## 1) Core Policy
 
 - Use TDD for behavior that affects core logic, regression risk, integration contracts, or bug fixes.
 - Treat documentation-only work, formatting, and low-risk mechanical edits as TDD optional.
 - CI/CD is a quality gate language first and an automation pipeline second.
+- CI/CD and repository settings should enforce what machines can reliably detect; the harness records evidence, skipped checks, and recovery context.
 - A branch can be complete only when its agreed tests, harness validation, and manual verification evidence are recorded.
 - Deployment, publish, destructive migration, and production-impacting CD steps stay behind human confirmation.
 - Passing local quality gates plus PR readiness authorizes automatic feature branch push and PR creation when no opt-out or stop condition exists; merge, finalize, issue close, cleanup, deploy, and handoff still require `Pre-PR Human Checkpoint`.
@@ -63,6 +65,7 @@ Project-specific CI should add stack-specific lint, test, typecheck, build, secu
 
 An optional harness-level CI example lives at `.github/workflows/harness-validation.example.yml`.
 Copy or adapt it when the target project wants provider-based CI.
+Required check status, branch protection, secret scanning, CODEOWNER review, PR linked issue checks, and Project lifecycle automation are tracked in `docs/system-guardrails.md`.
 
 During Existing Codebase Adoption:
 
@@ -75,6 +78,7 @@ During Existing Codebase Adoption:
 ## 5) CD Gate
 
 Use CD only when the project actually deploys or publishes artifacts.
+Environment-level approval and deploy protection belong in GitHub Environment or platform settings when available; this document records the verification evidence and human confirmation protocol.
 
 Before deployment:
 

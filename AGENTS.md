@@ -35,14 +35,15 @@ Target repository: `JUNGLE-TEAM1/NMM_team1`.
 11. Next Action Menu: `docs/10-next-action-menu.md`
 12. Git Sync Policy: `docs/11-git-sync-policy.md`
 13. Quality Gates: `docs/12-quality-gates.md`
-14. Human Command Flow: `docs/13-human-command-flow.md`
-15. Decision Option Brief: `docs/14-decision-option-brief.md`
-16. Context Budget Rule: `docs/15-context-budget-rule.md`
-17. Existing Codebase Adoption: `docs/16-existing-codebase-adoption.md`
-18. Parallel Milestone Protocol: `docs/17-parallel-milestone-protocol.md`
-19. Branch Workspaces: `docs/workflows/`
-20. Evidence: `docs/reports/`
-21. External Summary: `README.md`
+14. System Guardrails: `docs/system-guardrails.md`
+15. Human Command Flow: `docs/13-human-command-flow.md`
+16. Decision Option Brief: `docs/14-decision-option-brief.md`
+17. Context Budget Rule: `docs/15-context-budget-rule.md`
+18. Existing Codebase Adoption: `docs/16-existing-codebase-adoption.md`
+19. Parallel Milestone Protocol: `docs/17-parallel-milestone-protocol.md`
+20. Branch Workspaces: `docs/workflows/`
+21. Evidence: `docs/reports/`
+22. External Summary: `README.md`
 
 ## 기술 스택
 
@@ -73,13 +74,14 @@ Target repository: `JUNGLE-TEAM1/NMM_team1`.
 17. Phase가 local validation과 PR readiness를 통과하면 AI는 feature branch push와 PR 생성까지 자동 진행할 수 있다. PR 생성 뒤 merge/finalize/cleanup/handoff가 다음 자연스러운 행동이면 `Pre-PR Human Checkpoint`를 제시하고, 사람이 선택하기 전에는 merge/finalize/cleanup을 실행하지 않는다.
 18. branch sync 상태는 workspace `sync.md`에 기록한다.
 19. TDD, branch check, CI, CD/deploy gate는 `docs/12-quality-gates.md`를 따른다.
-20. TDD와 CI/CD 증거는 workspace `quality.md`에 기록한다.
-21. PR/integration handoff 전 상태 요약이 필요하면 `scripts/status-workflow.sh`를 사용한다.
-22. 고영향 선택은 `docs/14-decision-option-brief.md`를 사용하고 결과를 workspace `decisions.md`에 기록한다.
-23. `docs/15-context-budget-rule.md`에 따라 Lite Read로 시작하고, 위험 신호가 있으면 Escalate Read, 전체 검토에는 Audit Read를 사용한다.
-24. 토큰을 아끼기 위해 필요한 Source of Truth 문맥을 생략하지 않는다.
-25. 사용자가 `병렬`, `병렬 마일스톤`, `병렬 리팩토링`, `parallel milestone`, `parallel worktree`를 명시하면 `docs/17-parallel-milestone-protocol.md`를 적용한다.
-26. 병렬 프로토콜은 기존 Phase Workflow를 대체하지 않는다. 병렬 worktree/thread가 2개 이상 필요하거나 scope ownership, shared contract, integration order가 중요한 작업에만 얇은 실행 계약 레이어로 추가한다.
+20. 시스템이 강제할 수 있는 repository/CI/PR/issue/deploy 안전장치는 `docs/system-guardrails.md`에 인벤토리로 기록하고, 하네스 문서는 작업 흐름과 증거 기록을 담당한다.
+21. TDD와 CI/CD 증거는 workspace `quality.md`에 기록한다.
+22. PR/integration handoff 전 상태 요약이 필요하면 `scripts/status-workflow.sh`를 사용한다.
+23. 고영향 선택은 `docs/14-decision-option-brief.md`를 사용하고 결과를 workspace `decisions.md`에 기록한다.
+24. `docs/15-context-budget-rule.md`에 따라 Lite Read로 시작하고, 위험 신호가 있으면 Escalate Read, 전체 검토에는 Audit Read를 사용한다.
+25. 토큰을 아끼기 위해 필요한 Source of Truth 문맥을 생략하지 않는다.
+26. 사용자가 `병렬`, `병렬 마일스톤`, `병렬 리팩토링`, `parallel milestone`, `parallel worktree`를 명시하면 `docs/17-parallel-milestone-protocol.md`를 적용한다.
+27. 병렬 프로토콜은 기존 Phase Workflow를 대체하지 않는다. 병렬 worktree/thread가 2개 이상 필요하거나 scope ownership, shared contract, integration order가 중요한 작업에만 얇은 실행 계약 레이어로 추가한다.
 
 ## 한국어 협업 산출물 규칙
 
@@ -106,6 +108,7 @@ Target repository: `JUNGLE-TEAM1/NMM_team1`.
 - Development operations change: Development Operations -> Manual Verification -> Workflow
 - Git sync policy change: Development Operations -> Workflow -> Collaboration Agreement -> Next Action Menu
 - Quality gate change: Development Operations -> Acceptance -> Regression -> Manual Verification -> Workflow -> Collaboration Agreement -> Next Action Menu
+- System guardrail change: Development Operations -> System Guardrails -> Quality Gates -> Workflow -> Collaboration Agreement -> Human Command Flow
 - Human command flow change: Workflow -> Collaboration Agreement -> Next Action Menu
 - Decision option brief change: Workflow -> Collaboration Agreement -> Next Action Menu
 - Parallel milestone protocol change: Workflow -> Collaboration Agreement -> Next Action Menu
