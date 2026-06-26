@@ -21,7 +21,7 @@ main 동기화와 integration readiness를 기록한다.
 
 - main commit: 5b76e8f
 - conflicts: none detected locally
-- validation: `rg -n "M6|RAG|Semantic|AI Query|CatalogMetadata retrieval|RAG-lite|external vector|full document" docs/project-context/asklake-week2-module-plan/ver2`; `git diff --check`; `scripts/validate-harness.sh --strict`
+- validation: `rg -n "M6|RAG|Semantic|AI Query|CatalogMetadata retrieval|RAG-lite|external vector|full document" docs/project-context/asklake-week2-module-plan/ver2`; `rg -n "RAG|AI Query|Semantic|M6|CatalogMetadata|AIQueryResult|vector DB|full document" README.md docs/01-product-planning.md docs/02-architecture.md docs/03-interface-reference.md docs/05-acceptance-scenarios-and-checklist.md docs/06-regression-and-failure-scenarios.md docs/07-manual-verification-playbook.md docs/08-development-workflow.md docs/project-context/asklake-week2-module-plan/ver2`; `git diff --check`; `scripts/validate-harness.sh --strict`
 - result: ready for PR preparation
 - deferral reason: none
 

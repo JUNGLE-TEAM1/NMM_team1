@@ -13,3 +13,10 @@
 - `docs/03-interface-reference.md`
 - `contracts/*.sample.json`
 - runtime code
+
+## Change Propagation Check
+
+- Start layer: Project Context.
+- Reviewed downstream Source of Truth touchpoints: Product, Architecture, Interface, Acceptance, Regression, Manual Verification, Workflow.
+- Result: no Source of Truth propagation needed because existing documents already define RAG/AI Query policy, AI access guardrails, `AIQueryResult`, CatalogMetadata consumption, and RAG/vector target boundaries.
+- Revisit trigger: if M6 implementation changes `AIQueryResult.evidence`, retrieval trace fields, route behavior, or introduces external vector DB/full document RAG, update `docs/03`, `docs/05`, `docs/06`, `docs/07`, and related contracts.
