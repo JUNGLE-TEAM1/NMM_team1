@@ -1,3 +1,4 @@
+import json
 import tempfile
 from pathlib import Path
 
@@ -93,6 +94,44 @@ def test_week2_catalog_metadata_tracks_successful_run_lineage() -> None:
         "schema_match": "passed",
         "row_count_checked": True,
     }
+
+
+def test_week2_local_runner_representative_path_persists_run_catalog_and_output(
+    tmp_path: Path,
+) -> None:
+    output_root = tmp_path / "week2"
+    service = Week2WorkflowService(output_root=output_root)
+
+    run = service.trigger_run("pipeline_reviews_json_e2e", executor="local_runner", triggered_by="m5_owner")
+    catalog = service.get_catalog_metadata("dataset_reviews_gold")
+
+    output_path = Path(catalog["storage"]["local_fallback_path"])
+    persisted_run_path = output_root / "_metadata" / "runs" / "run_reviews_demo_001.json"
+    persisted_catalog_path = output_root / "_metadata" / "catalog" / "dataset_reviews_gold.json"
+    output_rows = [json.loads(line) for line in output_path.read_text(encoding="utf-8").splitlines()]
+    persisted_run = json.loads(persisted_run_path.read_text(encoding="utf-8"))
+    persisted_catalog = json.loads(persisted_catalog_path.read_text(encoding="utf-8"))
+
+    assert run["run_id"] == "run_reviews_demo_001"
+    assert run["status"] == "fallback_succeeded"
+    assert run["outputs"][0]["dataset_id"] == catalog["dataset_id"]
+    assert run["outputs"][0]["uri"] == catalog["s3_uri"]
+    assert catalog["lineage"]["run_id"] == run["run_id"]
+    assert catalog["storage"]["prefix"] == "reviews/gold/run_id=run_reviews_demo_001/"
+    assert output_path == output_root / "reviews" / "gold" / "run_id=run_reviews_demo_001" / "dataset_reviews_gold.jsonl"
+    assert output_path.exists()
+    assert output_rows == [
+        {"average_rating": 4.5, "product_id": "B001", "review_count": 2},
+        {"average_rating": 2.0, "product_id": "B002", "review_count": 1},
+        {"average_rating": 5.0, "product_id": "B003", "review_count": 1},
+    ]
+    assert catalog["metrics"]["row_count"] == len(output_rows)
+    assert catalog["metrics"]["bytes"] == output_path.stat().st_size
+    assert run["task_results"][-1]["row_count"] == len(output_rows)
+    assert run["task_results"][-1]["bytes"] == output_path.stat().st_size
+    assert persisted_run["run_id"] == run["run_id"]
+    assert persisted_catalog["lineage"]["run_id"] == run["run_id"]
+    assert persisted_catalog["storage"]["local_fallback_path"] == str(output_path)
 
 
 def test_week2_catalog_metadata_tracks_latest_successful_run() -> None:
