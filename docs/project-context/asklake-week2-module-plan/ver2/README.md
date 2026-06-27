@@ -16,8 +16,10 @@
 6. `existing-implementation-anchor.md`
 7. `m3-json-main-path-decision.md`
 8. `runner-boundary-decision.md`
-9. `m1-live-ui-phase-plan.md`
-10. 필요 시 상위 폴더의 `decisions.md`, `plan.md`, `meeting-summary.md`
+9. `m5-airflow-integration-options.md`
+10. `m1-live-ui-phase-plan.md`
+11. 필요 시 `m5-technical-depth-study-guide.md`
+12. 필요 시 상위 폴더의 `decisions.md`, `plan.md`, `meeting-summary.md`
 
 ## 현재 기준
 
@@ -75,6 +77,10 @@ Phase 5의 현재 기준은 [`m3-json-main-path-decision.md`](m3-json-main-path-
 
 Phase 6의 현재 기준은 [`runner-boundary-decision.md`](runner-boundary-decision.md)에 둔다.
 
+M5 실제 Airflow 연결 전 선택지는 [`m5-airflow-integration-options.md`](m5-airflow-integration-options.md)에 둔다.
+
 M1 live UI 후속 Phase 기준은 [`m1-live-ui-phase-plan.md`](m1-live-ui-phase-plan.md)에 둔다.
+
+M5 역할을 기술적으로 깊게 설명해야 할 때는 [`m5-technical-depth-study-guide.md`](m5-technical-depth-study-guide.md)를 보조 학습 문맥으로 사용한다.
 
 팀원이 빠르게 현재 분업과 진행상황을 파악할 때는 [`team-handoff-summary.md`](team-handoff-summary.md)를 먼저 읽는다.

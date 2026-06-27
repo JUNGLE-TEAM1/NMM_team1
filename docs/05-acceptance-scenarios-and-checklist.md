@@ -48,6 +48,7 @@ AskLake의 Target MVP 대표 성공 시나리오는 `Trusted Dataset -> Query/As
 - [ ] 첫 병렬 wave와 integration checkpoint가 하나 이상 제안되어 있다.
 - [ ] Week 2 모듈 구현 전 `contracts/*.sample.json` fixture가 producer/consumer 경계, `TransformSpec`, `RuntimeConfig`, `KafkaTopicContract`, Airflow/local runner 호환 결과, SQL engine adapter 경계를 제공한다.
 - [ ] Week 2 모듈 구현 전 API/UI route, ID 규칙, storage path pattern, workflow/run status, `QueryResult`, guardrail failure shape, daily smoke evidence 형식이 공통 계약으로 확인된다.
+- [ ] Week 2 M5 Airflow smoke는 실제 DAG 실행 결과 artifact를 backend가 읽고, `executor=airflow` run이 fallback 없이 Catalog lineage와 metrics를 갱신한다.
 
 ### Trusted Dataset
 
