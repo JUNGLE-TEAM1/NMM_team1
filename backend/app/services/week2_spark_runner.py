@@ -4,6 +4,7 @@ from time import perf_counter
 from typing import Any
 
 from app.domain.runtime_config import RuntimeConfig
+from app.services.week2_storage_adapter import StorageLocation, Week2StorageAdapter
 from app.services.week2_local_runner import Week2RunnerResult, elapsed_ms, path_size, repo_root
 
 
@@ -26,7 +27,8 @@ class Week2SparkRunner:
 
         try:
             input_path = resolve_input_path(config.input_path)
-            output_path = output_path_for_config(config, input_path, run_id)
+            output_location = output_location_for_config(config, input_path, run_id)
+            output_path = output_location.local_path
             rows = read_rows(input_path, config.input_format)
             write_parquet(rows, output_path, config.options)
             input_bytes = path_size(input_path)
@@ -123,12 +125,32 @@ def write_parquet(rows: list[dict[str, Any]], output_path: Path, options: dict[s
 def output_path_for_config(config: RuntimeConfig, input_path: Path, run_id: str) -> Path:
     """직접 지정한 output_path 또는 output_root/run_id 규칙으로 결과 경로를 만든다."""
 
+    return output_location_for_config(config, input_path, run_id).local_path
+
+
+def output_location_for_config(config: RuntimeConfig, input_path: Path, run_id: str) -> StorageLocation:
+    """RuntimeConfig에서 S3-compatible URI와 local output path를 함께 계산한다."""
+
     if config.output_path is not None:
-        return resolve_path(config.output_path)
+        return StorageLocation(uri=None, bucket=None, prefix="", local_path=resolve_path(config.output_path))
+    output_file_name = config.options.get("output_file_name") or f"{input_path.stem}.parquet"
+    if config.storage is not None:
+        return Week2StorageAdapter().build_location(
+            config.storage,
+            run_id=run_id,
+            file_name=output_file_name,
+            local_root=config.output_root,
+            default_prefix="spark_smoke/run_id=<run_id>/",
+        )
     if config.output_root is None:
         raise Week2SparkRunnerError("Either output_path or output_root is required")
     output_root = resolve_path(config.output_root)
-    return output_root / "spark_smoke" / f"run_id={run_id}" / f"{input_path.stem}.parquet"
+    return StorageLocation(
+        uri=None,
+        bucket=None,
+        prefix=f"spark_smoke/run_id={run_id}/",
+        local_path=output_root / "spark_smoke" / f"run_id={run_id}" / output_file_name,
+    )
 
 
 def resolve_input_path(path_value: str) -> Path:

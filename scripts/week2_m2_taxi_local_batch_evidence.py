@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+"""TLC Taxi Parquet을 M2 Taxi runner에 넣어 local batch evidence를 만드는 CLI."""
+
 import argparse
 import json
 import os
@@ -26,6 +28,8 @@ def run_evidence(
     demo_limit: int,
     compression: str,
 ) -> dict:
+    """Taxi runner를 실행하고 PR/리뷰용 evidence JSON으로 감싼다."""
+
     fixed_date = fixed_date if profile == "fixed" else None
     result = Week2TaxiBatchRunner().run(
         TaxiBatchConfig(
@@ -73,10 +77,14 @@ def run_evidence(
 
 
 def resolve_repo_path(path: Path) -> Path:
+    """상대 경로를 repository root 기준 절대 경로로 바꾼다."""
+
     return path if path.is_absolute() else REPO_ROOT / path
 
 
 def parse_args() -> argparse.Namespace:
+    """터미널에서 받을 Taxi input/output/profile option을 정의한다."""
+
     parser = argparse.ArgumentParser(description="Run M2 Taxi local batch evidence.")
     parser.add_argument(
         "--input",
@@ -98,6 +106,8 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> int:
+    """CLI entry point: evidence를 실행하고 성공 여부를 exit code로 돌려준다."""
+
     args = parse_args()
     evidence = run_evidence(
         input_path=args.input,
