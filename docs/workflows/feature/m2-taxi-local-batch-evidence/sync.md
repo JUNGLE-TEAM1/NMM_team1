@@ -21,10 +21,10 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 
 ## Pre-Merge Sync
 
-- main commit: `origin/main` `fd9720c`
+- main commit: `origin/main` `5d5d258`
 - conflicts: none
-- validation: pending final strict validation
-- result: `git fetch origin` showed no new upstream change; branch HEAD and `origin/main` both at `fd9720c` before local commits
+- validation: `git diff --check`, focused Taxi runner test 2 passed, backend tests 53 passed, `scripts/validate-harness.sh --strict` passed
+- result: `git fetch origin` showed `main` advanced from `fd9720c` to `5d5d258` by PR #170. `git merge origin/main` completed with no conflicts and brought M6 SQL-first buildup docs into this branch.
 - deferral reason: not needed
 
 ## PR Conflict Resolution
