@@ -147,8 +147,11 @@ M3가 모든 데이터 ETL을 맡으면 병목이 될 수 있다. 발표 전 AI 
 - `CatalogMetadata` retrieval과 semantic dataset selection evidence를 만든다.
 - Catalog metadata, schema/profile facts, metrics, quality, lineage facts를 근거로 RAG-lite answer grounding을 만든다.
 - 2주차 후속 실행 우선순위로 Amazon Reviews CatalogMetadata의 `storage.local_fallback_path`, `query.table_name`, `query.allowed_columns`, `query.default_limit`을 읽어 실제 SQL MVP를 완성한다.
+- SQL 실행 context는 M5 CatalogMetadata에서 읽은 값으로만 만든다. `storage.local_fallback_path`가 없거나 읽을 수 없으면 SQL route를 `blocked` 처리한다.
+- `DuckDBSqlEngine` 같은 실제 SQL 실행기는 `SqlEngineAdapter` 뒤에 둔다. M6 service는 DuckDB, Trino, Athena 같은 engine을 직접 import하지 않는다.
 - SQL planner와 SQL guardrail을 소유한다.
-- `AIQueryResult`, answer, evidence, `chart_spec`을 만든다.
+- `AIQueryResult`, answer, evidence, `chart_spec`을 만든다. 후속 `route`, `retrieval_trace`는 기존 M1 소비 필드를 깨지 않는 additive field로만 추가한다.
+- Catalog RAG-lite index가 필요하면 M6 전용 derived cache로 만든다. Source of Truth는 계속 M5 CatalogMetadata다.
 
 ### 하지 않는 것
 
@@ -156,9 +159,11 @@ M3가 모든 데이터 ETL을 맡으면 병목이 될 수 있다. 발표 전 AI 
 - Kafka ingestion을 소유하지 않는다.
 - Catalog 저장소/API 구현을 소유하지 않는다.
 - M5 CatalogMetadata를 저장하거나 수정하지 않는다.
+- M6 RAG-lite index를 M5 Catalog store에 저장하거나 CatalogMetadata를 대체하지 않는다.
 - SQL engine runtime 설치는 M2 runtime 책임이다.
 - SQL MVP 이전에 외부 vector DB, full document RAG, 대규모 indexing, real LLM provider 연결을 이번 기본 범위로 소유하지 않는다.
 - 범용 NL2SQL을 이번 기본 범위로 소유하지 않는다.
+- 외부 LLM이 SQL을 직접 실행하거나 허용되지 않은 컬럼, 원본 전체 파일, secret/API key를 prompt 재료로 보게 하지 않는다.
 
 ### 빌드업 순서
 
@@ -171,6 +176,21 @@ SQL MVP 완성
 -> 외부 LLM 답변 생성
 -> M1 evidence 표시 연동
 ```
+
+### M6 세부 개발 분할
+
+| 순서 | M6 slice | 다른 M과의 경계 |
+| --- | --- | --- |
+| 1 | SQL execution context 보강 | M5 CatalogMetadata를 읽기 전용으로 소비하고 `storage.local_fallback_path`, `query.table_name`, `query.allowed_columns`, `query.default_limit`만 SQL context에 반영한다. |
+| 2 | DuckDB adapter 기본 구현 | 실제 SQL은 `SqlEngineAdapter` 뒤에서 실행한다. runtime 설치와 `RuntimeConfig` 경계는 M2 책임과 충돌하지 않게 둔다. |
+| 3 | SQL guardrail 강화 | SELECT-only, table allowlist, column allowlist, LIMIT required, missing local output path blocked를 M6가 검증한다. |
+| 4 | SQL Planner 분리 | `_build_template_sql()` 성격의 규칙을 planner로 분리하되 M3 schema facts와 M5 CatalogMetadata allowlist만 사용한다. |
+| 5 | Planner 지원 확장 | `review_count`, `average_rating`, basic select, unsupported intent를 우선 처리하고 범용 NL2SQL은 제외한다. |
+| 6 | 응답 계약 보강 | `route`, `retrieval_trace`는 additive field로만 추가하고 기존 `sql`, `rows`, `summary`, `evidence`, `query_result`, `status`는 유지한다. |
+| 7 | Catalog RAG-lite index | M6 전용 derived cache로 만들고 M5 CatalogMetadata를 Source of Truth로 유지한다. |
+| 8 | Hybrid query | SQL 결과와 Catalog evidence를 조합하되 M1/M5 계약을 바꾸지 않는다. |
+| 9 | 외부 LLM adapter | SQL MVP 이후 별도 adapter로 붙이고 secret, 원본 파일, 허용되지 않은 컬럼은 prompt에 넣지 않는다. |
+| 10 | M1 표시 연동 지원 | M6는 API/result/evidence 계약을 제공하고, 화면 구현은 M1 소유로 둔다. |
 
 ## 계약별 책임
 
@@ -186,7 +206,7 @@ SQL MVP 완성
 | `CatalogMetadata` facts | M3 | M2/M4 raw facts | M5, M6, M1 | schema, metrics, quality, source lineage facts. |
 | Catalog store/API/lineage | M5 | M3 facts | M1, M6 | Catalog record 저장, 조회 API, lineage 저장. |
 | `KafkaTopicContract` | M4 | M3 요구사항 | M3, M5 | topic, event key, event timestamp, replay command. |
-| `AIQueryResult` | M6 | M5 catalog, M3 facts | M1 | question, selected_datasets, semantic/RAG-lite evidence, SQL, rows, summary, chart_spec. |
+| `AIQueryResult` | M6 | M5 catalog, M3 facts | M1 | question, selected_datasets, semantic/RAG-lite evidence, SQL, rows, summary, chart_spec. 후속 `route`, `retrieval_trace`는 additive field로만 추가한다. |
 
 ## Spark/Runtime 책임 분리
 

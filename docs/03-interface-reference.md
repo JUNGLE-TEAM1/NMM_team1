@@ -302,6 +302,17 @@ M6 AI Query
 -> CatalogMetadata.s3_uri or local path
 ```
 
+For the Week 2 M6 SQL-first slice, `SqlEngineContext` is built from read-only `CatalogMetadata` values only:
+
+| CatalogMetadata field | M6 use |
+| --- | --- |
+| `storage.local_fallback_path` | local output file registered by the SQL adapter |
+| `query.table_name` | only table name M6 SQL may reference |
+| `query.allowed_columns` | only columns M6 SQL may select/order/filter |
+| `query.default_limit` | default bounded result limit |
+
+If `storage.local_fallback_path` is missing or unreadable, SQL execution must return a blocked guardrail result instead of fabricating rows. M6 must not update the Catalog record to fix the path; M5 remains the Catalog store/API owner.
+
 Minimum `SqlEngineAdapter` methods:
 
 | Method | Purpose |
@@ -326,6 +337,18 @@ Minimum `QueryResult` shape:
 `AIQueryResult.query_result` is the canonical SQL execution result for Week 2.
 Top-level `AIQueryResult.sql` and `AIQueryResult.rows` may remain as backward-compatible M1 display convenience fields, but they must mirror `query_result.sql` and `query_result.rows`.
 
+Future M6 route/evidence expansion is additive only. Existing M1 consumers must continue to work with `status`, `sql`, `query_result`, `rows`, `summary`, `evidence`, and `guardrail`. When added, `AIQueryResult.route` uses `sql`, `rag`, `hybrid`, or `unsupported`, and `AIQueryResult.retrieval_trace[]` records M6 retrieval reasoning without requiring M1 to recompute scoring.
+
+Minimum future `retrieval_trace[]` item shape:
+
+| Field | Required | Notes |
+| --- | --- | --- |
+| `source_type` | yes | `catalog`, `schema`, `metric`, `lineage`, or `chunk` |
+| `source_id` | yes | dataset id, field name, metric key, lineage id, or chunk id |
+| `score` | yes | M6 retrieval score |
+| `matched_terms` | yes | question terms or aliases matched by M6 |
+| `evidence_index` | no | index into `AIQueryResult.evidence[]` when a trace item backs a returned evidence item |
+
 Minimum `AIQueryResult.evidence[]` grounding shape:
 
 | Field | Required | Notes |
@@ -348,7 +371,7 @@ Minimum SQL guardrail failure shape:
 | --- | --- |
 | `status` | `succeeded`, `blocked`, `failed` |
 | `guardrail.validation_status` | `passed`, `blocked`, `failed` |
-| `guardrail.failure_code` | `non_select_sql`, `table_not_allowed`, `column_not_allowed`, `timeout`, `limit_required`, `engine_unavailable`, or `null` |
+| `guardrail.failure_code` | `non_select_sql`, `table_not_allowed`, `column_not_allowed`, `timeout`, `limit_required`, `local_path_missing`, `engine_unavailable`, or `null` |
 | `guardrail.failure_message` | human-readable reason or `null` |
 
 Week 2 workflow/run status values:

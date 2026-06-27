@@ -30,7 +30,7 @@
 
 이번 ver2에서 M6의 RAG는 외부 vector DB나 full document RAG가 아니라 `CatalogMetadata` 기반 semantic retrieval, dataset selection evidence, answer grounding을 뜻한다. 즉 발표 기본 범위는 Catalog/Semantic retrieval 기반 RAG-lite와 AI Query이며, 대규모 indexing이나 real LLM 연결은 후속 확장으로 둔다.
 
-M6의 다음 빌드업은 SQL-first로 진행한다. 현재 M6는 CatalogMetadata 선택, template SQL, fake SQL engine, evidence grounding까지 갖춘 skeleton이며 실제 output file을 SQL로 안정 조회하는 완성 상태는 아니다. 따라서 2주차 후속 M6 실행 우선순위는 RAG/LLM 확장이 아니라 Amazon Reviews 대표 CatalogMetadata를 기준으로 `storage.local_fallback_path`, `query.table_name`, `query.allowed_columns`, `query.default_limit`만 읽어 실제 SQL MVP를 닫는 것이다. RAG/LLM은 SQL MVP 이후 `SQL MVP -> SQL Planner 강화 -> 응답 계약 보강 -> CatalogMetadata 기반 RAG -> Hybrid query -> 외부 LLM 답변 생성 -> M1 evidence 표시 연동` 순서로 확장한다.
+M6의 다음 빌드업은 SQL-first로 진행한다. 현재 M6는 CatalogMetadata 선택, template SQL, fake SQL engine, evidence grounding까지 갖춘 skeleton이며 실제 output file을 SQL로 안정 조회하는 완성 상태는 아니다. 따라서 2주차 후속 M6 실행 우선순위는 RAG/LLM 확장이 아니라 Amazon Reviews 대표 CatalogMetadata를 기준으로 `storage.local_fallback_path`, `query.table_name`, `query.allowed_columns`, `query.default_limit`만 읽어 실제 SQL MVP를 닫는 것이다. 실제 SQL engine은 `SqlEngineAdapter` 뒤에 두고, path 부재는 `blocked`로 처리한다. RAG/LLM은 SQL MVP 이후 `SQL MVP -> SQL Planner 강화 -> 응답 계약 보강 -> CatalogMetadata 기반 RAG -> Hybrid query -> 외부 LLM 답변 생성 -> M1 evidence 표시 연동` 순서로 확장한다.
 
 ## 데이터 경로 기준
 
@@ -53,6 +53,8 @@ Week2는 세 데이터 경로를 모두 구현 대상으로 둔다.
 - M2/M3/M4가 각자 Spark session, config, output convention을 따로 만들지 않는다.
 - `SourceConfig`는 M1 단독 소유가 아니다. M1은 shell/demo tenant/source id/화면 입력 흐름을 관리하고, M3/M4는 source type별 options와 validation 요구사항을 제공한다.
 - M6는 M5 CatalogMetadata를 읽기 전용으로 소비한다. Catalog 저장/API, ETL, Spark runtime, Kafka ingestion은 각각 M5, M3, M2, M4의 책임으로 유지한다.
+- M6의 `route`, `retrieval_trace` 같은 응답 확장은 기존 M1 필드를 깨지 않는 additive field로만 추가한다.
+- M6 RAG-lite index는 M6 전용 derived cache이며 M5 CatalogMetadata를 대체하거나 수정하지 않는다.
 - Iceberg는 이번 발표 범위에서 제외한다.
 
 ## 병렬 구현 시작 전 Phase Queue
