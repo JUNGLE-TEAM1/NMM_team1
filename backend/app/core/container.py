@@ -55,9 +55,9 @@ class AppContainer:
         )
 
     def create_sql_engine(self) -> SqlEngineAdapter:
-        if self.settings.week2_sql_engine == "fake":
-            return FakeSqlEngine()
-        return DuckDBSqlEngine()
+        if self.settings.week2_sql_engine == "duckdb":
+            return DuckDBSqlEngine()
+        return FakeSqlEngine()
 
     def create_catalog_trust_service(self) -> CatalogTrustService:
         return CatalogTrustService()

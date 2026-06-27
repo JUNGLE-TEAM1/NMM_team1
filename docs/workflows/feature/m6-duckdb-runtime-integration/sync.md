@@ -18,25 +18,26 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 | Checked At | Upstream Changes | Impacted Source of Truth | Action |
 | --- | --- | --- | --- |
 | 2026-06-27 | local `origin/main` remains `80945a8`; merge-base with branch is `80945a8` | none | continue; no pull/merge/rebase executed |
+| 2026-06-27 | `origin/main` advanced to `e640f90` via PR #199 `feature/m2-sql-runtime-smoke` | `backend/app/core/settings.py`, `backend/app/core/container.py`, `docs/03-interface-reference.md` | user requested PR finalization; merged `origin/main` into feature branch and resolved M2 opt-in vs M6 default switch conflict |
 
 ## Pre-Merge Sync
 
-- main commit: local `origin/main` `80945a8aa15055d12bb2edc08ac5d28ac3b559e0`
-- conflicts: none checked locally; no upstream divergence in local remote ref
-- validation: focused/backend/harness/API smoke passed before PR-ready handoff
-- result: deferred
-- deferral reason: no pull, merge, rebase, PR merge, finalize, or cleanup is executed before human confirmation. This branch is local-validation complete and ready for meaningful commit/PR preparation.
+- main commit: local `origin/main` `e640f90`
+- conflicts: `backend/app/core/settings.py`, `backend/app/core/container.py`; Source of Truth wording in `docs/03-interface-reference.md`
+- validation: focused M6/DuckDB tests 18 passed; full backend tests 67 passed; `git diff --check`, contract JSON, harness, strict harness passed
+- result: conflict resolved and revalidated locally
+- deferral reason: PR merge/finalize/cleanup still requires human confirmation after PR checks pass.
 
 ## PR Conflict Resolution
 
-- conflict detected at:
-- conflict detection command:
-- conflict type:
-- affected files:
-- resolution path:
-- resolved files:
-- revalidation:
-- remaining risk:
+- conflict detected at: 2026-06-27 after PR #204 creation
+- conflict detection command: `gh pr view 204 --json mergeStateStatus`; `git merge-tree 80945a8... HEAD origin/main`; `git merge origin/main`
+- conflict type: M2 SQL runtime smoke introduced DuckDB opt-in/default-fake setting while M6 Step 3 changes the API default to DuckDB
+- affected files: `backend/app/core/settings.py`, `backend/app/core/container.py`, `docs/03-interface-reference.md`
+- resolution path: keep M2 explicit engine selection and M6 Step 3 default switch; `duckdb` is default, `fake` remains explicit fallback for legacy smoke/tests
+- resolved files: `backend/app/core/settings.py`, `backend/app/core/container.py`, `docs/03-interface-reference.md`
+- revalidation: focused M6/DuckDB tests 18 passed; full backend tests 67 passed; `scripts/validate-harness.sh` passed; `scripts/validate-harness.sh --strict` passed
+- remaining risk: reviewers should confirm the default DuckDB switch is intended after PR #199's opt-in smoke stage
 
 ## Push / PR
 
@@ -45,7 +46,7 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 - issue creation result: created
 - issue project result: failed: error: your authentication token is missing required scopes [read:project] To request it, run:  gh auth refresh -s read:project
 - PR closing keyword: Closes #203
-- pushed branch:
-- PR link:
-- merge status:
-- issue close status:
+- pushed branch: `feature/m6-duckdb-runtime-integration`
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/204
+- merge status: open; conflict resolution ready to push
+- issue close status: open
