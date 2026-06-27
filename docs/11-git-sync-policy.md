@@ -116,6 +116,7 @@ Issue body는 literal newline escape가 남지 않도록 `--body-file` 경로로
 GitHub issue/PR이 UI, `gh`, 외부 자동화, 또는 오래된 스크립트 경로로 생성되면 하네스 템플릿을 우회할 수 있다.
 이 경우 `scripts/audit-github-records.sh`를 먼저 실행해 한국어 issue title/body/label, PR 제목, 읽기 쉬운 PR handoff body, closing keyword 누락을 읽기 전용으로 확인한다.
 PR 제목은 한국어 prefix 양식을 따라야 한다. `[기능]`, `[버그]`, `[문서/운영]`, `[긴급수정]`, `[검증]` 중 하나로 시작해야 하며, 영어 기술명, branch name, API/schema 이름은 prefix 뒤 제목 안에 포함할 수 있다. `docs:`, `feat:`, `fix:`, `chore:`, `test:`, `hotfix:` 같은 conventional prefix 제목, 영어-only 제목, 또는 한국어가 있더라도 하네스 prefix가 없는 제목은 drift로 본다.
+PR body는 `.github/pull_request_template.md`의 7개 section을 유지해야 한다. 단순 `연결된 Issue: 연결된 issue 없음`은 linked issue 예외로 인정하지 않는다. 실제 issue가 없는 예외 PR은 `No Linked Issue Exception: approved` 또는 `연결된 Issue 예외: 승인`을 함께 남겨야 하며, 이 예외는 evidence-only 보정, 이미 merge/finalize된 기록 정리, 또는 사람이 명시 승인한 로컬-only 운영 변경처럼 active implementation issue를 만들지 않는 경우에만 쓴다.
 
 ```bash
 scripts/audit-github-records.sh --issue 112
@@ -137,6 +138,7 @@ PR merge/finalize -> issue closed + Project Done
 
 - `scripts/start-workflow.sh`는 linked issue를 만들고 Project Status를 `In Progress`로 둔다.
 - `scripts/prepare-pr.sh --auto-pr`, `--approved-pr`, `--push --create-pr`, 또는 `--create-pr`가 PR을 만들거나 기존 PR을 감지하기 전 linked issue가 `CLOSED`이면 active work issue로 reopen을 시도하고 결과를 `sync.md`에 기록한다. 그 뒤 linked issue의 Project Status를 `Review`로 둔다.
+- 열린 PR의 linked issue 또는 Project item을 바로 `Done`으로 옮기지 않는다. `Done`은 PR merge/finalize가 확인된 뒤 issue close와 함께 기록하는 최종 상태다.
 - linked issue close와 Project `Done` 전환은 PR merge 후 `scripts/prepare-pr.sh --close-issue` 또는 `--finalize` 경로에서만 수행한다.
 - PR이 아직 `OPEN`인데 linked issue가 이미 `CLOSED`이면 lifecycle mismatch다. `scripts/status-workflow.sh <workspace>`는 이를 별도 warning으로 보고하고, issue reopen + Project `Review` 정렬 또는 finalize evidence 확인을 권고한다. 이는 PR 생성 뒤 외부 조작이나 reopen 실패를 잡는 사후 안전망이다.
 - PR이 `MERGED`이고 linked issue가 `CLOSED`인데 Project Status가 `Done`이 아니면 lifecycle mismatch다. `scripts/status-workflow.sh <workspace>`는 이를 별도 warning으로 보고하고, 자동 보정하지 않는다. 사람 승인 후 `scripts/prepare-pr.sh --finalize <workspace>` 재실행 또는 GitHub Project UI에서 `Done` 수동 정렬로 처리한다.
