@@ -18,25 +18,26 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 | Checked At | Upstream Changes | Impacted Source of Truth | Action |
 | --- | --- | --- | --- |
 | 2026-06-27 | none checked after branch start | n/a | continue implementation |
+| 2026-06-27 | `origin/main` advanced to `80945a8` via PR #196 `feature/m6-duckdb-sql-engine` | `DuckDBSqlEngine`, DuckDB tests, dependency, SQL runtime docs/workspace | user approved resolving conflict by following M6; `git merge origin/main` started |
 
 ## Pre-Merge Sync
 
-- main commit: `5d05bea`
-- conflicts: none; `git diff --name-status HEAD..origin/main` returned no files
-- validation: `git rev-list --left-right --count HEAD...origin/main` -> `0 0`; local tests and strict harness passed before this check
-- result: branch is up to date with `origin/main`; no merge/rebase needed before PR
+- main commit: `80945a8`
+- conflicts: `backend/app/adapters/duckdb_sql_engine.py`, `backend/tests/test_duckdb_sql_engine.py`; dependency version drift in `backend/requirements.txt`
+- validation: `PYTHONPATH=backend .venv/bin/pytest backend/tests/test_duckdb_sql_engine.py backend/tests/test_week2_ai_query_duckdb.py -q` -> 5 passed; `PYTHONPATH=backend .venv/bin/python scripts/week2_m2_sql_runtime_smoke.py` -> succeeded; `PYTHONPATH=backend .venv/bin/pytest -q` -> 77 passed; `scripts/validate-harness.sh --strict` -> passed
+- result: conflict resolved by keeping M6 implementation and leaving only M2 opt-in/smoke additions
 - deferral reason: n/a
 
 ## PR Conflict Resolution
 
-- conflict detected at:
-- conflict detection command:
-- conflict type:
-- affected files:
-- resolution path:
-- resolved files:
-- revalidation:
-- remaining risk:
+- conflict detected at: 2026-06-27 PR #199 after PR #196 merged
+- conflict detection command: `gh pr view 199 --json mergeStateStatus`; `git merge origin/main`
+- conflict type: overlapping implementation of M6-owned DuckDB SQL engine
+- affected files: `backend/app/adapters/duckdb_sql_engine.py`, `backend/tests/test_duckdb_sql_engine.py`, `backend/requirements.txt`
+- resolution path: keep M6 `origin/main` implementation for DuckDB engine/test/dependency; keep M2-only opt-in wiring and smoke script
+- resolved files: `backend/app/adapters/duckdb_sql_engine.py`, `backend/tests/test_duckdb_sql_engine.py`, `backend/requirements.txt`
+- revalidation: focused tests 5 passed; smoke script succeeded; backend tests 77 passed; strict harness passed
+- remaining risk: M2 PR must not re-own M6 SQL engine internals
 
 ## Push / PR
 

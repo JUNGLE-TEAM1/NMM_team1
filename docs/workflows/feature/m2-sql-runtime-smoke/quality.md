@@ -7,24 +7,24 @@
 ## TDD Plan / TDD 계획
 
 - Applies: yes
-- Reason: SQL engine runtime boundary가 fake result에서 실제 local file 조회로 확장되므로 adapter guardrail과 AI query integration regression test가 필요하다.
+- Reason: SQL engine runtime boundary가 fake result에서 M6 DuckDB adapter 기반 실제 local file 조회로 확장되므로 opt-in wiring과 AI query integration regression test가 필요하다.
 - Failing test first: `PYTHONPATH=backend .venv/bin/pytest backend/tests/test_duckdb_sql_engine.py backend/tests/test_week2_ai_query_duckdb.py -q`
 - Expected failure command/result: failed with `ModuleNotFoundError: No module named 'app.adapters.duckdb_sql_engine'`
 - Pass command/result: `PYTHONPATH=backend .venv/bin/pytest backend/tests/test_duckdb_sql_engine.py backend/tests/test_week2_ai_query_duckdb.py -q` -> 5 passed
-- Refactor notes: DuckDB는 adapter 내부 구현체로만 추가하고 M6 service는 `SqlEngineAdapter` protocol만 보게 유지한다.
+- Refactor notes: M6 `DuckDBSqlEngine` 구현을 기준으로 충돌을 해결하고, M2는 settings/container opt-in과 smoke evidence만 유지한다.
 
 ## Branch Checks / 브랜치 검증
 
 | Check | Command | Result | Evidence |
 | --- | --- | --- | --- |
-| dependency install | `.venv/bin/pip install -r backend/requirements.txt` | passed | `duckdb==1.1.3` installed |
+| dependency install | `.venv/bin/pip install -r backend/requirements.txt` | passed | M6 main 기준 `duckdb==1.5.4` installed |
 | script syntax | `python3 -m py_compile scripts/week2_m2_sql_runtime_smoke.py` | passed | no output |
 | unit/focused test | `PYTHONPATH=backend .venv/bin/pytest backend/tests/test_duckdb_sql_engine.py backend/tests/test_week2_ai_query_duckdb.py -q` | passed | 5 passed |
 | integration/contract test | `PYTHONPATH=backend .venv/bin/pytest backend/tests/test_duckdb_sql_engine.py backend/tests/test_week2_ai_query_duckdb.py backend/tests/test_week2_ai_query.py backend/tests/test_week2_workflow_catalog.py -q` | passed | 32 passed |
 | manual smoke | `PYTHONPATH=backend .venv/bin/python scripts/week2_m2_sql_runtime_smoke.py` | passed | `engine=duckdb`, `row_count=3`, `status=succeeded` |
-| backend full test | `PYTHONPATH=backend .venv/bin/pytest -q` | passed | 77 passed |
+| backend full test after M6 merge | `PYTHONPATH=backend .venv/bin/pytest -q` | passed | 77 passed |
 | diff whitespace | `git diff --check` | passed | no output |
-| strict harness validation | `scripts/validate-harness.sh --strict` | passed | Harness validation passed |
+| strict harness validation after M6 merge | `scripts/validate-harness.sh --strict` | passed | Harness validation passed |
 
 ## CI/CD Gate / CI-CD 게이트
 
