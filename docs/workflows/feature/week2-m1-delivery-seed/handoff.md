@@ -37,7 +37,9 @@ PR에는 generated data를 올리지 않고, 재생성 가능한 script/test/wor
   "delivery_distance_km": 2.768,
   "total_delivery_cost_amount": 22.7,
   "currency": "USD",
+  "late_minutes": 0,
   "late_delivery_flag": false,
+  "is_late_60": false,
   "late_threshold_minutes": 60,
   "delivery_status": "delivered",
   "source_dataset_id": "nyc_taxi",
@@ -66,14 +68,16 @@ PYTHONPATH=/tmp/asklake_pyarrow_runtime \
   scripts/week2_m1_delivery_seed.py --limit 100000
 ```
 
-주의: 현재 repo에는 Parquet reader dependency를 추가하지 않았다. 이 실행에서는 임시 target `/tmp/asklake_pyarrow_runtime`에 `pyarrow 24.0.0`을 설치해 생성했다.
+주의: repo에는 이미 `backend/requirements.txt`에 `pyarrow==18.1.0`이 있다. local desktop 기본 Python에는 해당 dependency가 없어서, 이 실행에서는 임시 target `/tmp/asklake_pyarrow_runtime`에 `pyarrow 24.0.0`을 설치해 생성했다. 정식 재생성 환경에서는 backend requirements 설치 환경을 쓰면 된다.
 
 ## 검증 결과
 
 - focused unittest: `python3 -m unittest tests/test_week2_m1_delivery_seed.py` passed, 5 tests.
 - JSONL validation: 100,000 rows, required fields present.
 - `is_synthetic_source=true`: all rows.
+- `late_minutes`: all present.
 - `late_delivery_flag`: all boolean.
+- `is_late_60`: all boolean.
 - `source_taxi_row_hash`: all present.
 - event date filter: all rows are within January 2024.
 - Parquet copy read validation: 100,000 rows.
@@ -91,6 +95,6 @@ PYTHONPATH=/tmp/asklake_pyarrow_runtime \
 ## M5/M6에 요청할 확인 사항
 
 1. 이 shape로 late delivery, cost/distance, product-level delivery analysis를 시작할 수 있는지 확인한다.
-2. `late_threshold_minutes=60` 기준이 분석에 충분한지 확인한다.
+2. `late_threshold_minutes=60`, `late_minutes`, `is_late_60` 기준이 분석에 충분한지 확인한다.
 3. Parquet copy가 필요한지, JSONL만으로 충분한지 결정한다.
-4. 향후 정식 dev dependency로 `pyarrow` 또는 `duckdb`가 필요한지 판단한다.
+4. `duckdb`는 M6 SQL adapter Phase에서 `SqlEngineAdapter` 뒤에 붙일 때 추가할지 판단한다.

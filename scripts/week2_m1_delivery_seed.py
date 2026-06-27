@@ -23,7 +23,9 @@ REQUIRED_DELIVERY_FIELDS = [
     "delivery_distance_km",
     "total_delivery_cost_amount",
     "currency",
+    "late_minutes",
     "late_delivery_flag",
+    "is_late_60",
     "late_threshold_minutes",
     "delivery_status",
     "source_dataset_id",
@@ -119,6 +121,7 @@ def taxi_row_to_delivery(
     total_amount = finite_float(row.get("total_amount"))
     distance_km = round(max(trip_distance_miles, 0.0) * 1.609344, 3)
     cost_amount = round(max(total_amount, 0.0), 2)
+    late_minutes = max(duration_minutes - late_threshold_minutes, 0)
     source_taxi_trip_id = f"yellow_tripdata_2024-01:{source_index:08d}"
     row_hash = stable_hash(
         [
@@ -142,7 +145,9 @@ def taxi_row_to_delivery(
         "delivery_distance_km": distance_km,
         "total_delivery_cost_amount": cost_amount,
         "currency": "USD",
-        "late_delivery_flag": duration_minutes > late_threshold_minutes,
+        "late_minutes": late_minutes,
+        "late_delivery_flag": late_minutes > 0,
+        "is_late_60": duration_minutes > 60,
         "late_threshold_minutes": late_threshold_minutes,
         "delivery_status": "delivered",
         "source_dataset_id": SOURCE_DATASET_ID,
@@ -157,9 +162,9 @@ def taxi_row_to_delivery(
 
 def iter_taxi_rows(parquet_path: Path, limit: int) -> Iterable[dict[str, Any]]:
     try:
-        import pandas as pd  # type: ignore
+        import pyarrow.parquet as pq  # type: ignore
     except ModuleNotFoundError as exc:
-        raise RuntimeError("pandas is required to read Taxi parquet input") from exc
+        raise RuntimeError("pyarrow is required to read Taxi parquet input; install backend requirements") from exc
 
     columns = [
         "tpep_pickup_datetime",
@@ -169,12 +174,8 @@ def iter_taxi_rows(parquet_path: Path, limit: int) -> Iterable[dict[str, Any]]:
         "PULocationID",
         "DOLocationID",
     ]
-    try:
-        frame = pd.read_parquet(parquet_path, columns=columns)
-    except ImportError as exc:
-        raise RuntimeError("A pandas parquet engine such as pyarrow or fastparquet is required") from exc
-
-    for row in frame.head(limit).to_dict(orient="records"):
+    table = pq.read_table(parquet_path, columns=columns).slice(0, limit)
+    for row in table.to_pylist():
         yield row
 
 
@@ -215,14 +216,13 @@ def summarize_delivery(rows: list[dict[str, Any]]) -> dict[str, Any]:
 
 def write_parquet_copy(path: Path, rows: list[dict[str, Any]]) -> bool:
     try:
-        import pandas as pd  # type: ignore
+        import pyarrow as pa  # type: ignore
+        import pyarrow.parquet as pq  # type: ignore
     except ModuleNotFoundError:
         return False
     path.parent.mkdir(parents=True, exist_ok=True)
-    try:
-        pd.DataFrame(rows).to_parquet(path, index=False)
-    except ImportError:
-        return False
+    table = pa.Table.from_pylist(rows)
+    pq.write_table(table, path)
     return True
 
 
