@@ -34,7 +34,7 @@ class StorageLocation:
 class StorageUploadResult:
     """MinIO/S3-compatible object upload smoke 결과.
 
-    runner 결과에는 secret이나 signed header를 남기지 않고, 사람이 확인할 수 있는 object URI와 bytes만 남긴다.
+    runner 결과에는 secret이나 signed header를 남기지 않는다.
     """
 
     object_uri: str | None
@@ -47,8 +47,7 @@ class StorageUploadResult:
 class Week2StorageAdapter:
     """MinIO/S3-compatible storage 계약을 local fallback과 object upload 경로로 해석한다.
 
-    이 adapter는 변환 의미를 모르고, 파일이 어디에 저장되어야 하는지만 계산한다.
-    그래서 M3 TransformSpec이나 M5 Catalog 저장 로직과 섞이지 않는다.
+    이 adapter는 변환 의미를 모르고 저장 위치만 계산한다.
     """
 
     def build_location(
@@ -65,8 +64,7 @@ class Week2StorageAdapter:
         prefix = normalize_prefix(apply_run_id(config.prefix or default_prefix, run_id))
         root = resolve_local_root(local_root or config.local_fallback_root)
         safe_file_name = normalized_file_name(file_name)
-        # prefix와 file_name을 한 번에 만든 object_key가 remote upload의 단일 기준이다.
-        # 같은 prefix로 local_path도 만들기 때문에 local/remote drift를 막을 수 있다.
+        # object_key와 local_path를 같은 prefix에서 만들어 local/remote drift를 막는다.
         object_key = f"{prefix}{safe_file_name}"
         return StorageLocation(
             uri=s3_uri(config.bucket, prefix),
@@ -195,12 +193,8 @@ def create_bucket(
     access_key: str,
     secret_key: str,
     http_client: Any | None,
-) -> None:
-    """local smoke 재현을 위해 bucket이 없으면 만들고, 이미 있으면 통과시킨다.
-
-    MinIO/S3는 이미 있는 bucket 생성 요청에 409를 줄 수 있다. 이 경우 smoke 재실행을 막을 이유가 없어서
-    성공과 같은 상태로 취급한다.
-    """
+    ) -> None:
+    """local smoke 재현을 위해 bucket이 없으면 만들고, 이미 있으면 통과시킨다."""
 
     bucket_url, canonical_uri = bucket_request_target(endpoint, config.bucket)
     response = signed_put(
@@ -243,8 +237,7 @@ def signed_put(
 ):
     """AWS SigV4로 서명한 PUT 요청을 보낸다.
 
-    여기서는 단일 object PUT smoke만 다룬다. multipart upload, STS, IAM role 같은 운영 기능이 필요해지면
-    이 helper를 키우기보다 `boto3` 또는 MinIO SDK 도입을 별도 결정으로 검토한다.
+    multipart, STS, IAM role은 후속 SDK 도입 결정으로 둔다.
     """
 
     headers = signed_put_headers(
@@ -275,8 +268,7 @@ def signed_put_headers(
 ) -> dict[str, str]:
     """MinIO/S3-compatible PUT 요청에 필요한 AWS SigV4 header를 만든다.
 
-    SigV4는 요청 본문 hash, canonical request, credential scope를 묶어 Authorization header를 만든다.
-    테스트와 로그에는 완성된 secret 값이 아니라 header 형태와 object URI만 확인한다.
+    본문 hash, canonical request, credential scope로 Authorization header를 만든다.
     """
 
     request_time = now or datetime.now(UTC)
@@ -325,10 +317,7 @@ def signed_put_headers(
 
 
 def sigv4_signing_key(secret_key: str, date_stamp: str, region: str) -> bytes:
-    """AWS SigV4 signing key를 계산한다.
-
-    secret key 원문을 직접 signature에 쓰지 않고 날짜, region, service 범위로 단계별 파생 key를 만든다.
-    """
+    """날짜, region, service 범위로 AWS SigV4 signing key를 계산한다."""
 
     date_key = hmac.new(f"AWS4{secret_key}".encode(), date_stamp.encode(), hashlib.sha256).digest()
     region_key = hmac.new(date_key, region.encode(), hashlib.sha256).digest()
