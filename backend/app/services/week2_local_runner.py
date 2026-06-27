@@ -281,11 +281,7 @@ def repo_root() -> Path:
 
 
 def path_size(path: Path | None) -> int | None:
-    if path is None or not path.exists():
-        return None
-    if path.is_dir():
-        return sum(candidate.stat().st_size for candidate in path.rglob("*") if candidate.is_file())
-    return path.stat().st_size
+    return path.stat().st_size if path is not None and path.exists() else None
 
 
 def elapsed_ms(started: float) -> int:

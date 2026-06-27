@@ -106,36 +106,3 @@ def test_taxi_batch_runner_reports_invalid_rows(tmp_path: Path) -> None:
     assert jan_second["trip_count"] == 2
     assert jan_second["valid_trip_count"] == 1
     assert jan_second["invalid_trip_count"] == 1
-
-
-def test_taxi_batch_runner_reads_parquet_directory(tmp_path: Path) -> None:
-    """여러 Taxi Parquet 파일이 있는 디렉터리도 하나의 batch 입력으로 처리한다."""
-
-    input_dir = tmp_path / "yellow_tripdata"
-    output_root = tmp_path / "taxi_results"
-    input_dir.mkdir()
-    first_file = input_dir / "yellow_tripdata_2024-01.parquet"
-    second_file = input_dir / "yellow_tripdata_2024-02.parquet"
-    write_taxi_fixture(first_file)
-    write_taxi_fixture(second_file)
-
-    result = Week2TaxiBatchRunner().run(
-        TaxiBatchConfig(
-            input_path=str(input_dir),
-            output_root=str(output_root),
-            run_id="run_taxi_test_directory",
-            profile="local-full-month",
-        )
-    )
-
-    gold_rows = pq.ParquetFile(result.output_path).read().to_pylist()
-    jan_first = [row for row in gold_rows if str(row["pickup_date"]) == "2024-01-01"][0]
-    expected_input_bytes = first_file.stat().st_size + second_file.stat().st_size
-
-    assert result.status == "succeeded"
-    assert result.row_count == 8
-    assert result.bytes == expected_input_bytes
-    assert result.output_row_count == 2
-    assert jan_first["trip_count"] == 4
-    assert jan_first["valid_trip_count"] == 4
-    assert jan_first["total_trip_distance"] == 12.0

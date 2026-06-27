@@ -5,7 +5,7 @@
 ## Current State / 현재 상태
 
 - State: PySpark local evidence ready; 5GB scale input pending
-- Summary: Taxi pyarrow runner는 Parquet 디렉터리 입력을 처리하도록 보강되었고, PySpark local mode로 10,000행 Taxi smoke와 MinIO-compatible upload smoke가 성공했다. 다만 현재 CLI 환경에서 TLC CloudFront/S3 직접 다운로드가 `403`으로 차단되어 약 5GB 원본 다운로드는 완료하지 못했다.
+- Summary: PySpark local mode로 10,000행 Taxi smoke와 MinIO-compatible upload smoke가 성공했다. 다만 현재 CLI 환경에서 TLC CloudFront/S3 직접 다운로드가 `403`으로 차단되어 약 5GB 원본 다운로드는 완료하지 못했다.
 
 ## Recommended Next Action / 권장 다음 행동
 

@@ -7,6 +7,7 @@
 - `.venv`에 `pyspark==4.1.2`를 설치했고, Spark local mode `local[1]` smoke가 성공했다.
 - `Week2TaxiSparkRunner`를 추가해 작은 Taxi Parquet 입력에서 Spark read -> Taxi daily Gold metric aggregate -> Parquet write까지 확인했다.
 - 임시 MinIO 컨테이너를 `http://localhost:19000`에 띄워 Spark local output을 existing `Week2StorageAdapter`로 upload하는 smoke까지 성공했다.
+- PR size hard gate를 통과하기 위해 기존 pyarrow Taxi runner 디렉터리 입력 보강은 이번 PR에서 제외했다. 5GB 재실행은 Spark reader의 디렉터리 input으로 처리한다.
 
 ## 결정
 
@@ -25,4 +26,3 @@
 
 - Spark local demo summary: `data/results/m2_taxi_spark_local_evidence/run_taxi_spark_local_demo_001_summary.json` (gitignored)
 - Spark local + MinIO upload summary: `data/results/m2_taxi_spark_local_evidence/run_taxi_spark_local_minio_001_summary.json` (gitignored)
-- Existing local full-month pyarrow summary: `data/results/m2_taxi_scale_evidence/run_taxi_2024_01_full_month_scale_smoke_001_summary.json` (gitignored)

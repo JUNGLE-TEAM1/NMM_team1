@@ -7,11 +7,11 @@
 ## TDD Plan / TDD 계획
 
 - Applies: yes
-- Reason: Taxi runner의 입력 경로 해석, PySpark local mode 실행, row/bytes/duration evidence가 바뀌므로 focused regression test가 필요하다.
+- Reason: PySpark local mode 실행과 row/bytes/duration evidence가 추가되므로 focused regression test가 필요하다.
 - Failing test first: 기존 테스트는 단일 Parquet 파일 중심이었고, PySpark local mode가 Taxi Gold Parquet을 쓰는 증거가 없었다.
 - Expected failure command/result: `python3 -m pytest backend/tests/test_week2_taxi_batch_runner.py` -> local system Python에 `pyarrow`가 없어 collection 실패; `backend/tests/test_week2_taxi_spark_runner.py` 초기 실행 -> Spark 4 `TIMESTAMP_NTZ` duration 계산 실패.
-- Pass command/result: `PYTHONPATH=backend SPARK_LOCAL_IP=127.0.0.1 .venv/bin/python -m pytest backend/tests/test_week2_taxi_batch_runner.py backend/tests/test_week2_taxi_spark_runner.py backend/tests/test_week2_storage_adapter.py -q` -> `6 passed in 5.42s`
-- Refactor notes: 기존 pyarrow Taxi runner는 유지하고, PySpark local mode용 `Week2TaxiSparkRunner`를 별도로 추가했다. 여러 Parquet 파일은 pyarrow runner에서 파일별로 누적 처리하고, Spark runner는 작은 smoke와 5GB 재실행 경로를 담당한다.
+- Pass command/result: `PYTHONPATH=backend SPARK_LOCAL_IP=127.0.0.1 .venv/bin/python -m pytest backend/tests/test_week2_taxi_spark_runner.py backend/tests/test_week2_storage_adapter.py -q` -> `3 passed in 7.44s`
+- Refactor notes: 기존 pyarrow Taxi runner는 유지하고, PySpark local mode용 `Week2TaxiSparkRunner`를 별도로 추가했다. PR size hard gate를 지키기 위해 기존 pyarrow runner 보강은 이번 PR에서 제외했다.
 
 ## Branch Checks / 브랜치 검증
 
@@ -20,9 +20,9 @@
 | lint | `git diff --check` | passed | no output |
 | dependency install | `.venv/bin/python -m pip install pyspark==4.1.2` | passed | installed `pyspark 4.1.2`, `py4j 0.10.9.9` |
 | PySpark install smoke | `SPARK_LOCAL_IP=127.0.0.1 .venv/bin/python - <<'PY' ... SparkSession.builder.master('local[1]') ... PY` | passed | Spark `4.1.2`, `rows=3` |
-| unit/focused test | `PYTHONPATH=backend SPARK_LOCAL_IP=127.0.0.1 .venv/bin/python -m pytest backend/tests/test_week2_taxi_batch_runner.py backend/tests/test_week2_taxi_spark_runner.py backend/tests/test_week2_storage_adapter.py -q` | passed | `6 passed in 5.42s` |
+| unit/focused test | `PYTHONPATH=backend SPARK_LOCAL_IP=127.0.0.1 .venv/bin/python -m pytest backend/tests/test_week2_taxi_spark_runner.py backend/tests/test_week2_storage_adapter.py -q` | passed | `3 passed in 7.44s` |
 | integration/contract test | `PYTHONPATH=backend SPARK_LOCAL_IP=127.0.0.1 .venv/bin/python -m pytest backend/tests/test_week2_spark_runner.py backend/tests/test_week2_workflow_catalog.py backend/tests/test_week2_taxi_spark_runner.py -q` | passed | `21 passed in 6.18s` |
-| backend full test | `PYTHONPATH=backend SPARK_LOCAL_IP=127.0.0.1 .venv/bin/python -m pytest backend/tests -q` | passed | `67 passed in 7.14s` |
+| backend full test | `PYTHONPATH=backend SPARK_LOCAL_IP=127.0.0.1 .venv/bin/python -m pytest backend/tests -q` | passed | `66 passed in 6.17s` |
 | build/typecheck | `PYTHONPATH=backend .venv/bin/python -m py_compile backend/app/services/week2_taxi_spark_runner.py scripts/week2_m2_taxi_spark_local_evidence.py backend/app/services/week2_taxi_batch_runner.py backend/app/services/week2_local_runner.py` | passed | no output |
 | harness validation | `scripts/validate-harness.sh` | passed | Harness validation passed |
 | strict harness validation | `scripts/validate-harness.sh --strict` | passed | Harness validation passed |

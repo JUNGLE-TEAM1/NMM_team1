@@ -15,12 +15,12 @@
 ## 범위
 
 - `yellow_tripdata` 2019-2025 월별 Parquet 파일을 다운로드 후보로 사용한다. HEAD 기준 총 크기는 약 4.54 GiB, 십진 기준 약 4.87 GB다.
-- Taxi runner가 단일 Parquet 파일뿐 아니라 Parquet 파일들이 들어 있는 디렉터리도 입력으로 받을 수 있게 한다.
 - 입력 row 수, 입력 bytes, 실행 시간, Gold output row 수, Gold output bytes를 evidence summary로 기록한다.
 - 실행 산출물은 `data/` 아래 ignored 경로에만 둔다.
 - `.venv`에 PySpark를 추가하고 `backend/requirements.txt`에 같은 버전을 고정한다.
 - 작은 Taxi Parquet 입력으로 PySpark local mode smoke를 실행한다.
 - Spark local mode에서 Parquet 읽기, Taxi daily Gold metric 생성, Parquet 쓰기까지 확인한다.
+- Spark local mode는 파일 또는 디렉터리 Parquet input을 받을 수 있는 Spark reader 경로를 사용한다.
 - MinIO가 준비되면 Spark local output을 기존 `Week2StorageAdapter`로 MinIO/S3-compatible endpoint에 upload한다.
 - Spark local 결과는 기존 M2 evidence result shape인 `Week2RunnerResult` 호환 필드와 summary JSON으로 남긴다.
 
