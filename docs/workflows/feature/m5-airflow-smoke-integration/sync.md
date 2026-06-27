@@ -27,7 +27,7 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 - conflicts: first approved merge required conflict resolution; latest `origin/main` merge had no additional conflicts
 - validation: post-sync `npm run build`, full backend pytest, strict harness, integration harness, and `git diff --check` passed
 - result: combined M5 local/demo branch is synced to latest checked `origin/main` and locally PR-ready
-- deferral reason: PR merge/finalize/cleanup remains deferred by policy; remote PR body guardrail correction still requires GitHub authentication
+- deferral reason: PR merge/finalize/cleanup remains deferred by policy; PR body guardrail was corrected after GitHub authentication recovery
 
 ## PR Conflict Resolution
 
@@ -38,16 +38,16 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 - resolution path: keep Airflow smoke + M5 demo cockpit UI together as one M5 local/demo completion PR candidate unless PR review asks for split
 - resolved files: same as affected files; latest follow-up merge through `e640f90` had no additional conflict
 - revalidation: `npm run build`; `PYTHONPATH=backend ./.venv/bin/python -m pytest backend/tests -q`; `scripts/validate-harness.sh --strict`; `scripts/validate-harness.sh --integration`; `git diff --check`
-- remaining risk: remote PR checks need body guardrail correction for linked issue/no-issue and large PR exception; PR merge/finalize/cleanup not executed
+- remaining risk: remote PR checks need recheck after body guardrail correction; PR merge/finalize/cleanup not executed
 
 ## Push / PR
 
-- linked GitHub issue: 
-- issue link: 
-- issue creation result: not requested
-- issue project result: not requested
-- PR closing keyword: 
+- linked GitHub issue: #202
+- issue link: https://github.com/JUNGLE-TEAM1/NMM_team1/issues/202
+- issue creation result: created for PR #200 linked-issue guardrail
+- issue project result: added to JUNGLE-TEAM1 project 3; status set to Review
+- PR closing keyword: Closes #202
 - pushed branch: feature/m5-airflow-smoke-integration
 - PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/200
 - merge status: open; latest local branch includes `origin/main` through `e640f90`
-- issue close status: n/a
+- issue close status: #202 remains open until PR merge/finalize because PR body uses `Closes #202`

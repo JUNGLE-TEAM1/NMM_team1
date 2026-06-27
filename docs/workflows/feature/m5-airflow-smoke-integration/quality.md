@@ -39,7 +39,7 @@
 ## CI/CD Gate / CI-CD 게이트
 
 - CI required: no local-only change in this turn
-- CI result: PR #200 opened; remote `linked-issue` and `pr-size-hard-gate` require PR body correction, while local test/build/harness gates pass
+- CI result: PR #200 body corrected with `Closes #202` and `Large PR Exception: approved`; remote recheck pending while local test/build/harness gates pass
 - Deploy/publish required: no
 - Deployment confirmation: not applicable
 - Rollback/smoke notes: local Airflow containers are started by `docker compose -f docker-compose.airflow.yml up -d`; stop with `docker compose -f docker-compose.airflow.yml down` when no longer needed.
