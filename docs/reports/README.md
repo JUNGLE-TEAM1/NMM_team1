@@ -81,6 +81,7 @@ report가 늘어나면 영역별 최신 report index를 작게 유지한다. 이
 | M1 Run Status Live UI | [`m1-run-status-live-ui.md`](m1-run-status-live-ui.md) | M1 live UI Phase 2에서 `/runs` 화면이 M5 workflow 실행/refresh와 ExecutionResult 표시를 소비하는지 확인 |
 | M1 AI Query Live UI | [`m1-ai-query-live-ui.md`](m1-ai-query-live-ui.md) | M1 live UI Phase 4에서 `/query` 화면이 M6 `AIQueryResult`와 evidence grounding을 표시하는지 확인 |
 | M1 Demo Click Flow Polish | [`m1-demo-click-flow-polish.md`](m1-demo-click-flow-polish.md) | M1 live UI Phase 5에서 `/sources -> /runs -> /catalog -> /ask` 발표 클릭 흐름 CTA가 연결됐는지 확인 |
+| M1 Week2 final demo flow | [`m1-week2-final-demo-flow.md`](m1-week2-final-demo-flow.md) | 최신 M5/M6 진행 뒤 `/catalog` query readiness와 `/query` DuckDB/evidence 상태 표시를 M1 화면에 보강했는지 확인 |
 | M1 Catalog Live UI | [`m1-catalog-live-ui.md`](m1-catalog-live-ui.md) | M1 live UI Phase 3에서 `/catalog`와 detail 화면이 M5 CatalogMetadata를 소비하는지 확인 |
 | PR Conflict Resolution Protocol | [`pr-conflict-resolution-protocol.md`](pr-conflict-resolution-protocol.md) | PR conflict 감지, 분류, 사람 확인, 해결 후 재검증과 evidence 기록 규칙 확인 |
 | Harness 변경사항 병합 후 점검 | [`harness-post-merge-change-audit.md`](harness-post-merge-change-audit.md) | PR #45~#47 병합 뒤 Pre-PR checkpoint, Product Rebaseline, validation/script 충돌 여부 확인 |
