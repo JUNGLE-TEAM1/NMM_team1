@@ -10,13 +10,15 @@ Week2 분업은 이제 초기 회의안 그대로가 아니라 ver2 기준으로
 Amazon Reviews JSON
 -> M3 profile/schema/TransformSpec
 -> M5 Workflow/local runner/Catalog
--> M6 Semantic/RAG-lite/AI Query
+-> M6 SQL-first Semantic/RAG-lite/AI Query
 -> M1 UI
 ```
 
 Week2 데이터 경로는 세 가지다. Amazon Reviews JSON은 Semantic/RAG-lite/AI Query 분석 대표 경로이고, Taxi Batch와 Kafka Event도 필수 처리/evidence 경로다. Taxi/Kafka는 선택 사항이 아니지만, M6 분석 연결의 선행 조건으로 두지는 않는다.
 
 먼저 기존 M5 local runner로 Amazon Reviews 분석 E2E를 닫고, M2/M4는 각각 정형 batch와 streaming ingestion의 처리 증거를 완성한다. SparkRunner는 runner boundary 뒤에 붙인다.
+
+M6는 최종적으로 RAG/LLM까지 확장될 수 있지만, 현재는 실제 SQL도 아직 fake/template 수준이다. 그래서 2주차 후속 M6 우선순위는 `DuckDBSqlEngine` 같은 실제 SQL adapter와 SQL planner/guardrail을 통해 Amazon Reviews CatalogMetadata의 output file을 조회하는 SQL MVP 완성이다. CatalogMetadata 기반 RAG, hybrid query, 외부 LLM 답변 생성은 SQL MVP 이후 단계로 둔다.
 
 M2 구현은 Taxi 전용 ETL이 아니다. M2는 데이터셋 독립적인 `RuntimeConfig`/`SparkRunner` 공통 실행기를 만들고, TLC NYC Taxi Dataset은 예전 M2 계획과 정형 빅데이터 ETL 가능성을 보여주는 대표 evidence로 사용한다.
 
@@ -44,7 +46,7 @@ M2 구현은 Taxi 전용 ETL이 아니다. M2는 데이터셋 독립적인 `Runt
 | M3 | Amazon Reviews JSON inspect/profile/schema facts와 최소 `TransformSpec`를 만든다. | M5 runner boundary, M2 runtime 제약, PR #105 source material | JSON sample에서 field facts와 minimal `TransformSpec`가 나오고, M5에 넘길 Catalog facts가 정리된다. | Spark session/config/output convention을 직접 만들지 않는다. |
 | M4 | Kafka replay demo와 raw event evidence를 유지하고, 필요 시 M3가 읽을 raw event contract를 정리한다. | M3 raw event 요구사항, M5 evidence 저장 방식 | replay command, raw event shape, throughput/lag/restart evidence, output_path가 문서와 실행 로그로 남는다. | M6 분석 연결의 선행 조건으로 Kafka streaming to Gold를 만들지 않는다. |
 | M5 | `Week2WorkflowService` 중심 runner selection과 Catalog persistence를 유지/확장한다. | M2 `SparkRunner`, M3 `TransformSpec`, M6 Catalog 소비 요구 | local runner baseline을 유지하면서 선택형 runner adapter를 선택하고 successful result만 Catalog에 반영한다. | ETL 내부 변환 로직이나 Spark runtime을 소유하지 않는다. |
-| M6 | fixture-only query에서 M5 Catalog-backed Semantic/RAG-lite/AI Query로 전환한다. | M5 Catalog store/API, M3 schema/profile facts, M2 SQL runtime smoke | AI Query 응답이 Catalog metadata를 semantic retrieval/evidence grounding 근거로 사용하고 selected dataset 근거를 보여준다. | Catalog 저장소/API, 원본 ETL, 외부 vector DB/full document RAG를 소유하지 않는다. |
+| M6 | fixture-only query에서 M5 Catalog-backed SQL-first Semantic/RAG-lite/AI Query로 전환한다. | M5 Catalog store/API, M3 schema/profile facts, M2 SQL runtime smoke | 우선 Amazon Reviews CatalogMetadata의 `storage.local_fallback_path`, `query.table_name`, `query.allowed_columns`, `query.default_limit`로 실제 SQL MVP를 닫고, 그 결과와 evidence를 `AIQueryResult`로 반환한다. | Catalog 저장소/API, 원본 ETL, Spark runtime, Kafka ingestion, 2주차 범위를 넘는 외부 vector DB/full document RAG/real LLM을 소유하지 않는다. |
 
 ## 보존할 기존 구현
 
@@ -152,10 +154,10 @@ PR #105는 닫힌 PR이고 그대로 merge하지 않는다. 이유는 JSON inspe
 | 1 | M3 JSON TransformSpec | Amazon Reviews JSON sample에서 profile/schema facts와 minimal `TransformSpec` 생성 |
 | 2 | M2 RuntimeConfig/SparkRunner smoke | dataset-independent Spark read/write smoke가 `Week2RunnerResult` 호환 metrics 반환 |
 | 3 | M5 runner selection | local runner baseline 유지, 선택형 SparkRunner adapter 선택 가능 |
-| 4 | M6 Catalog-backed Semantic/RAG-lite query | fixture catalog 대신 M5 Catalog metadata를 semantic retrieval/evidence source로 사용 |
+| 4 | M6 SQL-first Catalog-backed query | fixture/fake SQL 수준에서 벗어나 M5 Catalog metadata와 output file을 SQL MVP/evidence source로 사용 |
 | 5 | M1 analysis path UI | run/catalog/query/evidence 상태를 한 흐름으로 표시 |
 
-M3와 M2는 병렬로 시작할 수 있다. M5 runner selection은 M2/M3의 첫 smoke 결과를 보고 연결한다. M6와 M1은 M5의 API/result shape가 안정된 뒤 붙이는 것이 좋다. 이때 M6는 외부 vector DB/full document RAG가 아니라 CatalogMetadata 기반 Semantic/RAG-lite query부터 붙인다.
+M3와 M2는 병렬로 시작할 수 있다. M5 runner selection은 M2/M3의 첫 smoke 결과를 보고 연결한다. M6와 M1은 M5의 API/result shape가 안정된 뒤 붙이는 것이 좋다. 이때 M6는 외부 vector DB/full document RAG/real LLM이 아니라 실제 SQL MVP와 CatalogMetadata 기반 evidence query부터 붙인다.
 
 ## 병렬 구현 시작 조건
 
