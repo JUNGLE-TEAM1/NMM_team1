@@ -78,6 +78,7 @@ Target MVP 기능이 구현될 때 아래 경로를 단계별로 실제 manual v
 8. Week 2 fixture가 M1~M6 producer/consumer, M2 runtime, M3 transform intent, M4 Kafka raw event handoff, Airflow/local runner fallback, direct `spark_runner`, `SqlEngineAdapter` 경계를 명시하는지 확인한다.
 9. Week 2 공통 hardening으로 API/UI route, ID 규칙, storage path pattern, workflow/run status, `QueryResult`, guardrail failure shape, daily smoke evidence 형식이 `docs/03`에 정리되어 있는지 확인한다.
 10. `contracts/ai_query_result.sample.json`의 `query_result` 필드가 `docs/03`의 `QueryResult` 필드와 일치하는지 확인한다.
+11. M2 Taxi local batch evidence를 확인할 때 `scripts/week2_m2_taxi_local_batch_evidence.py --profile fixed`가 하루치 Taxi row를 Gold Parquet 1행으로 만들고, `--profile local-full-month`가 월별 파일 전체 row count와 Gold output path를 evidence JSON에 남기는지 확인한다.
 
 ### Trust Gate 점검
 

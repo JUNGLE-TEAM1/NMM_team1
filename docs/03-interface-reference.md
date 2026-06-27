@@ -259,6 +259,25 @@ Locked Week 2 contract decisions:
 - Week 2 workflow run request `executor` accepts `local_runner`, `airflow`, or `spark_runner`. `spark_runner` means M5 calls the M2 `Week2SparkRunner` boundary directly; it does not mean Airflow DAG-internal Spark execution is already implemented.
 - `KafkaTopicContract` is evidence and raw-event handoff for Week 2. Kafka is not a blocker for the Amazon Reviews main E2E path unless a later Phase explicitly changes the main path.
 - `ExecutionResult.duration_ms` is part of the locked execution evidence and comes from `Week2RunnerResult.duration_ms`.
+- M2 Taxi local batch evidence uses `pipeline_taxi_daily_metrics`, `dataset_taxi_daily_metrics_gold`, and `gold_taxi_daily_metrics`. It is local Parquet evidence only; PostgreSQL loader, MinIO/S3 write, PySpark, and Airflow DAG-internal invocation are later phases.
+
+M2 Taxi Gold daily metric fields:
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `pickup_date` | date | pickup timestamp truncated to date |
+| `trip_count` | integer | input Taxi rows for the date |
+| `total_passenger_count` | integer | sum of passenger count over valid rows |
+| `total_trip_distance` | number | sum of trip distance over valid rows |
+| `avg_trip_distance` | number | average trip distance over valid rows |
+| `total_fare_amount` | number | sum of fare amount over valid rows |
+| `total_tip_amount` | number | sum of tip amount over valid rows |
+| `total_tolls_amount` | number | sum of tolls amount over valid rows |
+| `total_amount` | number | sum of total amount over valid rows |
+| `avg_total_amount` | number | average total amount over valid rows |
+| `avg_duration_minutes` | number | average dropoff-pickup duration over valid rows |
+| `valid_trip_count` | integer | rows passing basic time, distance, and amount checks |
+| `invalid_trip_count` | integer | `trip_count - valid_trip_count` |
 
 Week 2 shared IDs:
 
