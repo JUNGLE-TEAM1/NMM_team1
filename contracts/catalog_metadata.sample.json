@@ -8,12 +8,12 @@
   "name": "Amazon Reviews Gold",
   "layer": "gold",
   "s3_uri": "s3://asklake-demo/reviews/gold/run_id=run_reviews_demo_001/",
-  "s3_uri_status": "example_pending_minio_path_contract",
+  "s3_uri_status": "adapter_locked_endpoint_pending",
   "storage": {
     "profile": "minio",
     "bucket": "asklake-demo",
     "prefix": "reviews/gold/run_id=run_reviews_demo_001/",
-    "local_fallback_path": "TODO: confirm local fallback path if MinIO is unavailable"
+    "local_fallback_path": "data/week2/reviews/gold/run_id=run_reviews_demo_001/dataset_reviews_gold.parquet"
   },
   "schema": {
     "schema_version": "schema_reviews_gold_v1",
