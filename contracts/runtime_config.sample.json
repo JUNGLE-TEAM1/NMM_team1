@@ -21,9 +21,10 @@
     "profile": "minio",
     "bucket": "asklake-demo",
     "endpoint": "TODO: confirm local MinIO endpoint before M2/M5 handoff",
+    "prefix": "reviews/gold/run_id=<run_id>/",
     "path_pattern": "s3://<bucket>/<domain>/<layer>/[dataset_path/]run_id=<run_id>/",
     "local_fallback_root": "data/week2",
-    "path_contract_status": "locked_pattern_endpoint_pending"
+    "path_contract_status": "adapter_locked_endpoint_pending"
   },
   "spark": {
     "enabled_for_main_path": false,
