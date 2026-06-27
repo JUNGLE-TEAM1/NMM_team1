@@ -1,0 +1,51 @@
+name: PR Template Drift Check
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - synchronize
+      - reopened
+      - ready_for_review
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  pr-template-drift:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build PR audit fixture
+        env:
+          PR_EVENT_PATH: ${{ github.event_path }}
+          PR_AUDIT_FIXTURE: ${{ runner.temp }}/pr-audit-fixture.json
+        run: |
+          node - "$PR_EVENT_PATH" "$PR_AUDIT_FIXTURE" <<'NODE'
+          const fs = require("fs");
+          const [eventPath, fixturePath] = process.argv.slice(2);
+          const event = JSON.parse(fs.readFileSync(eventPath, "utf8"));
+          const pr = event.pull_request || {};
+          const fixture = {
+            issues: [],
+            prs: [
+              {
+                number: pr.number,
+                title: pr.title || "",
+                state: pr.state || "",
+                url: pr.html_url || "",
+                body: pr.body || "",
+              },
+            ],
+          };
+          fs.writeFileSync(fixturePath, JSON.stringify(fixture, null, 2));
+          NODE
+
+      - name: Enforce PR template drift audit
+        env:
+          PR_AUDIT_FIXTURE: ${{ runner.temp }}/pr-audit-fixture.json
+        run: scripts/audit-github-records.sh --fixture "$PR_AUDIT_FIXTURE"

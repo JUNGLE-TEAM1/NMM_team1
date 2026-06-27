@@ -20,10 +20,16 @@
   "storage": {
     "profile": "minio",
     "bucket": "asklake-demo",
-    "endpoint": "TODO: confirm local MinIO endpoint before M2/M5 handoff",
+    "endpoint": "http://localhost:9000",
+    "region": "us-east-1",
+    "prefix": "reviews/gold/run_id=<run_id>/",
     "path_pattern": "s3://<bucket>/<domain>/<layer>/[dataset_path/]run_id=<run_id>/",
     "local_fallback_root": "data/week2",
-    "path_contract_status": "locked_pattern_endpoint_pending"
+    "access_key_env": "ASKLAKE_DEMO_MINIO_ACCESS_KEY",
+    "secret_key_env": "ASKLAKE_DEMO_MINIO_SECRET_KEY",
+    "auto_create_bucket": true,
+    "upload_timeout_seconds": 30,
+    "path_contract_status": "object_upload_smoke_ready"
   },
   "spark": {
     "enabled_for_main_path": false,
@@ -45,7 +51,10 @@
   },
   "secrets": {
     "uses_secret_values": false,
-    "secret_refs": []
+    "secret_refs": [
+      "ASKLAKE_DEMO_MINIO_ACCESS_KEY",
+      "ASKLAKE_DEMO_MINIO_SECRET_KEY"
+    ]
   },
   "updated_at": "2026-06-26T00:00:00+09:00"
 }

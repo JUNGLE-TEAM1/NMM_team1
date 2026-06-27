@@ -74,9 +74,11 @@ class Week2AIQueryService:
 
     def _context_from_catalog(self, catalog: dict[str, Any]) -> SqlEngineContext:
         fields = catalog["schema"]["fields"]
+        storage = catalog.get("storage", {})
         return SqlEngineContext(
             table_name=catalog["query"]["table_name"],
             allowed_columns=catalog["query"]["allowed_columns"],
+            local_fallback_path=storage.get("local_fallback_path"),
             default_limit=catalog["query"].get("default_limit", 100),
             timeout_seconds=catalog["query"].get("timeout_seconds", 30),
             column_types={field["name"]: field["type"] for field in fields},

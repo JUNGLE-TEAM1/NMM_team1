@@ -247,7 +247,7 @@ The fixture package lives in `contracts/` and is a thin consumer/producer contra
 | `contracts/runtime_config.sample.json` | M2 | M3, M4, M5, M6 | MinIO/S3-compatible storage, Spark/local runner, Parquet, and SQL runtime settings |
 | `contracts/kafka_topic_contract.sample.json` | M4 | M3, M5 | Kafka raw event shape, replay evidence, and non-blocking streaming handoff |
 | `contracts/workflow_definition.sample.json` | M1/M5 | M5 | Source -> Select/Filter -> Cast/Normalize -> Aggregate -> Load workflow shape |
-| `contracts/execution_result.sample.json` | M2, M3, M4, M5 | M1, M5, M6 | Airflow and local runner compatible execution result shape |
+| `contracts/execution_result.sample.json` | M2, M3, M4, M5 | M1, M5, M6 | Airflow, local runner, and spark runner compatible execution result shape |
 | `contracts/catalog_metadata.sample.json` | M2, M3, M4, M5 | M1, M6 | Dataset metadata, location, schema, metrics, lineage, and SQL allowlist context |
 | `contracts/ai_query_result.sample.json` | M6 | M1 | Dataset selection, evidence, SELECT-only SQL, rows, summary, and chart result shape |
 
@@ -255,10 +255,31 @@ Locked Week 2 contract decisions:
 
 - `SourceConfig` is not owned by M1 alone. M1 owns demo tenant, source id, and UI input shell; M3 owns CSV/JSON/JSONL source-specific options; M4 owns Kafka source-specific options.
 - `TransformSpec` is the M3-owned intent contract. It does not create Spark sessions, choose runner implementation, or write Catalog state directly.
-- `RuntimeConfig` is the M2-owned runtime contract. M5 consumes it for runner selection and M6 consumes its SQL runtime profile, but M2 does not define transform semantics.
+- `RuntimeConfig` is the M2-owned runtime contract. M5 consumes it for runner selection and M6 consumes its SQL runtime profile, but M2 does not define transform semantics. `RuntimeConfig.storage` is the S3-compatible storage mapping used to calculate both `s3_uri` and the local fallback path during MVP smoke runs.
+- Week 2 workflow run request `executor` accepts `local_runner`, `airflow`, or `spark_runner`. `spark_runner` means M5 calls the M2 `Week2SparkRunner` boundary directly; it does not mean Airflow DAG-internal Spark execution is already implemented.
 - `KafkaTopicContract` is evidence and raw-event handoff for Week 2. Kafka is not a blocker for the Amazon Reviews main E2E path unless a later Phase explicitly changes the main path.
 - `ExecutionResult.duration_ms` is part of the locked execution evidence and comes from `Week2RunnerResult.duration_ms`.
 - M5 Airflow local smoke uses a shared result artifact. `Week2AirflowAdapter` triggers DAG `asklake_week2_reviews` with `conf.airflow_result_file=<run_id>.json`; the DAG writes `data/week2/_airflow_results/<run_id>.json`; the artifact contains `week2_result` with the `Week2RunnerResult`-compatible fields `status`, `task_results`, `logs`, `row_count`, `bytes`, `duration_ms`, `output_path`, `output_row_count`, and `output_bytes`.
+- M2 Taxi local batch evidence uses `pipeline_taxi_daily_metrics`, `dataset_taxi_daily_metrics_gold`, and `gold_taxi_daily_metrics`. It is local Parquet evidence only; PostgreSQL loader, MinIO/S3 write, PySpark, and Airflow DAG-internal invocation are later phases.
+- The hardcoded Taxi daily Gold schema, aggregation, and valid-row mask are provisional evidence scaffolding, not durable M2-owned transform semantics. Final Gold metric definitions, quality rules, quarantine behavior, and period rules remain M3-owned `TransformSpec` / `QualityRule` responsibilities. M2's durable responsibility is runner/runtime/storage execution plus row_count, bytes, duration, output path, and related evidence. When the M3 spec execution path is available, this hardcoded Taxi Gold builder must be removed or demoted to a demo/test fixture.
+
+Provisional M2 Taxi daily metric evidence fields:
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `pickup_date` | date | pickup timestamp truncated to date |
+| `trip_count` | integer | input Taxi rows for the date |
+| `total_passenger_count` | integer | sum of passenger count over valid rows |
+| `total_trip_distance` | number | sum of trip distance over valid rows |
+| `avg_trip_distance` | number | average trip distance over valid rows |
+| `total_fare_amount` | number | sum of fare amount over valid rows |
+| `total_tip_amount` | number | sum of tip amount over valid rows |
+| `total_tolls_amount` | number | sum of tolls amount over valid rows |
+| `total_amount` | number | sum of total amount over valid rows |
+| `avg_total_amount` | number | average total amount over valid rows |
+| `avg_duration_minutes` | number | average dropoff-pickup duration over valid rows |
+| `valid_trip_count` | integer | rows passing basic time, distance, and amount checks |
+| `invalid_trip_count` | integer | `trip_count - valid_trip_count` |
 
 Week 2 shared IDs:
 
@@ -291,7 +312,7 @@ s3://<bucket>/<domain>/<layer>/[dataset_path/]run_id=<run_id>/
 ```
 
 `dataset_path` is optional and may hold a domain-specific Gold output such as `daily_metrics`.
-MVP default bucket is `asklake-demo`; final MinIO endpoint and local fallback path remain implementation decisions that must be recorded before M3/M5 handoff.
+MVP default bucket is `asklake-demo`. The local fallback file path is calculated from the same prefix under `RuntimeConfig.storage.local_fallback_root`, so `s3://asklake-demo/reviews/gold/run_id=run_reviews_demo_001/` maps to `data/week2/reviews/gold/run_id=run_reviews_demo_001/<output_file>`. Local MinIO smoke uses `RuntimeConfig.storage.endpoint=http://localhost:9000` and credential environment names only; secret values must stay outside Git. Object upload is opt-in through runner options and does not replace local fallback evidence.
 
 Week 2 SQL execution uses an adapter boundary:
 
@@ -381,7 +402,7 @@ Consumer module, Blocked issue, Next first action
 ```
 
 M6 must not import DuckDB, Trino, or Athena directly. The MVP implementation may use `DuckDBSqlEngine` behind the adapter.
-Unconfirmed values such as real sample file path, row count, and final MinIO path remain TODO in fixture files until the responsible module verifies them.
+Unconfirmed values such as real sample file path, row count, remote bucket contents, and production S3 path remain TODO in fixture files until the responsible module verifies them.
 M1 static shell placeholders are not source of truth. When real API state is connected, M1 must display `tenant_demo`, `pipeline_reviews_json_e2e`, `dataset_reviews_gold`, and other shared fixture identifiers unless this section is updated first.
 
 ### Workstream Ownership

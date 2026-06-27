@@ -48,8 +48,9 @@ import {
 import {
   WEEK2_DEFAULT_DATASET_ID,
   WEEK2_DEFAULT_PIPELINE_ID,
-  getWeek2Catalog,
+  askWeek2AiQuery,
   getHealth,
+  getWeek2Catalog,
   getWeek2Run,
   triggerWeek2Run,
 } from "../api/asklakeClient";
@@ -112,6 +113,12 @@ const stepIcons = {
   schema: FileJson,
   workflow: GitBranch,
 };
+
+const demoQuestions = [
+  "Amazon reviews에서 평점 높은 상품 알려줘",
+  "리뷰가 가장 많은 상품 알려줘",
+  "Amazon reviews의 product_id별 review_count를 보여줘",
+];
 
 function normalizePath(pathname) {
   if (pathname === "/" || pathname === "" || pathname === "/dataset") return "/sources";
@@ -251,7 +258,7 @@ export function App() {
           {activePath === "/runs" ? <RunStatusPage navigate={navigate} /> : null}
           {activePath === "/catalog" ? <CatalogPage navigate={navigate} /> : null}
           {activePath === "/catalog-detail" ? <CatalogDetailShell navigate={navigate} /> : null}
-          {activePath === "/ask" ? <AiQueryPage setNotice={setNotice} /> : null}
+          {activePath === "/ask" ? <AiQueryPage navigate={navigate} setNotice={setNotice} /> : null}
           {activePath === "/dashboard" ? <DashboardPlaceholder /> : null}
           {activePath === "/admin" ? <AdminPlaceholder /> : null}
         </section>
@@ -348,6 +355,10 @@ function SourcesPage({ navigate, setNotice }) {
           <button type="button" className="ghost-action" onClick={openConnectionManager} aria-label="새 파이프라인 영역에서 연결 관리 열기">
             <Database size={16} />
             연결 관리
+          </button>
+          <button type="button" className="ghost-action" onClick={() => navigate("/runs")}>
+            <Play size={16} />
+            Workflow 실행으로 이동
           </button>
         </div>
       </section>
@@ -893,6 +904,74 @@ function compactJson(value) {
   return JSON.stringify(value, null, 2);
 }
 
+function useWeek2CatalogState() {
+  const [catalogState, setCatalogState] = useState({
+    catalog: null,
+    error: "",
+    loading: true,
+  });
+
+  async function refreshCatalog() {
+    setCatalogState((previous) => ({ ...previous, error: "", loading: true }));
+    try {
+      const catalog = await getWeek2Catalog();
+      setCatalogState({ catalog, error: "", loading: false });
+    } catch (error) {
+      setCatalogState((previous) => ({
+        catalog: previous.catalog,
+        error: error.message,
+        loading: false,
+      }));
+    }
+  }
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadCatalog() {
+      try {
+        const catalog = await getWeek2Catalog();
+        if (isMounted) setCatalogState({ catalog, error: "", loading: false });
+      } catch (error) {
+        if (isMounted) setCatalogState({ catalog: null, error: error.message, loading: false });
+      }
+    }
+
+    loadCatalog();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  return { catalogState, refreshCatalog };
+}
+
+function catalogQualityRows(catalog) {
+  return Object.entries(catalog?.metrics?.quality || {}).map(([key, value]) => [
+    key,
+    formatMetric(value),
+  ]);
+}
+
+function catalogSchemaRows(catalog) {
+  return (catalog?.schema?.fields || []).map((field) => [
+    field.name,
+    field.type,
+    formatMetric(field.nullable),
+  ]);
+}
+
+function catalogLineageNodes(catalog) {
+  const lineage = catalog?.lineage || {};
+  return [
+    ["Source", (lineage.source_ids || []).join(", ") || "-"],
+    ["Upstream", (lineage.upstream_datasets || []).join(", ") || "-"],
+    ["Pipeline", lineage.pipeline_id || "-"],
+    ["Run", lineage.run_id || "-"],
+    ["Dataset", catalog?.dataset_id || "-"],
+  ];
+}
+
 function RunStatusPage({ navigate }) {
   const [executor, setExecutor] = useState("local_runner");
   const [runState, setRunState] = useState({
@@ -1037,6 +1116,26 @@ function RunStatusPage({ navigate }) {
           <p>{interpretation.body}</p>
         </div>
       </section>
+
+      {currentRun ? (
+        <section className="demo-handoff-panel">
+          <div>
+            <p className="eyebrow">Next demo step</p>
+            <h3>CatalogMetadata 확인으로 이동</h3>
+            <p>{currentRun.run_id} 실행 결과가 만든 dataset metadata를 확인한 뒤 AI Query로 이어갑니다.</p>
+          </div>
+          <div className="handoff-actions">
+            <button type="button" className="primary-action" onClick={() => navigate("/catalog-detail")}>
+              Catalog detail
+              <ArrowRight size={16} />
+            </button>
+            <button type="button" className="ghost-action" onClick={() => navigate("/ask")}>
+              AI Query
+              <MessageSquareText size={16} />
+            </button>
+          </div>
+        </section>
+      ) : null}
 
       <M5VerdictPanel checks={learningChecks} />
       <M5NarrativePanel sentences={narrative} />
@@ -1377,14 +1476,18 @@ function RawJsonBlock({ title, value }) {
 
 function CatalogPage({ navigate }) {
   const [selectedTag, setSelectedTag] = useState("전체");
+  const { catalogState, refreshCatalog } = useWeek2CatalogState();
   const tags = ["전체", "bronze", "silver", "gold"];
+  const catalog = catalogState.catalog;
+  const isVisible = selectedTag === "전체" || selectedTag === (catalog?.layer || m1CatalogPlaceholder.layer);
 
   return (
     <div className="page-stack">
       <PageHeader
         title="데이터 카탈로그"
         body="M5가 생성한 dataset metadata와 lineage를 M6가 소비할 수 있게 보여주는 화면입니다."
-        actionLabel="CatalogMetadata 연결 대기"
+        actionLabel={catalogState.loading ? "조회 중" : "Catalog 새로고침"}
+        onAction={refreshCatalog}
       />
       <div className="filter-row">
         {tags.map((tag) => (
@@ -1398,40 +1501,69 @@ function CatalogPage({ navigate }) {
           </button>
         ))}
       </div>
-      <section className="catalog-feature">
-        <div className="dataset-icon">
-          <Sparkles size={22} />
-        </div>
-        <div>
-          <div className="catalog-title-row">
-            <h3>{m1CatalogPlaceholder.name}</h3>
-            <span>placeholder</span>
-            <span>품질 확인 대기</span>
+      {catalogState.error ? (
+        <EmptyState
+          icon={AlertCircle}
+          title="CatalogMetadata를 불러오지 못했습니다"
+          body="아직 successful Week2 run이 없을 수 있습니다. /etl에서 로컬 runner 실행 후 다시 새로고침하세요."
+        />
+      ) : null}
+      {catalogState.loading ? (
+        <EmptyState icon={Loader2} title="CatalogMetadata 조회 중" body={WEEK2_DEFAULT_DATASET_ID} />
+      ) : null}
+      {catalog && isVisible ? (
+        <>
+          <section className="catalog-feature">
+            <div className="dataset-icon">
+              <Sparkles size={22} />
+            </div>
+            <div>
+              <div className="catalog-title-row">
+                <h3>{catalog.name}</h3>
+                <span>{catalog.contract}</span>
+                <span>{catalog.metrics?.quality?.schema_match || "quality unknown"}</span>
+              </div>
+              <p>{catalog.dataset_id} metadata를 M6 query context와 lineage 확인에 사용할 수 있습니다.</p>
+            </div>
+            <button type="button" className="icon-link" onClick={() => navigate("/catalog-detail")} aria-label="catalog detail">
+              <ArrowRight size={18} />
+            </button>
+            <button type="button" className="ghost-action" onClick={() => navigate("/ask")}>
+              AI Query
+              <MessageSquareText size={16} />
+            </button>
+          </section>
+          <div className="grid three">
+            <InfoCard title="Dataset" value={catalog.dataset_id} detail={catalog.name} />
+            <InfoCard title="Layer" value={catalog.layer} detail={catalog.version} />
+            <InfoCard title="Query table" value={catalog.query?.table_name} detail="M6 allowlist context" />
           </div>
-          <p>타겟 데이터셋을 찾고 구조를 확인하는 카탈로그 카드 스타일을 M1 shell에 맞춰 보존했습니다.</p>
-        </div>
-        <button type="button" className="icon-link" onClick={() => navigate("/catalog-detail")} aria-label="catalog detail">
-          <ArrowRight size={18} />
-        </button>
-      </section>
-      <div className="grid three">
-        <InfoCard title="Dataset" value={m1CatalogPlaceholder.dataset_id} detail={m1CatalogPlaceholder.name} />
-        <InfoCard title="Layer" value={m1CatalogPlaceholder.layer} detail="신뢰 게이트 연결 전 placeholder" />
-        <InfoCard title="Query table" value={m1CatalogPlaceholder.query_table} detail="M6 allowlist context" />
-      </div>
-      <section className="contract-panel">
-        <div>
-          <p className="eyebrow">Storage contract</p>
-          <code>{m1CatalogPlaceholder.s3_uri}</code>
-        </div>
-        <p>{m1CatalogPlaceholder.quality}</p>
-      </section>
+          <div className="grid three">
+            <InfoCard title="Rows" value={formatMetric(catalog.metrics?.row_count)} detail={catalog.metrics?.semantics?.row_count} />
+            <InfoCard title="Bytes" value={formatMetric(catalog.metrics?.bytes)} detail={catalog.metrics?.semantics?.bytes} />
+            <InfoCard title="Lineage run" value={catalog.lineage?.run_id} detail={catalog.lineage?.pipeline_id} />
+          </div>
+          <section className="contract-panel">
+            <div>
+              <p className="eyebrow">Storage contract</p>
+              <code>{catalog.s3_uri}</code>
+            </div>
+            <p>{catalog.storage?.local_fallback_path}</p>
+          </section>
+          <DataTable columns={["field", "type", "nullable"]} rows={catalogSchemaRows(catalog)} />
+        </>
+      ) : null}
+      {catalog && !isVisible ? (
+        <EmptyState icon={Database} title={`${selectedTag} catalog가 없습니다`} body={`${catalog.layer} layer metadata만 live API에서 조회됐습니다.`} />
+      ) : null}
     </div>
   );
 }
 
 function CatalogDetailShell({ navigate }) {
   const [tab, setTab] = useState("lineage");
+  const { catalogState, refreshCatalog } = useWeek2CatalogState();
+  const catalog = catalogState.catalog;
   const tabs = [
     ["lineage", "리니지(데이터 계보)", GitBranch],
     ["quality", "품질 검사 리포트", ShieldCheck],
@@ -1441,11 +1573,47 @@ function CatalogDetailShell({ navigate }) {
   return (
     <div className="page-stack">
       <PageHeader
-        title={m1CatalogPlaceholder.name}
-        body="Catalog detail과 lineage/quality/governance tab shell입니다."
-        actionLabel="목록으로"
-        onAction={() => navigate("/catalog")}
+        title={catalog?.name || m1CatalogPlaceholder.name}
+        body={catalog ? `${catalog.dataset_id} CatalogMetadata detail입니다.` : "Catalog detail과 lineage/quality/governance tab shell입니다."}
+        actionLabel={catalogState.loading ? "조회 중" : "목록으로"}
+        onAction={() => (catalogState.loading ? refreshCatalog() : navigate("/catalog"))}
       />
+      {catalogState.error ? (
+        <EmptyState
+          icon={AlertCircle}
+          title="CatalogMetadata를 불러오지 못했습니다"
+          body="아직 successful Week2 run이 없을 수 있습니다. /etl에서 로컬 runner 실행 후 다시 확인하세요."
+        />
+      ) : null}
+      {catalogState.loading ? (
+        <EmptyState icon={Loader2} title="Catalog detail 조회 중" body={WEEK2_DEFAULT_DATASET_ID} />
+      ) : null}
+      {catalog ? (
+        <div className="grid three">
+          <InfoCard title="Dataset" value={catalog.dataset_id} detail={catalog.layer} />
+          <InfoCard title="Storage" value={catalog.storage?.profile} detail={catalog.storage?.prefix} />
+          <InfoCard title="Updated" value={catalog.updated_at} detail={catalog.version} />
+        </div>
+      ) : null}
+      {catalog ? (
+        <section className="demo-handoff-panel">
+          <div>
+            <p className="eyebrow">Next demo step</p>
+            <h3>M6 AI Query로 근거 확인</h3>
+            <p>{catalog.dataset_id}의 schema, metrics, lineage를 evidence로 사용해 질문 결과를 확인합니다.</p>
+          </div>
+          <div className="handoff-actions">
+            <button type="button" className="primary-action" onClick={() => navigate("/ask")}>
+              AI Query 실행
+              <ArrowRight size={16} />
+            </button>
+            <button type="button" className="ghost-action" onClick={() => navigate("/runs")}>
+              Run으로 돌아가기
+              <ListChecks size={16} />
+            </button>
+          </div>
+        </section>
+      ) : null}
       <section className="detail-tabs">
         {tabs.map(([id, label, Icon]) => (
           <button key={id} type="button" className={tab === id ? "active" : ""} onClick={() => setTab(id)}>
@@ -1454,12 +1622,22 @@ function CatalogDetailShell({ navigate }) {
           </button>
         ))}
       </section>
-      {tab === "lineage" ? <LineageShell /> : null}
-      {tab === "quality" ? (
+      {tab === "lineage" ? <LineageShell catalog={catalog} /> : null}
+      {tab === "quality" && catalog ? (
+        <>
+          <div className="grid three">
+            <InfoCard title="schema status" value={catalog.metrics?.quality?.schema_match} detail="M5 quality fact" />
+            <InfoCard title="row count checked" value={formatMetric(catalog.metrics?.quality?.row_count_checked)} detail="M5 quality fact" />
+            <InfoCard title="query allowed" value={formatMetric(catalog.query?.allow_readonly_sql)} detail={catalog.query?.table_name} />
+          </div>
+          <DataTable columns={["quality fact", "value"]} rows={catalogQualityRows(catalog)} />
+        </>
+      ) : null}
+      {tab === "quality" && !catalog && !catalogState.loading ? (
         <div className="grid three">
-          <InfoCard title="missing rate" value="연결 대기" detail="M5 quality output 필요" />
-          <InfoCard title="duplicate count" value="연결 대기" detail="ExecutionResult quality metric" />
-          <InfoCard title="schema status" value="연결 대기" detail="SchemaDefinition 비교" />
+          <InfoCard title="schema status" value="연결 대기" detail="M5 quality output 필요" />
+          <InfoCard title="row count checked" value="연결 대기" detail="ExecutionResult quality metric" />
+          <InfoCard title="query allowed" value="연결 대기" detail="CatalogMetadata 필요" />
         </div>
       ) : null}
       {tab === "governance" ? (
@@ -1468,38 +1646,91 @@ function CatalogDetailShell({ navigate }) {
           rows={[
             ["mask customer identifiers", "연결 대기", "M6/RBAC"],
             ["monthly aggregate only", "연결 대기", "M5/M6"],
-            ["allow preview export", "disabled", "security"],
+            ["allow readonly SQL", formatMetric(catalog?.query?.allow_readonly_sql, "disabled"), "M6"],
           ]}
         />
+      ) : null}
+      {catalog ? (
+        <section className="contract-panel">
+          <div>
+            <p className="eyebrow">Local fallback path</p>
+            <code>{catalog.storage?.local_fallback_path}</code>
+          </div>
+          <p>{catalog.s3_uri}</p>
+        </section>
       ) : null}
     </div>
   );
 }
 
-function LineageShell() {
+function LineageShell({ catalog }) {
+  const lineageRows = catalog
+    ? catalogLineageNodes(catalog)
+    : [
+        ["Source", "M5 연결 대기"],
+        ["Raw placeholder", "M5 연결 대기"],
+        ["Prepared placeholder", "M5 연결 대기"],
+        ["Quality Gate", "M5 연결 대기"],
+        ["Output placeholder", m1CatalogPlaceholder.dataset_id],
+      ];
+
   return (
     <section className="lineage-shell">
-      {["Source", "Raw placeholder", "Prepared placeholder", "Quality Gate", "Output placeholder"].map((item, index) => (
-        <article key={item}>
+      {lineageRows.map(([label, detail], index) => (
+        <article key={label}>
           <span>{index + 1}</span>
-          <strong>{item}</strong>
-          <p>{item === "Output placeholder" ? m1CatalogPlaceholder.dataset_id : "M5 연결 대기"}</p>
+          <strong>{label}</strong>
+          <p>{detail}</p>
         </article>
       ))}
     </section>
   );
 }
 
-function AiQueryPage({ setNotice }) {
-  const [queryText, setQueryText] = useState("");
+function AiQueryPage({ navigate, setNotice }) {
+  const [queryText, setQueryText] = useState("Amazon reviews에서 평점 높은 상품 알려줘");
+  const [queryState, setQueryState] = useState({
+    result: null,
+    error: "",
+    loading: false,
+  });
   const [viewMode, setViewMode] = useState("table");
+  const queryResult = queryState.result?.query_result;
+  const rows = queryResult?.rows || queryState.result?.rows || [];
+  const columns = queryResult?.columns?.length
+    ? queryResult.columns.map((column) => column.name)
+    : Object.keys(rows[0] || {});
+  const evidence = queryState.result?.evidence || [];
+
+  async function submitQuery(nextQuestion = queryText) {
+    const question = nextQuestion.trim();
+    if (!question) {
+      setQueryState((previous) => ({ ...previous, error: "질문을 입력해야 합니다." }));
+      setNotice("질문을 입력한 뒤 실행할 수 있습니다.");
+      return;
+    }
+
+    setQueryText(question);
+    setQueryState((previous) => ({ ...previous, error: "", loading: true }));
+    try {
+      const result = await askWeek2AiQuery(question);
+      setQueryState({ result, error: "", loading: false });
+    } catch (error) {
+      setQueryState((previous) => ({
+        result: previous.result,
+        error: error.message,
+        loading: false,
+      }));
+    }
+  }
 
   return (
     <div className="page-stack">
       <PageHeader
         title="AI Query"
-        body="검증 질문, selected dataset, evidence, SQL, chart spec을 표시할 위치입니다."
-        actionLabel="M6 연결 대기"
+        body="M6 AIQueryResult를 받아 SQL 실행 결과와 근거를 표시합니다."
+        actionLabel={queryState.loading ? "실행 중" : "샘플 질문 실행"}
+        onAction={() => submitQuery()}
       />
       <section className="ask-layout">
         <div className="question-box query-editor">
@@ -1512,16 +1743,43 @@ function AiQueryPage({ setNotice }) {
           <button
             type="button"
             className="primary-action"
-            onClick={() => setNotice("M6 AI Query 연결 전에는 SQL 실행 결과를 생성하지 않습니다.")}
+            onClick={() => submitQuery()}
+            disabled={queryState.loading}
           >
-            <Play size={16} />
-            실행 대기
+            {queryState.loading ? <Loader2 size={16} className="spin" /> : <Play size={16} />}
+            {queryState.loading ? "실행 중" : "질문 실행"}
           </button>
+          {queryState.error ? <p className="form-error">{queryState.error}</p> : null}
+          <div className="demo-question-list" aria-label="Demo question candidates">
+            {demoQuestions.map((question) => (
+              <button
+                key={question}
+                type="button"
+                className="ghost-action"
+                onClick={() => submitQuery(question)}
+                disabled={queryState.loading}
+              >
+                <Sparkles size={14} />
+                {question}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="contract-panel">
-          <p className="eyebrow">{m1AiQueryPlaceholder.contract}</p>
-          <h3>{m1AiQueryPlaceholder.status}</h3>
-          <code>{m1AiQueryPlaceholder.sql}</code>
+        <div className="contract-panel query-summary-panel">
+          <p className="eyebrow">{queryState.result?.contract || m1AiQueryPlaceholder.contract}</p>
+          <div className="query-status-row">
+            <h3>{queryState.result?.status || "질문 대기"}</h3>
+            {queryState.result?.guardrail ? (
+              <span className={`badge ${queryStatusBadgeClass(queryState.result)}`}>
+                {queryState.result.guardrail.validation_status}
+              </span>
+            ) : null}
+          </div>
+          <p>{queryState.result?.summary || "아직 실행된 질문이 없습니다."}</p>
+          {queryState.result?.guardrail?.failure_message ? (
+            <p className="form-error">{queryState.result.guardrail.failure_message}</p>
+          ) : null}
+          <code>{queryResult?.sql || queryState.result?.sql || m1AiQueryPlaceholder.sql}</code>
           <div className="segmented-control">
             {["table", "chart"].map((mode) => (
               <button
@@ -1535,15 +1793,139 @@ function AiQueryPage({ setNotice }) {
               </button>
             ))}
           </div>
-          <p>Chart spec: {m1AiQueryPlaceholder.chart_spec}</p>
+          <p>Chart spec: {formatChartSpec(queryState.result?.chart_spec)}</p>
         </div>
       </section>
-      <DataTable
-        columns={["module", "M1 surface", "contract"]}
-        rows={m1IntegrationRows}
-      />
+      {queryState.result ? (
+        <section className="ask-result-stack">
+          <div className="grid three">
+            <InfoCard
+              title="Dataset"
+              value={queryState.result.selected_datasets?.[0]?.dataset_id}
+              detail={queryState.result.selected_datasets?.[0]?.reason}
+            />
+            <InfoCard title="Engine" value={queryResult?.engine} detail="M6 SqlEngineAdapter" />
+            <InfoCard
+              title="Rows"
+              value={formatMetric(queryResult?.row_count ?? rows.length)}
+              detail={`${formatMetric(queryResult?.duration_ms)} ms / ${formatMetric(queryResult?.executed_at)}`}
+            />
+          </div>
+          <section className="demo-handoff-panel">
+            <div>
+              <p className="eyebrow">Review loop</p>
+              <h3>근거에서 run과 catalog로 돌아가기</h3>
+              <p>AI Query 결과를 확인한 뒤 같은 세션에서 실행 결과와 CatalogMetadata를 다시 볼 수 있습니다.</p>
+            </div>
+            <div className="handoff-actions">
+              <button type="button" className="ghost-action" onClick={() => navigate("/runs")}>
+                Run Status
+                <ListChecks size={16} />
+              </button>
+              <button type="button" className="primary-action" onClick={() => navigate("/catalog-detail")}>
+                Catalog detail
+                <ArrowRight size={16} />
+              </button>
+            </div>
+          </section>
+
+          {viewMode === "table" ? (
+            <DataTable
+              columns={columns.length ? columns : ["result"]}
+              rows={rows.length ? queryRows(rows, columns) : [["반환된 row가 없습니다."]]}
+            />
+          ) : (
+            <section className="chart-spec-panel">
+              <BarChart3 size={22} />
+              <div>
+                <strong>{queryState.result.chart_spec?.title || "Chart spec"}</strong>
+                <p>
+                  {formatMetric(queryState.result.chart_spec?.type)} / x:{" "}
+                  {formatMetric(queryState.result.chart_spec?.x)} / y:{" "}
+                  {formatMetric(queryState.result.chart_spec?.y)}
+                </p>
+              </div>
+            </section>
+          )}
+
+          <section className="evidence-grid">
+            {evidence.map((item) => (
+              <EvidenceCard key={`${item.dataset_id}:${item.run_id || item.s3_uri || item.table_name}`} evidence={item} />
+            ))}
+          </section>
+        </section>
+      ) : (
+        <EmptyState
+          icon={MessageSquareText}
+          title="질문을 실행하면 결과가 표시됩니다"
+          body="M1은 M6 응답을 표시하고 SQL, 요약, evidence를 직접 생성하지 않습니다."
+        />
+      )}
     </div>
   );
+}
+
+function queryStatusBadgeClass(result) {
+  if (result.status === "succeeded" && result.guardrail?.validation_status === "passed") return "green";
+  if (result.status === "blocked" || result.guardrail?.validation_status === "blocked") return "orange";
+  if (result.status === "failed" || result.guardrail?.validation_status === "failed") return "red";
+  return "blue";
+}
+
+function formatChartSpec(chartSpec) {
+  if (!chartSpec) return m1AiQueryPlaceholder.chart_spec;
+  return `${formatMetric(chartSpec.type)} / ${formatMetric(chartSpec.x)} -> ${formatMetric(chartSpec.y)}`;
+}
+
+function queryRows(rows, columns) {
+  return rows.map((row) => columns.map((column) => formatMetric(row[column])));
+}
+
+function EvidenceCard({ evidence }) {
+  const schemaRows = (evidence.schema_fields || []).map((field) => [
+    field.name,
+    field.type,
+    formatMetric(field.nullable),
+  ]);
+  const metricRows = Object.entries(evidence.metrics || {}).map(([key, value]) => [
+    key,
+    formatEvidenceValue(value),
+  ]);
+  const lineageRows = Object.entries(evidence.lineage || {}).map(([key, value]) => [
+    key,
+    formatEvidenceValue(value),
+  ]);
+
+  return (
+    <article className="evidence-card">
+      <header>
+        <div>
+          <p className="eyebrow">Evidence</p>
+          <h3>{evidence.dataset_id}</h3>
+        </div>
+        {evidence.table_name ? <span className="badge blue">{evidence.table_name}</span> : null}
+      </header>
+      <div className="evidence-facts">
+        <span>run: {formatMetric(evidence.run_id)}</span>
+        <span>freshness: {formatMetric(evidence.freshness)}</span>
+        <span>terms: {(evidence.retrieval_terms || []).join(", ") || "-"}</span>
+      </div>
+      {evidence.s3_uri ? <code>{evidence.s3_uri}</code> : null}
+      {schemaRows.length ? <DataTable columns={["field", "type", "nullable"]} rows={schemaRows} /> : null}
+      {metricRows.length || lineageRows.length ? (
+        <div className="grid two evidence-tables">
+          {metricRows.length ? <DataTable columns={["metric", "value"]} rows={metricRows} /> : null}
+          {lineageRows.length ? <DataTable columns={["lineage", "value"]} rows={lineageRows} /> : null}
+        </div>
+      ) : null}
+    </article>
+  );
+}
+
+function formatEvidenceValue(value) {
+  if (Array.isArray(value)) return value.join(", ") || "-";
+  if (value && typeof value === "object") return JSON.stringify(value);
+  return formatMetric(value);
 }
 
 function DashboardPlaceholder() {

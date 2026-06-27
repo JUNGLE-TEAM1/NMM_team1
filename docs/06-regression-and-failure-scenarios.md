@@ -98,6 +98,16 @@
 | Verification method | `docs/07` Week 2 M5 Airflow local smoke 점검과 `backend/tests/test_week2_airflow_adapter.py`를 확인한다. |
 | Related docs/interface/Phase | `docs/03`, `docs/07`, `backend/app/services/week2_airflow_adapter.py`, `docker-compose.airflow.yml` |
 
+### Week 2 storage URI와 local fallback path가 다른 prefix를 가리키는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | `CatalogMetadata.s3_uri`, `storage.prefix`, `storage.local_fallback_path`는 같은 bucket/prefix/run_id 계약에서 계산되어야 한다. |
+| Failure condition | runner는 local path에 파일을 쓰지만 Catalog의 `s3_uri` 또는 `storage.prefix`가 다른 run_id/domain/layer를 가리킨다. |
+| Expected behavior | M2 storage adapter가 S3-compatible URI와 local fallback path를 함께 계산하고, opt-in upload smoke에서는 같은 object key로 MinIO/S3-compatible endpoint에 PUT한다. upload가 실패해도 secret 값을 로그나 Git에 남기지 않는다. |
+| Verification method | `backend/tests/test_week2_storage_adapter.py`, `backend/tests/test_week2_spark_runner.py`, `backend/tests/test_week2_workflow_catalog.py`를 확인한다. |
+| Related docs/interface/Phase | `docs/03`, `contracts/runtime_config.sample.json`, `contracts/catalog_metadata.sample.json`, M2 storage adapter |
+
 ### Mock/Fake Boundary를 넘어 실제 접근으로 진행되는 경우
 
 | 항목 | 내용 |
