@@ -1,0 +1,142 @@
+{
+  "contract_id": "m3_expanded_layer_contract_v1",
+  "created_for": "M3 CSV/JSON unknown-structure profiling, AI recommendation, Silver/Gold spec handoff",
+  "reason": "The previous L0-L6 map overloaded L3 and L4. L3 contained evidence reduction, Silver recommendation, Gold recommendation, and approval. L4 contained deterministic Silver spec, Gold spec, compiler validation, Silver preview, and Gold preview. The expanded map separates AI recommendation, human decision, deterministic compilation, Silver preview, and Gold preview.",
+  "model_boundary": {
+    "ai_model_slot": "L4 AI Recommendation Draft",
+    "requested_model_name": "gpt-5.3-codex-spark",
+    "meaning": "A Codex/model choice for AI recommendation generation. It is not Apache Spark execution.",
+    "must_not_do": [
+      "Do not call AI per raw row in realtime data-plane.",
+      "Do not let AI write directly to production Silver or Gold tables.",
+      "Do not merge Silver cleaning readiness and Gold semantic readiness into one status."
+    ]
+  },
+  "expanded_layers": [
+    {
+      "id": "L0",
+      "name": "Raw Preservation",
+      "role": "Preserve raw source reference, object identity, checksum/etag, byte size, source window, and replay pointer.",
+      "actual_flow": {
+        "from": "M1 source registration",
+        "to": "M3 L1 bronze envelope"
+      },
+      "outputs": ["source_manifest.json", "object_manifest.json", "raw_replay_pointer.json"]
+    },
+    {
+      "id": "L1",
+      "name": "Bronze Envelope",
+      "role": "Wrap records in a traceable bronze envelope without losing parse failures, offsets, file/object pointers, and rescue fields.",
+      "actual_flow": {
+        "from": "M3 L0 raw manifest",
+        "to": "M3 L2 profile snapshot"
+      },
+      "outputs": ["bronze_record_samples.jsonl", "range_sample_input.jsonl", "rescue_lane.jsonl"]
+    },
+    {
+      "id": "L2",
+      "name": "Profile and Schema Snapshot",
+      "role": "Create deterministic evidence from unknown CSV/JSON/JSONL/Parquet: type router result, schema fingerprint, field profile, null ratios, examples, sketch, and drift baseline.",
+      "actual_flow": {
+        "from": "M3 L1 bronze samples",
+        "to": "M3 L3 AI input evidence pack"
+      },
+      "outputs": ["profile_snapshot.json", "schema_fingerprint.json", "large_source_sketch_profile.json", "json_path_trie.json", "csv_dialect_profile.json"]
+    },
+    {
+      "id": "L3",
+      "name": "AI Input Evidence Pack",
+      "role": "Reduce L2 evidence into a compact, bounded control-plane package for AI. This is where row-level data is explicitly cut off and profile evidence becomes the only AI input.",
+      "actual_flow": {
+        "from": "M3 L2 profile/schema/sketch evidence",
+        "to": "M3 L4 AI recommendation model slot"
+      },
+      "outputs": ["ai_recommendation_input_pack.json", "field_evidence_reducer.json", "policy_context_pack.json"]
+    },
+    {
+      "id": "L4",
+      "name": "AI Recommendation Draft",
+      "role": "Call the configured AI model, for example gpt-5.3-codex-spark if available, to draft editable Silver cleaning recommendations and Gold semantic/model recommendations from L3 evidence only.",
+      "actual_flow": {
+        "from": "M3 L3 AI input evidence pack",
+        "to": "M1/M5 L5 recommendation edit and decision"
+      },
+      "outputs": ["silver_policy_recommendation_draft.json", "gold_model_recommendation_draft.json", "ai_generation_trace.json"]
+    },
+    {
+      "id": "L5",
+      "name": "Decision and Edit Contract",
+      "role": "Let the user edit, approve, reject, or request changes separately for Silver and Gold. AI output remains a draft until this layer locks a decision.",
+      "actual_flow": {
+        "from": "M1 user edits and M5 approval state",
+        "to": "M3 L6 deterministic spec compiler"
+      },
+      "outputs": ["silver_policy_decision.json", "gold_policy_decision.json", "recommendation_diff.json", "approval_state.json"]
+    },
+    {
+      "id": "L6",
+      "name": "Deterministic Spec Compiler",
+      "role": "Compile approved Silver and Gold decisions into deterministic, machine-readable Spark execution specs. This layer bans per-row AI, generated code execution, unbounded collect, and non-replayable functions.",
+      "actual_flow": {
+        "from": "M3 L5 approved Silver/Gold decisions",
+        "to": "M2 L7/L8 Spark preview execution"
+      },
+      "outputs": ["silver_transform_spec.json", "gold_generation_spec.json", "layered_transform_graph.json", "compiler_validation_result.json"]
+    },
+    {
+      "id": "L7",
+      "name": "Silver Preview and Structural Validation",
+      "role": "Run or request a bounded Silver preview from the compiled Silver spec and validate schema, row counts, null rules, type conversions, masked fields, and quarantine routing.",
+      "actual_flow": {
+        "from": "M2 execution of L6 silver_transform_spec",
+        "to": "M2 L8 Gold preview and M3 L9 quality gate"
+      },
+      "outputs": ["silver_preview_validation_result.json", "silver_preview_ref.json", "silver_quality_axis.json"]
+    },
+    {
+      "id": "L8",
+      "name": "Gold Preview and Semantic Readiness",
+      "role": "Run or request a bounded Gold preview from the compiled Gold spec and judge whether each Gold candidate is semantically useful, owner-reviewed, and safe for M6 query context.",
+      "actual_flow": {
+        "from": "M2 execution of L6 gold_generation_spec over L7 Silver",
+        "to": "M3 L9 quality/gold readiness gate"
+      },
+      "outputs": ["gold_preview_validation_result.json", "gold_readiness_axis.json", "metric_definition_draft.json"]
+    },
+    {
+      "id": "L9",
+      "name": "Quality, Drift, and Quarantine Gate",
+      "role": "Evaluate processing quality, schema compatibility, drift, replay hash, reconciliation, PII warnings, quarantine, and policy gates across Silver and Gold outputs.",
+      "actual_flow": {
+        "from": "M2 L7/L8 preview metrics and M3 gate rules",
+        "to": "M5/M6 L10 catalog and semantic handoff"
+      },
+      "outputs": ["processing_quality_axis.json", "catalog_safety_axis.json", "drift_snapshot.json", "quarantine_result.json", "reconciliation_result.json"]
+    },
+    {
+      "id": "L10",
+      "name": "Catalog Metadata and Semantic Handoff",
+      "role": "Package source, profile, Silver spec, Gold metric definitions, lineage, quality caveats, semantic hints, and SQL context into catalog metadata usable by M5 and M6.",
+      "actual_flow": {
+        "from": "M3 L0-L9 artifact references and gate results",
+        "to": "M5 catalog API/storage and M6 SQL/AI query context"
+      },
+      "outputs": ["catalog_metadata_draft.json", "field_level_lineage.json", "sql_context_pack.json", "artifact_reference_manifest.json", "handoff_package.json"]
+    }
+  ],
+  "actual_module_flow": "M1 source registration -> M3 profiling/recommendation/spec contract -> M2 Silver/Gold preview execution -> M3 quality/readiness gate -> M5 catalog storage -> M6 SQL/AI query context",
+  "m4_note": "M4 is not in the current actual handoff path. Add M4 only if the team assigns it as a concrete execution/result producer.",
+  "current_to_expanded_mapping": [
+    {"current": "L3/rule-based-reducer", "expanded": "L3 AI Input Evidence Pack"},
+    {"current": "L3/bronze-to-silver-recommendation", "expanded": "L4 Silver policy recommendation draft"},
+    {"current": "L3/silver-to-gold-recommendation", "expanded": "L4 Gold model recommendation draft"},
+    {"current": "L3/approval-decision", "expanded": "L5 Decision and Edit Contract"},
+    {"current": "L4/silver-transform-spec", "expanded": "L6 Silver deterministic spec"},
+    {"current": "L4/gold-generation-spec", "expanded": "L6 Gold deterministic spec"},
+    {"current": "L4/layered-transform-graph and compiler-validation", "expanded": "L6 Deterministic Spec Compiler"},
+    {"current": "L4/silver-preview-validation", "expanded": "L7 Silver Preview and Structural Validation"},
+    {"current": "L4/gold-preview-validation", "expanded": "L8 Gold Preview and Semantic Readiness"},
+    {"current": "L5 quality/drift/quarantine", "expanded": "L9 Quality, Drift, and Quarantine Gate"},
+    {"current": "L6 catalog/lineage/sql context", "expanded": "L10 Catalog Metadata and Semantic Handoff"}
+  ]
+}
