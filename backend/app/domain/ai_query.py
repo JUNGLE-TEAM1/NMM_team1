@@ -75,6 +75,7 @@ class EngineHealth(BaseModel):
 class SqlEngineContext(BaseModel):
     table_name: str
     allowed_columns: list[str]
+    local_fallback_path: str | None = None
     default_limit: int = 100
     timeout_seconds: int = 30
     column_types: dict[str, str] = Field(default_factory=dict)

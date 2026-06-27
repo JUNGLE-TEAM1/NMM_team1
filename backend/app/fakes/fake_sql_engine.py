@@ -34,6 +34,12 @@ class FakeSqlEngine:
         if disallowed_columns:
             return self._blocked("column_not_allowed", f"Columns are not allowed: {', '.join(disallowed_columns)}")
 
+        if not context.local_fallback_path:
+            return self._blocked(
+                "local_path_missing",
+                "CatalogMetadata storage.local_fallback_path is required for SQL execution.",
+            )
+
         return ValidationResult(
             status="succeeded",
             guardrail=GuardrailResult(validation_status="passed"),

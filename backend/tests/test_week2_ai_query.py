@@ -19,12 +19,24 @@ class InMemoryCatalogSource:
         return self.catalogs
 
 
+class RecordingSqlEngine(FakeSqlEngine):
+    def __init__(self) -> None:
+        self.validated_contexts: list[SqlEngineContext] = []
+
+    def validate(self, sql: str, context: SqlEngineContext):
+        self.validated_contexts.append(context)
+        return super().validate(sql, context)
+
+
 def _review_catalog(dataset_id: str, name: str, run_id: str) -> dict[str, object]:
     return {
         "tenant_id": "tenant_demo",
         "dataset_id": dataset_id,
         "name": name,
         "s3_uri": f"s3://asklake-demo/{dataset_id}/run_id={run_id}/",
+        "storage": {
+            "local_fallback_path": f"/tmp/{dataset_id}/{run_id}/reviews_gold.jsonl",
+        },
         "schema": {
             "fields": [
                 {"name": "product_id", "type": "string", "nullable": False},
@@ -149,6 +161,9 @@ def test_week2_ai_query_uses_injected_catalog_source_for_evidence() -> None:
         "dataset_id": "dataset_reviews_catalog_source",
         "name": "Catalog Source Reviews Gold",
         "s3_uri": "s3://asklake-demo/catalog-source/reviews/run_id=run_catalog_source_001/",
+        "storage": {
+            "local_fallback_path": "/tmp/catalog-source/reviews/run_catalog_source_001/reviews_gold.jsonl",
+        },
         "schema": {
             "fields": [
                 {"name": "product_id", "type": "string", "nullable": False},
@@ -182,6 +197,49 @@ def test_week2_ai_query_uses_injected_catalog_source_for_evidence() -> None:
     assert result.status == "succeeded"
     assert result.query_result.sql == result.sql
     assert result.query_result.rows == result.rows
+
+
+def test_week2_ai_query_passes_catalog_local_fallback_path_to_sql_context() -> None:
+    catalog = _review_catalog(
+        "dataset_reviews_with_path",
+        "Reviews With Path",
+        "run_reviews_with_path_001",
+    )
+    sql_engine = RecordingSqlEngine()
+    service = Week2AIQueryService(
+        sql_engine=sql_engine,
+        catalog_source=InMemoryCatalogSource(catalog),
+    )
+
+    result = service.answer("리뷰가 가장 많은 상품 알려줘")
+
+    assert result.status == "succeeded"
+    assert sql_engine.validated_contexts
+    assert (
+        sql_engine.validated_contexts[0].local_fallback_path
+        == "/tmp/dataset_reviews_with_path/run_reviews_with_path_001/reviews_gold.jsonl"
+    )
+
+
+def test_week2_ai_query_blocks_when_catalog_local_fallback_path_is_missing() -> None:
+    catalog = _review_catalog(
+        "dataset_reviews_without_path",
+        "Reviews Without Path",
+        "run_reviews_without_path_001",
+    )
+    catalog["storage"] = {}
+    service = Week2AIQueryService(
+        sql_engine=FakeSqlEngine(),
+        catalog_source=InMemoryCatalogSource(catalog),
+    )
+
+    result = service.answer("리뷰가 가장 많은 상품 알려줘")
+
+    assert result.status == "blocked"
+    assert result.guardrail.validation_status == "blocked"
+    assert result.guardrail.failure_code == "local_path_missing"
+    assert result.query_result.rows == []
+    assert "local_fallback_path" in result.summary
 
 
 def test_week2_ai_query_scores_catalog_metadata_terms_when_columns_tie() -> None:
@@ -253,3 +311,17 @@ def test_fake_sql_engine_blocks_unallowed_column() -> None:
 
     assert validation.status == "blocked"
     assert validation.failure_code == "column_not_allowed"
+
+
+def test_fake_sql_engine_blocks_valid_sql_when_local_fallback_path_is_missing() -> None:
+    context = SqlEngineContext(
+        table_name="reviews_gold",
+        allowed_columns=["product_id", "review_count"],
+        default_limit=10,
+        timeout_seconds=30,
+    )
+
+    validation = FakeSqlEngine().validate("SELECT product_id FROM reviews_gold LIMIT 10", context)
+
+    assert validation.status == "blocked"
+    assert validation.failure_code == "local_path_missing"
