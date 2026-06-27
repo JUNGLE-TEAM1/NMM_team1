@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import hashlib
 import json
 import math
@@ -31,6 +32,12 @@ REQUIRED_DELIVERY_FIELDS = [
     "source_dataset_id",
     "source_taxi_trip_id",
     "source_taxi_row_hash",
+    "source_pickup_location_id",
+    "source_dropoff_location_id",
+    "pickup_borough",
+    "pickup_zone",
+    "dropoff_borough",
+    "dropoff_zone",
     "is_synthetic_source",
     "synthetic_generation_version",
     "synthetic_rule_id",
@@ -41,6 +48,13 @@ SOURCE_DATASET_ID = "nyc_taxi"
 SYNTHETIC_GENERATION_VERSION = "v1"
 SYNTHETIC_RULE_ID = "taxi_to_delivery_seed_v1"
 SOURCE_ROLE = "M5/M6 auxiliary synthetic dataset, not M3 main raw"
+
+
+def parse_int(value: Any) -> int | None:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
 
 
 def stable_hash(parts: Iterable[Any]) -> str:
@@ -96,11 +110,29 @@ def read_product_ids(path: Path, fallback_count: int) -> list[str]:
     return [f"P{index:06d}" for index in range(1, fallback_count + 1)]
 
 
+def read_taxi_zone_lookup(path: Path) -> dict[int, dict[str, str]]:
+    if not path.exists():
+        return {}
+    lookup: dict[int, dict[str, str]] = {}
+    with path.open("r", encoding="utf-8-sig", newline="") as handle:
+        reader = csv.DictReader(handle)
+        for row in reader:
+            location_id = parse_int(row.get("LocationID"))
+            if location_id is None:
+                continue
+            lookup[location_id] = {
+                "borough": row.get("Borough") or "Unknown",
+                "zone": row.get("Zone") or "Unknown",
+            }
+    return lookup
+
+
 def taxi_row_to_delivery(
     row: dict[str, Any],
     source_index: int,
     product_id: str,
     late_threshold_minutes: int,
+    taxi_zone_lookup: dict[int, dict[str, str]] | None = None,
     source_start_at: datetime | None = None,
     source_end_at: datetime | None = None,
 ) -> dict[str, Any] | None:
@@ -122,6 +154,10 @@ def taxi_row_to_delivery(
     distance_km = round(max(trip_distance_miles, 0.0) * 1.609344, 3)
     cost_amount = round(max(total_amount, 0.0), 2)
     late_minutes = max(duration_minutes - late_threshold_minutes, 0)
+    pickup_location_id = parse_int(row.get("PULocationID"))
+    dropoff_location_id = parse_int(row.get("DOLocationID"))
+    pickup_location = (taxi_zone_lookup or {}).get(pickup_location_id or -1, {})
+    dropoff_location = (taxi_zone_lookup or {}).get(dropoff_location_id or -1, {})
     source_taxi_trip_id = f"yellow_tripdata_2024-01:{source_index:08d}"
     row_hash = stable_hash(
         [
@@ -153,6 +189,12 @@ def taxi_row_to_delivery(
         "source_dataset_id": SOURCE_DATASET_ID,
         "source_taxi_trip_id": source_taxi_trip_id,
         "source_taxi_row_hash": row_hash,
+        "source_pickup_location_id": pickup_location_id,
+        "source_dropoff_location_id": dropoff_location_id,
+        "pickup_borough": pickup_location.get("borough"),
+        "pickup_zone": pickup_location.get("zone"),
+        "dropoff_borough": dropoff_location.get("borough"),
+        "dropoff_zone": dropoff_location.get("zone"),
         "is_synthetic_source": True,
         "synthetic_generation_version": SYNTHETIC_GENERATION_VERSION,
         "synthetic_rule_id": SYNTHETIC_RULE_ID,
@@ -209,6 +251,20 @@ def summarize_delivery(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "is_synthetic_source_all_true": all(row.get("is_synthetic_source") is True for row in rows),
         "late_delivery_flag_boolean": all(isinstance(row.get("late_delivery_flag"), bool) for row in rows),
         "source_taxi_row_hash_present": all(bool(row.get("source_taxi_row_hash")) for row in rows),
+        "source_pickup_location_id_present": all(row.get("source_pickup_location_id") is not None for row in rows),
+        "source_dropoff_location_id_present": all(row.get("source_dropoff_location_id") is not None for row in rows),
+        "pickup_zone_present_rate": round(
+            sum(1 for row in rows if row.get("pickup_zone")) / len(rows),
+            4,
+        )
+        if rows
+        else 0.0,
+        "dropoff_zone_present_rate": round(
+            sum(1 for row in rows if row.get("dropoff_zone")) / len(rows),
+            4,
+        )
+        if rows
+        else 0.0,
         "min_event_date": min(dates) if dates else None,
         "max_event_date": max(dates) if dates else None,
     }
@@ -226,7 +282,14 @@ def write_parquet_copy(path: Path, rows: list[dict[str, Any]]) -> bool:
     return True
 
 
-def update_manifest(path: Path, taxi_path: Path, output_path: Path, parquet_path: Path | None, row_count: int) -> dict[str, Any]:
+def update_manifest(
+    path: Path,
+    taxi_path: Path,
+    zone_lookup_path: Path,
+    output_path: Path,
+    parquet_path: Path | None,
+    row_count: int,
+) -> dict[str, Any]:
     manifest = read_json(path)
     if not manifest:
         manifest = {
@@ -246,6 +309,8 @@ def update_manifest(path: Path, taxi_path: Path, output_path: Path, parquet_path
         based_on.append("nyc_taxi_2024_01_yellow_tripdata")
     source_files = manifest.setdefault("source_files", {})
     source_files["delivery_taxi_source"] = str(taxi_path)
+    if zone_lookup_path.exists():
+        source_files["taxi_zone_lookup"] = str(zone_lookup_path)
     source_files["delivery_trips_seed"] = str(output_path)
     if parquet_path is not None:
         source_files["delivery_trips_seed_parquet"] = str(parquet_path)
@@ -257,6 +322,11 @@ def update_manifest(path: Path, taxi_path: Path, output_path: Path, parquet_path
     manifest["delivery_seed_logical_shape"] = "delivery_trips_seed_json"
     manifest["delivery_seed_source_profile"] = "synthetic_auxiliary_source"
     manifest["delivery_seed_caveat"] = "Taxi trips are transformed into synthetic delivery records for analysis support only."
+    manifest["delivery_seed_location_enrichment"] = {
+        "source_location_ids": ["PULocationID", "DOLocationID"],
+        "lookup_source": str(zone_lookup_path) if zone_lookup_path.exists() else None,
+        "lookup_fields": ["Borough", "Zone"] if zone_lookup_path.exists() else [],
+    }
     manifest["synthetic_generation_version"] = SYNTHETIC_GENERATION_VERSION
     manifest["synthetic_rule_id"] = SYNTHETIC_RULE_ID
     write_json(path, manifest)
@@ -299,6 +369,7 @@ def update_summary(path: Path, delivery_path: Path, parquet_path: Path | None, d
         "source_dataset_id": SOURCE_DATASET_ID,
         "synthetic_generation_version": SYNTHETIC_GENERATION_VERSION,
         "synthetic_rule_id": SYNTHETIC_RULE_ID,
+        "source_location_fields": ["PULocationID", "DOLocationID"],
     }
     write_json(path, summary)
     return summary
@@ -309,6 +380,7 @@ def generate(args: argparse.Namespace) -> dict[str, Any]:
         raise FileNotFoundError(args.taxi_parquet)
 
     product_ids = read_product_ids(args.product_seed, args.fallback_product_count)
+    taxi_zone_lookup = read_taxi_zone_lookup(args.taxi_zone_lookup)
     source_start_at = coerce_datetime(args.source_start_at) if args.source_start_at else None
     source_end_at = coerce_datetime(args.source_end_at) if args.source_end_at else None
     rows: list[dict[str, Any]] = []
@@ -319,6 +391,7 @@ def generate(args: argparse.Namespace) -> dict[str, Any]:
             source_index,
             product_id,
             args.late_threshold_minutes,
+            taxi_zone_lookup=taxi_zone_lookup,
             source_start_at=source_start_at,
             source_end_at=source_end_at,
         )
@@ -335,7 +408,7 @@ def generate(args: argparse.Namespace) -> dict[str, Any]:
     parquet_written = write_parquet_copy(args.output_parquet, rows) if args.output_parquet else False
     parquet_path = args.output_parquet if parquet_written else None
     delivery_summary = summarize_delivery(rows)
-    update_manifest(args.manifest, args.taxi_parquet, args.output_jsonl, parquet_path, delivery_count)
+    update_manifest(args.manifest, args.taxi_parquet, args.taxi_zone_lookup, args.output_jsonl, parquet_path, delivery_count)
     summary = update_summary(args.summary, args.output_jsonl, parquet_path, delivery_summary)
     return summary
 
@@ -343,6 +416,7 @@ def generate(args: argparse.Namespace) -> dict[str, Any]:
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--taxi-parquet", type=Path, default=Path("data/external/nyc-taxi/yellow_tripdata_2024-01.parquet"))
+    parser.add_argument("--taxi-zone-lookup", type=Path, default=Path("data/external/nyc-taxi/taxi_zone_lookup.csv"))
     parser.add_argument("--product-seed", type=Path, default=Path("data/week2/mvp_synthesis/raw_demo/product_master_seed.jsonl"))
     parser.add_argument("--output-jsonl", type=Path, default=Path("data/week2/mvp_synthesis/raw_demo/delivery_trips_seed.jsonl"))
     parser.add_argument("--output-parquet", type=Path, default=Path("data/week2/mvp_synthesis/raw_demo/delivery_trips_seed.parquet"))
