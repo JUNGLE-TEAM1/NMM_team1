@@ -4,8 +4,8 @@
 
 ## Source Branch Workspaces / source branch workspace
 
-- `docs/workflows/feature/m2-amazon-reviews-runner-evidence`
-- `docs/workflows/feature/week2-workflow-catalog`
+- `docs/workflows/feature/m2-amazon-reviews-runner-evidence/`
+- `docs/workflows/feature/week2-workflow-catalog/`
 
 ## Required Source Files / 읽어야 할 source 파일
 
@@ -25,8 +25,8 @@
 
 | Source Branch | Workspace | Base Commit | Read At | Notes |
 | --- | --- | --- | --- | --- |
-| `origin/feature/m2-amazon-reviews-runner-evidence` | `docs/workflows/feature/m2-amazon-reviews-runner-evidence` | `8935337` | 2026-06-27 | M2 `Week2SparkRunner` Amazon Reviews JSONL Parquet evidence와 runner output shape를 입력으로 사용 |
-| `origin/codex/week2-workflow-catalog` | `docs/workflows/feature/week2-workflow-catalog` | `74e5e3c` | 2026-06-27 | M5 `Week2WorkflowService`, API route, `ExecutionResult`/`CatalogMetadata` persistence 흐름을 입력으로 사용 |
+| `origin/feature/m2-amazon-reviews-runner-evidence` | `docs/workflows/feature/m2-amazon-reviews-runner-evidence/` | `8935337` | 2026-06-27 | M2 `Week2SparkRunner` Amazon Reviews JSONL Parquet evidence와 runner output shape를 입력으로 사용 |
+| `origin/codex/week2-workflow-catalog` | `docs/workflows/feature/week2-workflow-catalog/` | `74e5e3c` | 2026-06-27 | M5 `Week2WorkflowService`, API route, `ExecutionResult`/`CatalogMetadata` persistence 흐름을 입력으로 사용 |
 
 ## Integration Notes / 통합 메모
 

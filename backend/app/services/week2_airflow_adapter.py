@@ -1,5 +1,7 @@
+import json
 import os
 from dataclasses import dataclass
+from pathlib import Path
 from time import sleep
 from typing import Any, Protocol
 
@@ -20,6 +22,7 @@ class Week2AirflowUnavailableError(Week2AirflowError):
 class Week2AirflowConfig:
     base_url: str
     dag_id: str
+    result_root: Path
     username: str | None = None
     password: str | None = None
     timeout_seconds: float = 5
@@ -32,9 +35,11 @@ class Week2AirflowConfig:
         base_url = source.get("ASKLAKE_WEEK2_AIRFLOW_BASE_URL") or source.get("AIRFLOW_BASE_URL")
         if not base_url:
             return None
+        result_root = source.get("ASKLAKE_WEEK2_AIRFLOW_RESULT_ROOT")
         return cls(
             base_url=base_url,
             dag_id=source.get("ASKLAKE_WEEK2_AIRFLOW_DAG_ID", "asklake_week2_reviews"),
+            result_root=airflow_result_root_from_env(result_root),
             username=source.get("ASKLAKE_WEEK2_AIRFLOW_USERNAME") or source.get("AIRFLOW_USERNAME"),
             password=source.get("ASKLAKE_WEEK2_AIRFLOW_PASSWORD") or source.get("AIRFLOW_PASSWORD"),
             timeout_seconds=float(source.get("ASKLAKE_WEEK2_AIRFLOW_TIMEOUT_SECONDS", "5")),
@@ -93,6 +98,7 @@ class Week2AirflowAdapter:
                 "run_id": run_id,
                 "pipeline_id": workflow_definition["pipeline_id"],
                 "workflow_definition": workflow_definition,
+                "airflow_result_file": airflow_result_file_name(run_id),
             },
         }
         client.request("POST", dag_run_path, dag_run_payload)
@@ -102,7 +108,7 @@ class Week2AirflowAdapter:
             latest_run = client.request("GET", f"{dag_run_path}/{run_id}")
             state = airflow_state(latest_run)
             if state == "success":
-                return result_from_successful_dag_run(latest_run, run_id)
+                return result_from_successful_dag_run(latest_run, run_id, self.config)
             if state in {"failed", "upstream_failed"}:
                 return failed_airflow_result(run_id, f"Airflow DAG finished with state {state}")
             if poll_index < self.config.max_polls - 1 and self.config.poll_interval_seconds > 0:
@@ -117,8 +123,16 @@ def airflow_state(dag_run: dict[str, Any]) -> str | None:
     return str(value).lower() if value is not None else None
 
 
-def result_from_successful_dag_run(dag_run: dict[str, Any], run_id: str) -> Week2RunnerResult:
+def result_from_successful_dag_run(
+    dag_run: dict[str, Any],
+    run_id: str,
+    config: Week2AirflowConfig,
+) -> Week2RunnerResult:
     payload = week2_result_payload(dag_run)
+    if payload is None:
+        payload, artifact_error = week2_result_artifact_payload(dag_run, run_id, config)
+        if artifact_error is not None:
+            return failed_airflow_result(run_id, artifact_error)
     if payload is None:
         return failed_airflow_result(run_id, "Airflow DAG succeeded but missing Week 2 result payload")
     if not payload.get("output_path"):
@@ -149,6 +163,67 @@ def week2_result_payload(dag_run: dict[str, Any]) -> dict[str, Any] | None:
         if isinstance(candidate, dict):
             return candidate
     return None
+
+
+def week2_result_artifact_payload(
+    dag_run: dict[str, Any],
+    run_id: str,
+    config: Week2AirflowConfig,
+) -> tuple[dict[str, Any] | None, str | None]:
+    result_file = airflow_result_file_from_dag_run(dag_run, run_id)
+    if result_file is None:
+        return None, None
+
+    result_path = config.result_root / result_file
+    try:
+        with result_path.open(encoding="utf-8") as result_file_handle:
+            payload = json.load(result_file_handle)
+    except FileNotFoundError:
+        return None, f"Airflow DAG succeeded but result artifact is missing: {result_path}"
+    except json.JSONDecodeError as error:
+        return None, f"Airflow DAG result artifact is invalid JSON: {result_path}: {error}"
+    except OSError as error:
+        return None, f"Airflow DAG result artifact cannot be read: {result_path}: {error}"
+
+    if not isinstance(payload, dict):
+        return None, f"Airflow DAG result artifact is not a JSON object: {result_path}"
+    nested_payload = payload.get("week2_result")
+    if isinstance(nested_payload, dict):
+        return nested_payload, None
+    return payload, None
+
+
+def airflow_result_file_from_dag_run(dag_run: dict[str, Any], run_id: str) -> str | None:
+    conf = dag_run.get("conf")
+    if not isinstance(conf, dict):
+        return None
+    value = conf.get("airflow_result_file")
+    if value is None:
+        return None
+    name = Path(str(value)).name
+    return name if name else airflow_result_file_name(run_id)
+
+
+def airflow_result_file_name(run_id: str) -> str:
+    return f"{run_id}.json"
+
+
+def default_airflow_result_root() -> Path:
+    return repo_root() / "data" / "week2" / "_airflow_results"
+
+
+def airflow_result_root_from_env(value: str | None) -> Path:
+    if not value:
+        return default_airflow_result_root()
+    path = Path(value)
+    return path if path.is_absolute() else repo_root() / path
+
+
+def repo_root() -> Path:
+    for parent in Path(__file__).resolve().parents:
+        if (parent / "contracts").is_dir():
+            return parent
+    return Path(__file__).resolve().parents[3]
 
 
 def succeeded_airflow_task_result(payload: dict[str, Any]) -> dict[str, Any]:
