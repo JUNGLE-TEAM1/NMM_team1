@@ -49,7 +49,6 @@ AskLake의 Target MVP 대표 성공 시나리오는 `Trusted Dataset -> Query/As
 - [ ] Week 2 모듈 구현 전 `contracts/*.sample.json` fixture가 producer/consumer 경계, `TransformSpec`, `RuntimeConfig`, `KafkaTopicContract`, Airflow/local runner/spark runner 호환 결과, SQL engine adapter 경계를 제공한다.
 - [ ] Week 2 모듈 구현 전 API/UI route, ID 규칙, storage path pattern, workflow/run status, `QueryResult`, guardrail failure shape, daily smoke evidence 형식이 공통 계약으로 확인된다.
 - [ ] M2 Taxi local batch evidence는 TLC Taxi Parquet 입력을 `gold_taxi_daily_metrics` Parquet output으로 만들고 row count, bytes, duration, output path를 기록한다.
-- [ ] M2 storage adapter는 `RuntimeConfig.storage` 기준으로 `s3_uri`, `storage.prefix`, `storage.local_fallback_path`가 같은 run_id prefix를 가리키는지 확인한다.
 
 ### Trusted Dataset
 
