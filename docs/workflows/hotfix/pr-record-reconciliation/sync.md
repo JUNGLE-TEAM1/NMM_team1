@@ -27,15 +27,17 @@
 - linked GitHub issue: #189
 - issue link: https://github.com/JUNGLE-TEAM1/NMM_team1/issues/189
 - issue creation result: created after human "진행해"
-- issue project result: set to In Progress in JUNGLE-TEAM1 project 3
+- issue project result: set to Review in JUNGLE-TEAM1 project 3
 - PR closing keyword: Closes #189
-- pushed branch:
-- PR link:
-- merge status:
-- issue close status:
+- pushed branch: hotfix/pr-record-reconciliation
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/190
+- merge status: open
+- issue close status: open
 
 ## Remote Operation Boundary
 
 - 이번 branch에서는 issue #189 생성과 Project `In Progress` 설정만 실행했다.
+- PR #190 생성 후 issue #189 state `OPEN`, Project `Review` 확인.
 - #181/#182 title/body 보정은 이전 대화 turn에서 이미 원격 적용됐고, 이번 branch는 그 evidence를 repo에 남긴다.
 - merge/finalize/cleanup은 실행하지 않았다.
+- issue reopen result: reopened closed issue before PR open
