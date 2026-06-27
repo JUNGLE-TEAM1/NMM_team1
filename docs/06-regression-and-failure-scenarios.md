@@ -88,6 +88,16 @@
 | Verification method | `docs/03`, `contracts/*.sample.json`, workspace `decisions.md`, `quality.md`, daily smoke evidence format을 확인한다. |
 | Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07`, `contracts/` |
 
+### Week 2 Airflow 실패가 local fallback 성공으로 가려지는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | M5 Airflow smoke는 local fallback 성공만으로 Airflow 연결 성공이라고 판단하지 않는다. |
+| Failure condition | Airflow DAG trigger, DAG success, result artifact, Catalog update 중 하나가 실패했는데 `fallback_succeeded`만 보고 Airflow 연결이 완료된 것으로 표시한다. |
+| Expected behavior | 일반 demo API는 fallback을 유지하되, Airflow smoke evidence는 `status=succeeded`, `airflow adapter executed Week 2 workflow boundary` log, `data/week2/_airflow_results/<run_id>.json`, output JSONL, Catalog lineage를 함께 확인한다. |
+| Verification method | `docs/07` Week 2 M5 Airflow local smoke 점검과 `backend/tests/test_week2_airflow_adapter.py`를 확인한다. |
+| Related docs/interface/Phase | `docs/03`, `docs/07`, `backend/app/services/week2_airflow_adapter.py`, `docker-compose.airflow.yml` |
+
 ### Week 2 storage URI와 local fallback path가 다른 prefix를 가리키는 경우
 
 | 항목 | 내용 |

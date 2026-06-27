@@ -1,3 +1,6 @@
+import json
+from pathlib import Path
+
 import pytest
 
 from app.services.week2_airflow_adapter import (
@@ -82,11 +85,69 @@ def test_week2_airflow_adapter_triggers_dag_and_converts_week2_result() -> None:
                     "run_id": "run_reviews_demo_001",
                     "pipeline_id": "pipeline_reviews_json_e2e",
                     "workflow_definition": {"pipeline_id": "pipeline_reviews_json_e2e"},
+                    "airflow_result_file": "run_reviews_demo_001.json",
                 },
             },
         ),
         ("GET", "/api/v1/dags/asklake_week2_reviews/dagRuns/run_reviews_demo_001", None),
     ]
+
+
+def test_week2_airflow_adapter_reads_shared_result_artifact(tmp_path: Path) -> None:
+    result_root = tmp_path / "_airflow_results"
+    result_root.mkdir()
+    output_path = tmp_path / "reviews" / "gold" / "run_id=run_reviews_demo_001" / "dataset_reviews_gold.jsonl"
+    output_path.parent.mkdir(parents=True)
+    output_path.write_text('{"product_id": "B001", "review_count": 3}\n', encoding="utf-8")
+    artifact_path = result_root / "run_reviews_demo_001.json"
+    artifact_path.write_text(
+        json.dumps(
+            {
+                "status": "succeeded",
+                "task_results": [
+                    {
+                        "node_id": "airflow_dag_reviews",
+                        "status": "succeeded",
+                        "attempt": 1,
+                        "row_count": 1,
+                        "bytes": output_path.stat().st_size,
+                        "error": None,
+                    }
+                ],
+                "logs": [{"level": "info", "message": "Airflow result artifact completed"}],
+                "row_count": 4,
+                "bytes": 580,
+                "duration_ms": 14,
+                "output_path": str(output_path),
+                "output_row_count": 1,
+                "output_bytes": output_path.stat().st_size,
+            }
+        ),
+        encoding="utf-8",
+    )
+    http_client = FakeAirflowHttpClient(
+        [
+            {"dag_run_id": "run_reviews_demo_001", "state": "queued"},
+            {
+                "dag_run_id": "run_reviews_demo_001",
+                "state": "success",
+                "conf": {"airflow_result_file": "run_reviews_demo_001.json"},
+            },
+        ]
+    )
+    adapter = Week2AirflowAdapter(
+        config=airflow_config(max_polls=1, result_root=result_root),
+        http_client=http_client,
+    )
+
+    result = adapter.run({"pipeline_id": "pipeline_reviews_json_e2e"}, run_id="run_reviews_demo_001")
+
+    assert result.status == "succeeded"
+    assert result.output_path == str(output_path)
+    assert result.output_row_count == 1
+    assert result.output_bytes == output_path.stat().st_size
+    assert result.logs == [{"level": "info", "message": "Airflow result artifact completed"}]
+    assert http_client.requests[0][2]["conf"]["airflow_result_file"] == "run_reviews_demo_001.json"
 
 
 def test_week2_airflow_adapter_marks_success_without_result_as_failed() -> None:
@@ -157,10 +218,11 @@ def test_week2_workflow_uses_airflow_adapter_result_without_local_fallback(tmp_p
     assert catalog["storage"]["local_fallback_path"] == str(output_path)
 
 
-def airflow_config(max_polls: int = 3) -> Week2AirflowConfig:
+def airflow_config(max_polls: int = 3, result_root: Path | None = None) -> Week2AirflowConfig:
     return Week2AirflowConfig(
         base_url="http://airflow.local",
         dag_id="asklake_week2_reviews",
+        result_root=result_root or Path("/tmp/week2/_airflow_results"),
         max_polls=max_polls,
         poll_interval_seconds=0,
     )
