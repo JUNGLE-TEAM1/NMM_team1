@@ -69,6 +69,7 @@ Required check status, branch protection, secret scanning, CODEOWNER review, PR 
 The current `main` ruleset requires `harness`, `container-smoke`, `manifest-smoke`, `linked-issue`, `migration-schema-security`, and `pr-size-hard-gate` checks before merge.
 `migration-schema-security` is a hard detection gate for migration/schema/security-sensitive path changes.
 `pr-size-hard-gate` blocks PRs over 10 non-evidence files or 600 non-evidence changed lines unless the PR body includes `Large PR Exception: approved`.
+`pr-template-drift` is a repo-local PR event check for Korean PR title prefix and 7-section PR body shape; repo admin must confirm whether it is registered as a required context in the active ruleset.
 Risky path detection remains advisory.
 
 During Existing Codebase Adoption:

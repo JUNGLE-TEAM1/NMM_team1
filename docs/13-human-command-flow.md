@@ -211,6 +211,8 @@ AI does:
 
 - Runs read-only checks first: `scripts/audit-github-records.sh --issue <number>` and/or `scripts/audit-github-records.sh --pr <number>`.
 - Reports drift reasons, current title/body shape, suggested Korean title prefix, missing label, missing PR handoff sections, and closing keyword risk.
+- Reports that a plain `연결된 Issue: 연결된 issue 없음` is not enough for a PR check; no-issue PRs need `No Linked Issue Exception: approved` or `연결된 Issue 예외: 승인` plus a reason.
+- Reports that open PRs should keep linked issues in Project `Review`; `Done` is only for merge/finalize-complete linked issues.
 - Does not edit existing GitHub issue/PR records until the human explicitly asks for correction.
 - If the drift came from a harness gap, adds or updates fixture regression coverage before correcting the existing records.
 

@@ -4,6 +4,8 @@ const CLOSING_KEYWORD_RE =
   /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+(?:[\w.-]+\/[\w.-]+)?#\d+\b/i;
 const EXPLICIT_NO_ISSUE_RE =
   /(?:연결된\s*Issue\s*:\s*(?:연결된\s*issue\s*없음|없음|none|n\/a)|no\s+linked\s+issue)/i;
+const APPROVED_NO_ISSUE_RE =
+  /(?:No\s+Linked\s+Issue\s+Exception\s*:\s*approved|연결된\s*Issue\s*예외\s*:\s*approved|연결된\s*Issue\s*예외\s*:\s*승인)/i;
 
 function stripHtmlComments(text) {
   return String(text || "").replace(/<!--[\s\S]*?-->/g, "");
@@ -24,13 +26,21 @@ function checkPrLinkedIssue(body) {
   }
 
   if (EXPLICIT_NO_ISSUE_RE.test(normalizedBody)) {
-    return { ok: true, reason: "explicit no-issue exception found" };
+    if (APPROVED_NO_ISSUE_RE.test(normalizedBody)) {
+      return { ok: true, reason: "approved no-issue exception found" };
+    }
+
+    return {
+      ok: false,
+      reason:
+        'PR body uses a no-issue exception, but it must also include "No Linked Issue Exception: approved" or "연결된 Issue 예외: 승인".',
+    };
   }
 
   return {
     ok: false,
     reason:
-      'PR body must include a real closing keyword like "Closes #123" or explicit "연결된 Issue: 연결된 issue 없음".',
+      'PR body must include a real closing keyword like "Closes #123" or an approved no-issue exception.',
   };
 }
 
@@ -63,6 +73,7 @@ if (require.main === module) {
 }
 
 module.exports = {
+  APPROVED_NO_ISSUE_RE,
   checkPrLinkedIssue,
   stripHtmlComments,
 };
