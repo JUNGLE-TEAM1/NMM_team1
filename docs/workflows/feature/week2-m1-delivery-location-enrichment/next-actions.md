@@ -9,12 +9,12 @@
 
 ## Recommended Next Action / 권장 다음 행동
 
-- script/test/workspace docs 변경을 commit하고 PR을 생성한다.
-- Reason: generated `data/`는 ignored로 유지하고, 재생성 가능한 코드와 evidence만 PR 대상이다.
+- PR #192 review/CI 결과를 확인한다.
+- Reason: generated `data/`는 ignored로 유지하고, 재생성 가능한 코드와 evidence만 PR 대상에 포함했다.
 
 ## Options / 선택지
 
-1. commit/push/PR을 진행한다.
+1. PR #192 review/CI를 확인한다.
 2. M5/M6 소비 query Phase로 넘긴다.
 3. shared interface 정식화를 별도 Phase로 판단한다.
 4. 이 workspace를 보류한다.
@@ -29,7 +29,7 @@
 
 ## Next AI Action / 다음 AI 행동
 
-- option 1이면 focused test, generated-data validation, strict harness를 재확인하고 PR을 생성한다.
+- option 1이면 PR #192 checks를 확인하고 merge 전 사람 확인을 받는다.
 - option 2이면 handoff 내용을 M5/M6 소비 Phase 프롬프트로 전환한다.
 - option 3이면 `docs/03-interface-reference.md` 영향 여부를 Decision Option Brief로 검토한다.
 - option 4이면 pause reason을 `notes.md`에 기록한다.

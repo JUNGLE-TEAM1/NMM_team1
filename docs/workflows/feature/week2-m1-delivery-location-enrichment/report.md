@@ -12,6 +12,6 @@
 - Context omitted intentionally: M5/M6 consumer implementation, M3 main raw integration
 - Changed: added pickup/dropoff source location IDs and TLC Taxi Zone borough/zone enrichment to `scripts/week2_m1_delivery_seed.py`; updated focused tests; generated local ignored enriched JSONL/Parquet; added follow-up handoff evidence.
 - Verified: unit tests passed; Taxi source checksum confirmed; Taxi Zone lookup downloaded and checksummed; JSONL 100,000 rows validated; pickup/dropoff zone present rate 1.0; Parquet copy 100,000 rows read; metadata JSON valid; strict harness passed.
-- Remaining: commit/push/PR; generated `data/` remains ignored.
+- Remaining: wait for PR #192 review/CI, then merge/finalize only after human confirmation. Generated `data/` remains ignored.
 - Next context: M5/M6 can use enriched fields for borough/zone late rate, cost-distance, and route-level aggregation.
 - Risk: borough/zone values come from TLC Taxi Zone lookup and should be treated as synthetic auxiliary analysis dimensions, not real delivery operations geography.
