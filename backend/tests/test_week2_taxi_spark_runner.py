@@ -1,5 +1,6 @@
 from datetime import datetime
 from pathlib import Path
+import shutil
 
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -9,6 +10,7 @@ from app.services.week2_taxi_spark_runner import TaxiSparkConfig, Week2TaxiSpark
 
 
 pytest.importorskip("pyspark")
+pytestmark = pytest.mark.skipif(shutil.which("java") is None, reason="PySpark local mode smoke requires Java")
 
 
 def write_taxi_fixture(path: Path) -> None:

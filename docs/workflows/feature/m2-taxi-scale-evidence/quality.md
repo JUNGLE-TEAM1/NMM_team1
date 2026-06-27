@@ -23,6 +23,7 @@
 | unit/focused test | `PYTHONPATH=backend SPARK_LOCAL_IP=127.0.0.1 .venv/bin/python -m pytest backend/tests/test_week2_taxi_spark_runner.py backend/tests/test_week2_storage_adapter.py -q` | passed | `3 passed in 7.44s` |
 | integration/contract test | `PYTHONPATH=backend SPARK_LOCAL_IP=127.0.0.1 .venv/bin/python -m pytest backend/tests/test_week2_spark_runner.py backend/tests/test_week2_workflow_catalog.py backend/tests/test_week2_taxi_spark_runner.py -q` | passed | `21 passed in 6.18s` |
 | backend full test | `PYTHONPATH=backend SPARK_LOCAL_IP=127.0.0.1 .venv/bin/python -m pytest backend/tests -q` | passed | `66 passed in 6.17s` |
+| backend container smoke | `docker build -f infra/docker/backend.Dockerfile -t asklake-backend:m2-taxi-spark-evidence . && docker run --rm asklake-backend:m2-taxi-spark-evidence python -m pytest -q` | passed | `65 passed, 1 skipped in 0.86s`; PySpark test skips when Java is absent in the backend container |
 | build/typecheck | `PYTHONPATH=backend .venv/bin/python -m py_compile backend/app/services/week2_taxi_spark_runner.py scripts/week2_m2_taxi_spark_local_evidence.py backend/app/services/week2_taxi_batch_runner.py backend/app/services/week2_local_runner.py` | passed | no output |
 | harness validation | `scripts/validate-harness.sh` | passed | Harness validation passed |
 | strict harness validation | `scripts/validate-harness.sh --strict` | passed | Harness validation passed |
