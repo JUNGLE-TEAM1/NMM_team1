@@ -12,6 +12,6 @@
 - Context omitted intentionally: M3 main raw integration, M5/M6 runtime integration
 - Changed: added `scripts/week2_m1_delivery_seed.py`, added focused tests, generated local ignored `delivery_trips_seed.jsonl` and optional `delivery_trips_seed.parquet`, updated generated manifest/summary lineage/caveat, and wrote M5/M6 handoff notes.
 - Verified: URL HEAD `HTTP/2 200`, local size `49,961,641 bytes`, SHA-256, Parquet magic bytes `PAR1`; unit tests passed; JSONL 100,000 rows validated; Parquet copy 100,000 rows read; metadata JSON valid; strict harness passed.
-- Remaining: commit/push/PR script, tests, workspace docs, and handoff notes. Generated `data/` remains ignored.
+- Remaining: wait for PR review/CI, then merge/finalize only after human confirmation. Generated `data/` remains ignored.
 - Next context: M3 guidance says delivery seed should stay an auxiliary synthetic dataset by default; JSONL is safest if M3 ever processes it.
 - Risk: generating from Parquet currently requires an external parquet engine; this run used temporary `/tmp/asklake_pyarrow_runtime` and did not add a repo dependency.

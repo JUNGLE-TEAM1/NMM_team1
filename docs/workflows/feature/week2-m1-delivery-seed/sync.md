@@ -25,7 +25,7 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 - conflicts:
 - validation: focused unit test, generated JSONL validation, metadata JSON validation, Parquet copy read validation, strict harness validation
 - result: local generation validation passed
-- deferral reason: generated `data/` remains ignored; PR/push decision pending user choice
+- deferral reason: generated `data/` remains ignored; PR #180 created with script/test/workspace evidence only
 
 ## PR Conflict Resolution
 
@@ -45,7 +45,7 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 - issue creation result: not requested
 - issue project result: not requested
 - PR closing keyword: no linked issue
-- pushed branch:
-- PR link:
-- merge status:
-- issue close status:
+- pushed branch: `feature/week2-m1-delivery-seed`
+- PR link: `https://github.com/JUNGLE-TEAM1/NMM_team1/pull/180`
+- merge status: open
+- issue close status: not applicable; no linked issue
