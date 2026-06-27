@@ -13,7 +13,7 @@ ver2는 rewrite 계획이 아니다. 이미 main에 들어간 M1 UI shell, M4 Ka
 - M3 transformation spec/job logic은 기존 `Week2LocalRunner`를 한 번에 대체하지 않는다.
 - M2 Spark runtime은 M3/M4 내부로 들어가지 않고 `SparkRunner` 또는 runtime adapter 뒤에 붙는다.
 - M2 `SparkRunner`는 Taxi 전용 구현이 아니다. 입력 format/path/options를 `RuntimeConfig`로 받고, Amazon Reviews JSON이든 TLC NYC Taxi Parquet이든 같은 result shape를 반환하는 공통 실행기로 둔다.
-- M6는 fixture catalog 기반 skeleton을 유지하되, 후속 작업에서 M5 Catalog store/API를 소비하도록 전환한다.
+- M6는 fixture catalog 기반 skeleton을 유지하되, 후속 작업에서 M5 Catalog store/API를 읽기 전용으로 소비하고 SQL MVP부터 닫도록 전환한다.
 - M4 Kafka replay demo는 버리지 않고 raw event contract/evidence로 흡수한다.
 
 ## 유지할 기존 구현
@@ -23,7 +23,7 @@ ver2는 rewrite 계획이 아니다. 이미 main에 들어간 M1 UI shell, M4 Ka
 | M1 UI | `frontend/src/app/*`, catalog/source/pipeline 화면 | 발표 클릭 흐름과 UI shell이 이미 있다. | M5/M6 API 상태를 표시하는 쪽으로 확장 |
 | M4 Kafka | `scripts/kafka_replay_to_parquet_demo.py`, `docs/manual-verification/08-kafka-replay-parquet-demo.md` | Kafka raw replay와 Parquet evidence가 있다. | raw event contract/evidence로 유지 |
 | M5 Workflow/Catalog | `Week2WorkflowService`, `Week2LocalRunner`, `Week2CatalogStore`, `/api/week2/*` | 실행, fallback, Catalog 저장/API가 가장 많이 구현되어 있다. | runner boundary를 넓혀 M3/M2를 붙임 |
-| M6 Semantic/RAG-lite/AI Query | `Week2AIQueryService`, `SqlEngineAdapter`, fake SQL engine | query skeleton과 guardrail shape가 있다. | Catalog source를 fixture에서 M5 Catalog로 전환 |
+| M6 Semantic/RAG-lite/AI Query | `Week2AIQueryService`, `SqlEngineAdapter`, fake SQL engine | query skeleton과 guardrail shape가 있지만 실제 SQL은 아직 fake/template 수준이다. | Catalog source를 fixture에서 M5 Catalog로 전환한 뒤 Amazon Reviews output file SQL MVP를 우선 완성 |
 | Contracts | `contracts/*.sample.json` | M5/M6 테스트와 demo fixture가 의존한다. | 후속 interface/contracts PR에서만 조정 |
 
 ## 버리지 말 것
@@ -32,7 +32,7 @@ ver2는 rewrite 계획이 아니다. 이미 main에 들어간 M1 UI shell, M4 Ka
 - `Week2LocalRunner`를 즉시 제거하지 않는다.
 - `Week2CatalogStore`를 후속 DB 구현 전까지 제거하지 않는다.
 - M4 Kafka script를 Spark Streaming 구현으로 즉시 교체하지 않는다.
-- M6 fake SQL skeleton을 real SQL로 한 번에 갈아엎지 않는다.
+- M6 fake SQL skeleton을 real SQL로 한 번에 갈아엎지 않는다. Adapter 경계 뒤에서 SQL MVP, planner 강화, RAG, LLM 순서로 단계화한다.
 
 ## 전환 대상 경계
 
@@ -64,7 +64,7 @@ Week2WorkflowService
 | 4 | Runner boundary decision | M2/M3/M5 | local runner, M3 job logic, SparkRunner가 공유할 호출 계약 결정 |
 | 5 | M2 RuntimeConfig/SparkRunner smoke | M2 | dataset-independent Spark read/write smoke가 row_count/bytes/duration/output_path를 같은 result shape로 반환 |
 | 6 | M5 runner selection | M5 | local runner와 SparkRunner를 선택/호출할 수 있음 |
-| 7 | M6 Catalog source 전환 | M6/M5 | fixture catalog 대신 M5 Catalog store/API를 소비 |
+| 7 | M6 SQL-first Catalog query | M6/M5 | fixture catalog/fake SQL 대신 M5 CatalogMetadata를 읽기 전용으로 소비하고 Amazon Reviews output file을 SQL로 조회 |
 | 8 | M1 UI 연결 | M1 | run/catalog/query/evidence 상태 표시 |
 
 ## 분석 대표 E2E 후보
@@ -76,7 +76,7 @@ Amazon Reviews JSON
 -> M3 profile/schema/transform spec
 -> M5 workflow/local runner
 -> M5 Catalog
--> M6 Semantic/RAG-lite/AI Query
+-> M6 SQL-first Semantic/RAG-lite/AI Query
 -> M1 UI
 ```
 
@@ -91,7 +91,7 @@ Taxi와 Kafka는 선택 사항이 아니다. 각각 정형 batch와 streaming in
 | M3 | Amazon Reviews JSON 분석 대표 path와 PR #105 회수 여부 결정 | 분석 대표 path 확정 후 |
 | M4 | Kafka raw event contract와 streaming ingestion evidence 정리 | M3가 필요한 raw event shape를 확정한 뒤 |
 | M5 | runner boundary와 Catalog handoff 유지 | Phase 6 runner boundary 결정 후 |
-| M6 | M5 Catalog store/API 소비 계획 | Catalog source boundary 확인 후 |
+| M6 | M5 Catalog store/API 읽기 전용 소비와 SQL MVP 계획 | Catalog source boundary 확인 후 |
 
 ## 하지 말 것
 
@@ -100,6 +100,7 @@ Taxi와 Kafka는 선택 사항이 아니다. 각각 정형 batch와 streaming in
 - M3가 Taxi/Kafka까지 완전한 ETL을 한 번에 떠안지 않는다.
 - M5를 전면 rewrite하지 않는다.
 - `contracts/*.sample.json`을 ver2 문서 작업만으로 즉시 바꾸지 않는다.
+- RAG/LLM을 SQL MVP보다 먼저 구현하지 않는다.
 - Iceberg를 발표 범위로 되살리지 않는다.
 
 ## Phase 2 완료 기준
