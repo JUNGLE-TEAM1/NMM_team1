@@ -5,14 +5,14 @@
 - Type: feature
 - Branch/work location: `feature/m2-amazon-reviews-runner-evidence`, `docs/workflows/feature/m2-amazon-reviews-runner-evidence`
 - Date: 2026-06-26
-- Workspace state: ready-for-review
+- Workspace state: complete
 - Context Budget mode: Lite Read
 - Primary context read: `AGENTS.md`, `docs/workflows/docs/week2-main-e2e-path/decisions.md`, `docs/workflows/docs/week2-main-e2e-path/notes.md`, `docs/workflows/feature/week2-m1-synthetic-raw/report.md`, `backend/app/services/week2_spark_runner.py`, `backend/tests/test_week2_spark_runner.py`
 - Escalated context read: not needed
 - Context omitted intentionally: M3 Bronze implementation internals, M5 Workflow/Catalog adapter internals, SQL engine implementation, Taxi benchmark plan
 - Changed: added `scripts/week2_m2_amazon_reviews_runner_evidence.py`, `tests/test_week2_m2_amazon_reviews_runner_evidence.py`, and workspace evidence docs for Amazon Reviews JSONL runner proof.
 - Verified: focused unittest, existing `Week2SparkRunner` regression, sample evidence smoke, M1 synthetic raw 10,000행 generation, synthetic raw runner evidence, Parquet row count verification, `origin/main` merge, `git diff --check`, `scripts/validate-harness.sh`, `scripts/validate-harness.sh --strict`
-- Remaining: PR #163 CI completion and merge decision.
+- Remaining: none for current main/integration consumption. Historical PR/issue lifecycle may be audited separately if needed.
 - Next context: after merge, choose M5 runner integration or SQL smoke as the next M2/M5/M6 handoff. M1 synthetic raw can be regenerated with the recorded command because generated `data/` artifacts stay ignored.
 - Risk: this is local `pyarrow` Parquet evidence, not distributed Spark execution. It proves the runner boundary and output evidence path, not GB/TB scale processing.
 

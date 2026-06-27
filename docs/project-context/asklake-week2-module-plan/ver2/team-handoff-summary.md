@@ -7,20 +7,22 @@ Week2 분업은 이제 초기 회의안 그대로가 아니라 ver2 기준으로
 핵심은 단순하다.
 
 ```text
-Amazon Reviews JSON
--> M3 profile/schema/TransformSpec
--> M5 Workflow/local runner/Catalog
+reviews_seed + behavior_events_seed + delivery_trips_seed + product_master_seed
+-> bronze partitioned Parquet
+-> silver metrics
+-> gold_product_health
+-> M5 Workflow/Catalog
 -> M6 SQL-first Semantic/RAG-lite/AI Query
 -> M1 UI
 ```
 
-Week2 데이터 경로는 세 가지다. Amazon Reviews JSON은 Semantic/RAG-lite/AI Query 분석 대표 경로이고, Taxi Batch와 Kafka Event도 필수 처리/evidence 경로다. Taxi/Kafka는 선택 사항이 아니지만, M6 분석 연결의 선행 조건으로 두지는 않는다.
+Week2 분석 대표 경로는 상품 리스크 Gold인 `gold_product_health`다. Amazon Reviews JSON은 버리지 않고 리뷰 fact input으로 유지한다. 5GB 처리는 Taxi 별도 evidence가 아니라 `gold_product_health` 생성 main pipeline의 raw/bronze input 규모 기준이다.
 
-먼저 기존 M5 local runner로 Amazon Reviews 분석 E2E를 닫고, M2/M4는 각각 정형 batch와 streaming ingestion의 처리 증거를 완성한다. SparkRunner는 runner boundary 뒤에 붙인다.
+먼저 작은 input으로 `gold_product_health` 기능 smoke를 닫고, 같은 transform으로 `input_total_bytes >= 5GB` raw/bronze fact input 처리 evidence를 남긴다. Kafka는 1차 blocker가 아니며, 2차 이후 behavior replay evidence 또는 3차 streaming evidence로 붙인다.
 
-M6는 최종적으로 RAG/LLM까지 확장될 수 있지만, 현재는 실제 SQL도 아직 fake/template 수준이다. 그래서 2주차 후속 M6 우선순위는 `DuckDBSqlEngine` 같은 실제 SQL adapter와 SQL planner/guardrail을 통해 Amazon Reviews CatalogMetadata의 output file을 조회하는 SQL MVP 완성이다. CatalogMetadata 기반 RAG, hybrid query, 외부 LLM 답변 생성은 SQL MVP 이후 단계로 둔다.
+M6는 최종적으로 RAG/LLM까지 확장될 수 있지만, 2주차 후속 M6 우선순위는 `DuckDBSqlEngine` 같은 실제 SQL adapter와 SQL planner/guardrail을 통해 `dataset_product_health_gold`의 output file을 조회하는 SQL MVP 완성이다. CatalogMetadata 기반 RAG, hybrid query, 외부 LLM 답변 생성은 SQL MVP 이후 단계로 둔다.
 
-M2 구현은 Taxi 전용 ETL이 아니다. M2는 데이터셋 독립적인 `RuntimeConfig`/`SparkRunner` 공통 실행기를 만들고, TLC NYC Taxi Dataset은 예전 M2 계획과 정형 빅데이터 ETL 가능성을 보여주는 대표 evidence로 사용한다.
+M2 구현은 Taxi 전용 ETL이 아니다. M2는 데이터셋 독립적인 `RuntimeConfig`/`SparkRunner` 공통 실행기를 만들고, 5GB 이상 reviews/behavior/delivery fact input을 읽고 쓰는 execution evidence를 제공한다.
 
 팀원이 지금부터 해야 할 일은 새 구조를 다시 설계하는 것이 아니라, 아래 기준 위에 각자 맡은 작은 구현 slice를 올리는 것이다.
 
@@ -30,7 +32,7 @@ M2 구현은 Taxi 전용 ETL이 아니다. M2는 데이터셋 독립적인 `Runt
 | --- | --- | --- |
 | 책임 분리 ver2 | 완료 | M1~M6 소유권을 다시 나눴고, Spark/Catalog/ETL 중복 구현을 금지했다. |
 | 기존 구현 전환 계획 | 완료 | rewrite가 아니라 기존 M1/M4/M5/M6 구현 위에 adapter-first로 얹는다. |
-| 분석 대표 path | 완료 | Semantic/RAG-lite/AI Query 분석 대표 경로는 Amazon Reviews JSON 중심이다. Taxi/Kafka는 필수 처리/evidence 경로로 별도 완료한다. |
+| 분석 대표 path | 갱신 | Semantic/RAG-lite/AI Query 분석 대표 경로는 `gold_product_health` 중심이다. 5GB input evidence는 이 Gold 생성 pipeline에 연결한다. |
 | 기존 구현 anchor | 완료 | M5 workflow/catalog, M4 Kafka demo, M6 skeleton, M1 shell은 보존한다. |
 | M3 JSON path | 완료 | PR #105는 바로 merge하지 않고 JSON inspect/profile 로직만 source material로 회수한다. |
 | runner boundary | 완료 | M2 SparkRunner, M3 TransformSpec, M5 runner selection이 공유할 input/output 기준을 정했다. |
@@ -42,11 +44,11 @@ M2 구현은 Taxi 전용 ETL이 아니다. M2는 데이터셋 독립적인 `Runt
 | 모듈 | 지금 할 일 | 의존하는 모듈 | 완료 기준 | 하지 말 것 |
 | --- | --- | --- | --- | --- |
 | M1 | M5/M6 API 결과를 run/catalog/query/evidence 화면에 연결한다. | M5 run/catalog API, M6 query API | demo 화면에서 run 상태, Catalog metadata, AI Query evidence를 한 흐름으로 볼 수 있다. | schema, ETL, runner 선택을 결정하지 않는다. |
-| M2 | 데이터셋 독립 `RuntimeConfig`와 `SparkRunner` smoke를 만들고, TLC NYC Taxi Dataset으로 정형 빅데이터 ETL 가능성 evidence를 남긴다. `Week2RunnerResult` 호환 metrics를 반환한다. | M5 runner boundary, M3 `TransformSpec` 요구사항 | JSON/Parquet 같은 입력 차이를 config로 받고, Spark/local equivalent가 `status`, `row_count`, `bytes`, `duration_ms`, `output_path`를 같은 result shape로 반환한다. | transformation semantics를 정의하거나 Taxi 전용 runner를 만들지 않는다. |
-| M3 | Amazon Reviews JSON inspect/profile/schema facts와 최소 `TransformSpec`를 만든다. | M5 runner boundary, M2 runtime 제약, PR #105 source material | JSON sample에서 field facts와 minimal `TransformSpec`가 나오고, M5에 넘길 Catalog facts가 정리된다. | Spark session/config/output convention을 직접 만들지 않는다. |
-| M4 | Kafka replay demo와 raw event evidence를 유지하고, 필요 시 M3가 읽을 raw event contract를 정리한다. | M3 raw event 요구사항, M5 evidence 저장 방식 | replay command, raw event shape, throughput/lag/restart evidence, output_path가 문서와 실행 로그로 남는다. | M6 분석 연결의 선행 조건으로 Kafka streaming to Gold를 만들지 않는다. |
+| M2 | 데이터셋 독립 `RuntimeConfig`와 `SparkRunner` smoke를 만들고, 5GB 이상 fact input read/write evidence를 남긴다. `Week2RunnerResult` 호환 metrics를 반환한다. | M5 runner boundary, M3 `TransformSpec` 요구사항 | JSON/Parquet 같은 입력 차이를 config로 받고, Spark/local equivalent가 `status`, source별 `row_count`, `bytes`, `duration_ms`, `output_path`를 같은 result shape로 반환한다. | transformation semantics를 정의하거나 Taxi 전용 runner를 만들지 않는다. |
+| M3 | `gold_product_health` schema, reviews/behavior/delivery silver metrics, risk_score semantics와 최소 `TransformSpec`를 만든다. | M5 runner boundary, M2 runtime 제약, PR #105 source material | 작은 input smoke와 5GB input run에서 같은 transform으로 `gold_product_health`가 나온다. | Spark session/config/output convention을 직접 만들지 않는다. |
+| M4 | Kafka replay demo와 raw event evidence를 유지하고, 2차 이후 behavior replay contract를 정리한다. | behavior event contract, M5 evidence 저장 방식 | replay command, raw event shape, throughput/lag/restart evidence, output_path가 문서와 실행 로그로 남는다. | 1차 Gold 생성의 선행 조건으로 Kafka streaming to Gold를 만들지 않는다. |
 | M5 | `Week2WorkflowService` 중심 runner selection과 Catalog persistence를 유지/확장한다. | M2 `SparkRunner`, M3 `TransformSpec`, M6 Catalog 소비 요구 | local runner baseline을 유지하면서 선택형 runner adapter를 선택하고 successful result만 Catalog에 반영한다. | ETL 내부 변환 로직이나 Spark runtime을 소유하지 않는다. |
-| M6 | fixture-only query에서 M5 Catalog-backed SQL-first Semantic/RAG-lite/AI Query로 전환한다. | M5 Catalog store/API, M3 schema/profile facts, M2 SQL runtime smoke | 우선 Amazon Reviews CatalogMetadata의 `storage.local_fallback_path`, `query.table_name`, `query.allowed_columns`, `query.default_limit`로 실제 SQL MVP를 닫고, 그 결과와 evidence를 `AIQueryResult`로 반환한다. | Catalog 저장소/API, 원본 ETL, Spark runtime, Kafka ingestion, 2주차 범위를 넘는 외부 vector DB/full document RAG/real LLM을 소유하지 않는다. |
+| M6 | fixture-only query에서 M5 Catalog-backed SQL-first Semantic/RAG-lite/AI Query로 전환한다. | M5 Catalog store/API, M3 schema/profile facts, M2 SQL runtime smoke | 우선 `dataset_product_health_gold` CatalogMetadata의 `storage.local_fallback_path`, `query.table_name`, `query.allowed_columns`, `query.default_limit`로 실제 SQL MVP를 닫고, 그 결과와 evidence를 `AIQueryResult`로 반환한다. | Catalog 저장소/API, 원본 ETL, Spark runtime, Kafka ingestion, 2주차 범위를 넘는 외부 vector DB/full document RAG/real LLM을 소유하지 않는다. |
 
 ## 보존할 기존 구현
 

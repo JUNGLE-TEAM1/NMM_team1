@@ -59,36 +59,38 @@ Week2WorkflowService
 | 순서 | 작업 | 책임 | 완료 기준 |
 | --- | --- | --- | --- |
 | 1 | M5 existing implementation anchor 확인 | M5 | `Week2WorkflowService`, `Week2LocalRunner`, `Week2CatalogStore` 유지 선언 |
-| 2 | Analysis representative E2E path 고정 | M1/M3/M5/M6 | Amazon Reviews JSON path를 Semantic/RAG-lite/AI Query 분석 대표 경로로 확정 |
-| 3 | M3 JSON analysis path decision | M3 | PR #105 회수/재구현 범위와 `TransformSpec` 최소 shape 결정 |
+| 2 | Analysis representative E2E path 고정 | M1/M2/M3/M5/M6 | 5GB raw/bronze input -> `gold_product_health` -> Semantic/RAG-lite/AI Query 분석 대표 경로로 확정 |
+| 3 | M3 product health transform decision | M3 | PR #105 회수/재구현 범위, `gold_product_health` schema, `TransformSpec` 최소 shape 결정 |
 | 4 | Runner boundary decision | M2/M3/M5 | local runner, M3 job logic, SparkRunner가 공유할 호출 계약 결정 |
 | 5 | M2 RuntimeConfig/SparkRunner smoke | M2 | dataset-independent Spark read/write smoke가 row_count/bytes/duration/output_path를 같은 result shape로 반환 |
 | 6 | M5 runner selection | M5 | local runner와 SparkRunner를 선택/호출할 수 있음 |
-| 7 | M6 SQL-first Catalog query | M6/M5 | fixture catalog/fake SQL 대신 M5 CatalogMetadata를 읽기 전용으로 소비하고 Amazon Reviews output file을 SQL로 조회 |
+| 7 | M6 SQL-first Catalog query | M6/M5 | fixture catalog/fake SQL 대신 M5 CatalogMetadata를 읽기 전용으로 소비하고 `gold_product_health` output file을 SQL로 조회 |
 | 8 | M1 UI 연결 | M1 | run/catalog/query/evidence 상태 표시 |
 
 ## 분석 대표 E2E 후보
 
-병렬 구현 시작 전 Semantic/RAG-lite/AI Query 분석 대표 경로는 다음 Phase에서 확정하지만, 현재 추천 후보는 아래와 같다.
+병렬 구현 시작 전 Semantic/RAG-lite/AI Query 분석 대표 경로는 다음 Phase에서 확정하지만, 현재 기준 후보는 아래와 같다.
 
 ```text
-Amazon Reviews JSON
+reviews_seed + behavior_events_seed + delivery_trips_seed + product_master_seed
 -> M3 profile/schema/transform spec
--> M5 workflow/local runner
+-> M2 runtime/Spark read-write
+-> bronze/silver
+-> gold_product_health
 -> M5 Catalog
 -> M6 SQL-first Semantic/RAG-lite/AI Query
 -> M1 UI
 ```
 
-Taxi와 Kafka는 선택 사항이 아니다. 각각 정형 batch와 streaming ingestion의 필수 처리/evidence 경로로 완료하되, M6 분석 대표 경로의 필수 선행 조건으로 두지는 않는다.
+5GB 처리는 별도 Taxi evidence가 아니라 `gold_product_health` 생성 pipeline의 input 규모 기준이다. Kafka는 1차 blocker가 아니며 2차 이후 behavior replay evidence 또는 3차 streaming evidence로 둔다.
 
 ## 모듈별 다음 작업
 
 | 모듈 | 다음 작업 | 병렬 가능 조건 |
 | --- | --- | --- |
 | M1 | M5/M6 API 상태 표시 준비 | 분석 대표 path와 API shape 확정 후 |
-| M2 | 데이터셋 독립 `RuntimeConfig`와 SparkRunner smoke, TLC NYC Taxi 기반 정형 빅데이터 ETL 가능성 evidence 설계 | runner boundary 결정 후 |
-| M3 | Amazon Reviews JSON 분석 대표 path와 PR #105 회수 여부 결정 | 분석 대표 path 확정 후 |
+| M2 | 데이터셋 독립 `RuntimeConfig`와 SparkRunner smoke, 5GB fact input read/write evidence 설계 | runner boundary 결정 후 |
+| M3 | `gold_product_health` 분석 대표 path와 PR #105 회수 여부 결정 | 분석 대표 path 확정 후 |
 | M4 | Kafka raw event contract와 streaming ingestion evidence 정리 | M3가 필요한 raw event shape를 확정한 뒤 |
 | M5 | runner boundary와 Catalog handoff 유지 | Phase 6 runner boundary 결정 후 |
 | M6 | M5 Catalog store/API 읽기 전용 소비와 SQL MVP 계획 | Catalog source boundary 확인 후 |
@@ -97,7 +99,7 @@ Taxi와 Kafka는 선택 사항이 아니다. 각각 정형 batch와 streaming in
 
 - M2/M3/M4가 각자 Spark session/config/output convention을 만들지 않는다.
 - M2가 `TaxiRunner`, `AmazonReviewRunner`처럼 데이터셋별 실행기를 따로 만들지 않는다. 차이는 code branch가 아니라 `RuntimeConfig`의 입력 format/path/options로 처리한다.
-- M3가 Taxi/Kafka까지 완전한 ETL을 한 번에 떠안지 않는다.
+- M3가 runtime/storage/Spark session까지 떠안지 않는다. M3는 `gold_product_health` schema와 transform semantics를 소유한다.
 - M5를 전면 rewrite하지 않는다.
 - `contracts/*.sample.json`을 ver2 문서 작업만으로 즉시 바꾸지 않는다.
 - RAG/LLM을 SQL MVP보다 먼저 구현하지 않는다.
