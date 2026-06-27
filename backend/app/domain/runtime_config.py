@@ -9,8 +9,13 @@ class StorageConfig(BaseModel):
     profile: Literal["local", "minio", "s3"] = "minio"
     bucket: str = Field(default="asklake-demo", min_length=1)
     endpoint: str | None = None
+    region: str = Field(default="us-east-1", min_length=1)
     prefix: str | None = Field(default=None, min_length=1)
     local_fallback_root: str = Field(default="data/week2", min_length=1)
+    access_key_env: str = Field(default="ASKLAKE_DEMO_MINIO_ACCESS_KEY", min_length=1)
+    secret_key_env: str = Field(default="ASKLAKE_DEMO_MINIO_SECRET_KEY", min_length=1)
+    auto_create_bucket: bool = False
+    upload_timeout_seconds: float = Field(default=30.0, gt=0)
 
 
 class RuntimeConfig(BaseModel):

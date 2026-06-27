@@ -311,7 +311,7 @@ s3://<bucket>/<domain>/<layer>/[dataset_path/]run_id=<run_id>/
 ```
 
 `dataset_path` is optional and may hold a domain-specific Gold output such as `daily_metrics`.
-MVP default bucket is `asklake-demo`. The local fallback file path is calculated from the same prefix under `RuntimeConfig.storage.local_fallback_root`, so `s3://asklake-demo/reviews/gold/run_id=run_reviews_demo_001/` maps to `data/week2/reviews/gold/run_id=run_reviews_demo_001/<output_file>`. The final MinIO endpoint remains pending until the team runs a real MinIO service.
+MVP default bucket is `asklake-demo`. The local fallback file path is calculated from the same prefix under `RuntimeConfig.storage.local_fallback_root`, so `s3://asklake-demo/reviews/gold/run_id=run_reviews_demo_001/` maps to `data/week2/reviews/gold/run_id=run_reviews_demo_001/<output_file>`. Local MinIO smoke uses `RuntimeConfig.storage.endpoint=http://localhost:9000` and credential environment names only; secret values must stay outside Git. Object upload is opt-in through runner options and does not replace local fallback evidence.
 
 Week 2 SQL execution uses an adapter boundary:
 
@@ -401,7 +401,7 @@ Consumer module, Blocked issue, Next first action
 ```
 
 M6 must not import DuckDB, Trino, or Athena directly. The MVP implementation may use `DuckDBSqlEngine` behind the adapter.
-Unconfirmed values such as real sample file path, row count, and final MinIO path remain TODO in fixture files until the responsible module verifies them.
+Unconfirmed values such as real sample file path, row count, remote bucket contents, and production S3 path remain TODO in fixture files until the responsible module verifies them.
 M1 static shell placeholders are not source of truth. When real API state is connected, M1 must display `tenant_demo`, `pipeline_reviews_json_e2e`, `dataset_reviews_gold`, and other shared fixture identifiers unless this section is updated first.
 
 ### Workstream Ownership

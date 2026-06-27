@@ -94,7 +94,7 @@
 | --- | --- |
 | Must not break | `CatalogMetadata.s3_uri`, `storage.prefix`, `storage.local_fallback_path`는 같은 bucket/prefix/run_id 계약에서 계산되어야 한다. |
 | Failure condition | runner는 local path에 파일을 쓰지만 Catalog의 `s3_uri` 또는 `storage.prefix`가 다른 run_id/domain/layer를 가리킨다. |
-| Expected behavior | M2 storage adapter가 S3-compatible URI와 local fallback path를 함께 계산하고, M5 Catalog는 그 결과를 사용한다. 실제 MinIO endpoint는 pending이어도 local fallback smoke는 재현 가능해야 한다. |
+| Expected behavior | M2 storage adapter가 S3-compatible URI와 local fallback path를 함께 계산하고, opt-in upload smoke에서는 같은 object key로 MinIO/S3-compatible endpoint에 PUT한다. upload가 실패해도 secret 값을 로그나 Git에 남기지 않는다. |
 | Verification method | `backend/tests/test_week2_storage_adapter.py`, `backend/tests/test_week2_spark_runner.py`, `backend/tests/test_week2_workflow_catalog.py`를 확인한다. |
 | Related docs/interface/Phase | `docs/03`, `contracts/runtime_config.sample.json`, `contracts/catalog_metadata.sample.json`, M2 storage adapter |
 

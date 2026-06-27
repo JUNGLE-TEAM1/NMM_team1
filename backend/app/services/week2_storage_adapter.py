@@ -1,6 +1,14 @@
+import hashlib
+import hmac
+import os
 import re
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
+from urllib.parse import quote, urlsplit
+
+import httpx
 
 from app.domain.runtime_config import StorageConfig
 from app.services.week2_local_runner import repo_root
@@ -13,11 +21,24 @@ class StorageLocation:
     uri: str | None
     bucket: str | None
     prefix: str
+    object_key: str
+    object_uri: str | None
     local_path: Path
 
 
+@dataclass(frozen=True)
+class StorageUploadResult:
+    """MinIO/S3-compatible object upload smoke 결과."""
+
+    object_uri: str | None
+    endpoint: str
+    status_code: int
+    etag: str | None
+    bytes: int
+
+
 class Week2StorageAdapter:
-    """MinIO/S3-compatible storage 계약을 local fallback write 경로로 해석한다."""
+    """MinIO/S3-compatible storage 계약을 local fallback과 object upload 경로로 해석한다."""
 
     def build_location(
         self,
@@ -33,11 +54,60 @@ class Week2StorageAdapter:
         prefix = normalize_prefix(apply_run_id(config.prefix or default_prefix, run_id))
         root = resolve_local_root(local_root or config.local_fallback_root)
         safe_file_name = normalized_file_name(file_name)
+        object_key = f"{prefix}{safe_file_name}"
         return StorageLocation(
             uri=s3_uri(config.bucket, prefix),
             bucket=config.bucket,
             prefix=prefix,
+            object_key=object_key,
+            object_uri=s3_uri(config.bucket, object_key),
             local_path=root / Path(prefix) / safe_file_name,
+        )
+
+    def upload_file(
+        self,
+        storage: StorageConfig | dict,
+        location: StorageLocation,
+        http_client: Any | None = None,
+    ) -> StorageUploadResult:
+        """local fallback 파일을 MinIO/S3-compatible object로 업로드한다."""
+
+        config = StorageConfig.model_validate(storage)
+        if config.profile == "local":
+            raise Week2StorageAdapterError("local storage profile does not support object upload")
+        if not config.endpoint:
+            raise Week2StorageAdapterError("storage endpoint is required for object upload")
+        if not location.bucket:
+            raise Week2StorageAdapterError("storage bucket is required for object upload")
+        if not location.object_uri:
+            raise Week2StorageAdapterError("storage object URI is required for object upload")
+        if not location.local_path.exists():
+            raise Week2StorageAdapterError(f"Local file not found for upload: {location.local_path}")
+
+        endpoint = normalize_endpoint(config.endpoint)
+        access_key = credential_from_env(config.access_key_env)
+        secret_key = credential_from_env(config.secret_key_env)
+        if config.auto_create_bucket:
+            create_bucket(config, endpoint, access_key, secret_key, http_client)
+
+        content = location.local_path.read_bytes()
+        object_url, canonical_uri = object_request_target(endpoint, location.bucket, location.object_key)
+        response = signed_put(
+            object_url,
+            canonical_uri,
+            content,
+            config,
+            access_key,
+            secret_key,
+            http_client,
+        )
+        response.raise_for_status()
+        return StorageUploadResult(
+            object_uri=location.object_uri,
+            endpoint=endpoint,
+            status_code=response.status_code,
+            etag=response.headers.get("etag"),
+            bytes=len(content),
         )
 
 
@@ -81,6 +151,155 @@ def s3_uri(bucket: str, prefix: str) -> str:
     """bucket과 prefix를 S3-compatible URI로 만든다."""
 
     return f"s3://{bucket}/{prefix}"
+
+
+def normalize_endpoint(endpoint: str) -> str:
+    """endpoint를 trailing slash 없는 HTTP(S) URL로 정규화한다."""
+
+    normalized = endpoint.rstrip("/")
+    parsed = urlsplit(normalized)
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        raise Week2StorageAdapterError("storage endpoint must be an http(s) URL")
+    return normalized
+
+
+def credential_from_env(env_name: str) -> str:
+    """환경 변수 이름으로 credential을 읽되 실제 값은 로그나 문서에 남기지 않는다."""
+
+    value = os.environ.get(env_name)
+    if not value:
+        raise Week2StorageAdapterError(f"Missing storage credential env: {env_name}")
+    return value
+
+
+def create_bucket(
+    config: StorageConfig,
+    endpoint: str,
+    access_key: str,
+    secret_key: str,
+    http_client: Any | None,
+) -> None:
+    """local smoke 재현을 위해 bucket이 없으면 만들고, 이미 있으면 통과시킨다."""
+
+    bucket_url, canonical_uri = bucket_request_target(endpoint, config.bucket)
+    response = signed_put(
+        bucket_url,
+        canonical_uri,
+        b"",
+        config,
+        access_key,
+        secret_key,
+        http_client,
+    )
+    if response.status_code not in {200, 409}:
+        response.raise_for_status()
+
+
+def bucket_request_target(endpoint: str, bucket: str) -> tuple[str, str]:
+    """bucket 생성용 path-style URL과 canonical URI를 만든다."""
+
+    quoted_bucket = quote(bucket, safe="")
+    return f"{endpoint}/{quoted_bucket}", f"/{quoted_bucket}"
+
+
+def object_request_target(endpoint: str, bucket: str, object_key: str) -> tuple[str, str]:
+    """object upload용 path-style URL과 canonical URI를 만든다."""
+
+    bucket_uri = quote(bucket, safe="")
+    key_uri = quote(object_key, safe="/")
+    canonical_uri = f"/{bucket_uri}/{key_uri}"
+    return f"{endpoint}{canonical_uri}", canonical_uri
+
+
+def signed_put(
+    url: str,
+    canonical_uri: str,
+    content: bytes,
+    config: StorageConfig,
+    access_key: str,
+    secret_key: str,
+    http_client: Any | None,
+):
+    """AWS SigV4로 서명한 PUT 요청을 보낸다."""
+
+    headers = signed_put_headers(
+        url=url,
+        canonical_uri=canonical_uri,
+        content=content,
+        region=config.region,
+        access_key=access_key,
+        secret_key=secret_key,
+    )
+    client = http_client or httpx
+    return client.put(
+        url,
+        content=content,
+        headers=headers,
+        timeout=config.upload_timeout_seconds,
+    )
+
+
+def signed_put_headers(
+    url: str,
+    canonical_uri: str,
+    content: bytes,
+    region: str,
+    access_key: str,
+    secret_key: str,
+    now: datetime | None = None,
+) -> dict[str, str]:
+    """MinIO/S3-compatible PUT 요청에 필요한 AWS SigV4 header를 만든다."""
+
+    request_time = now or datetime.now(UTC)
+    amz_date = request_time.strftime("%Y%m%dT%H%M%SZ")
+    date_stamp = request_time.strftime("%Y%m%d")
+    payload_hash = hashlib.sha256(content).hexdigest()
+    host = urlsplit(url).netloc
+    headers = {
+        "content-type": "application/octet-stream",
+        "host": host,
+        "x-amz-content-sha256": payload_hash,
+        "x-amz-date": amz_date,
+    }
+    signed_headers = ";".join(sorted(headers))
+    canonical_headers = "".join(f"{key}:{headers[key]}\n" for key in sorted(headers))
+    canonical_request = "\n".join(
+        [
+            "PUT",
+            canonical_uri,
+            "",
+            canonical_headers,
+            signed_headers,
+            payload_hash,
+        ]
+    )
+    credential_scope = f"{date_stamp}/{region}/s3/aws4_request"
+    string_to_sign = "\n".join(
+        [
+            "AWS4-HMAC-SHA256",
+            amz_date,
+            credential_scope,
+            hashlib.sha256(canonical_request.encode()).hexdigest(),
+        ]
+    )
+    signing_key = sigv4_signing_key(secret_key, date_stamp, region)
+    signature = hmac.new(signing_key, string_to_sign.encode(), hashlib.sha256).hexdigest()
+    headers["Authorization"] = (
+        "AWS4-HMAC-SHA256 "
+        f"Credential={access_key}/{credential_scope}, "
+        f"SignedHeaders={signed_headers}, "
+        f"Signature={signature}"
+    )
+    return headers
+
+
+def sigv4_signing_key(secret_key: str, date_stamp: str, region: str) -> bytes:
+    """AWS SigV4 signing key를 계산한다."""
+
+    date_key = hmac.new(f"AWS4{secret_key}".encode(), date_stamp.encode(), hashlib.sha256).digest()
+    region_key = hmac.new(date_key, region.encode(), hashlib.sha256).digest()
+    service_key = hmac.new(region_key, b"s3", hashlib.sha256).digest()
+    return hmac.new(service_key, b"aws4_request", hashlib.sha256).digest()
 
 
 class Week2StorageAdapterError(ValueError):
