@@ -5,16 +5,16 @@
 ## Current State / 현재 상태
 
 - State: ready-for-review
-- Summary: DuckDB-backed SQL runtime smoke 구현과 local validation은 완료했다. PR 생성과 CI 확인이 남았다.
+- Summary: DuckDB-backed SQL runtime smoke 구현, local validation, PR 생성은 완료했다. CI 확인이 남았다.
 
 ## Recommended Next Action / 권장 다음 행동
 
-- commit 후 PR을 생성하고 CI를 확인한다.
+- PR CI를 확인한다.
 - Reason: local focused/full tests, smoke script, strict harness가 통과했다.
 
 ## Options / 선택지
 
-1. PR-ready 확인 후 commit/PR로 진행한다.
+1. PR CI를 확인하고 필요하면 수정한다.
 2. 기본 API engine을 `duckdb`로 전환하는 범위까지 확장한다.
 3. 여기서 멈추고 구현 내용을 리뷰한다.
 4. 이 workspace를 멈춘다.
@@ -29,7 +29,7 @@
 
 ## Next AI Action / 다음 AI 행동
 
-- option 1이면 git status, diff, validation 상태를 확인하고 commit/PR을 진행한다.
+- option 1이면 PR checks를 확인하고 실패 시 로그를 보고 수정한다.
 - option 2이면 `decisions.md`를 다시 열고 M6 default switch 영향을 확인한다.
 - option 3이면 현재 diff를 설명하고 멈춘다.
 - option 4이면 pause reason을 `notes.md`에 기록한다.
