@@ -26,6 +26,8 @@ GOLD_TABLE_NAME = "gold_taxi_daily_metrics"
 
 @dataclass(frozen=True)
 class TaxiBatchConfig:
+    """Taxi local batch evidence 실행에 필요한 입력 경로와 실행 option."""
+
     input_path: str
     output_root: str
     run_id: str = "run_taxi_local_batch_001"
@@ -312,18 +314,26 @@ def pyarrow_modules() -> tuple[Any, Any, Any]:
 
 
 def int_or_zero(value: Any) -> int:
+    """None metric 값을 0으로 대체해 정수 합계 필드를 안정적으로 만든다."""
+
     return int(value) if value is not None else 0
 
 
 def float_or_zero(value: Any) -> float:
+    """None metric 값을 0.0으로 대체해 실수 합계 필드를 안정적으로 만든다."""
+
     return float(value) if value is not None else 0.0
 
 
 def nullable_float(value: Any) -> float | None:
+    """평균처럼 값이 없을 수 있는 metric은 None을 보존하고 숫자만 float로 바꾼다."""
+
     return float(value) if value is not None else None
 
 
 def succeeded_task_result(node_id: str, row_count: int, bytes: int | None) -> dict[str, Any]:
+    """성공한 Taxi batch 단계를 Week2RunnerResult task result 모양으로 만든다."""
+
     return {
         "node_id": node_id,
         "status": "succeeded",
@@ -335,6 +345,8 @@ def succeeded_task_result(node_id: str, row_count: int, bytes: int | None) -> di
 
 
 def failed_task_result(error: str) -> dict[str, Any]:
+    """Taxi batch 실패를 Week2RunnerResult task result 모양으로 만든다."""
+
     return {
         "node_id": "node_taxi_batch",
         "status": "failed",
