@@ -28,7 +28,7 @@
 ## CI/CD Gate / CI-CD 게이트
 
 - CI required: yes after PR creation
-- CI result: not run remotely yet
+- CI result: PR #196 remote checks passed: `linked-issue`, `migration-schema-security`, `risk-warning`, `pr-size-hard-gate`, `pr-template-drift`, `manifest-smoke`, `container-smoke`, `harness`.
 - Deploy/publish required: no
 - Deployment confirmation: 
 - Rollback/smoke notes: 

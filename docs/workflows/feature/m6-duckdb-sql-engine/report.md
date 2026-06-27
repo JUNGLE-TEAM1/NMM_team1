@@ -11,7 +11,7 @@
 - Escalated context read: `docs/05-acceptance-scenarios-and-checklist.md`, `docs/06-regression-and-failure-scenarios.md`, `docs/07-manual-verification-playbook.md`, M5 workflow catalog tests for JSONL/Parquet local fallback paths.
 - Context omitted intentionally: container default SQL engine switch, external LLM/RAG/vector DB, remote MinIO/S3 reads, policy/trust gate implementation.
 - Changed: added `DuckDBSqlEngine`, added `duckdb==1.5.4`, and added focused tests for JSONL, Parquet, missing local path guardrail, and `Week2AIQueryService` using the DuckDB adapter.
-- Verified: TDD expected failure; focused DuckDB tests 4 passed; focused M6 tests 15 passed; backend tests 62 passed; `git diff --check`; `scripts/validate-harness.sh`; `scripts/validate-harness.sh --strict`.
-- Remaining: PR creation/checks. Container default still uses fake SQL engine by design.
+- Verified: TDD expected failure; focused DuckDB tests 4 passed; focused M6 tests 15 passed; backend tests 62 passed; `git diff --check`; `scripts/validate-harness.sh`; `scripts/validate-harness.sh --strict`; PR #196 remote checks passed.
+- Remaining: Container default still uses fake SQL engine by design.
 - Next context: later step can decide whether to wire `DuckDBSqlEngine` behind an env-gated container setting or keep using explicit injection until SQL planner hardening is complete.
 - Risk: `duckdb` is a new backend dependency. Remote CI must install it from `backend/requirements.txt`; no secret or external service is required.
