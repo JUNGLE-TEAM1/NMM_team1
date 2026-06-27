@@ -46,7 +46,7 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 - issue creation result: not requested
 - issue project result: not requested
 - PR closing keyword: 
-- pushed branch:
-- PR link:
-- merge status:
-- issue close status:
+- pushed branch: feature/m5-airflow-smoke-integration
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/200
+- merge status: open
+- issue close status: n/a
