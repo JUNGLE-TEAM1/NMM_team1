@@ -37,6 +37,21 @@ class TaxiBatchConfig:
     compression: str = "snappy"
 
 
+@dataclass
+class DailyMetricStats:
+    """여러 Parquet 파일의 날짜별 metric을 누적하기 위한 내부 상태."""
+
+    trip_count: int = 0
+    valid_trip_count: int = 0
+    total_passenger_count: int = 0
+    total_trip_distance: float = 0.0
+    total_fare_amount: float = 0.0
+    total_tip_amount: float = 0.0
+    total_tolls_amount: float = 0.0
+    total_amount: float = 0.0
+    duration_minutes_sum: float = 0.0
+
+
 class Week2TaxiBatchRunner:
     """Taxi Parquet 처리 증거를 만들기 위한 임시 M2 local batch runner.
 
@@ -56,9 +71,8 @@ class Week2TaxiBatchRunner:
 
         try:
             input_path = resolve_path(batch_config.input_path)
-            source_table = read_taxi_parquet(input_path)
-            scoped_table = scope_table(source_table, batch_config)
-            gold_table = build_daily_metrics_table(scoped_table)
+            source_files = taxi_parquet_files(input_path)
+            scoped_row_count, gold_table = build_daily_metrics_table_from_sources(source_files, batch_config)
             output_path = output_path_for_config(batch_config)
             write_gold_parquet(gold_table, output_path, batch_config.compression)
             input_bytes = path_size(input_path)
@@ -76,7 +90,7 @@ class Week2TaxiBatchRunner:
         return Week2RunnerResult(
             status="succeeded",
             task_results=[
-                succeeded_task_result("node_source_taxi", row_count=scoped_table.num_rows, bytes=input_bytes),
+                succeeded_task_result("node_source_taxi", row_count=scoped_row_count, bytes=input_bytes),
                 succeeded_task_result("node_aggregate_taxi_daily", row_count=gold_table.num_rows, bytes=None),
                 succeeded_task_result(
                     "node_load_taxi_daily_metrics",
@@ -85,13 +99,27 @@ class Week2TaxiBatchRunner:
                 ),
             ],
             logs=logs,
-            row_count=scoped_table.num_rows,
+            row_count=scoped_row_count,
             bytes=input_bytes,
             duration_ms=elapsed_ms(started),
             output_path=str(output_path),
             output_row_count=gold_table.num_rows,
             output_bytes=output_bytes,
         )
+
+
+def taxi_parquet_files(path: Path) -> list[Path]:
+    """입력 경로가 파일이면 1개, 디렉터리면 하위 Parquet 목록으로 정규화한다."""
+
+    if not path.exists():
+        raise Week2TaxiBatchRunnerError(f"Input path not found: {path}")
+    if path.is_file():
+        return [path]
+
+    parquet_files = sorted(candidate for candidate in path.rglob("*.parquet") if candidate.is_file())
+    if not parquet_files:
+        raise Week2TaxiBatchRunnerError(f"No Parquet files found under input directory: {path}")
+    return parquet_files
 
 
 def read_taxi_parquet(path: Path) -> Any:
@@ -108,11 +136,12 @@ def read_taxi_parquet(path: Path) -> Any:
     return parquet.read_table(path, columns=REQUIRED_TAXI_COLUMNS)
 
 
-def scope_table(table: Any, config: TaxiBatchConfig) -> Any:
+def scope_table(table: Any, config: TaxiBatchConfig, demo_limit: int | None = None) -> Any:
     """profile에 따라 demo/fixed/full-month 입력 범위를 고른다."""
 
     if config.profile == "demo":
-        return table.slice(0, config.demo_limit)
+        limit = config.demo_limit if demo_limit is None else demo_limit
+        return table.slice(0, max(limit, 0))
     if config.profile == "fixed":
         if not config.fixed_date:
             raise Week2TaxiBatchRunnerError("fixed profile requires fixed_date")
@@ -120,6 +149,28 @@ def scope_table(table: Any, config: TaxiBatchConfig) -> Any:
     if config.profile == "local-full-month":
         return table
     raise Week2TaxiBatchRunnerError(f"Unsupported taxi profile: {config.profile}")
+
+
+def build_daily_metrics_table_from_sources(files: list[Path], config: TaxiBatchConfig) -> tuple[int, Any]:
+    """여러 Parquet 파일을 하나씩 처리해 row count와 Gold metric table을 만든다."""
+
+    total_scoped_rows = 0
+    remaining_demo_rows = config.demo_limit
+    merged_stats: dict[date, DailyMetricStats] = {}
+
+    for file_path in files:
+        if config.profile == "demo" and remaining_demo_rows <= 0:
+            break
+
+        source_table = read_taxi_parquet(file_path)
+        scoped_table = scope_table(source_table, config, demo_limit=remaining_demo_rows)
+        if config.profile == "demo":
+            remaining_demo_rows -= scoped_table.num_rows
+
+        total_scoped_rows += scoped_table.num_rows
+        merge_daily_metric_stats(merged_stats, collect_daily_metric_stats(scoped_table))
+
+    return total_scoped_rows, daily_metric_stats_to_table(merged_stats)
 
 
 def filter_pickup_date(table: Any, fixed_date: str) -> Any:
@@ -138,38 +189,79 @@ def build_daily_metrics_table(table: Any) -> Any:
     최종 Gold metric 정의는 M3 TransformSpec이 소유하고, M2는 그 spec을 실행해야 한다.
     """
 
+    return daily_metric_stats_to_table(collect_daily_metric_stats(table))
+
+
+def collect_daily_metric_stats(table: Any) -> dict[date, DailyMetricStats]:
+    """한 Arrow table에서 날짜별 metric 누적값을 계산한다."""
+
     arrow, _, compute = pyarrow_modules()
-    gold_schema = gold_metrics_schema(arrow)
     if table.num_rows == 0:
-        return arrow.Table.from_pylist([], schema=gold_schema)
+        return {}
 
     base_table = table.append_column("pickup_date", pickup_date_array(table))
     total_by_date = group_total_rows(base_table, arrow)
     valid_table = base_table.filter(valid_trip_mask(base_table))
     valid_by_date = group_valid_rows(valid_table, arrow, compute) if valid_table.num_rows else {}
 
-    rows = []
+    stats_by_date: dict[date, DailyMetricStats] = {}
     for pickup_date, trip_count in sorted(total_by_date.items(), key=lambda item: str(item[0])):
         valid_metrics = valid_by_date.get(pickup_date, {})
-        valid_trip_count = int_or_zero(valid_metrics.get("valid_trip_count"))
+        stats_by_date[pickup_date] = DailyMetricStats(
+            trip_count=trip_count,
+            valid_trip_count=int_or_zero(valid_metrics.get("valid_trip_count")),
+            total_passenger_count=int_or_zero(valid_metrics.get("total_passenger_count")),
+            total_trip_distance=float_or_zero(valid_metrics.get("total_trip_distance")),
+            total_fare_amount=float_or_zero(valid_metrics.get("total_fare_amount")),
+            total_tip_amount=float_or_zero(valid_metrics.get("total_tip_amount")),
+            total_tolls_amount=float_or_zero(valid_metrics.get("total_tolls_amount")),
+            total_amount=float_or_zero(valid_metrics.get("total_amount")),
+            duration_minutes_sum=float_or_zero(valid_metrics.get("duration_minutes_sum")),
+        )
+
+    return stats_by_date
+
+
+def merge_daily_metric_stats(target: dict[date, DailyMetricStats], source: dict[date, DailyMetricStats]) -> None:
+    """파일별 날짜 metric을 전체 실행 metric으로 누적한다."""
+
+    for pickup_date, incoming in source.items():
+        current = target.setdefault(pickup_date, DailyMetricStats())
+        current.trip_count += incoming.trip_count
+        current.valid_trip_count += incoming.valid_trip_count
+        current.total_passenger_count += incoming.total_passenger_count
+        current.total_trip_distance += incoming.total_trip_distance
+        current.total_fare_amount += incoming.total_fare_amount
+        current.total_tip_amount += incoming.total_tip_amount
+        current.total_tolls_amount += incoming.total_tolls_amount
+        current.total_amount += incoming.total_amount
+        current.duration_minutes_sum += incoming.duration_minutes_sum
+
+
+def daily_metric_stats_to_table(stats_by_date: dict[date, DailyMetricStats]) -> Any:
+    """누적 metric 상태를 Gold daily metric Arrow table로 변환한다."""
+
+    arrow, _, _ = pyarrow_modules()
+    gold_schema = gold_metrics_schema(arrow)
+    rows = []
+    for pickup_date, stats in sorted(stats_by_date.items(), key=lambda item: str(item[0])):
         rows.append(
             {
                 "pickup_date": pickup_date,
-                "trip_count": trip_count,
-                "total_passenger_count": int_or_zero(valid_metrics.get("total_passenger_count")),
-                "total_trip_distance": float_or_zero(valid_metrics.get("total_trip_distance")),
-                "avg_trip_distance": nullable_float(valid_metrics.get("avg_trip_distance")),
-                "total_fare_amount": float_or_zero(valid_metrics.get("total_fare_amount")),
-                "total_tip_amount": float_or_zero(valid_metrics.get("total_tip_amount")),
-                "total_tolls_amount": float_or_zero(valid_metrics.get("total_tolls_amount")),
-                "total_amount": float_or_zero(valid_metrics.get("total_amount")),
-                "avg_total_amount": nullable_float(valid_metrics.get("avg_total_amount")),
-                "avg_duration_minutes": nullable_float(valid_metrics.get("avg_duration_minutes")),
-                "valid_trip_count": valid_trip_count,
-                "invalid_trip_count": trip_count - valid_trip_count,
+                "trip_count": stats.trip_count,
+                "total_passenger_count": stats.total_passenger_count,
+                "total_trip_distance": stats.total_trip_distance,
+                "avg_trip_distance": average_or_none(stats.total_trip_distance, stats.valid_trip_count),
+                "total_fare_amount": stats.total_fare_amount,
+                "total_tip_amount": stats.total_tip_amount,
+                "total_tolls_amount": stats.total_tolls_amount,
+                "total_amount": stats.total_amount,
+                "avg_total_amount": average_or_none(stats.total_amount, stats.valid_trip_count),
+                "avg_duration_minutes": average_or_none(stats.duration_minutes_sum, stats.valid_trip_count),
+                "valid_trip_count": stats.valid_trip_count,
+                "invalid_trip_count": stats.trip_count - stats.valid_trip_count,
             }
         )
-
     return arrow.Table.from_pylist(rows, schema=gold_schema)
 
 
@@ -182,7 +274,7 @@ def group_total_rows(table: Any, arrow: Any) -> dict[date, int]:
 
 
 def group_valid_rows(table: Any, arrow: Any, compute: Any) -> dict[date, dict[str, Any]]:
-    """valid row만 대상으로 합계/평균 metric을 만든다."""
+    """valid row만 대상으로 합계 metric을 만든다."""
 
     duration_minutes = compute.divide(
         compute.cast(
@@ -198,13 +290,11 @@ def group_valid_rows(table: Any, arrow: Any, compute: Any) -> dict[date, dict[st
             ("_valid_count", "sum"),
             ("passenger_count", "sum"),
             ("trip_distance", "sum"),
-            ("trip_distance", "mean"),
             ("fare_amount", "sum"),
             ("tip_amount", "sum"),
             ("tolls_amount", "sum"),
             ("total_amount", "sum"),
-            ("total_amount", "mean"),
-            ("duration_minutes", "mean"),
+            ("duration_minutes", "sum"),
         ]
     )
 
@@ -214,13 +304,11 @@ def group_valid_rows(table: Any, arrow: Any, compute: Any) -> dict[date, dict[st
             "valid_trip_count": row["_valid_count_sum"],
             "total_passenger_count": row["passenger_count_sum"],
             "total_trip_distance": row["trip_distance_sum"],
-            "avg_trip_distance": row["trip_distance_mean"],
             "total_fare_amount": row["fare_amount_sum"],
             "total_tip_amount": row["tip_amount_sum"],
             "total_tolls_amount": row["tolls_amount_sum"],
             "total_amount": row["total_amount_sum"],
-            "avg_total_amount": row["total_amount_mean"],
-            "avg_duration_minutes": row["duration_minutes_mean"],
+            "duration_minutes_sum": row["duration_minutes_sum"],
         }
     return result
 
@@ -339,6 +427,12 @@ def nullable_float(value: Any) -> float | None:
     """평균처럼 값이 없을 수 있는 metric은 None을 보존하고 숫자만 float로 바꾼다."""
 
     return float(value) if value is not None else None
+
+
+def average_or_none(total: float, count: int) -> float | None:
+    """누적 합계와 count로 평균을 만들고 count가 0이면 None을 돌려준다."""
+
+    return total / count if count else None
 
 
 def succeeded_task_result(node_id: str, row_count: int, bytes: int | None) -> dict[str, Any]:
