@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from app.adapters.csv_source import CsvSourceConnector
+from app.adapters.duckdb_sql_engine import DuckDBSqlEngine
 from app.adapters.fixture_catalog_source import FixtureCatalogSource
 from app.adapters.local_result_store import LocalResultStore
 from app.adapters.sqlite_metadata_store import SQLiteMetadataStore
@@ -54,7 +55,9 @@ class AppContainer:
         )
 
     def create_sql_engine(self) -> SqlEngineAdapter:
-        return FakeSqlEngine()
+        if self.settings.week2_sql_engine == "fake":
+            return FakeSqlEngine()
+        return DuckDBSqlEngine()
 
     def create_catalog_trust_service(self) -> CatalogTrustService:
         return CatalogTrustService()
