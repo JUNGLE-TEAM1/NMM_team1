@@ -28,14 +28,16 @@
 - linked GitHub issue: #186
 - issue link: https://github.com/JUNGLE-TEAM1/NMM_team1/issues/186
 - issue creation result: created after human "진행해"
-- issue project result: set to In Progress in JUNGLE-TEAM1 project 3; reopened after unexpected CLOSED drift before PR creation
+- issue project result: set to Review in JUNGLE-TEAM1 project 3
 - PR closing keyword: Closes #186
-- pushed branch:
-- PR link:
-- merge status:
-- issue close status:
+- pushed branch: hotfix/pr-issue-project-guardrails
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/187
+- merge status: open
+- issue close status: open
 
 ## Remote Operation Boundary
 
 - 원격 issue #186 생성, unexpected `CLOSED` issue reopen, Project `In Progress` 설정은 PR 준비를 위해 실행했다. PR 생성 직전 issue state `OPEN`, Project `In Progress` 확인.
+- PR #187 생성 후 issue #186 state `OPEN`, Project `Review` 확인.
 - 기존 PR body 수정, 기존 issue 보정, Project status 수동 보정, PR merge/finalize/cleanup은 실행하지 않았다.
+- issue reopen result: already open
