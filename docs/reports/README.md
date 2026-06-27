@@ -66,12 +66,13 @@ report가 늘어나면 영역별 최신 report index를 작게 유지한다. 이
 | Guardrail Scenario Audit | [`guardrail-scenario-audit.md`](guardrail-scenario-audit.md) | 시스템 가드레일과 협업 하네스 경계가 CI 기본 단위, 읽기 전용 audit, human-approved E2E로 나뉘는지 확인 |
 | PR Size Hard Gate | [`pr-size-hard-gate.md`](pr-size-hard-gate.md) | PR size hard gate 기준, evidence exclusion, override 문구, required check 적용 상태 확인 |
 | Week2 responsibility ver2 | [`week2-responsibility-ver2.md`](week2-responsibility-ver2.md) | 초기 회의안 이후 M1~M6 책임 분리를 ver2 기준으로 재정리하고 Spark/Parquet/Catalog 중복 책임을 제거 |
-| Week2 main E2E path | [`week2-main-e2e-path.md`](week2-main-e2e-path.md) | Amazon Reviews JSON -> M5 Workflow/Catalog -> M6 AI Query -> M1 UI 발표 필수 경로 확인 |
+| Week2 main E2E path | [`week2-main-e2e-path.md`](week2-main-e2e-path.md) | 과거 Amazon Reviews 대표 경로 결정 evidence. 현재 대표 경로는 Source of Truth 전파 report와 ver2 Source of Truth를 우선 확인 |
 | Week2 existing implementation anchor | [`week2-existing-implementation-anchor.md`](week2-existing-implementation-anchor.md) | 기존 M1 shell, M4 Kafka demo, M5 workflow/catalog, M6 skeleton을 ver2 후속 구현의 보존 anchor로 확인 |
-| Week2 M3 JSON main path decision | [`week2-m3-json-main-path-decision.md`](week2-m3-json-main-path-decision.md) | M3 첫 구현 대상을 Amazon Reviews JSON으로 고정하고 PR #105 selective recovery 범위 확인 |
+| Week2 M3 JSON main path decision | [`week2-m3-json-main-path-decision.md`](week2-m3-json-main-path-decision.md) | 과거 M3 JSON path decision evidence. 현재 M3 기준은 `gold_product_health` TransformSpec과 PR #105 selective recovery를 함께 확인 |
 | Week2 runner boundary decision | [`week2-runner-boundary-decision.md`](week2-runner-boundary-decision.md) | M2 SparkRunner, M3 TransformSpec/job logic, M5 runner selection이 공유할 input/output boundary 확인 |
 | Week2 team handoff summary | [`week2-team-handoff-summary.md`](week2-team-handoff-summary.md) | Phase 1~6 이후 팀원이 읽을 현재 분업/진행상황/다음 병렬 구현 순서 확인 |
-| Week2 data path scope clarity | [`week2-data-path-scope-clarity.md`](week2-data-path-scope-clarity.md) | 세 데이터 경로는 모두 구현하되 Amazon Reviews는 분석 대표 경로, Taxi/Kafka는 필수 처리/evidence 경로라는 기준 확인 |
+| Week2 상품 리스크 Source of Truth 전파 | [`week2-product-risk-source-of-truth-propagation.md`](week2-product-risk-source-of-truth-propagation.md) | Week2 대표 경로가 5GB raw/bronze input 기반 `gold_product_health`로 갱신된 Source of Truth 전파 범위와 남은 구현 gap 확인 |
+| Week2 data path scope clarity | [`week2-data-path-scope-clarity.md`](week2-data-path-scope-clarity.md) | 과거 세 데이터 경로 scope clarity evidence. 현재 5GB input 기반 `gold_product_health` 대표 경로는 Source of Truth 전파 report를 우선 확인 |
 | Week2 M6 RAG scope | [`week2-m6-rag-scope.md`](week2-m6-rag-scope.md) | M6의 RAG 책임을 CatalogMetadata 기반 Semantic/RAG-lite/AI Query로 보강하고 full RAG/vector DB는 후속으로 유지한 기준 확인 |
 | M6 M5 CatalogSource adapter | [`m6-m5-catalog-source-adapter.md`](m6-m5-catalog-source-adapter.md) | M6 AI Query가 M5 `Week2CatalogStore`의 최신 CatalogMetadata를 evidence source로 소비하는 adapter 연결 확인 |
 | M6 answer evidence grounding | [`m6-answer-evidence-grounding.md`](m6-answer-evidence-grounding.md) | M6 `AIQueryResult.evidence`가 CatalogMetadata schema/metrics/lineage/retrieval terms를 포함하고 summary가 같은 근거를 말하는지 확인 |

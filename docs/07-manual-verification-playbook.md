@@ -65,7 +65,7 @@
 
 ## Week 2 M5 Airflow local smoke 점검
 
-이 경로는 M5 Airflow 연결이 "진짜 Airflow DAG 실행 -> result artifact -> backend Catalog 저장"까지 이어지는지 확인한다.
+이 경로는 기존 reviews demo DAG를 사용해 M5 Airflow 연결이 "진짜 Airflow DAG 실행 -> result artifact -> backend Catalog 저장"까지 이어지는지 확인한다. 현재 Week2 대표 분석 경로는 `gold_product_health`이며, 이 smoke는 Airflow adapter 검증용 legacy/supporting path다.
 `/etl` 화면을 보면서 M5가 구현한 범위와 evidence를 학습하려면 먼저 `docs/manual-verification/09-m5-demo-cockpit-learning-guide.md`를 따른다.
 
 1. Docker daemon이 실행 중인지 확인한다.
@@ -109,6 +109,21 @@ Target MVP 기능이 구현될 때 아래 경로를 단계별로 실제 manual v
 9. Week 2 공통 hardening으로 API/UI route, ID 규칙, storage path pattern, workflow/run status, `QueryResult`, guardrail failure shape, daily smoke evidence 형식이 `docs/03`에 정리되어 있는지 확인한다.
 10. `contracts/ai_query_result.sample.json`의 `query_result` 필드가 `docs/03`의 `QueryResult` 필드와 일치하는지 확인한다.
 11. M2 Taxi local batch evidence를 확인할 때 `scripts/week2_m2_taxi_local_batch_evidence.py --profile fixed`가 하루치 Taxi row를 Gold Parquet 1행으로 만들고, `--profile local-full-month`가 월별 파일 전체 row count와 Gold output path를 evidence JSON에 남기는지 확인한다.
+
+### Week 2 상품 리스크 대표 경로 점검
+
+이 경로는 Week2 발표 대표 path가 5GB 이상 fact input을 처리해 `gold_product_health`를 만들고, Catalog/SQL/UI까지 이어지는지 확인한다.
+
+1. `pipeline_product_health_e2e` run을 실행하거나 사전 실행된 5GB run id를 선택한다.
+2. `ExecutionResult.status`가 `succeeded`인지 확인한다.
+3. `ExecutionResult.bytes` 또는 run metrics의 `input_total_bytes`가 5GB 이상인지 확인한다.
+4. source별 `row_count`, `bytes`, `duration_ms`, `input_path`가 reviews/behavior/delivery fact input에 대해 남았는지 확인한다.
+5. bronze output path, silver output path, gold output path가 같은 `run_id`와 연결되는지 확인한다.
+6. `GET /api/week2/catalog/dataset_product_health_gold` 또는 대응 Catalog 화면에서 `gold_product_health` output path, Gold row count, Gold bytes, lineage를 확인한다.
+7. M6 AI Query에서 "리뷰가 나쁘고 구매 전환도 낮고 배송 지연까지 겹친 문제 상품군을 찾아줘."를 실행한다.
+8. `AIQueryResult.query_result.engine=duckdb`, SELECT-only SQL, returned rows, evidence `dataset_id=dataset_product_health_gold`가 확인되는지 본다.
+9. M1에서 run -> catalog -> ask -> evidence 흐름이 끊기지 않고, 위험 상품군과 `risk_score`, `negative_review_rate`, `conversion_rate`, `late_delivery_rate`가 표시되는지 확인한다.
+10. 발표 문구나 UI가 "Gold 파일이 5GB"라고 설명하지 않고, 5GB를 input 처리 evidence로 표시하는지 확인한다.
 
 ### Trust Gate 점검
 
