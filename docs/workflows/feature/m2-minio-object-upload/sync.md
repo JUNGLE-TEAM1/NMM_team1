@@ -21,11 +21,14 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 
 ## Pre-Merge Sync
 
-- main commit: `a14b760`
-- conflicts: no overlapping files detected by `git diff --name-status HEAD..origin/main`; upstream added `docs/reports/pr-record-reconciliation.md` and `docs/workflows/hotfix/pr-record-reconciliation/*`
-- validation: merge attempt was blocked by repository policy because pull/merge/rebase requires explicit human confirmation
-- result:
-- deferral reason: defer merging `origin/main` into this feature branch until explicit human approval or PR pre-merge checkpoint; current upstream change is hotfix/report workspace only and does not overlap M2 MinIO upload files
+- main commit before human approval: `a14b760`
+- deferral reason before human approval: repository policy blocks unconfirmed pull/merge/rebase actions
+- human approval: 2026-06-27, user requested main sync, test, and merge
+- synced main commit: `32f2ece`
+- merge commit: `65f4447`
+- conflicts: none
+- validation after merge: `PYTHONPATH=backend .venv/bin/pytest -q` -> 72 passed; `scripts/validate-harness.sh --strict` -> passed; `python3 -m py_compile scripts/week2_m2_minio_upload_smoke.py` -> passed; `python3 -m json.tool contracts/runtime_config.sample.json` -> passed; `git diff --check` -> passed
+- result: ready to push and re-check PR CI before PR merge
 
 ## PR Conflict Resolution
 
