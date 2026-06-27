@@ -4,7 +4,11 @@ from pydantic import BaseModel, Field, model_validator
 
 
 class StorageConfig(BaseModel):
-    """M2 runtime output을 S3-compatible URI와 local fallback path로 매핑하는 설정."""
+    """M2 runtime output을 local fallback과 S3-compatible object storage에 매핑하는 설정.
+
+    secret 값은 이 모델에 직접 넣지 않는다. Git에 남겨도 되는 것은 env 이름뿐이고,
+    실제 access key/secret key 값은 upload 실행 시점의 환경 변수에서 읽는다.
+    """
 
     profile: Literal["local", "minio", "s3"] = "minio"
     bucket: str = Field(default="asklake-demo", min_length=1)
@@ -19,7 +23,11 @@ class StorageConfig(BaseModel):
 
 
 class RuntimeConfig(BaseModel):
-    """M2 runner가 어떤 파일을 읽고 어디에 결과를 쓸지 받는 설정 모델."""
+    """M2 runner가 어떤 파일을 읽고 어디에 결과를 쓸지 받는 설정 모델.
+
+    `output_path`는 정확한 파일 경로를 직접 지정할 때 쓰고,
+    `output_root + storage` 조합은 run_id 기반 prefix 규칙으로 local/MinIO 경로를 함께 계산할 때 쓴다.
+    """
 
     runner: Literal["local_runner", "spark_runner"] = "spark_runner"
     input_format: Literal["json", "jsonl", "parquet"]

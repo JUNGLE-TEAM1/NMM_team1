@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the M2 SparkRunner and upload its Parquet output to a MinIO endpoint."""
+"""M2 SparkRunner output을 실제 MinIO endpoint에 업로드하는 수동 smoke CLI."""
 
 from __future__ import annotations
 
@@ -19,6 +19,8 @@ from app.services.week2_storage_adapter import Week2StorageAdapter
 
 
 def main() -> int:
+    """CLI 인자를 RuntimeConfig로 바꿔 SparkRunner와 MinIO upload smoke를 실행한다."""
+
     args = parse_args()
     endpoint = args.endpoint or os.environ.get("ASKLAKE_DEMO_MINIO_ENDPOINT")
     storage = StorageConfig(
@@ -53,6 +55,8 @@ def main() -> int:
         file_name=args.output_file_name,
         local_root=args.output_root,
     )
+    # summary에는 secret 값이나 signed header를 남기지 않는다.
+    # 사람이 확인해야 하는 것은 local output, s3/object URI, row/byte metric, task 결과뿐이다.
     summary = {
         "status": result.status,
         "run_id": args.run_id,
@@ -74,6 +78,8 @@ def main() -> int:
 
 
 def parse_args() -> argparse.Namespace:
+    """local MinIO smoke 재현에 필요한 CLI 옵션을 정의한다."""
+
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input", default="backend/samples/amazon_reviews_demo.jsonl")
     parser.add_argument("--input-format", choices=["json", "jsonl", "parquet"], default="jsonl")
@@ -96,6 +102,8 @@ def parse_args() -> argparse.Namespace:
 
 
 def write_summary(path_value: str, summary: dict[str, Any]) -> None:
+    """smoke 결과 JSON을 data/results 아래에 저장한다."""
+
     path = REPO_ROOT / path_value if not Path(path_value).is_absolute() else Path(path_value)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
