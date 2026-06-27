@@ -1,0 +1,62 @@
+# L3 AI Input Evidence Pack 상세 설계
+
+## 1. 역할
+
+L3는 AI 추천을 만들기 전의 안전 장치다. L3는 L2 profile을 AI가 볼 수 있는 bounded, redacted, structured evidence pack으로 변환한다. 이 단계가 없으면 AI가 raw record, rescue snippet, PII candidate, secret candidate를 직접 볼 위험이 생긴다.
+
+L3는 추천 계층이 아니다. L3는 L4가 사용할 입력을 만든다. 따라서 L3 산출물에는 “이 field를 drop하라” 같은 최종 정책이 아니라 “이 field는 이런 type 후보와 이런 risk를 가진다”는 evidence가 들어간다.
+
+## 2. 선택 방식
+
+선택 방식은 `Redaction-first Evidence Pack`이다. L2 profile에서 field name, source path, inferred type, null ratio, type conflict, capped redacted examples, PII/secret candidate, semantic hint, confidence를 추출한다.
+
+AI 입력 크기를 제한하기 위해 evidence budget을 둔다. 최대 field 수, field당 example 수, 전체 character 수, rescue sample 수를 제한한다. budget을 넘는 정보는 summary나 count로만 남긴다.
+
+## 3. 선택 이유
+
+대용량 비정형/반정형 데이터에서 AI를 모든 row에 실시간 적용하는 것은 현실적이지 않다. L3를 두는 이유는 AI가 볼 정보와 보지 말아야 할 정보를 분리하기 위해서다. AI는 control-plane에서 profile evidence를 보고 추천하고, data-plane의 실제 row 처리에는 들어가지 않는다.
+
+또한 개인정보와 secret을 추천 단계에서부터 줄여야 한다. L4 draft와 generation trace는 M5에 저장될 수 있고, UI에 노출될 수 있다. 이때 raw PII가 들어가면 이후 계층에서 아무리 막아도 이미 늦다.
+
+## 4. 주요 산출 파일
+
+| 파일 | 설명 |
+| --- | --- |
+| `l3/ai_recommendation_input_pack.json` | L4 model이 읽는 유일한 AI 입력 package다. |
+| `l3/redaction_map.json` | 어떤 field/example이 어떤 이유로 masking/redaction 되었는지 기록한다. |
+| `l3/evidence_budget_report.json` | budget 적용 결과, 누락/축약된 evidence, confidence 영향을 기록한다. |
+| `l3/pii_candidate_summary.json` | PII/secret candidate와 권장 handling hint를 요약한다. |
+
+## 5. 장점
+
+첫째, AI 입력을 통제한다. raw file, full stream, full rescue lane을 모델에 넣는 비현실적 구조를 막는다.
+
+둘째, 보안과 감사 가능성이 높아진다. 어떤 evidence가 redaction되었는지 trace가 남으므로 나중에 추천 근거와 안전성 판단을 설명할 수 있다.
+
+셋째, L4 output 품질이 안정된다. free-form raw examples보다 structured field evidence를 주면 strict schema 추천을 만들기 쉽다.
+
+## 6. 단점과 문제
+
+첫째, redaction이 과하면 AI가 의미를 잘못 추론할 수 있다. 예를 들어 field value pattern이 모두 가려지면 timestamp, code, category, free text 구분이 어려워진다.
+
+둘째, PII detection은 완벽하지 않다. false positive는 field를 불필요하게 제한하고, false negative는 민감정보 노출 위험을 만든다.
+
+셋째, evidence budget이 작으면 복잡한 nested source에서 rare field나 low-frequency issue가 빠질 수 있다.
+
+## 7. 가능 범위
+
+L3는 structured/semi-structured source의 field-level evidence를 다룬다. CSV column, JSON path, JSONL field path, Parquet column path를 모두 field evidence로 표현할 수 있다.
+
+AI 입력은 source-level summary, field-level profile, failure summary, redacted examples, policy hints로 제한한다. 이 정도면 Silver 정제 추천과 Gold 후보 추천에 필요한 핵심 근거는 제공할 수 있다.
+
+## 8. 한계
+
+L3는 unstructured retrieval pack을 core로 만들지 않는다. PDF/image/audio chunking과 citation policy는 별도 extension hook이다. L3는 AI recommendation의 정확성을 보장하지 않는다. L4 draft는 L5에서 사람이 수정/승인해야 한다.
+
+## 9. 검증 기준
+
+`ai_recommendation_input_pack.json`에는 raw payload가 직접 들어가면 안 된다. `forbidden_raw_payload=true` 조건을 만족해야 한다. PII candidate field는 example이 redacted되어야 한다. 모든 input ref는 artifact id string이어야 한다.
+
+## 10. Handoff
+
+L3는 L2 profile을 받아 L4 AI recommendation draft로 넘긴다. L4 model은 L3 pack만 입력으로 사용해야 하며, L0/L1 raw artifact를 직접 읽으면 계약 위반이다.
