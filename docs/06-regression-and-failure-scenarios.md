@@ -98,6 +98,16 @@
 | Verification method | `docs/07` Week 2 M5 Airflow local smoke 점검과 `backend/tests/test_week2_airflow_adapter.py`를 확인한다. |
 | Related docs/interface/Phase | `docs/03`, `docs/07`, `backend/app/services/week2_airflow_adapter.py`, `docker-compose.airflow.yml` |
 
+### M4 Kafka replay가 UI 확인만 남기고 하네스 evidence를 남기지 않는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | M4 Kafka replay는 Kafka UI에서 메시지가 보이는 것과 별개로 `KafkaReplayEvidence` JSON을 남겨 backend가 조회할 수 있어야 한다. |
+| Failure condition | topic message count, consumer lag, throughput을 화면에서만 확인하고 `data/results/week2/_metadata/kafka_replay/<run_id>.json` 또는 backend `/api/week2/kafka-replay/*` 응답이 없다. |
+| Expected behavior | replay 시작/진행/종료 시 source file, topic, partitions, rate, batch, sent rows, error count, health, lineage가 evidence JSON과 latest pointer로 저장된다. |
+| Verification method | `backend/tests/test_week2_kafka_replay_evidence.py`, `docs/manual-verification/08-kafka-replay-parquet-demo.md`의 AskLake 하네스 evidence 확인 절차를 실행한다. |
+| Related docs/interface/Phase | `docs/03`, `docs/07`, `contracts/kafka_topic_contract.sample.json`, `kafka-replay-console/server.mjs` |
+
 ### Week 2 storage URI와 local fallback path가 다른 prefix를 가리키는 경우
 
 | 항목 | 내용 |

@@ -314,10 +314,35 @@ Week 2 draft API/UI route contract:
 | Workflow run | `POST /api/week2/workflows/{pipeline_id}/runs` / `/runs` | M5 + M1 | `ExecutionResult` |
 | Run status | `GET /api/week2/runs/{run_id}` / `/runs/{run_id}` | M5 + M1 | `ExecutionResult` |
 | Catalog detail | `GET /api/week2/catalog/{dataset_id}` / `/catalog/{dataset_id}` | M5 + M1 | `CatalogMetadata` |
+| Kafka replay health | `GET /api/week2/kafka-replay/health` | M4 + M5 | `KafkaReplayEvidence` summary |
+| Kafka replay runs | `GET /api/week2/kafka-replay/runs`, `GET /api/week2/kafka-replay/runs/{run_id}` | M4 + M5 | `KafkaReplayEvidence` |
 | AI query | `POST /api/week2/ai/query` / `/ask` | M6 + M1 | `AIQueryResult` |
 
 These are Week 2 draft routes, not final product API routes. If an implementation uses existing baseline `/api/sources`, `/api/pipelines`, or `/api/catalog/datasets` routes, it must either adapt to these fixture names at the boundary or update this section before module work continues.
-Locked for this contract pass: Source register and schema preview routes remain fixture-first until a later implementation PR adds them. The currently executable Week 2 routes are workflow run, run status, catalog detail, and AI query. M1 may replace placeholders with fixture/API state, but placeholder identifiers must converge on the shared Week 2 IDs in this section.
+Locked for this contract pass: Source register and schema preview routes remain fixture-first until a later implementation PR adds them. The currently executable Week 2 routes are workflow run, run status, catalog detail, Kafka replay evidence, and AI query. M1 may replace placeholders with fixture/API state, but placeholder identifiers must converge on the shared Week 2 IDs in this section.
+
+M4 Kafka replay writes harness-readable evidence under `data/results/week2/_metadata/kafka_replay/`.
+Each replay run produces `<run_id>.json` plus `latest.json`. The minimum `KafkaReplayEvidence` shape is:
+
+| Field | Required | Notes |
+| --- | --- | --- |
+| `contract` | yes | `KafkaReplayEvidence` |
+| `run_id` | yes | `run_kafka_replay_<timestamp>_<suffix>` |
+| `status` | yes | `queued`, `starting`, `running`, `paused`, `stopped`, `succeeded`, or `failed` |
+| `source_file` | yes | CSV path replayed by M4 |
+| `topic` | yes | Kafka topic written by M4 |
+| `partitions` | yes | Topic partition count requested for replay |
+| `records_per_second` | yes | Producer throttle setting |
+| `batch_size` | yes | Producer batch size setting |
+| `key_column` | no | Kafka key source column, or `null` when Kafka chooses partitions |
+| `metrics.sent_rows` | yes | Rows successfully produced to Kafka |
+| `metrics.error_count` | yes | Replay job error count |
+| `metrics.throughput_per_second` | yes | Job-level rows/sec based on sent rows and elapsed runtime |
+| `lineage.source_file` | yes | Source file node |
+| `lineage.kafka_topic` | yes | Kafka target node |
+| `health.status` | yes | `running`, `ok`, or `error` for status center display |
+
+Kafka UI remains the live view for broker-side message count, consumer lag, and live throughput. `KafkaReplayEvidence` is the durable harness receipt that AskLake backend/report flows can read after the replay job.
 
 Week 2 storage path pattern:
 

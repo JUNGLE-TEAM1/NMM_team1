@@ -52,6 +52,7 @@ AskLake의 Target MVP 대표 성공 시나리오는 `Trusted Dataset -> Query/As
 - [ ] `gold_product_health` output은 M5 Catalog에 등록되고, M6는 Gold output file을 SQL로 조회해 위험 상품군과 근거 지표를 `AIQueryResult`로 반환한다.
 - [ ] Week 2 M5 Airflow smoke는 실제 DAG 실행 결과 artifact를 backend가 읽고, `executor=airflow` run이 fallback 없이 Catalog lineage와 metrics를 갱신한다.
 - [ ] M2 Taxi local batch supporting evidence는 TLC Taxi Parquet 입력을 `gold_taxi_daily_metrics` Parquet output으로 만들고 row count, bytes, duration, output path를 기록한다. 이는 `gold_product_health` 대표 경로를 대체하지 않는다.
+- [ ] M4 Kafka replay supporting evidence는 `data/results/week2/_metadata/kafka_replay`에 `KafkaReplayEvidence` JSON을 남기고 backend `GET /api/week2/kafka-replay/*` route에서 source file, topic, sent rows, error count, health, lineage를 조회할 수 있다.
 
 ### Trusted Dataset
 
