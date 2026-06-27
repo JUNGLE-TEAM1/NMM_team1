@@ -290,7 +290,20 @@ def replay_error(status: str, job: dict[str, Any]) -> str | None:
 
 def resolve_repo_path(value: str) -> Path:
     path = Path(value)
-    return path if path.is_absolute() else repo_root() / path
+    if path.is_absolute():
+        return path
+
+    root = repo_root()
+    primary_path = root / path
+    if primary_path.exists():
+        return primary_path
+
+    if path.parts and path.parts[0] == "backend":
+        container_path = root / Path(*path.parts[1:])
+        if container_path.exists():
+            return container_path
+
+    return primary_path
 
 
 def int_option(value: Any, fallback: int) -> int:
