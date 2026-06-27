@@ -26,7 +26,7 @@
 | diff whitespace | `git diff --check` | passed | no output |
 | PR size local estimate | local `git diff --numstat` estimate | passed | non-evidence tracked files 8 / 10, lines 430 / 600 before staging untracked smoke script |
 | harness validation | `scripts/validate-harness.sh` | passed | Harness validation passed |
-| strict harness validation | `scripts/validate-harness.sh --strict` | pending after status value fix | rerun required |
+| strict harness validation | `scripts/validate-harness.sh --strict` | passed | Harness validation passed |
 
 ## CI/CD Gate / CI-CD 게이트
 
