@@ -16,6 +16,7 @@
 | 첫 구현 입력 | local Taxi Parquet file 직접 처리 | PostgreSQL loader까지 넣으면 PR 범위가 커진다. 이번 PR은 처리 로직과 Gold output evidence를 먼저 닫는다. | 사용자 "그래 그렇게 하자" / 2026-06-27 |
 | 첫 Gold output | `gold_taxi_daily_metrics.parquet` | 날짜별 운행 수, 거리, 금액, 유효/무효 row count가 SQL/AI follow-up에 쓰기 쉽다. | `taxi-dataset-bootstrap` 결정 승계 |
 | 실행 엔진 | local pyarrow batch runner | Spark/S3 전환 전 같은 metric/output 경계를 빠르게 검증한다. | `taxi-dataset-bootstrap` 결정 승계 |
+| 기간 밖 Taxi row 처리 | Raw/Bronze 원본은 보존하고, Gold에는 기대 월 필터를 적용하며, 제외 row는 품질 증거로 기록 | `yellow_tripdata_2024-01.parquet` 안에 1월 밖 pickup 날짜 18행이 섞여 있었다. 원본을 삭제하면 재현성이 깨지고, Gold에 그대로 넣으면 1월 결과가 35일로 보여 데모 설명이 어려워진다. | 사용자 후속 확인 / 2026-06-27 |
 
 ## Deferred Decisions / 보류한 결정
 
