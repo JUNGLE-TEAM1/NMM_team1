@@ -5,6 +5,7 @@
 이번 PR은 <!-- 무엇을 가능하게 하거나 어떤 문제를 해결하는지 1~2문장으로 적습니다. -->
 
 - 연결된 Issue: <!-- 예: Closes #123 / 연결된 issue 없음 -->
+- No Linked Issue Exception: <!-- no-issue 예외가 승인된 경우에만 approved, 아니면 비움 -->
 - Branch:
 - Branch workspace:
 - 상태: <!-- 리뷰 요청 / Draft / follow-up 필요 -->
