@@ -38,7 +38,11 @@ class TaxiBatchConfig:
 
 
 class Week2TaxiBatchRunner:
-    """TLC Taxi Parquet을 일별 Gold metric Parquet으로 바꾸는 M2 local batch runner."""
+    """Taxi Parquet 처리 증거를 만들기 위한 임시 M2 local batch runner.
+
+    이 runner의 하드코딩 Gold metric 정의는 M2의 최종 책임이 아니다.
+    M3 TransformSpec/QualityRule 실행 경로가 붙으면 제거하거나 demo/test fixture로 격하한다.
+    """
 
     def run(self, config: TaxiBatchConfig | dict[str, Any]) -> Week2RunnerResult:
         """Taxi batch를 실행하고 M5가 소비 가능한 Week2RunnerResult 모양으로 돌려준다."""
@@ -129,7 +133,10 @@ def filter_pickup_date(table: Any, fixed_date: str) -> Any:
 
 
 def build_daily_metrics_table(table: Any) -> Any:
-    """Taxi row를 pickup_date 기준 Gold daily metric table로 집계한다."""
+    """임시 evidence용 Taxi daily metric table을 만든다.
+
+    최종 Gold metric 정의는 M3 TransformSpec이 소유하고, M2는 그 spec을 실행해야 한다.
+    """
 
     arrow, _, compute = pyarrow_modules()
     gold_schema = gold_metrics_schema(arrow)
@@ -219,7 +226,10 @@ def group_valid_rows(table: Any, arrow: Any, compute: Any) -> dict[date, dict[st
 
 
 def valid_trip_mask(table: Any) -> Any:
-    """Gold metric에 포함할 정상 Taxi row 조건을 만든다."""
+    """임시 metric 계산에서만 쓸 기본 row 조건을 만든다.
+
+    이 조건은 M3 QualityRule을 대체하지 않으며, 장기 구현에서는 spec 입력으로 이관한다.
+    """
 
     _, _, compute = pyarrow_modules()
     checks = [
