@@ -10,8 +10,8 @@
 - Primary context read: `AGENTS.md`, `docs/00-layer-map.md`, PR #181, PR #182, `docs/reports/pr-issue-project-guardrails-hotfix.md`
 - Escalated context read: 없음
 - Context omitted intentionally: Product/Architecture/Interface 문서는 PR metadata evidence 기록이 제품 기능 계약을 바꾸지 않으므로 생략
-- Changed: #181/#182 원격 PR metadata 보정 작업을 repo evidence로 기록했다.
-- Verified: `scripts/audit-github-records.sh --pr 181 --pr 182`; origin/main `check-pr-linked-issue.js` body check for #181/#182
+- Changed: #181/#182 원격 PR metadata 보정 작업과 #150 이후 merged PR metadata 보정 작업을 repo evidence로 기록했다.
+- Verified: `scripts/audit-github-records.sh --pr 181 --pr 182`; `scripts/audit-github-records.sh --pr 150 --pr 153 --pr 154 --pr 156 --pr 157 --pr 159 --pr 160 --pr 167 --pr 170 --pr 180 --pr 183`; origin/main `check-pr-linked-issue.js` body check for corrected PRs
 - Remaining: #181/#182 branch synchronize 후 `pr-template-drift` check rollup 확인
 - Next context: #181은 Draft 유지, #182는 별도 merge/finalize 지시 전까지 open 유지
 - Risk: PR metadata edit 자체는 Git commit history가 아니므로, 이 report가 보정 evidence의 기준이다.
@@ -25,6 +25,8 @@
 
 ## Historical Drift / 과거 drift
 
-- #150, #153, #154, #156, #157, #159, #160, #167, #170, #180, #183은 merged PR이므로 원격 수정하지 않았다.
+- 사용자 추가 지시 후 #150, #153, #154, #156, #157, #159, #160, #167, #170, #180, #183도 원격 title/body metadata를 보정했다.
+- #153, #157, #160, #183은 title prefix를 harness 형식으로 보정했다.
+- 승인 없는 no-issue PR에는 `No Linked Issue Exception: approved`와 historical metadata reconciliation 사유를 추가했다.
+- 구형/축약 body PR은 7-section template으로 재작성했다.
 - #184는 최신 기준 통과로 판단해 수정하지 않았다.
-

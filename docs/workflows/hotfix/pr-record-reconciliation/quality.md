@@ -15,6 +15,8 @@
 | --- | --- | --- | --- |
 | PR record audit | `scripts/audit-github-records.sh --pr 181 --pr 182` | passed | GitHub record drift audit passed. |
 | linked issue check | origin/main `check-pr-linked-issue.js` fixture for #181/#182 | passed | #181 closing keyword found; #182 approved no-issue exception found |
+| merged PR record audit | `scripts/audit-github-records.sh --pr 150 --pr 153 --pr 154 --pr 156 --pr 157 --pr 159 --pr 160 --pr 167 --pr 170 --pr 180 --pr 183` | passed | GitHub record drift audit passed. |
+| merged PR linked issue check | origin/main `check-pr-linked-issue.js` fixture for #150/#153/#154/#156/#157/#159/#160/#167/#170/#180/#183 | passed | approved no-issue or closing keyword found |
 | diff hygiene | `git diff --check` | pending | |
 | harness validation | `scripts/validate-harness.sh` | pending | |
 | strict harness validation | `scripts/validate-harness.sh --strict` | pending | |
