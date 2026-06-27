@@ -68,7 +68,7 @@ def make_week2_client() -> TestClient:
 
 
 def test_week2_ai_query_returns_fixture_backed_ai_query_result() -> None:
-    client = TestClient(create_app())
+    client = TestClient(create_app(settings=Settings(week2_sql_engine="fake")))
 
     response = client.post(
         "/api/week2/ai/query",
@@ -119,7 +119,10 @@ def test_week2_ai_query_uses_latest_m5_catalog_after_workflow_runs() -> None:
     assert payload["evidence"][0]["run_id"] == "run_reviews_demo_002"
     assert payload["evidence"][0]["s3_uri"] == "s3://asklake-demo/reviews/gold/run_id=run_reviews_demo_002/"
     assert payload["status"] == "succeeded"
-    assert payload["query_result"]["engine"] == "fake"
+    assert payload["query_result"]["engine"] == "duckdb"
+    assert payload["query_result"]["rows"][0]["product_id"] == "B001"
+    assert payload["query_result"]["rows"][0]["review_count"] == 2
+    assert payload["query_result"]["rows"][0]["review_count"] != 42
 
 
 def test_week2_ai_query_evidence_grounding_includes_catalog_schema_metrics_and_lineage() -> None:
@@ -140,6 +143,9 @@ def test_week2_ai_query_evidence_grounding_includes_catalog_schema_metrics_and_l
     payload = response.json()
     evidence = payload["evidence"][0]
 
+    assert payload["query_result"]["engine"] == "duckdb"
+    assert payload["query_result"]["rows"][0]["product_id"] == "B003"
+    assert payload["query_result"]["rows"][0]["average_rating"] == 5.0
     assert evidence["dataset_id"] == "dataset_reviews_gold"
     assert evidence["run_id"] == run["run_id"]
     assert evidence["schema_fields"] == catalog["schema"]["fields"]
