@@ -27,7 +27,7 @@
 ## CI/CD Gate / CI-CD 게이트
 
 - CI required: yes after PR creation
-- CI result: PR #193 opened; `linked-issue` initially failed because no issue was linked, then Issue #194 and PR body `Closes #194` were added. Final remote check result must be rechecked after commit split push.
+- CI result: PR #193 remote checks passed after commit split push: `linked-issue`, `migration-schema-security`, `pr-size-hard-gate`, `pr-template-drift`, `risk-warning`, `harness`, `container-smoke`, `manifest-smoke`.
 - Deploy/publish required: no
 - Deployment confirmation: not applicable
 - Rollback/smoke notes: not applicable
