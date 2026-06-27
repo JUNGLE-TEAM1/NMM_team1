@@ -178,6 +178,26 @@
 | Verification method | schema inference/transform/load 후 `ExecutionResult`, `CatalogMetadata`, `QueryResult` evidence를 확인한다. |
 | Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07`, Week 2 M2~M6 |
 
+### Week 2 상품 리스크 5GB input이 Gold pipeline과 분리되는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | Week 2 상품 리스크 대표 경로의 5GB evidence는 `gold_product_health` 생성 main pipeline input으로 연결되어야 한다. |
+| Failure condition | 5GB 처리가 Taxi 별도 evidence로만 남고 `dataset_product_health_gold`의 `run_id`, lineage, source별 rows/bytes/duration과 연결되지 않는다. |
+| Expected behavior | `ExecutionResult`는 `input_total_bytes >= 5GB`와 source별 `row_count`, `bytes`, `duration_ms`, `input_path`, bronze/silver/gold `output_path`를 남기고, M5 Catalog는 같은 `run_id`로 `gold_product_health` output을 가리킨다. |
+| Verification method | `pipeline_product_health_e2e` 5GB run의 `ExecutionResult`, `CatalogMetadata`, M6 `QueryResult`, M1 evidence display를 확인한다. |
+| Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07`, `pm/docs/week2-product-risk-demo-scenario.md` |
+
+### Gold output 크기를 5GB input 처리 증거로 오해하는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | `gold_product_health`는 상품별 집계 Gold이므로 output이 원천보다 작아지는 것이 정상이다. |
+| Failure condition | 발표/문서/UI가 "Gold 파일이 5GB"라고 설명하거나, Gold output bytes만으로 5GB input 처리를 증명한다. |
+| Expected behavior | 5GB 증거는 source/raw/bronze input bytes와 source별 evidence로 설명하고, Gold bytes는 집계 output 크기로 별도 표시한다. |
+| Verification method | 발표 문구, M1 evidence label, `ExecutionResult.bytes`, `CatalogMetadata.metrics.bytes` 의미가 `docs/03`과 일치하는지 확인한다. |
+| Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07`, M1/M5/M6 |
+
 ### Container App Health
 
 | 항목 | 내용 |

@@ -48,8 +48,10 @@ AskLake의 Target MVP 대표 성공 시나리오는 `Trusted Dataset -> Query/As
 - [ ] 첫 병렬 wave와 integration checkpoint가 하나 이상 제안되어 있다.
 - [ ] Week 2 모듈 구현 전 `contracts/*.sample.json` fixture가 producer/consumer 경계, `TransformSpec`, `RuntimeConfig`, `KafkaTopicContract`, Airflow/local runner/spark runner 호환 결과, SQL engine adapter 경계를 제공한다.
 - [ ] Week 2 모듈 구현 전 API/UI route, ID 규칙, storage path pattern, workflow/run status, `QueryResult`, guardrail failure shape, daily smoke evidence 형식이 공통 계약으로 확인된다.
+- [ ] Week 2 상품 리스크 대표 경로는 `pipeline_product_health_e2e`가 5GB 이상 reviews/behavior/delivery fact input을 처리해 `dataset_product_health_gold` / `gold_product_health`를 생성하고, source별 row count, bytes, duration, output path, run id를 evidence로 남긴다.
+- [ ] `gold_product_health` output은 M5 Catalog에 등록되고, M6는 Gold output file을 SQL로 조회해 위험 상품군과 근거 지표를 `AIQueryResult`로 반환한다.
 - [ ] Week 2 M5 Airflow smoke는 실제 DAG 실행 결과 artifact를 backend가 읽고, `executor=airflow` run이 fallback 없이 Catalog lineage와 metrics를 갱신한다.
-- [ ] M2 Taxi local batch evidence는 TLC Taxi Parquet 입력을 `gold_taxi_daily_metrics` Parquet output으로 만들고 row count, bytes, duration, output path를 기록한다.
+- [ ] M2 Taxi local batch supporting evidence는 TLC Taxi Parquet 입력을 `gold_taxi_daily_metrics` Parquet output으로 만들고 row count, bytes, duration, output path를 기록한다. 이는 `gold_product_health` 대표 경로를 대체하지 않는다.
 
 ### Trusted Dataset
 
