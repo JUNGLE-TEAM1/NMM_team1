@@ -260,8 +260,9 @@ Locked Week 2 contract decisions:
 - `KafkaTopicContract` is evidence and raw-event handoff for Week 2. Kafka is not a blocker for the Amazon Reviews main E2E path unless a later Phase explicitly changes the main path.
 - `ExecutionResult.duration_ms` is part of the locked execution evidence and comes from `Week2RunnerResult.duration_ms`.
 - M2 Taxi local batch evidence uses `pipeline_taxi_daily_metrics`, `dataset_taxi_daily_metrics_gold`, and `gold_taxi_daily_metrics`. It is local Parquet evidence only; PostgreSQL loader, MinIO/S3 write, PySpark, and Airflow DAG-internal invocation are later phases.
+- The hardcoded Taxi daily Gold schema, aggregation, and valid-row mask are provisional evidence scaffolding, not durable M2-owned transform semantics. Final Gold metric definitions, quality rules, quarantine behavior, and period rules remain M3-owned `TransformSpec` / `QualityRule` responsibilities. M2's durable responsibility is runner/runtime/storage execution plus row_count, bytes, duration, output path, and related evidence. When the M3 spec execution path is available, this hardcoded Taxi Gold builder must be removed or demoted to a demo/test fixture.
 
-M2 Taxi Gold daily metric fields:
+Provisional M2 Taxi daily metric evidence fields:
 
 | Field | Type | Meaning |
 | --- | --- | --- |
