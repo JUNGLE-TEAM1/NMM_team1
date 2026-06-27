@@ -97,6 +97,19 @@ AI가 멈추고 사람 확인을 받아야 하는 지점을 기록한다.
   - 다음 작업 문맥
 - Human response: 문서 반영과 로컬 검증을 완료했다. 커밋/PR 여부는 다음 사용자 지시에 따른다.
 
+## Pre-PR Human Checkpoint
+
+- Status: recorded
+- PR: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/182
+- Checks: passed
+- Summary: PR #182는 open/mergeable 상태이며 `harness`, `container-smoke`, `linked-issue`, `manifest-smoke`, `migration-schema-security`, `pr-size-hard-gate`, `risk-warning`가 통과했다.
+- Options:
+  1. PR 진행: review 후 merge/finalize/cleanup 확인으로 간다.
+  2. PR 보류: PR #182를 열어둔 채 다음 M6 구현 slice를 준비한다.
+  3. 추가 보강: 현재 PR에 추가 커밋을 올린다.
+  4. 다음 Phase: PR #182 처리 방식을 명시하고 다음 개발로 넘어간다.
+- Human response: 최종 응답에서 사용자에게 PR 진행, PR 보류, 추가 보강, 다음 Phase 선택지를 제시한다.
+
 ## Integration Conflict Confirm / 통합 충돌 확인
 
 - Status: not needed

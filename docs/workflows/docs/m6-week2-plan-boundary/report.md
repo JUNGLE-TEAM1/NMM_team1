@@ -11,7 +11,7 @@
 - Escalated context read: `docs/03-interface-reference.md`, relevant snippets from `docs/05-acceptance-scenarios-and-checklist.md`, `docs/06-regression-and-failure-scenarios.md`, `docs/07-manual-verification-playbook.md`, `contracts/ai_query_result.sample.json`
 - Context omitted intentionally: backend/frontend implementation code changes, external LLM provider docs, vector DB implementation details
 - Changed: M6 SQL-first Week2 plan now explicitly says M6 reads M5 CatalogMetadata read-only, executes SQL only through `SqlEngineAdapter`, blocks missing local output paths, keeps response additions additive, keeps RAG-lite index as M6 derived cache, and leaves M1~M5 ownership intact.
-- Verified: `git diff --check`; M6 boundary wording `rg`; `scripts/validate-harness.sh`; `scripts/validate-harness.sh --strict`
-- Remaining: no implementation performed. Future M6 contract/code PR should decide when to add `route` and `retrieval_trace` to `contracts/ai_query_result.sample.json` and backend models.
-- Next context: start M6 SQL execution context / DuckDB adapter slice from this boundary plan, or commit/PR this docs-only branch first.
+- Verified: `git diff --check`; M6 boundary wording `rg`; `scripts/validate-harness.sh`; `scripts/validate-harness.sh --strict`; PR #182 checks passed.
+- Remaining: no implementation performed. Future M6 contract/code PR should decide when to add `route` and `retrieval_trace` to `contracts/ai_query_result.sample.json` and backend models. PR #182 merge/finalize/cleanup requires human confirmation.
+- Next context: start M6 SQL execution context / DuckDB adapter slice from this boundary plan after PR #182 is merged or explicitly held.
 - Risk: `docs/03-interface-reference.md` now documents future additive `route`/`retrieval_trace` and `local_path_missing`; implementation and contract sample must be aligned in the later M6 contract slice.

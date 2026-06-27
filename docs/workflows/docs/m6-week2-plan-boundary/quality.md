@@ -28,8 +28,8 @@
 
 ## CI/CD Gate / CI-CD 게이트
 
-- CI required: no local docs-only change; PR CI may still run after push/PR
-- CI result: not run locally
+- CI required: yes, after PR creation
+- CI result: PR #182 checks passed: `harness`, `container-smoke`, `linked-issue`, `manifest-smoke`, `migration-schema-security`, `pr-size-hard-gate`, `risk-warning`
 - Deploy/publish required: no
 - Deployment confirmation: not applicable
 - Rollback/smoke notes: not applicable
