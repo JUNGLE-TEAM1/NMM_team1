@@ -4,17 +4,17 @@
 
 ## Current State / 현재 상태
 
-- State: PR open, local checks passed after latest main sync
-- Summary: local Airflow smoke 연결과 M5 demo cockpit UI가 같은 branch에 정리됐고, PR #200이 열려 있다. 최신 확인 `origin/main`(`e640f90`) 병합 뒤 local test/build/harness는 통과했으며, PR body는 `Closes #202`와 `Large PR Exception: approved`로 보정했다.
+- State: PR open, checks passed, mergeable
+- Summary: local Airflow smoke 연결과 M5 demo cockpit UI가 같은 branch에 정리됐고, PR #200이 열려 있다. 최신 확인 `origin/main`(`e640f90`) 병합 뒤 local test/build/harness가 통과했고, PR body는 `Closes #202`와 `Large PR Exception: approved`로 보정했으며 remote checks도 통과했다.
 
 ## Recommended Next Action / 권장 다음 행동
 
-- PR #200 remote CI recheck를 확인하고, 통과하면 merge/finalize/cleanup은 사람 확인 뒤 진행한다.
-- Reason: 로컬 구현과 검증, PR body guardrail 보정은 완료됐고 remote check 결과 확인만 남았다.
+- Pre-PR Human Checkpoint를 제시하고, 사람이 명시적으로 선택한 뒤에만 merge/finalize/cleanup을 진행한다.
+- Reason: 로컬 구현, 검증, PR body guardrail 보정, remote checks가 완료됐고 PR은 mergeable 상태다.
 
 ## Options / 선택지
 
-1. PR #200 remote CI recheck를 확인한다.
+1. PR #200 merge/finalize/cleanup을 진행할지 사람이 선택한다.
 2. PR 리뷰에서 요청될 때만 Airflow smoke와 demo cockpit UI를 분리한다.
 3. production Airflow/MinIO/SparkRunner/async UI는 후속 Phase로 둔다.
 
@@ -28,4 +28,4 @@
 
 ## Next AI Action / 다음 AI 행동
 
-- sync/quality/report 업데이트를 commit/push하고 remote CI recheck를 확인한다.
+- 현재 작업은 handoff 상태로 둔다. 다음 행동은 사람의 merge/finalize/cleanup 선택이다.

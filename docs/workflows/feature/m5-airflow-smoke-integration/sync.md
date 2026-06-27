@@ -37,8 +37,8 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 - affected files: `docs/03-interface-reference.md`, `docs/05-acceptance-scenarios-and-checklist.md`, `docs/06-regression-and-failure-scenarios.md`, `frontend/src/app/App.jsx`, `frontend/src/app/styles.css`
 - resolution path: keep Airflow smoke + M5 demo cockpit UI together as one M5 local/demo completion PR candidate unless PR review asks for split
 - resolved files: same as affected files; latest follow-up merge through `e640f90` had no additional conflict
-- revalidation: `npm run build`; `PYTHONPATH=backend ./.venv/bin/python -m pytest backend/tests -q`; `scripts/validate-harness.sh --strict`; `scripts/validate-harness.sh --integration`; `git diff --check`
-- remaining risk: remote PR checks need recheck after body guardrail correction; PR merge/finalize/cleanup not executed
+- revalidation: `npm run build`; `PYTHONPATH=backend ./.venv/bin/python -m pytest backend/tests -q`; `scripts/validate-harness.sh --strict`; `scripts/validate-harness.sh --integration`; `git diff --check`; PR #200 remote checks
+- remaining risk: remote PR checks passed and PR is mergeable; PR merge/finalize/cleanup not executed
 
 ## Push / PR
 
@@ -49,5 +49,5 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 - PR closing keyword: Closes #202
 - pushed branch: feature/m5-airflow-smoke-integration
 - PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/200
-- merge status: open; latest local branch includes `origin/main` through `e640f90`
+- merge status: open, CLEAN, MERGEABLE; latest local branch includes `origin/main` through `e640f90`
 - issue close status: #202 remains open until PR merge/finalize because PR body uses `Closes #202`

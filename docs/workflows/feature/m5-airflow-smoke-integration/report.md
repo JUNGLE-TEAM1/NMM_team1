@@ -14,7 +14,7 @@
 - Verified: adapter TDD, focused Week2 tests, full backend tests, frontend build, browser local runner smoke, DAG syntax, compose config, real local Airflow smoke, result artifact/output/Catalog, strict harness validation, integration harness validation.
 - Remaining: production Airflow deployment, MinIO/S3 storage, SparkRunner/M2 runtime, async UI are intentionally out of scope.
 - Next context: 사용자는 추천안 구현과 남은 M5 정리 전체 진행을 선택했다. 완료 범위는 local Airflow smoke + M5 demo cockpit UI를 묶은 M5 local/demo slice이며 production 완성이 아니다.
-- Risk: first local run requires pulling a large Airflow image; port `8080` must be free or `AIRFLOW_PORT` must be changed. Latest checked `origin/main` through `e640f90` is merged locally, and PR body guardrails were corrected with `Closes #202` plus `Large PR Exception: approved`; remote CI recheck still needs confirmation.
+- Risk: first local run requires pulling a large Airflow image; port `8080` must be free or `AIRFLOW_PORT` must be changed. Latest checked `origin/main` through `e640f90` is merged locally, PR body guardrails were corrected with `Closes #202` plus `Large PR Exception: approved`, and PR #200 remote checks passed.
 
 ## Changed Files / 변경 파일
 
@@ -50,3 +50,4 @@
 - `scripts/validate-harness.sh --strict` -> Harness validation passed.
 - `scripts/validate-harness.sh --integration` -> Harness validation passed.
 - Post-main-sync validation after merging `origin/main` through `e640f90`: `npm run build`, full backend pytest, strict harness, integration harness, and `git diff --check` all passed.
+- PR #200 remote checks -> passed: `linked-issue`, `pr-size-hard-gate`, `pr-template-drift`, `risk-warning`, `migration-schema-security`, `manifest-smoke`, `container-smoke`, `harness`; PR state `CLEAN` / `MERGEABLE`.
