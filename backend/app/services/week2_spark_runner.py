@@ -9,7 +9,11 @@ from app.services.week2_local_runner import Week2RunnerResult, elapsed_ms, path_
 
 
 class Week2SparkRunner:
-    """M2 SparkRunner 경계를 검증하는 local Parquet smoke 실행기."""
+    """M2 SparkRunner 경계를 검증하는 local Parquet smoke 실행기.
+
+    이름은 SparkRunner지만 현재 구현은 local pyarrow smoke다. 중요한 것은 M5가 호출할 수 있는
+    runner/result 경계를 먼저 고정하고, 이후 PySpark나 cluster Spark로 내부 실행 방식을 바꿀 수 있게 하는 것이다.
+    """
 
     def run(
         self,
@@ -27,12 +31,24 @@ class Week2SparkRunner:
 
         try:
             input_path = resolve_input_path(config.input_path)
-            output_location = output_location_for_config(config, input_path, run_id)
+            storage_adapter = Week2StorageAdapter()
+            output_location = output_location_for_config(config, input_path, run_id, storage_adapter)
             output_path = output_location.local_path
             rows = read_rows(input_path, config.input_format)
             write_parquet(rows, output_path, config.options)
             input_bytes = path_size(input_path)
             output_bytes = path_size(output_path)
+            logs.append({"level": "info", "message": "spark_runner smoke succeeded"})
+            task_results = [
+                succeeded_task_result("spark_read", row_count=len(rows), bytes=input_bytes),
+                succeeded_task_result("spark_write", row_count=len(rows), bytes=output_bytes),
+            ]
+            if should_upload_to_object_storage(config):
+                # upload는 local write 이후의 추가 evidence다. 실패하면 전체 runner가 실패로 내려가서
+                # M5 Catalog가 remote object가 없는 결과를 성공으로 착각하지 않게 한다.
+                upload_result = storage_adapter.upload_file(config.storage, output_location)
+                task_results.append(succeeded_task_result("spark_upload", row_count=len(rows), bytes=upload_result.bytes))
+                logs.append({"level": "info", "message": "spark_runner upload succeeded"})
         except Exception as error:
             logs.append({"level": "error", "message": f"spark_runner failed: {error}"})
             return Week2RunnerResult(
@@ -42,13 +58,9 @@ class Week2SparkRunner:
                 duration_ms=elapsed_ms(started),
             )
 
-        logs.append({"level": "info", "message": "spark_runner smoke succeeded"})
         return Week2RunnerResult(
             status="succeeded",
-            task_results=[
-                succeeded_task_result("spark_read", row_count=len(rows), bytes=input_bytes),
-                succeeded_task_result("spark_write", row_count=len(rows), bytes=output_bytes),
-            ],
+            task_results=task_results,
             logs=logs,
             row_count=len(rows),
             bytes=input_bytes,
@@ -128,14 +140,31 @@ def output_path_for_config(config: RuntimeConfig, input_path: Path, run_id: str)
     return output_location_for_config(config, input_path, run_id).local_path
 
 
-def output_location_for_config(config: RuntimeConfig, input_path: Path, run_id: str) -> StorageLocation:
-    """RuntimeConfig에서 S3-compatible URI와 local output path를 함께 계산한다."""
+def output_location_for_config(
+    config: RuntimeConfig,
+    input_path: Path,
+    run_id: str,
+    storage_adapter: Week2StorageAdapter | None = None,
+) -> StorageLocation:
+    """RuntimeConfig에서 S3-compatible URI와 local output path를 함께 계산한다.
+
+    직접 `output_path`가 있으면 기존 테스트/호출 호환성을 우선한다. `storage`가 있으면
+    `Week2StorageAdapter`를 통해 local path와 remote object key를 같은 prefix에서 계산한다.
+    """
 
     if config.output_path is not None:
-        return StorageLocation(uri=None, bucket=None, prefix="", local_path=resolve_path(config.output_path))
+        return StorageLocation(
+            uri=None,
+            bucket=None,
+            prefix="",
+            object_key="",
+            object_uri=None,
+            local_path=resolve_path(config.output_path),
+        )
     output_file_name = config.options.get("output_file_name") or f"{input_path.stem}.parquet"
     if config.storage is not None:
-        return Week2StorageAdapter().build_location(
+        adapter = storage_adapter or Week2StorageAdapter()
+        return adapter.build_location(
             config.storage,
             run_id=run_id,
             file_name=output_file_name,
@@ -149,8 +178,19 @@ def output_location_for_config(config: RuntimeConfig, input_path: Path, run_id: 
         uri=None,
         bucket=None,
         prefix=f"spark_smoke/run_id={run_id}/",
+        object_key="",
+        object_uri=None,
         local_path=output_root / "spark_smoke" / f"run_id={run_id}" / output_file_name,
     )
+
+
+def should_upload_to_object_storage(config: RuntimeConfig) -> bool:
+    """명시 옵션이 켜지고 storage 설정이 있을 때만 object upload를 수행한다.
+
+    기본값을 false로 둔 이유는 MinIO가 없는 개발/CI 환경에서도 기존 local fallback smoke가 재현되어야 하기 때문이다.
+    """
+
+    return config.storage is not None and config.options.get("upload_to_object_storage") is True
 
 
 def resolve_input_path(path_value: str) -> Path:
