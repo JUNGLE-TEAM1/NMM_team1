@@ -98,6 +98,16 @@
 | Verification method | `backend/tests/test_week2_storage_adapter.py`, `backend/tests/test_week2_spark_runner.py`, `backend/tests/test_week2_workflow_catalog.py`를 확인한다. |
 | Related docs/interface/Phase | `docs/03`, `contracts/runtime_config.sample.json`, `contracts/catalog_metadata.sample.json`, M2 storage adapter |
 
+### Week 2 SQL runtime이 adapter guardrail 없이 local file을 읽는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | `DuckDBSqlEngine`은 `SqlEngineAdapter` 뒤에서만 사용하고, `CatalogMetadata.storage.local_fallback_path`를 기준으로 Parquet/JSONL을 읽어야 한다. |
+| Failure condition | M6가 DuckDB를 직접 import하거나, SELECT-only/table allowlist/column allowlist/LIMIT/local path 확인 없이 SQL을 실행한다. |
+| Expected behavior | SQL 실행 전 guardrail이 실패하면 `AIQueryResult.status`는 `blocked`가 되고, 성공한 경우에만 `QueryResult.engine=duckdb`와 실제 row를 반환한다. |
+| Verification method | `backend/tests/test_duckdb_sql_engine.py`, `backend/tests/test_week2_ai_query_duckdb.py`, `scripts/week2_m2_sql_runtime_smoke.py`를 확인한다. |
+| Related docs/interface/Phase | `docs/03`, `contracts/catalog_metadata.sample.json`, M2 SQL runtime smoke |
+
 ### Mock/Fake Boundary를 넘어 실제 접근으로 진행되는 경우
 
 | 항목 | 내용 |

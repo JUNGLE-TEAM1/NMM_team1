@@ -401,6 +401,7 @@ Consumer module, Blocked issue, Next first action
 ```
 
 M6 must not import DuckDB, Trino, or Athena directly. The MVP implementation may use `DuckDBSqlEngine` behind the adapter.
+The Week 2 runtime can opt into the real DuckDB adapter with `Settings.week2_sql_engine="duckdb"` for local SQL smoke. The default remains `fake` until the M6 SQL MVP path intentionally switches the API default.
 Unconfirmed values such as real sample file path, row count, remote bucket contents, and production S3 path remain TODO in fixture files until the responsible module verifies them.
 M1 static shell placeholders are not source of truth. When real API state is connected, M1 must display `tenant_demo`, `pipeline_reviews_json_e2e`, `dataset_reviews_gold`, and other shared fixture identifiers unless this section is updated first.
 
