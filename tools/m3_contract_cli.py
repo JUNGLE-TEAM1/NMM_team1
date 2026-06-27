@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from m3_contract.cli import main
 
 
