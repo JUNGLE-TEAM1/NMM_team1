@@ -43,9 +43,10 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 - linked GitHub issue: #188
 - issue link: https://github.com/JUNGLE-TEAM1/NMM_team1/issues/188
 - issue creation result: created
-- issue project result: added to JUNGLE-TEAM1 project 3; status set to In Progress
+- issue project result: set to Review in JUNGLE-TEAM1 project 3
 - PR closing keyword: Closes #188
-- pushed branch:
-- PR link:
-- merge status:
-- issue close status:
+- pushed branch: feature/m2-minio-object-upload
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/191
+- merge status: open
+- issue close status: open
+- issue reopen result: reopened closed issue before PR open
