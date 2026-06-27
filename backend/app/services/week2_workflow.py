@@ -8,13 +8,14 @@ from typing import Any
 from app.domain.runtime_config import RuntimeConfig, StorageConfig
 from app.services.week2_airflow_adapter import Week2AirflowAdapter, Week2AirflowError
 from app.services.week2_catalog_store import Week2CatalogStore
+from app.services.week2_kafka_replay_runner import Week2KafkaReplayRunner
 from app.services.week2_local_runner import Week2LocalRunner, Week2RunnerResult
 from app.services.week2_spark_runner import Week2SparkRunner
 from app.services.week2_storage_adapter import StorageLocation, Week2StorageAdapter
 
 SUCCESSFUL_RUN_STATUSES = {"succeeded", "fallback_succeeded"}
 AIRFLOW_SUCCESS_STATUS = "succeeded"
-SUPPORTED_EXECUTORS = {"airflow", "local_runner", "spark_runner"}
+SUPPORTED_EXECUTORS = {"airflow", "kafka_replay", "local_runner", "spark_runner"}
 
 
 class Week2WorkflowNotFoundError(ValueError):
@@ -36,6 +37,7 @@ class Week2WorkflowService:
         self,
         contracts_dir: Path | None = None,
         airflow_adapter: Week2AirflowAdapter | None = None,
+        kafka_replay_runner: Week2KafkaReplayRunner | None = None,
         local_runner: Week2LocalRunner | None = None,
         spark_runner: Week2SparkRunner | None = None,
         output_root: Path | None = None,
@@ -50,8 +52,10 @@ class Week2WorkflowService:
         self.workflow_definition = self._load_contract("workflow_definition.sample.json")
         self.execution_template = self._load_contract("execution_result.sample.json")
         self.catalog_template = self._load_contract("catalog_metadata.sample.json")
+        self.kafka_topic_contract = self._load_contract("kafka_topic_contract.sample.json")
         self.catalog_store = catalog_store or Week2CatalogStore(self.output_root / "_metadata")
         self.airflow_adapter = airflow_adapter or Week2AirflowAdapter()
+        self.kafka_replay_runner = kafka_replay_runner or Week2KafkaReplayRunner(output_root=self.output_root)
         self.local_runner = local_runner or Week2LocalRunner(
             source_config=self.source_config,
             schema_definition=self.schema_definition,
@@ -94,13 +98,17 @@ class Week2WorkflowService:
         run["duration_ms"] = runner_result.duration_ms
         run["task_results"] = runner_result.task_results
         run["logs"] = self._logs_for_executor(executor, status, runner_result.logs)
+        metadata = runner_metadata(runner_result)
+        if "lineage" in metadata:
+            run["lineage"] = metadata["lineage"]
 
         self.runs[run_id] = run
-        self.catalog_store.save_run(run)
         if status in SUCCESSFUL_RUN_STATUSES:
             catalog = self._catalog_for_run(run_id, timestamp, runner_result)
             self.catalog[catalog["dataset_id"]] = catalog
             self.catalog_store.save_catalog(catalog)
+            run["outputs"] = [output_from_catalog(catalog)]
+        self.catalog_store.save_run(run)
         return run
 
     def get_run(self, run_id: str) -> dict[str, Any]:
@@ -126,6 +134,8 @@ class Week2WorkflowService:
             return self.local_runner.run(self.workflow_definition, run_id=run_id)
         if executor == "spark_runner":
             return self.spark_runner.run(self._spark_runtime_config(run_id), run_id=run_id)
+        if executor == "kafka_replay":
+            return self.kafka_replay_runner.run(self.kafka_topic_contract, run_id=run_id)
 
         try:
             airflow_result = self.airflow_adapter.run(self.workflow_definition, run_id=run_id)
@@ -200,7 +210,7 @@ class Week2WorkflowService:
             runtime_config = json.load(runtime_config_file)
         return runtime_config.get("parquet", {}).get("compression", "snappy")
 
-    def _runtime_storage_config(self) -> StorageConfig:
+    def _runtime_storage_config(self, prefix: str | None = None) -> StorageConfig:
         """runtime/catalog fixture를 합쳐 runner와 Catalog가 공유할 storage 설정을 만든다."""
 
         runtime_config_path = self.contracts_dir / "runtime_config.sample.json"
@@ -212,7 +222,7 @@ class Week2WorkflowService:
             profile=runtime_storage.get("profile", self.catalog_template["storage"].get("profile", "minio")),
             bucket=runtime_storage.get("bucket", self.catalog_template["storage"].get("bucket", "asklake-demo")),
             endpoint=runtime_storage.get("endpoint"),
-            prefix=self.catalog_template["storage"]["prefix"],
+            prefix=prefix or self.catalog_template["storage"]["prefix"],
             local_fallback_root=str(self.output_root),
         )
 
@@ -220,8 +230,13 @@ class Week2WorkflowService:
         """runner 결과를 CatalogMetadata fixture에 반영해 저장 가능한 catalog record를 만든다."""
 
         catalog = deepcopy(self.catalog_template)
+        deep_update(catalog, runner_metadata(runner_result).get("catalog", {}))
         output_file_name = Path(runner_result.output_path).name if runner_result.output_path else f"{catalog['dataset_id']}.parquet"
-        storage_location = self._catalog_storage_location(run_id, output_file_name)
+        storage_location = self._catalog_storage_location(
+            run_id,
+            output_file_name,
+            prefix=catalog.get("storage", {}).get("prefix"),
+        )
         catalog["s3_uri"] = storage_location.uri
         catalog["storage"]["bucket"] = storage_location.bucket
         catalog["storage"]["prefix"] = storage_location.prefix
@@ -234,11 +249,16 @@ class Week2WorkflowService:
         catalog["updated_at"] = timestamp
         return catalog
 
-    def _catalog_storage_location(self, run_id: str, output_file_name: str) -> StorageLocation:
+    def _catalog_storage_location(
+        self,
+        run_id: str,
+        output_file_name: str,
+        prefix: str | None = None,
+    ) -> StorageLocation:
         """Catalog에 기록할 S3-compatible URI와 local fallback path를 계산한다."""
 
         return self.storage_adapter.build_location(
-            self._runtime_storage_config(),
+            self._runtime_storage_config(prefix),
             run_id=run_id,
             file_name=output_file_name,
             local_root=self.output_root,
@@ -259,6 +279,8 @@ class Week2WorkflowService:
             logs.append({"level": "info", "message": "airflow adapter fell back to local runner"})
         elif executor == "spark_runner":
             logs.append({"level": "info", "message": "spark runner executed Week 2 workflow boundary"})
+        elif executor == "kafka_replay":
+            logs.append({"level": "info", "message": "kafka replay executed Week 2 workflow boundary"})
         else:
             logs.append({"level": "info", "message": "local runner executed Week 2 workflow boundary"})
         return logs
@@ -316,7 +338,30 @@ def result_with_logs(result: Week2RunnerResult, leading_logs: list[dict[str, str
         output_path=result.output_path,
         output_row_count=result.output_row_count,
         output_bytes=result.output_bytes,
+        metadata=result.metadata,
     )
+
+
+def runner_metadata(result: Week2RunnerResult) -> dict[str, Any]:
+    return result.metadata if isinstance(result.metadata, dict) else {}
+
+
+def output_from_catalog(catalog: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "dataset_id": catalog["dataset_id"],
+        "layer": catalog["layer"],
+        "uri": catalog["s3_uri"],
+        "uri_status": catalog.get("s3_uri_status"),
+    }
+
+
+def deep_update(target: dict[str, Any], overlay: dict[str, Any]) -> dict[str, Any]:
+    for key, value in overlay.items():
+        if isinstance(value, dict) and isinstance(target.get(key), dict):
+            deep_update(target[key], value)
+        else:
+            target[key] = deepcopy(value)
+    return target
 
 
 def output_row_count(result: Week2RunnerResult) -> int | None:

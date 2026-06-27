@@ -85,5 +85,5 @@ class PipelineRunRecord(BaseModel):
 
 
 class Week2WorkflowRunRequest(BaseModel):
-    executor: Literal["airflow", "local_runner", "spark_runner"] = "local_runner"
+    executor: Literal["airflow", "kafka_replay", "local_runner", "spark_runner"] = "local_runner"
     triggered_by: str = Field(default="demo_user", min_length=1, max_length=80)

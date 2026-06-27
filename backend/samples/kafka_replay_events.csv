@@ -1,0 +1,6 @@
+event_id,user_id,event_type,event_time,amount,payload
+evt-1,user-1,view,2026-06-27T00:00:01Z,10,opened product page
+evt-2,user-2,click,2026-06-27T00:00:02Z,20,clicked add to cart
+evt-3,user-1,purchase,2026-06-27T00:00:03Z,30,completed checkout
+evt-4,user-3,view,2026-06-27T00:00:04Z,40,opened search result
+evt-5,user-2,click,2026-06-27T00:00:05Z,50,clicked recommendation

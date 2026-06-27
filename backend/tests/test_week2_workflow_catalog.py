@@ -191,8 +191,11 @@ def test_week2_catalog_metadata_tracks_latest_successful_run() -> None:
     catalog = response.json()
     assert catalog["s3_uri"] == "s3://asklake-demo/reviews/gold/run_id=run_reviews_demo_002/"
     assert catalog["storage"]["prefix"] == "reviews/gold/run_id=run_reviews_demo_002/"
-    assert catalog["storage"]["local_fallback_path"].endswith(
-        "reviews/gold/run_id=run_reviews_demo_002/dataset_reviews_gold.jsonl"
+    assert path_tail(catalog["storage"]["local_fallback_path"], 4) == (
+        "reviews",
+        "gold",
+        "run_id=run_reviews_demo_002",
+        "dataset_reviews_gold.jsonl",
     )
     assert catalog["lineage"]["run_id"] == "run_reviews_demo_002"
 
@@ -231,8 +234,11 @@ def test_week2_run_and_catalog_survive_service_restart(tmp_path: Path) -> None:
     assert stored_run["run_id"] == "run_reviews_demo_001"
     assert stored_run["status"] == "fallback_succeeded"
     assert stored_catalog["lineage"]["run_id"] == "run_reviews_demo_001"
-    assert stored_catalog["storage"]["local_fallback_path"].endswith(
-        "reviews/gold/run_id=run_reviews_demo_001/dataset_reviews_gold.jsonl"
+    assert path_tail(stored_catalog["storage"]["local_fallback_path"], 4) == (
+        "reviews",
+        "gold",
+        "run_id=run_reviews_demo_001",
+        "dataset_reviews_gold.jsonl",
     )
     assert second_run["run_id"] == "run_reviews_demo_002"
 
@@ -380,6 +386,10 @@ class FailingRunner:
             logs=[{"level": "error", "message": "forced failure"}],
             duration_ms=1,
         )
+
+
+def path_tail(path_value: str, count: int) -> tuple[str, ...]:
+    return Path(path_value).parts[-count:]
 
 
 class SuccessfulAirflowAdapter:

@@ -6,7 +6,7 @@
   "run_id": "run_reviews_demo_001",
   "pipeline_id": "pipeline_reviews_json_e2e",
   "executor": "airflow",
-  "allowed_executors": ["airflow", "local_runner", "spark_runner"],
+  "allowed_executors": ["airflow", "kafka_replay", "local_runner", "spark_runner"],
   "fallback_compatible_executor": "local_runner",
   "status": "succeeded",
   "triggered_by": "demo_user",

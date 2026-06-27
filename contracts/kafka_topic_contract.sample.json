@@ -9,18 +9,25 @@
   "event_time_column": "event_time",
   "event_shape": {
     "event_id": "string",
+    "user_id": "string",
     "event_time": "timestamp",
     "event_type": "string",
+    "amount": "number",
     "payload": "object"
   },
   "replay": {
-    "command": "python scripts/kafka_replay_to_parquet_demo.py",
-    "rate_per_second": "TODO: confirm M4 replay rate",
-    "source_file": "TODO: confirm M4 replay source file"
+    "command": "POST http://localhost:5189/api/replay/start",
+    "records_per_second": 10,
+    "batch_size": 10,
+    "partitions": 3,
+    "start_row": 1,
+    "max_rows": 5,
+    "key_column": "event_id",
+    "source_file": "backend/samples/kafka_replay_events.csv"
   },
   "evidence": {
     "metrics": ["message_count", "throughput_per_second", "consumer_lag", "error_count", "restart_result"],
-    "output_path": "TODO: confirm raw event evidence output path",
+    "output_path": "data/week2/kafka/raw_events/run_id=<run_id>/kafka_replay_evidence.json",
     "main_path_blocker": false
   },
   "handoff": {

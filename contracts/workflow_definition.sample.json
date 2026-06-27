@@ -63,7 +63,9 @@
     "primary": "airflow",
     "fallback": "local_runner",
     "direct_executor": "spark_runner",
+    "evidence_executor": "kafka_replay",
     "direct_executor_condition": "Use spark_runner when M5 explicitly selects the M2 Week2SparkRunner boundary for local Parquet evidence",
+    "evidence_executor_condition": "Use kafka_replay when M5 records M4 Kafka replay evidence and Catalog metadata without making Kafka the main Gold ETL path",
     "fallback_condition": "Use local_runner when the Airflow adapter is unavailable or returns any status other than succeeded"
   }
 }

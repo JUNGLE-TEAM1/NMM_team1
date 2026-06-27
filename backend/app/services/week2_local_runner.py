@@ -26,6 +26,7 @@ class Week2RunnerResult:
     output_path: str | None = None
     output_row_count: int | None = None
     output_bytes: int | None = None
+    metadata: dict[str, Any] | None = None
 
 
 class Week2LocalRunner:
