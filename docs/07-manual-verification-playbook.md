@@ -79,6 +79,7 @@ Target MVP 기능이 구현될 때 아래 경로를 단계별로 실제 manual v
 9. Week 2 공통 hardening으로 API/UI route, ID 규칙, storage path pattern, workflow/run status, `QueryResult`, guardrail failure shape, daily smoke evidence 형식이 `docs/03`에 정리되어 있는지 확인한다.
 10. `contracts/ai_query_result.sample.json`의 `query_result` 필드가 `docs/03`의 `QueryResult` 필드와 일치하는지 확인한다.
 11. M2 Taxi local batch evidence를 확인할 때 `scripts/week2_m2_taxi_local_batch_evidence.py --profile fixed`가 하루치 Taxi row를 Gold Parquet 1행으로 만들고, `--profile local-full-month`가 월별 파일 전체 row count와 Gold output path를 evidence JSON에 남기는지 확인한다.
+12. M2 storage adapter를 확인할 때 `PYTHONPATH=backend .venv/bin/pytest backend/tests/test_week2_storage_adapter.py backend/tests/test_week2_spark_runner.py -q`가 통과하고, Catalog의 `s3_uri`, `storage.prefix`, `storage.local_fallback_path`가 같은 run_id prefix를 가리키는지 확인한다.
 
 ### Trust Gate 점검
 
