@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>M3 Expanded Layer Contract</title>
+  <style>
+    :root {
+      --ink: #172033;
+      --line: #d8e1ee;
+      --panel: #ffffff;
+      --bg: #f5f7fb;
+      --blue: #1f6feb;
+      --green: #167f5f;
+      --amber: #a96500;
+      --red: #b42318;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Arial, "Malgun Gothic", sans-serif; color: var(--ink); background: var(--bg); }
+    main { max-width: 1360px; margin: 0 auto; padding: 28px; }
+    header { background: #14213d; color: #fff; border-radius: 10px; padding: 24px; margin-bottom: 18px; }
+    header p { color: #dbe7ff; max-width: 980px; line-height: 1.7; }
+    h1, h2, h3 { margin-top: 0; }
+    p, li { line-height: 1.65; }
+    code { background: #eef3fa; padding: 2px 5px; border-radius: 4px; color: var(--ink); }
+    section { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; margin-bottom: 16px; }
+    .nav { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+    .nav a { color: var(--ink); text-decoration: none; background: #fff; border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; }
+    .flow { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+    .node { border: 1px solid var(--line); border-radius: 8px; padding: 12px; min-height: 150px; background: #fbfcfe; }
+    .node strong { display: block; font-size: 18px; margin: 6px 0; }
+    .node span { display: inline-block; color: #fff; background: var(--blue); border-radius: 4px; padding: 3px 6px; font-weight: 700; }
+    .handoff { border: 1px solid var(--line); border-radius: 6px; padding: 8px; margin: 8px 0; background: #fff; font-size: 13px; line-height: 1.5; }
+    .handoff b { color: var(--blue); }
+    .node.ai span { background: var(--amber); }
+    .node.exec span { background: var(--green); }
+    .node.gate span { background: var(--red); }
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    th, td { border-bottom: 1px solid #e6edf5; padding: 9px; vertical-align: top; text-align: left; overflow-wrap: anywhere; }
+    th { background: #eaf1fb; }
+    .scroll { overflow-x: auto; }
+    .callout { border-left: 5px solid var(--amber); }
+    .ok { border-left: 5px solid var(--green); }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>M3 Expanded Layer Contract</h1>
+    <p>기존 L0-L6에서 과밀해진 L3/L4를 L0-L10으로 재분해한 새 계약이다. 핵심은 L2 이후에 AI input pack, AI recommendation draft, user decision, deterministic compiler, Silver preview, Gold preview를 각각 분리하는 것이다.</p>
+  </header>
+
+  <nav class="nav">
+    <a href="#why">왜 변경</a>
+    <a href="#flow">L0-L10</a>
+    <a href="#handoff-map">실행 handoff</a>
+    <a href="#mapping">기존 매핑</a>
+    <a href="#model">모델 위치</a>
+    <a href="#ownership">역할 경계</a>
+    <a href="improvement-options.html">개선 후보 선택</a>
+    <a href="l0-l10-design.md">L0-L10 설계 해설</a>
+    <a href="selected-improvement-contract.md">선택 통합 계약</a>
+    <a href="selected-improvement-contract-v2.md">선택 통합 계약 v2</a>
+    <a href="selected-improvement-contract-v2.1.md">선택 통합 계약 v2.1</a>
+    <a href="selected-improvement-contract-v2.1.1.md">선택 통합 계약 v2.1.1</a>
+  </nav>
+
+  <section id="why" class="callout">
+    <h2>변경 이유</h2>
+    <p>기존 <code>L3</code>는 evidence reducer, Silver 추천, Gold 추천, approval decision이 한 단계에 들어갔다. 그래서 AI가 본 입력과 AI가 만든 추천, 사용자가 수정해야 할 결정이 섞였다.</p>
+    <p>기존 <code>L4</code>는 Silver spec, Gold spec, compiler validation, Silver preview validation, Gold preview validation이 한 단계에 들어갔다. 이러면 deterministic spec 생성과 preview 결과, Silver 구조 품질과 Gold semantic readiness가 한 status처럼 보인다.</p>
+    <p>새 구조는 AI 판단 위치를 명확히 하고, Silver와 Gold를 각각 수정/승인할 수 있게 하며, 실행 가능 spec은 AI draft가 아니라 deterministic compiler 산출물로 고정한다.</p>
+  </section>
+
+  <section id="flow">
+    <h2>새 L0-L10 흐름</h2>
+    <div class="flow">
+      <div class="node"><span>L0</span><strong>Raw Preservation</strong><div class="handoff"><b>From</b> M1 source registration<br><b>To</b> M3 L1 bronze envelope</div><p>원본 pointer, checksum, byte size, replay 기준을 보존한다.</p></div>
+      <div class="node"><span>L1</span><strong>Bronze Envelope</strong><div class="handoff"><b>From</b> M3 L0 raw manifest<br><b>To</b> M3 L2 profile snapshot</div><p>parse 실패, offset, rescue lane을 잃지 않는 bronze sample/envelope를 만든다.</p></div>
+      <div class="node"><span>L2</span><strong>Profile and Schema Snapshot</strong><div class="handoff"><b>From</b> M3 L1 bronze samples<br><b>To</b> M3 L3 AI input evidence pack</div><p>unknown source를 schema fingerprint, field profile, sketch로 축약한다.</p></div>
+      <div class="node ai"><span>L3</span><strong>AI Input Evidence Pack</strong><div class="handoff"><b>From</b> M3 L2 profile/schema/sketch<br><b>To</b> M3 L4 AI model slot</div><p>L2 evidence를 AI가 볼 수 있는 bounded control-plane package로 줄인다.</p></div>
+      <div class="node ai"><span>L4</span><strong>AI Recommendation Draft</strong><div class="handoff"><b>From</b> M3 L3 AI input pack<br><b>To</b> M1/M5 L5 edit and decision</div><p>Codex/model이 Silver policy draft와 Gold model draft를 만든다.</p></div>
+      <div class="node ai"><span>L5</span><strong>Decision and Edit Contract</strong><div class="handoff"><b>From</b> M1 edits + M5 approval state<br><b>To</b> M3 L6 spec compiler</div><p>사용자가 Silver와 Gold 추천을 따로 수정/승인한다.</p></div>
+      <div class="node exec"><span>L6</span><strong>Deterministic Spec Compiler</strong><div class="handoff"><b>From</b> M3 L5 approved decisions<br><b>To</b> M2 L7/L8 preview execution</div><p>승인된 정책을 M2 Spark가 실행 가능한 Silver/Gold spec으로 컴파일한다.</p></div>
+      <div class="node exec"><span>L7</span><strong>Silver Preview Validation</strong><div class="handoff"><b>From</b> M2 executes silver spec<br><b>To</b> M2 L8 Gold preview + M3 L9 gate</div><p>Silver schema, row count, masking, quarantine 구조를 검증한다.</p></div>
+      <div class="node exec"><span>L8</span><strong>Gold Preview Readiness</strong><div class="handoff"><b>From</b> M2 executes gold spec over Silver<br><b>To</b> M3 L9 readiness gate</div><p>Gold metric, grain, measure, caveat, owner review 상태를 검증한다.</p></div>
+      <div class="node gate"><span>L9</span><strong>Quality / Drift / Quarantine</strong><div class="handoff"><b>From</b> M2 preview metrics + M3 gate rules<br><b>To</b> M5/M6 L10 handoff</div><p>processing, drift, replay, catalog safety, quarantine gate를 분리 평가한다.</p></div>
+      <div class="node gate"><span>L10</span><strong>Catalog / Semantic Handoff</strong><div class="handoff"><b>From</b> M3 L0-L9 refs and gate results<br><b>To</b> M5 catalog + M6 query context</div><p>M5/M6가 저장하고 질의할 catalog, lineage, SQL context를 넘긴다.</p></div>
+    </div>
+  </section>
+
+  <section id="handoff-map">
+    <h2>실제 실행 Handoff</h2>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Layer</th><th>From</th><th>To</th><th>실제 의미</th></tr></thead>
+        <tbody>
+          <tr><td><code>L0</code></td><td><code>M1 source registration</code></td><td><code>M3 L1</code></td><td>M1이 등록한 source를 M3 raw preservation 계약으로 받는다.</td></tr>
+          <tr><td><code>L1</code></td><td><code>M3 L0 manifest</code></td><td><code>M3 L2</code></td><td>raw manifest를 bronze envelope와 sample lane으로 바꿔 profile 입력으로 넘긴다.</td></tr>
+          <tr><td><code>L2</code></td><td><code>M3 L1 samples</code></td><td><code>M3 L3</code></td><td>sample/profile/schema evidence를 AI 입력 전 단계로 넘긴다.</td></tr>
+          <tr><td><code>L3</code></td><td><code>M3 L2 evidence</code></td><td><code>M3 L4 model slot</code></td><td>AI가 볼 bounded input pack만 만든다.</td></tr>
+          <tr><td><code>L4</code></td><td><code>M3 L3 input pack</code></td><td><code>M1/M5 L5</code></td><td>AI 추천 draft를 사용자 수정/승인 단계로 넘긴다.</td></tr>
+          <tr><td><code>L5</code></td><td><code>M1 edits + M5 approval</code></td><td><code>M3 L6</code></td><td>승인된 Silver/Gold 결정을 compiler 입력으로 넘긴다.</td></tr>
+          <tr><td><code>L6</code></td><td><code>M3 approved decisions</code></td><td><code>M2 L7/L8</code></td><td>deterministic spec을 M2 실행 입력으로 넘긴다.</td></tr>
+          <tr><td><code>L7</code></td><td><code>M2 silver preview execution</code></td><td><code>M2 L8 + M3 L9</code></td><td>Silver preview 결과를 Gold preview와 quality gate로 넘긴다.</td></tr>
+          <tr><td><code>L8</code></td><td><code>M2 gold preview execution</code></td><td><code>M3 L9</code></td><td>Gold preview 결과와 semantic readiness를 gate로 넘긴다.</td></tr>
+          <tr><td><code>L9</code></td><td><code>M2 metrics + M3 gate rules</code></td><td><code>M5/M6 L10</code></td><td>quality/drift/readiness 결과를 catalog handoff로 넘긴다.</td></tr>
+          <tr><td><code>L10</code></td><td><code>M3 L0-L9 refs</code></td><td><code>M5 catalog + M6 query context</code></td><td>catalog 저장과 SQL/AI 질의 context로 최종 전달한다.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><code>M4</code>는 현재 실제 handoff path에 넣지 않는다. 팀에서 M4를 구체적인 execution/result producer로 배정할 때만 추가한다.</p>
+  </section>
+
+  <section id="mapping">
+    <h2>기존 L0-L6 산출물 재배치</h2>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>현재 위치</th><th>새 위치</th><th>판단</th></tr></thead>
+        <tbody>
+          <tr><td><code>l3/recommendation_evidence_reducer.json</code></td><td><code>L3</code></td><td>추천 결과가 아니라 AI 입력 evidence pack이다.</td></tr>
+          <tr><td><code>l3/bronze_to_silver_recommendation.json</code></td><td><code>L4-S</code></td><td>Silver cleaning policy draft다.</td></tr>
+          <tr><td><code>l3/silver_to_gold_recommendation.json</code></td><td><code>L4-G</code></td><td>Gold model recommendation draft다.</td></tr>
+          <tr><td><code>l3/approval_decision.json</code></td><td><code>L5</code></td><td>사용자 수정/승인 상태다.</td></tr>
+          <tr><td><code>l4/silver_transform_spec.json</code></td><td><code>L6-S</code></td><td>approved Silver policy를 deterministic spec으로 고정한 결과다.</td></tr>
+          <tr><td><code>l4/gold_generation_spec.json</code></td><td><code>L6-G</code></td><td>approved Gold policy를 deterministic spec으로 고정한 결과다.</td></tr>
+          <tr><td><code>l4/compiler_validation_result.json</code></td><td><code>L6-C</code></td><td>per-row AI, collect-all, generated code 실행 같은 금지 패턴을 막는 compiler gate다.</td></tr>
+          <tr><td><code>l4/silver_preview_validation_result.json</code></td><td><code>L7</code></td><td>Silver 구조 검증 결과다.</td></tr>
+          <tr><td><code>l4/gold_preview_validation_result.json</code></td><td><code>L8</code></td><td>Gold preview와 semantic readiness 검증 결과다.</td></tr>
+          <tr><td><code>l5/*</code></td><td><code>L9</code></td><td>quality, drift, quarantine, replay gate다.</td></tr>
+          <tr><td><code>l6/*</code></td><td><code>L10</code></td><td>catalog metadata, lineage, SQL context, handoff package다.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="model" class="ok">
+    <h2>AI 모델 위치</h2>
+    <p><code>gpt-5.3-codex-spark</code>는 Apache Spark 실행이 아니라 <code>L4 AI Recommendation Draft</code>에 들어가는 모델 슬롯이다. 모델은 <code>L3/ai_recommendation_input_pack.json</code>만 입력으로 보고, <code>L4/silver_policy_recommendation_draft.json</code>와 <code>L4/gold_model_recommendation_draft.json</code>를 만든다.</p>
+    <p><code>L6</code>부터는 AI가 아니라 deterministic compiler와 M2 Spark 실행 계약이다. AI draft가 곧 실행 spec이 되면 안 된다.</p>
+  </section>
+
+  <section id="ownership">
+    <h2>역할 경계</h2>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Layer</th><th>M3</th><th>M2</th><th>M5</th><th>M6</th></tr></thead>
+        <tbody>
+          <tr><td><code>L0-L2</code></td><td>manifest/profile 계약</td><td>source/sample 실행 지원</td><td>artifact 저장</td><td>사용 안 함</td></tr>
+          <tr><td><code>L3</code></td><td>AI input pack 생성</td><td>없음</td><td>version 저장</td><td>없음</td></tr>
+          <tr><td><code>L4</code></td><td>AI 추천 draft 생성</td><td>없음</td><td>draft 저장</td><td>없음</td></tr>
+          <tr><td><code>L5</code></td><td>수정/승인 contract</td><td>없음</td><td>approval state 저장</td><td>없음</td></tr>
+          <tr><td><code>L6</code></td><td>deterministic spec 생성</td><td>spec 실행 소비자</td><td>spec 저장</td><td>lineage ref 사용</td></tr>
+          <tr><td><code>L7-L8</code></td><td>validation 기준</td><td>preview 실행</td><td>run result 저장</td><td>Gold caveat 사용</td></tr>
+          <tr><td><code>L9</code></td><td>gate 기준</td><td>gate 측정</td><td>gate result 저장</td><td>quality/freshness 사용</td></tr>
+          <tr><td><code>L10</code></td><td>handoff package 초안</td><td>output ref 제공</td><td>catalog API 저장</td><td>SQL/context 사용</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>산출물</h2>
+    <p><a href="expanded-layer-contract.md">MD 계약서</a> / <a href="expanded-layer-contract.json">JSON 계약</a> / <a href="improvement-options.html">L0-L10 개선 후보 선택 보드</a> / <a href="l0-l10-design.md">L0-L10 설계 해설서</a> / <a href="selected-improvement-contract.md">선택 통합 계약서</a> / <a href="selected-improvement-contract-v2.md">선택 통합 계약서 v2</a> / <a href="selected-improvement-contract-v2.1.md">선택 통합 계약서 v2.1</a> / <a href="selected-improvement-contract-v2.1.1.md">선택 통합 계약서 v2.1.1</a></p>
+    <p>계층별 상세 문서: <a href="layers/l0-raw-preservation.md">L0</a> / <a href="layers/l1-bronze-envelope.md">L1</a> / <a href="layers/l2-profile-snapshot.md">L2</a> / <a href="layers/l3-ai-evidence-pack.md">L3</a> / <a href="layers/l4-recommendation-draft.md">L4</a> / <a href="layers/l5-decision-approval.md">L5</a> / <a href="layers/l6-spec-compiler.md">L6</a> / <a href="layers/l7-silver-preview.md">L7</a> / <a href="layers/l8-gold-preview-input.md">L8</a> / <a href="layers/l9-three-axis-gate.md">L9</a> / <a href="layers/l10-catalog-handoff.md">L10</a></p>
+  </section>
+</main>
+</body>
+</html>

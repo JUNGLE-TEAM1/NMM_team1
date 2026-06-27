@@ -1,0 +1,655 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>M3 L0-L10 Improvement Options</title>
+  <style>
+    :root {
+      --ink: #172033;
+      --muted: #607086;
+      --line: #d8e1ee;
+      --panel: #ffffff;
+      --bg: #f5f7fb;
+      --blue: #1f6feb;
+      --green: #167f5f;
+      --amber: #a96500;
+      --red: #b42318;
+      --soft-blue: #eaf2ff;
+      --soft-green: #eaf8f1;
+      --soft-amber: #fff6e6;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Arial, "Malgun Gothic", sans-serif; color: var(--ink); background: var(--bg); }
+    main { max-width: 1500px; margin: 0 auto; padding: 22px 28px; }
+    header { background: #14213d; color: #fff; border-radius: 10px; padding: 20px 24px; margin-bottom: 14px; }
+    header h1 { margin-bottom: 10px; }
+    header p { color: #dbe7ff; max-width: 1120px; line-height: 1.55; margin: 8px 0 0; }
+    h1, h2, h3 { margin-top: 0; }
+    p, li { line-height: 1.55; }
+    code { background: #eef3fa; color: var(--ink); border-radius: 4px; padding: 2px 5px; }
+    a { color: var(--blue); }
+    section { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-bottom: 14px; }
+    .nav { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+    .nav a, .button { color: var(--ink); text-decoration: none; background: #fff; border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; cursor: pointer; }
+    .button.primary { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .button.warn { background: var(--soft-amber); border-color: #e7c678; }
+    .toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+    .summary-card { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; background: #fbfcfe; }
+    .summary-card strong { display: block; font-size: 24px; margin: 4px 0; }
+    .principle { margin-top: 12px; background: #fbfcfe; }
+    .principle p { margin: 8px 0 0; }
+    .layer { scroll-margin-top: 16px; }
+    .layer-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: start; border-bottom: 1px solid var(--line); padding-bottom: 12px; margin-bottom: 14px; }
+    .flow { display: inline-block; background: var(--soft-blue); border: 1px solid #b7cdf7; border-radius: 6px; padding: 6px 8px; font-size: 13px; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 12px; }
+    .candidate { border: 1px solid var(--line); border-radius: 9px; background: #fbfcfe; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+    .candidate.selected { outline: 3px solid rgba(31,111,235,.28); border-color: var(--blue); background: #f7fbff; }
+    .candidate h3 { margin-bottom: 2px; }
+    .badge-row { display: flex; flex-wrap: wrap; gap: 6px; }
+    .badge { border-radius: 999px; padding: 3px 8px; font-size: 12px; border: 1px solid var(--line); background: #fff; }
+    .badge.good { background: var(--soft-green); border-color: #b7dec8; }
+    .badge.warn { background: var(--soft-amber); border-color: #e7c678; }
+    .detail-grid { display: grid; gap: 8px; }
+    details { border: 1px solid #e2e8f2; border-radius: 7px; background: #fff; padding: 8px; }
+    summary { cursor: pointer; font-weight: 700; }
+    ol { margin: 8px 0 0 20px; padding: 0; }
+    .select-row { margin-top: auto; display: flex; justify-content: space-between; align-items: center; gap: 10px; border-top: 1px solid var(--line); padding-top: 10px; }
+    .decision { color: var(--green); font-weight: 700; }
+    textarea { width: 100%; min-height: 190px; resize: vertical; border: 1px solid var(--line); border-radius: 8px; padding: 12px; font-family: Consolas, monospace; }
+    .muted { color: var(--muted); }
+    @media (max-width: 640px) {
+      main { padding: 14px; }
+      .layer-head { grid-template-columns: 1fr; }
+      .cards { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>M3 L0-L10 Improvement Options</h1>
+    <p>각 계층별 개선 후보 3개를 단독 선택 가능한 완성형 방식으로 정리했다. 후보는 장점, 단점, 우리 구조에 유리한 이유, 유리한 파일 형식, 유리한 데이터 규모를 각각 3줄로 제공한다.</p>
+    <p>이 보드는 후보를 합쳐서 쓰라는 용도가 아니라, 이미 필요한 조합을 후보 안에 포함한 상태에서 하나를 고르는 용도다.</p>
+  </header>
+
+  <nav class="nav" id="layerNav"></nav>
+
+  <section>
+    <div class="toolbar">
+      <button class="button primary" type="button" id="exportBtn">선택 JSON 내보내기</button>
+      <button class="button" type="button" id="copyBtn">선택 JSON 화면에 표시</button>
+      <button class="button warn" type="button" id="clearBtn">선택 초기화</button>
+      <a class="button" href="index.html">확장 계층 계약으로 돌아가기</a>
+    </div>
+    <div class="summary-grid" id="selectionSummary" style="margin-top:12px"></div>
+    <details class="principle">
+      <summary>선택 원칙과 실제 module handoff</summary>
+      <p>억지 개선은 제외했다. 지금 구조는 이미 충분히 세분화되어 있으므로, 후보는 계층을 더 늘리는 방식보다 각 계층의 schema, validation, handoff, UI decision state를 더 명확히 만드는 방향이다.</p>
+      <p>실제 module handoff는 <code>M1 source registration -> M3 recommendation/spec contract -> M2 preview execution -> M3 gate -> M5 catalog storage -> M6 query context</code>로 유지한다.</p>
+    </details>
+  </section>
+
+  <div id="layers"></div>
+
+  <section>
+    <h2>선택 JSON</h2>
+    <textarea id="decisionOutput" readonly placeholder="선택 JSON 화면에 표시 버튼을 누르면 여기에 결정 내용이 표시된다."></textarea>
+  </section>
+</main>
+
+<script>
+const layers = [
+  {
+    id: "L0",
+    name: "Raw Preservation",
+    flow: "From M1 source registration -> To M3 L1 bronze envelope",
+    focus: "원본 보존은 더 쪼개기보다 replay 가능성과 source 책임 정보를 보강하는 쪽이 맞다.",
+    candidates: [
+      {
+        id: "L0-A",
+        title: "Manifest + Replay Window Contract",
+        summary: "source manifest, object manifest, replay window, retention policy를 한 파일 세트로 고정한다.",
+        pros: "원본을 복제하지 않아도 재처리 기준이 명확하다.|byte size, etag/checksum, replay window가 함께 있어 손실 검증이 쉽다.|M5가 artifact pointer만 저장해도 run 재현성 설명이 가능하다.",
+        cons: "source owner나 retention 값이 비어 있으면 문서만 좋아 보일 수 있다.|stream source는 offset/window 표현을 추가로 관리해야 한다.|실제 원본 삭제 정책과 맞지 않으면 replay 보장이 깨진다.",
+        why: "현재 M3는 raw 99GB를 직접 복제하지 않는 구조라 manifest 중심이 맞다.|M1 source registration에서 받은 정보를 바로 L0 계약으로 받을 수 있다.|M2/M5가 나중에 재실행할 때 같은 pointer를 공유하기 좋다.",
+        formats: "CSV/JSONL 대용량 파일은 byte range와 checksum 기록에 유리하다.|Parquet은 object list와 file-level statistics pointer를 같이 두면 좋다.|JSON array처럼 seek가 어려운 형식은 replay window보다 full object pointer가 더 중요하다.",
+        scale: "수 GB 이상 file/object source에 가장 유리하다.|수십 GB 이상에서는 복제보다 pointer/manifest가 비용을 줄인다.|streaming은 micro-batch window 단위 manifest로 확장할 수 있다."
+      },
+      {
+        id: "L0-B",
+        title: "Source Contract Manifest",
+        summary: "raw manifest에 source owner, expected format, SLA, retention, privacy class를 같이 묶는다.",
+        pros: "원본 보존과 운영 책임자가 같은 문서에 남는다.|privacy class가 빨리 붙어 뒤 단계 redaction과 catalog caveat가 쉬워진다.|반복 ingestion에서 expected format과 실제 format mismatch를 잡기 좋다.",
+        cons: "초기 등록 화면에서 입력할 항목이 많아질 수 있다.|owner/SLA가 미정이면 draft 상태가 길어진다.|단순 demo에서는 manifest가 무거워 보일 수 있다.",
+        why: "M3가 나중에 L3/L4 추천을 할 때 source 책임과 privacy context를 같이 볼 수 있다.|M5 approval/catalog 저장에도 owner와 SLA가 그대로 넘어간다.|M6가 freshness 경고를 설명할 근거가 생긴다.",
+        formats: "CSV는 delimiter/encoding expectation을 contract에 넣기 좋다.|JSON/JSONL은 record boundary와 malformed policy를 같이 적기 좋다.|Parquet은 schema evolution expectation과 partition convention을 넣기 좋다.",
+        scale: "운영 반복 source나 팀 간 handoff가 있는 데이터에 유리하다.|작은 단발 파일보다 장기 source에서 가치가 크다.|실시간 데이터는 SLA, watermark expectation을 초기에 고정할 수 있다."
+      },
+      {
+        id: "L0-C",
+        title: "Object + Stream Hybrid Manifest",
+        summary: "file object와 streaming offset을 같은 manifest model로 표현해 batch와 realtime을 같이 처리한다.",
+        pros: "batch CSV/JSONL과 micro-batch stream을 같은 L0 계약으로 설명할 수 있다.|offset range, object version, ingest window가 같은 lineage로 묶인다.|나중에 source 형태가 바뀌어도 L1 이후 구조를 덜 바꾼다.",
+        cons: "초기 schema가 object-only manifest보다 복잡하다.|streaming runtime이 없으면 offset 필드가 빈 값으로 남을 수 있다.|M2/M5가 offset 의미를 이해해야 제대로 쓸 수 있다.",
+        why: "사용자가 실시간 비정형 빅데이터를 가정했으므로 batch-only L0보다 현실적이다.|M3는 실행 엔진이 아니어도 replay 기준을 stream까지 설계할 수 있다.|M2 Spark micro-batch와 연결될 때 계약 변경이 적다.",
+        formats: "JSONL/event log는 offset/window 표현과 잘 맞는다.|CSV landing file은 object manifest로 처리하고 같은 schema를 쓸 수 있다.|Parquet partition drop은 partition manifest로 표현하기 좋다.",
+        scale: "계속 들어오는 source나 하루 수십 GB landing 데이터에 유리하다.|작은 파일만 처리하면 과할 수 있다.|micro-batch, hourly batch, object landing 혼합 환경에 가장 좋다."
+      }
+    ]
+  },
+  {
+    id: "L1",
+    name: "Bronze Envelope",
+    flow: "From M3 L0 raw manifest -> To M3 L2 profile snapshot",
+    focus: "Bronze는 정제보다 손실 방지와 실패 보존을 더 강화하는 것이 핵심이다.",
+    candidates: [
+      {
+        id: "L1-A",
+        title: "Envelope + Rescue Lane Contract",
+        summary: "정상 record와 parse 실패 record를 같은 source pointer 아래 분리 저장한다.",
+        pros: "malformed row가 사라지지 않고 원본 pointer와 함께 보존된다.|Silver 변환 실패와 Bronze parse 실패를 분리해 설명할 수 있다.|CSV/JSON unknown 구조에서 가장 기본적인 안전장치다.",
+        cons: "rescue lane storage와 review UI가 필요하다.|실패 row가 많으면 catalog에서 warning 처리가 많아질 수 있다.|payload와 raw snippet 노출 제한을 명확히 해야 한다.",
+        why: "M3는 모르는 구조를 다루므로 parse 실패를 버리면 안 된다.|L2 profile이 성공 record만 보는지 rescue까지 반영하는지 명확해진다.|M5/M6에 품질 caveat를 넘기기 좋다.",
+        formats: "CSV는 row number, byte offset, raw line 보존에 유리하다.|JSONL은 line offset과 parse error reason을 붙이기 좋다.|Parquet은 row-level rescue보다 file/schema exception lane이 더 적합하다.",
+        scale: "수백 MB부터 수십 GB까지 안정적으로 적용 가능하다.|실시간 source는 rescue를 side output으로 보내면 backpressure를 줄인다.|오류율이 높은 외부 파일에서 가치가 크다."
+      },
+      {
+        id: "L1-B",
+        title: "Typed Bronze Payload Envelope",
+        summary: "payload, metadata, parse status, source ref를 한 record envelope schema로 고정한다.",
+        pros: "L2가 항상 같은 envelope schema를 읽으므로 profiler가 단순해진다.|payload와 metadata가 분리되어 lineage와 data profile을 구분하기 쉽다.|M2 Spark가 읽기 좋은 구조로 통일된다.",
+        cons: "payload가 nested JSON이면 envelope 안에서 다시 복잡해질 수 있다.|CSV column이 많으면 payload struct가 커진다.|raw payload를 그대로 담으면 저장량이 늘 수 있다.",
+        why: "현재 L1 sample과 L2 profile 사이의 계약을 더 강하게 만든다.|L3 AI input pack이 source metadata와 field evidence를 안정적으로 참조할 수 있다.|M5 artifact storage에 record-level trace 설명을 남기기 쉽다.",
+        formats: "JSON/JSONL은 payload struct로 감싸기 좋다.|CSV는 column map payload로 통일하기 좋다.|Parquet은 file-level envelope와 row sample envelope를 분리하면 좋다.",
+        scale: "bounded sample 처리에는 매우 적합하다.|full raw mirror에는 저장 비용이 커질 수 있다.|streaming micro-batch sample lane에 적합하다."
+      },
+      {
+        id: "L1-C",
+        title: "Offset Window Bronze Lane",
+        summary: "record sample을 object byte range, line range, event time window 기준으로 고정한다.",
+        pros: "동일한 sample을 다시 만들 수 있어 L2/L3 재현성이 높다.|late data와 replay window를 Bronze 단계부터 설명할 수 있다.|대용량에서 전체 scan 없이 profile window를 잡기 좋다.",
+        cons: "event time 후보가 없으면 ingest time 기준으로만 동작한다.|CSV multiline이나 JSON array는 offset boundary가 까다롭다.|window 선택이 나쁘면 profile bias가 생긴다.",
+        why: "지금 M3는 bounded sample/profile을 쓰므로 sample 선택 근거가 중요하다.|L3 AI 추천이 어떤 evidence window를 봤는지 남길 수 있다.|M2가 micro-batch로 실행할 때 같은 window를 다시 읽기 쉽다.",
+        formats: "JSONL은 line range와 byte range가 모두 유리하다.|CSV는 header와 byte range 처리 정책이 필요하다.|Parquet은 file/row-group/partition window가 더 적합하다.",
+        scale: "수십 GB 이상에서 특히 유리하다.|작은 파일은 과할 수 있지만 재현성에는 도움된다.|streaming은 micro-batch window와 자연스럽게 맞는다."
+      }
+    ]
+  },
+  {
+    id: "L2",
+    name: "Profile and Schema Snapshot",
+    flow: "From M3 L1 bronze samples -> To M3 L3 AI input evidence pack",
+    focus: "Profile은 더 많이 보는 것보다 confidence, drift baseline, format-specific evidence를 명확히 하는 것이 개선이다.",
+    candidates: [
+      {
+        id: "L2-A",
+        title: "Profile Snapshot + Confidence Score",
+        summary: "schema, null ratio, examples에 field confidence와 sampling confidence를 같이 저장한다.",
+        pros: "AI 추천이 확실한 field와 불확실한 field를 구분할 수 있다.|사용자가 왜 review가 필요한지 이해하기 쉽다.|profile quality가 낮으면 L4 추천을 자동으로 보수적으로 만들 수 있다.",
+        cons: "confidence 산식이 부정확하면 오히려 혼란을 만든다.|초기에는 heuristic confidence라 완전한 통계 보장은 어렵다.|UI가 confidence를 과신하지 않게 설명해야 한다.",
+        why: "unknown structure에서는 schema inferred 여부만으로 부족하다.|L3 evidence pack이 field별 신뢰도를 같이 넘길 수 있다.|Gold readiness에서 약한 grain을 걸러내기 쉽다.",
+        formats: "CSV는 type inference confidence가 특히 중요하다.|JSON/JSONL은 sparse nested path confidence가 중요하다.|Parquet은 schema confidence보다 distribution/profile confidence가 중요하다.",
+        scale: "sample 기반 대용량 profile에서 유리하다.|작은 파일은 confidence가 거의 1에 가까워 단순해진다.|streaming에서는 rolling confidence로 확장할 수 있다."
+      },
+      {
+        id: "L2-B",
+        title: "Format-specialized Profile Pack",
+        summary: "CSV dialect, JSON path trie, Parquet schema/statistics를 형식별 profile pack으로 분리한다.",
+        pros: "형식별 실패 원인을 정확히 설명할 수 있다.|CSV delimiter 문제와 JSON nested path 문제를 같은 방식으로 뭉개지 않는다.|L4 추천이 file format에 맞는 action을 제안하기 쉽다.",
+        cons: "format별 profiler를 유지해야 해서 코드가 늘어난다.|공통 UI에서 너무 많은 세부 정보가 보일 수 있다.|mixed source는 router 판단이 틀리면 pack도 틀어진다.",
+        why: "우리 구조는 CSV/JSON/JSONL/Parquet을 모두 다뤄야 한다.|L3 AI input pack에 필요한 format evidence만 선별해 넣기 좋다.|M6 catalog 설명에서 format-specific caveat를 유지할 수 있다.",
+        formats: "CSV는 dialect, header, encoding, multiline 여부가 핵심이다.|JSON/JSONL은 path trie, array strategy, malformed line이 핵심이다.|Parquet은 schema, partition, row-group statistics가 핵심이다.",
+        scale: "다양한 형식이 섞인 팀 프로젝트에 유리하다.|대용량일수록 format별 최적화 효과가 커진다.|단일 CSV demo만 있으면 다소 과할 수 있다."
+      },
+      {
+        id: "L2-C",
+        title: "Drift Baseline + Sketch Snapshot",
+        summary: "schema fingerprint와 numeric/string sketch를 baseline으로 저장해 다음 입력과 비교한다.",
+        pros: "반복 ingestion에서 새 field, missing field, type drift를 빠르게 잡는다.|전체 데이터를 다시 보지 않아도 distribution 변화를 감지할 수 있다.|L9 gate와 자연스럽게 연결된다.",
+        cons: "첫 run에는 비교 baseline이 없어 cold-start 상태가 필요하다.|sketch threshold를 잘못 잡으면 warn이 많아질 수 있다.|field rename처럼 semantic drift는 여전히 사람이 봐야 한다.",
+        why: "실시간/대용량에서는 매번 full profile이 어렵다.|M3가 L3/L4 추천을 새로 해야 하는지 판단하는 기준이 생긴다.|M5 catalog versioning과 연결하기 좋다.",
+        formats: "CSV/JSONL은 repeated batch drift에 강하다.|Parquet은 partition별 schema drift와 statistics 비교에 좋다.|JSON nested path 증가는 path trie baseline과 잘 맞는다.",
+        scale: "지속적으로 들어오는 수 GB~수십 GB source에 유리하다.|streaming은 rolling sketch로 운영 가능하다.|작은 단발 파일에서는 baseline 가치가 낮다."
+      }
+    ]
+  },
+  {
+    id: "L3",
+    name: "AI Input Evidence Pack",
+    flow: "From M3 L2 profile/schema/sketch evidence -> To M3 L4 AI recommendation model slot",
+    focus: "L3는 AI가 볼 입력을 통제하는 단계라 token cap, redaction, evidence reference가 핵심 개선 지점이다.",
+    candidates: [
+      {
+        id: "L3-A",
+        title: "Capped Evidence Pack",
+        summary: "field count, example count, token budget, sample window를 명시적으로 제한한 AI input pack이다.",
+        pros: "대용량에서도 AI 비용과 지연을 예측하기 쉽다.|모델이 raw 전체를 봤다는 과장을 구조적으로 막는다.|같은 L2 evidence에서 같은 L3 pack을 재생성하기 쉽다.",
+        cons: "cap이 너무 낮으면 rare field 판단이 약해질 수 있다.|어떤 field를 먼저 넣을지 ranking rule이 필요하다.|사용자가 cap 때문에 빠진 evidence를 오해할 수 있다.",
+        why: "현재 M3 역할은 control-plane AI 추천이므로 가장 정직하다.|L4 모델 슬롯에 들어가는 입력을 명확히 고정한다.|M5가 prompt/evidence version을 저장하기 좋다.",
+        formats: "CSV wide table은 field cap이 특히 필요하다.|JSON nested path는 path depth와 examples cap이 중요하다.|Parquet은 statistics summary 중심 pack이 적합하다.",
+        scale: "수백 컬럼 이상 wide data에 유리하다.|수십 GB 이상 raw source에서 필수에 가깝다.|streaming은 rolling evidence pack으로 확장한다."
+      },
+      {
+        id: "L3-B",
+        title: "Redaction-first Evidence Pack",
+        summary: "AI 입력 전에 PII 후보, secret 후보, raw text examples를 redaction하고 evidence ref만 남긴다.",
+        pros: "민감정보가 모델 prompt에 들어갈 위험을 줄인다.|M6 catalog caveat와 같은 privacy 판단을 앞 단계에서 시작할 수 있다.|L4 추천이 masking/hash rule을 더 보수적으로 만든다.",
+        cons: "redaction이 과하면 AI가 column 의미를 놓칠 수 있다.|오탐이 많으면 useful examples가 사라진다.|PII 탐지 rule 자체의 version 관리가 필요하다.",
+        why: "Amazon review의 user_id나 text 같은 field가 있는 구조에 맞다.|외부 JSON/CSV가 들어올 때 안전한 기본값이 된다.|M3가 row-level AI를 하지 않는다는 경계를 더 강하게 만든다.",
+        formats: "JSON/JSONL 텍스트 field에 특히 유리하다.|CSV free-text column에도 필요하다.|Parquet은 schema와 statistics 중심이면 redaction 부담이 상대적으로 작다.",
+        scale: "외부 사용자 데이터나 production-like 데이터에 유리하다.|작은 demo에서도 privacy 설명이 좋아진다.|streaming은 sample examples만 redaction해서 넘기는 방식이 적합하다."
+      },
+      {
+        id: "L3-C",
+        title: "Decision-hint Evidence Pack",
+        summary: "AI 입력에 field evidence와 함께 possible action 후보, risk hint, downstream consumer hint를 넣는다.",
+        pros: "L4 모델이 엉뚱한 action을 만들 가능성이 줄어든다.|Silver와 Gold 후보가 downstream M2/M5/M6 요구와 맞기 쉽다.|후보가 이미 실행 가능한 방향으로 좁혀진다.",
+        cons: "hint가 잘못되면 AI 추천이 한쪽으로 과도하게 쏠린다.|초기 hint rule을 설계해야 한다.|완전히 자유로운 AI 탐색에는 덜 적합하다.",
+        why: "사용자는 나중에 조합하라는 후보를 원하지 않으므로 완성형 추천에 유리하다.|M3의 deterministic guardrail과 L4 AI draft를 균형 있게 연결한다.|M6 query context까지 고려한 Gold 후보를 만들기 쉽다.",
+        formats: "CSV/Parquet 정형 field는 action hint가 잘 맞는다.|JSON nested field는 flatten/explode/stringify hint가 중요하다.|JSONL event data는 time/window hint가 유용하다.",
+        scale: "중대형 데이터에서 human review 시간을 줄인다.|복잡한 nested JSON에 특히 유리하다.|작은 데이터에서도 UI 설명이 좋아진다."
+      }
+    ]
+  },
+  {
+    id: "L4",
+    name: "AI Recommendation Draft",
+    flow: "From M3 L3 AI input pack -> To M1/M5 L5 edit and decision",
+    focus: "L4는 AI 추천 생성 위치라 output schema, self-check, domain guard가 실제 개선 지점이다.",
+    candidates: [
+      {
+        id: "L4-A",
+        title: "Strict JSON-schema Recommendation",
+        summary: "AI 출력 schema를 강제해 Silver draft와 Gold draft를 항상 분리 생성한다.",
+        pros: "UI와 M5가 안정적으로 draft를 읽을 수 있다.|모델 출력이 Markdown 설명으로 새는 문제를 줄인다.|Silver/Gold를 다른 승인 흐름으로 넘기기 쉽다.",
+        cons: "schema가 너무 엄격하면 모델이 실패하거나 빈 후보를 낼 수 있다.|복잡한 설명은 별도 rationale field로 제한해야 한다.|모델별 structured output 지원 차이를 확인해야 한다.",
+        why: "우리 구조는 L5에서 사용자가 수정해야 하므로 machine-readable draft가 필요하다.|L6 compiler 입력으로 변환하기 쉽다.|추천과 실행 spec의 경계를 명확히 유지한다.",
+        formats: "CSV/Parquet은 column action schema와 잘 맞는다.|JSON/JSONL은 path-based rule schema가 필요하다.|nested array는 flatten strategy field를 반드시 포함해야 한다.",
+        scale: "대용량 여부와 무관하게 UI/contract 안정성에 유리하다.|많은 field가 있어도 schema 기반 validation이 가능하다.|streaming source도 같은 draft schema를 재사용할 수 있다."
+      },
+      {
+        id: "L4-B",
+        title: "Draft + Critique + Revised Recommendation",
+        summary: "한 번의 L4 후보 안에 초안, 자체 검토, 수정본을 모두 포함해 최종 draft를 낸다.",
+        pros: "추천 품질을 올리면서도 별도 후보를 조합할 필요가 없다.|모델이 Gold 의미 약함이나 PII risk를 스스로 표시할 가능성이 높다.|최종 draft와 검토 이유를 같이 저장할 수 있다.",
+        cons: "토큰 비용이 Strict JSON 방식보다 늘어난다.|self-critique가 항상 정확하다고 보장할 수 없다.|출력 schema가 더 커져 validation이 필요하다.",
+        why: "사용자가 후보를 직접 비교/수정해야 하므로 이유와 약점을 같이 보는 것이 좋다.|Gold fallback이나 owner review 필요성을 더 잘 드러낸다.|M5 approval reason으로 연결하기 쉽다.",
+        formats: "텍스트가 많은 JSONL review 데이터에 유리하다.|CSV/Parquet 정형 데이터도 metric 후보 검토에 유용하다.|nested JSON은 flatten 전략 비판을 포함하기 좋다.",
+        scale: "중간 규모 이상에서 human review 비용을 줄인다.|매우 큰 source도 L3 pack만 보므로 모델 비용은 bounded다.|실시간 source는 drift-triggered recommendation에 쓰기 좋다."
+      },
+      {
+        id: "L4-C",
+        title: "Domain-guarded Recommendation Pack",
+        summary: "AI 추천에 domain template, allowed actions, forbidden actions, readiness rule을 함께 넣어 완성형 draft를 만든다.",
+        pros: "택시, 리뷰, 이벤트처럼 domain별 Gold 후보가 더 현실적이다.|허용 action 밖의 추천을 줄일 수 있다.|L6 compiler가 받아들일 수 있는 형태로 나오기 쉽다.",
+        cons: "도메인 template이 틀리면 추천도 같이 틀어진다.|완전히 unknown domain에서는 fallback template이 필요하다.|template 관리가 추가된다.",
+        why: "우리 데이터가 Amazon review, taxi, event처럼 서로 다른 domain을 포함한다.|Gold 추천은 domain 의미가 중요하므로 guard가 필요하다.|후보 자체가 실행 가능한 조합을 포함하므로 후속 합성 부담이 적다.",
+        formats: "CSV taxi 데이터는 numeric metric template과 잘 맞는다.|JSONL review/event 데이터는 entity-event template과 잘 맞는다.|Parquet mirror는 schema 기반 template 적용이 쉽다.",
+        scale: "대용량 domain dataset에 유리하다.|작은 unknown 파일은 generic fallback으로 처리한다.|반복 source는 template 성능이 누적 개선된다."
+      }
+    ]
+  },
+  {
+    id: "L5",
+    name: "Decision and Edit Contract",
+    flow: "From M1 user edits and M5 approval state -> To M3 L6 deterministic spec compiler",
+    focus: "L5는 추천 결과를 실행 가능한 정책으로 확정하는 곳이라 Silver/Gold 분리 승인과 diff 기록이 중요하다.",
+    candidates: [
+      {
+        id: "L5-A",
+        title: "Split Silver/Gold Approval",
+        summary: "Silver cleaning decision과 Gold semantic decision을 서로 다른 상태와 승인자로 관리한다.",
+        pros: "Silver가 통과해도 Gold가 약한 상태를 정확히 표현한다.|사용자가 정제와 분석 모델을 따로 수정할 수 있다.|M6가 Gold caveat를 그대로 받을 수 있다.",
+        cons: "UI 단계가 하나 늘어난 것처럼 느껴질 수 있다.|승인 상태가 많아 M5 workflow가 조금 복잡해진다.|사용자가 Gold를 생략하는 경우 fallback 정책이 필요하다.",
+        why: "현재 processing pass와 Gold needs_owner_review가 분리되어야 한다는 문제가 이미 있었다.|M3 역할에서 Gold 생성법까지 전달하되 실행은 M2가 하게 만들기 좋다.|M5 approval state와 자연스럽게 맞는다.",
+        formats: "모든 파일 형식에 공통 적용된다.|JSON/JSONL처럼 의미 해석이 어려운 데이터에서 특히 필요하다.|Parquet 정형 데이터도 Gold semantic 승인은 별도 필요하다.",
+        scale: "데이터 규모와 무관하게 제품 흐름에 유리하다.|큰 데이터일수록 잘못된 Gold 실행 비용을 줄인다.|실시간 source에서는 Gold 승인 전 production materialization을 막기 좋다."
+      },
+      {
+        id: "L5-B",
+        title: "Decision Diff Ledger",
+        summary: "AI draft와 사용자 수정본의 차이를 patch/diff로 저장하고 승인 이유를 남긴다.",
+        pros: "사용자가 무엇을 바꿨는지 audit하기 쉽다.|모델 추천 품질을 나중에 평가할 수 있다.|L6 spec compiler가 approved state만 읽도록 강제할 수 있다.",
+        cons: "diff 저장 schema를 설계해야 한다.|작은 수정도 기록이 많아질 수 있다.|사용자에게 diff UI를 잘 보여줘야 한다.",
+        why: "M3가 AI 추천을 만든다는 점 때문에 human edit trace가 중요하다.|M5 workflow history와 연결하기 좋다.|팀 발표에서 AI가 자동 실행하지 않는다는 증거가 된다.",
+        formats: "파일 형식과 무관하게 policy JSON diff에 적용된다.|JSON path rule은 diff가 특히 중요하다.|CSV column rename/cast도 patch로 설명하기 쉽다.",
+        scale: "큰 데이터에서는 승인 변경의 blast radius 설명에 유리하다.|작은 demo에서도 신뢰성을 보여준다.|반복 운영 source에서 변경 이력 분석에 좋다."
+      },
+      {
+        id: "L5-C",
+        title: "Risk-based Decision Gate",
+        summary: "낮은 위험 rule은 draft-approved로 두고, PII/Gold/semantic risk는 수동 승인으로 분기한다.",
+        pros: "모든 rule을 사람이 눌러야 하는 부담을 줄인다.|PII와 Gold처럼 위험한 것만 강하게 막는다.|운영에서 approval bottleneck을 줄일 수 있다.",
+        cons: "risk scoring이 틀리면 위험 rule이 자동 승인될 수 있다.|초기에는 보수적으로 설정해야 한다.|설명 없이 자동 승인되면 사용자가 불신할 수 있다.",
+        why: "M3의 추천을 UI에서 모두 수정 가능하게 하되 생산성을 유지할 수 있다.|M5 state machine과 잘 맞는다.|L6 compiler에 들어갈 approved policy를 명확히 만든다.",
+        formats: "정형 CSV/Parquet의 단순 keep/cast는 자동 승인 후보가 될 수 있다.|JSON text/identifier field는 수동 승인으로 보내기 좋다.|nested flatten이나 Gold metric은 수동 검토가 안전하다.",
+        scale: "컬럼이 많은 대용량 source에서 특히 유리하다.|작은 데이터는 full manual도 가능하다.|streaming에서는 위험 rule만 stop gate로 만들 수 있다."
+      }
+    ]
+  },
+  {
+    id: "L6",
+    name: "Deterministic Spec Compiler",
+    flow: "From M3 L5 approved decisions -> To M2 L7/L8 preview execution",
+    focus: "L6는 AI draft를 실행 가능 spec으로 고정하는 단계라 whitelist, typed DSL, lineage compiler가 개선 포인트다.",
+    candidates: [
+      {
+        id: "L6-A",
+        title: "Whitelist Transform Compiler",
+        summary: "허용된 action만 Spark spec으로 변환하고 forbidden pattern을 compiler에서 차단한다.",
+        pros: "per-row AI, eval, collect-all 같은 위험 실행을 구조적으로 막는다.|M2가 실행할 수 있는 deterministic spec만 남는다.|compiler_validation_result가 명확해진다.",
+        cons: "허용 action이 적으면 복잡한 변환을 표현하기 어렵다.|새 action이 필요할 때 compiler를 확장해야 한다.|초기에는 보수적이라 추천이 제한될 수 있다.",
+        why: "우리 구조는 L4 AI draft와 L6 실행 spec을 반드시 분리해야 한다.|M2 Spark handoff에 가장 안전하다.|대용량에서 위험 operation을 사전에 막을 수 있다.",
+        formats: "CSV/Parquet 정형 변환에 매우 유리하다.|JSON/JSONL nested flatten도 whitelist action으로 표현 가능하다.|복잡한 array explode는 명시 허용할 때만 처리한다.",
+        scale: "대용량/실시간에 가장 현실적이다.|작은 데이터에서도 production-like 안전성을 보여준다.|수십 GB 이상에서는 금지 operation 차단 효과가 크다."
+      },
+      {
+        id: "L6-B",
+        title: "Typed DSL Spec Compiler",
+        summary: "Silver/Gold spec을 typed DSL로 표현하고 schema/type validation을 컴파일 전에 수행한다.",
+        pros: "field type mismatch를 preview 실행 전 잡을 수 있다.|Gold measure와 dimension 타입을 명확히 검증한다.|M2 구현자가 spec을 해석하기 쉽다.",
+        cons: "DSL schema를 설계하고 유지해야 한다.|초기 구현 비용이 whitelist보다 크다.|표현력이 부족하면 escape hatch 요구가 생길 수 있다.",
+        why: "CSV/JSON unknown 구조는 type conflict가 흔하므로 typed contract가 필요하다.|L7/L8 preview 실패를 줄인다.|M6 SQL context의 schema 신뢰도를 높인다.",
+        formats: "CSV inferred type correction에 유리하다.|JSON/JSONL path type conflict를 표현하기 좋다.|Parquet은 native schema를 DSL에 매핑하기 쉽다.",
+        scale: "중대형 데이터에서 preview 실패 비용을 줄인다.|반복 ingestion source에서 schema evolution 관리가 쉬워진다.|streaming은 type compatibility gate와 연결하기 좋다."
+      },
+      {
+        id: "L6-C",
+        title: "Spec + Lineage Graph Compiler",
+        summary: "Silver/Gold spec과 field-level lineage graph를 동시에 생성하는 compiler package다.",
+        pros: "Gold metric이 어떤 raw/Silver field에서 왔는지 바로 설명할 수 있다.|M6 답변 evidence와 catalog lineage가 강해진다.|debugging과 발표 설명이 쉬워진다.",
+        cons: "complex transform에서는 lineage가 복잡해진다.|aggregate와 explode의 field mapping rule이 필요하다.|단순 pipeline보다 산출물이 많아진다.",
+        why: "사용자가 Gold 생성법까지 전달해야 한다고 했으므로 lineage가 중요하다.|L10 catalog handoff로 바로 연결된다.|M5/M6가 같은 lineage ref를 쓸 수 있다.",
+        formats: "JSON nested flatten과 Gold metric lineage에 특히 유리하다.|CSV/Parquet은 column-to-column lineage가 단순해 적용하기 쉽다.|JSONL event aggregation도 metric lineage를 남기기 좋다.",
+        scale: "분석용 Gold가 중요한 중대형 source에 유리하다.|작은 데이터에서도 신뢰 설명이 좋아진다.|복잡한 source일수록 lineage 가치가 커진다."
+      }
+    ]
+  },
+  {
+    id: "L7",
+    name: "Silver Preview and Structural Validation",
+    flow: "From M2 executes silver spec -> To M2 L8 Gold preview + M3 L9 gate",
+    focus: "L7은 Silver가 구조적으로 안전한지 확인하는 단계라 preview 기준을 더 촘촘히 만드는 것이 개선이다.",
+    candidates: [
+      {
+        id: "L7-A",
+        title: "Bounded Silver Preview Contract",
+        summary: "row count, schema match, output columns, sample fingerprint를 bounded preview 기준으로 검증한다.",
+        pros: "Silver spec이 실제 Spark에서 동작하는지 빠르게 확인한다.|full materialization 전 실패를 줄인다.|M2 실행 결과와 M3 계약을 같은 숫자로 비교할 수 있다.",
+        cons: "bounded preview가 전체 데이터 문제를 모두 잡지는 못한다.|sample bias가 있으면 rare error를 놓칠 수 있다.|preview output 저장 비용이 생긴다.",
+        why: "현재 250k row preview 구조와 잘 맞는다.|M2가 실제 실행하고 M3가 기준을 해석하는 경계가 명확하다.|L9 gate의 processing evidence로 바로 쓸 수 있다.",
+        formats: "CSV/JSONL sample preview에 유리하다.|Parquet은 row-group/partition sample preview가 적합하다.|JSON nested flatten 결과 schema 검증에 좋다.",
+        scale: "대용량에서 full run 전 smoke로 필수적이다.|작은 데이터는 full preview도 가능하다.|streaming은 micro-batch preview로 확장 가능하다."
+      },
+      {
+        id: "L7-B",
+        title: "PII + Quarantine Structural Validation",
+        summary: "masked/hash field, forbidden column exposure, quarantine routing을 Silver preview에서 검증한다.",
+        pros: "민감 field가 Silver와 catalog로 새는 위험을 줄인다.|quarantine rule이 실제로 분기되는지 확인할 수 있다.|M6 query context에서 forbidden field를 명확히 제외할 수 있다.",
+        cons: "PII 탐지 오탐/미탐 문제는 남는다.|quarantine sample이 없으면 rule 실행 여부만 확인해야 한다.|검증 rule이 많으면 preview 시간이 늘 수 있다.",
+        why: "user_id, text, possible identifier가 있는 데이터에서 필요하다.|M3 추천이 실제 Silver 구조에 반영됐는지 확인한다.|catalog safety warn을 설명하기 쉬워진다.",
+        formats: "JSON/JSONL text와 identifier field에 특히 유리하다.|CSV free text column에도 필요하다.|Parquet은 column exposure allowlist와 잘 맞는다.",
+        scale: "외부/민감 데이터에서는 규모와 무관하게 필요하다.|대용량에서는 preview 기반으로 먼저 검증한다.|streaming은 rule compile validation과 sample validation을 함께 쓴다."
+      },
+      {
+        id: "L7-C",
+        title: "Replayable Silver Validation",
+        summary: "같은 L0-L6 refs로 Silver preview를 재실행해 output fingerprint가 같은지 확인한다.",
+        pros: "deterministic spec인지 직접 검증할 수 있다.|발표나 handoff 전에 회귀 검증 근거가 강하다.|nondeterministic function 사용을 잡기 좋다.",
+        cons: "재실행 시간이 추가된다.|streaming은 offset/window 고정이 필요하다.|output ordering 차이는 fingerprint 기준을 잘 잡아야 한다.",
+        why: "M3는 실행 엔진이 아니지만 replay 가능한 계약을 줘야 한다.|M2/M5가 나중에 같은 결과를 재현할 수 있다.|L9 replay hash와 자연스럽게 연결된다.",
+        formats: "Parquet output fingerprint에 유리하다.|CSV/JSONL preview도 sorted hash 기준을 쓰면 가능하다.|nested JSON은 canonicalization이 필요하다.",
+        scale: "중요 source나 발표 전 검증에 유리하다.|수십 GB full replay는 비싸므로 preview replay가 현실적이다.|streaming은 fixed micro-batch replay로 제한한다."
+      }
+    ]
+  },
+  {
+    id: "L8",
+    name: "Gold Preview and Semantic Readiness",
+    flow: "From M2 executes gold spec over Silver -> To M3 L9 readiness gate",
+    focus: "L8은 Gold가 실행됐는지가 아니라 쓸만한 의미가 있는지를 판정해야 한다.",
+    candidates: [
+      {
+        id: "L8-A",
+        title: "Gold Readiness Rubric",
+        summary: "Gold 후보를 ready, needs_owner_review, blocked로 나누는 rubric을 명시한다.",
+        pros: "fallback row-count를 ready라고 과장하지 않는다.|M6가 사용할 수 있는 Gold와 caveat가 필요한 Gold를 구분한다.|사용자에게 왜 검토가 필요한지 설명하기 쉽다.",
+        cons: "rubric 설계가 부실하면 전부 review가 될 수 있다.|domain owner가 없으면 ready 판정이 보수적이다.|초기에는 사람이 기준을 조정해야 한다.",
+        why: "현재 Gold ready와 needs_owner_review가 섞인 문제가 이미 있었다.|M3가 Gold 생성법을 주되 semantic 책임을 분리할 수 있다.|M6 답변 품질에 직접 영향을 준다.",
+        formats: "리뷰 JSONL은 product/rating metric readiness에 적합하다.|택시 CSV/Parquet은 trip/payment/location grain readiness에 적합하다.|이벤트 JSONL은 user/item/time grain caveat가 중요하다.",
+        scale: "Gold를 질의에 쓸 모든 데이터 규모에 필요하다.|대용량일수록 잘못된 metric materialization 비용을 줄인다.|streaming Gold는 freshness/readiness를 같이 봐야 한다."
+      },
+      {
+        id: "L8-B",
+        title: "Grain Cardinality + Freshness Check",
+        summary: "Gold grain cardinality, null collapse, event time freshness, window policy를 함께 검증한다.",
+        pros: "너무 높은 cardinality나 null로 뭉친 Gold를 빨리 잡는다.|실시간 Gold의 stale 문제를 설명할 수 있다.|M6가 최신성 경고를 붙일 근거가 생긴다.",
+        cons: "cardinality threshold는 domain별 조정이 필요하다.|event time 후보가 없으면 freshness 판단이 약하다.|preview에서는 full cardinality를 과소추정할 수 있다.",
+        why: "Gold는 grain이 틀리면 실행돼도 쓸모가 없다.|실시간/대용량 가정에서 freshness는 필수다.|M2 preview metrics와 M3 semantic 판정을 연결한다.",
+        formats: "CSV/Parquet numeric/time columns에 유리하다.|JSONL event timestamp와 entity id에도 잘 맞는다.|JSON array 중심 데이터는 grain 정의가 먼저 필요하다.",
+        scale: "수백만 row 이상 Gold에서 매우 중요하다.|작은 데이터도 null collapse를 잡는 데 유용하다.|streaming windowed metric에 특히 적합하다."
+      },
+      {
+        id: "L8-C",
+        title: "Metric Definition Draft",
+        summary: "Gold preview와 함께 metric name, grain, measure, dimension, caveat, example SQL을 draft로 만든다.",
+        pros: "M6가 바로 query context로 쓸 수 있는 의미 정보가 생긴다.|사용자가 Gold가 무엇을 뜻하는지 검토하기 쉽다.|catalog handoff 품질이 좋아진다.",
+        cons: "metric 설명이 틀리면 오히려 오해를 만든다.|example SQL은 engine allowlist와 맞아야 한다.|모든 Gold가 metric 중심은 아닐 수 있다.",
+        why: "사용자가 Gold 생성법까지 전달해야 한다고 했으므로 metric definition이 필요하다.|L10 SQL context pack과 자연스럽게 연결된다.|M6 AI query의 hallucination을 줄인다.",
+        formats: "정형 CSV/Parquet Gold table에 매우 유리하다.|JSONL review/event metric에도 적합하다.|비정형 text 중심 데이터는 metric보다 entity summary가 더 나을 수 있다.",
+        scale: "분석 질의가 필요한 데이터라면 규모와 무관하게 유리하다.|대용량에서는 metric 정의가 scan 비용을 줄이는 query guide가 된다.|streaming은 freshness SLA를 metric에 붙인다."
+      }
+    ]
+  },
+  {
+    id: "L9",
+    name: "Quality, Drift, and Quarantine Gate",
+    flow: "From M2 preview metrics + M3 gate rules -> To M5/M6 L10 handoff",
+    focus: "L9는 모든 경고를 하나로 뭉치지 않고 block/warn/info와 처리 주체를 분리하는 것이 핵심이다.",
+    candidates: [
+      {
+        id: "L9-A",
+        title: "Three-axis Gate Status",
+        summary: "processing quality, catalog safety, Gold readiness를 별도 axis로 저장한다.",
+        pros: "전부 warn처럼 보이는 문제를 해결한다.|처리 실패와 semantic review를 분리해 설명할 수 있다.|M6가 어떤 caveat를 보여야 하는지 명확해진다.",
+        cons: "UI가 세 status를 보여줘야 한다.|legacy single status와 매핑 규칙이 필요하다.|사용자가 처음에는 복잡하게 느낄 수 있다.",
+        why: "이미 processing pass:5와 legacy warn:5 문제가 있었으므로 가장 직접적인 개선이다.|M3/M5/M6 경계가 명확해진다.|Gold review를 처리 실패로 오해하지 않게 한다.",
+        formats: "모든 파일 형식에 공통 적용된다.|JSON/JSONL은 catalog safety caveat가 특히 중요하다.|CSV/Parquet은 processing quality와 Gold readiness 분리가 유용하다.",
+        scale: "대용량/실시간 운영에서 필수적이다.|작은 demo에서도 보고서 가독성이 좋아진다.|반복 ingestion에서 trend status로 확장할 수 있다."
+      },
+      {
+        id: "L9-B",
+        title: "Severity Matrix Gate",
+        summary: "각 issue를 block, warn, info로 분류하고 owner action을 같이 적는다.",
+        pros: "무엇을 반드시 고쳐야 하는지 바로 보인다.|M2/M3/M5/M6 중 누가 처리할지 명확해진다.|사용자에게 next action을 줄 수 있다.",
+        cons: "severity 기준이 없으면 주관적으로 보일 수 있다.|초기에는 warn이 많아질 수 있다.|owner action을 최신 상태로 유지해야 한다.",
+        why: "M3 보고서가 단순 요약이 아니라 실행 가능한 handoff가 된다.|M5 workflow issue와 연결하기 쉽다.|M6 query 차단/경고 기준으로 쓸 수 있다.",
+        formats: "CSV parse/type issue는 block/warn 분류가 쉽다.|JSON nested/PII issue는 warn/caveat 분류가 중요하다.|Parquet schema mismatch는 block으로 처리하기 좋다.",
+        scale: "큰 데이터일수록 block/warn 구분이 중요하다.|작은 데이터에서도 user action을 명확히 한다.|streaming은 block이면 pipeline stop, warn이면 degraded로 처리 가능하다."
+      },
+      {
+        id: "L9-C",
+        title: "Replay + Reconciliation Gate",
+        summary: "L0 raw refs, L1 sample count, L7 Silver count, L8 Gold count, replay hash를 함께 대조한다.",
+        pros: "데이터 손실이나 예상치 못한 row 변화가 드러난다.|재실행 가능성과 count consistency를 동시에 본다.|M5 run evidence로 설득력이 높다.",
+        cons: "Gold aggregate는 row count 의미가 달라 별도 해석이 필요하다.|replay hash는 ordering/canonicalization 기준이 필요하다.|full replay는 비용이 커 preview 중심으로 제한해야 한다.",
+        why: "대용량에서 작은 실수도 downstream 전체를 흔든다.|M3가 만든 spec이 손실 없이 실행되는지 설명할 수 있다.|M6 답변의 freshness/quality caveat 근거가 된다.",
+        formats: "CSV/JSONL row count reconciliation에 유리하다.|Parquet output fingerprint와 잘 맞는다.|nested explode가 있는 JSON은 expected row expansion rule이 필요하다.",
+        scale: "수십 GB 이상에서 sanity check로 중요하다.|작은 파일에서도 발표 근거로 좋다.|streaming은 window별 reconciliation으로 적용한다."
+      }
+    ]
+  },
+  {
+    id: "L10",
+    name: "Catalog Metadata and Semantic Handoff",
+    flow: "From M3 L0-L9 refs and gate results -> To M5 catalog + M6 query context",
+    focus: "L10은 저장용 catalog와 M6 질의 context를 동시에 만족해야 하므로 allowlist, lineage, caveat를 강제하는 쪽이 개선이다.",
+    candidates: [
+      {
+        id: "L10-A",
+        title: "Catalog Draft + Lineage Package",
+        summary: "dataset metadata, schema, Silver/Gold refs, field lineage, quality caveat를 하나의 handoff package로 묶는다.",
+        pros: "M5가 저장할 catalog와 M6가 볼 lineage가 같은 source를 본다.|Gold metric이 어떤 Silver/raw field에서 왔는지 설명할 수 있다.|품질 caveat가 catalog 밖으로 사라지지 않는다.",
+        cons: "패키지가 커질 수 있다.|lineage 생성이 복잡한 transform에서는 어렵다.|catalog API schema와 맞춰야 한다.",
+        why: "우리 구조의 최종 산출물은 M5/M6 handoff이므로 가장 기본이다.|Gold 생성법까지 전달해야 한다는 요구와 잘 맞는다.|M3가 실행하지 않는 영역을 metadata로 명확히 넘긴다.",
+        formats: "모든 형식에 적용된다.|JSON nested lineage는 특히 가치가 크다.|Parquet/CSV는 column lineage가 단순해 안정적이다.",
+        scale: "데이터 규모와 무관하게 catalog 품질에 필요하다.|대용량에서는 scan 없이 의미를 찾게 해 비용을 줄인다.|streaming은 freshness/caveat를 같이 넣어야 한다."
+      },
+      {
+        id: "L10-B",
+        title: "M6 SQL Context Pack",
+        summary: "allowed tables, allowed columns, metrics, forbidden fields, example SQL, freshness warning을 별도 pack으로 만든다.",
+        pros: "M6가 안전하게 SQL/AI query를 만들 수 있다.|금지 field와 caveat가 query 생성 전에 적용된다.|example SQL이 모델의 질의 방향을 잡아준다.",
+        cons: "catalog metadata와 중복될 수 있다.|schema가 바뀌면 context pack도 갱신해야 한다.|example SQL이 부정확하면 query 품질이 떨어진다.",
+        why: "최종 소비자가 M6이므로 query context가 실사용에 중요하다.|M6가 DuckDB/Trino/Athena를 직접 알 필요 없이 adapter context를 받는다.|Gold readiness와 quality caveat를 답변에 반영하기 쉽다.",
+        formats: "정형 CSV/Parquet Gold table에 매우 유리하다.|JSONL에서 생성된 Silver/Gold도 table context로 정리할 수 있다.|raw JSON 직접 질의보다 curated context에 적합하다.",
+        scale: "큰 데이터일수록 allowlist와 metric guide가 비용을 줄인다.|작은 demo에서도 AI query 정확도가 오른다.|streaming은 stale warning과 latest processed time을 포함한다."
+      },
+      {
+        id: "L10-C",
+        title: "Catalog Sync Contract Package",
+        summary: "M5 저장 상태, artifact version, schema version, decision version, gate version을 한 package로 묶는다.",
+        pros: "catalog와 실제 artifact가 어긋나는 drift를 줄인다.|M5/M6가 같은 version을 참조한다.|재실행, rollback, approval 변경을 추적하기 쉽다.",
+        cons: "version field가 많아진다.|M5 저장소와 동기화 규칙을 맞춰야 한다.|단발 demo에서는 다소 무거워 보일 수 있다.",
+        why: "AI 추천, user decision, deterministic spec, preview result가 모두 versioned 되어야 한다.|M5 workflow/catalog 저장 흐름과 직접 연결된다.|M6가 오래된 context로 답하는 문제를 줄인다.",
+        formats: "파일 형식과 무관하게 artifact/version ref에 적용된다.|Parquet partition version과 잘 맞는다.|CSV/JSONL landing batch도 run_id 기준으로 관리하기 쉽다.",
+        scale: "반복 ingestion과 운영 catalog에 유리하다.|작은 파일도 발표용 trace가 좋아진다.|streaming은 checkpoint/version pointer를 같이 관리한다."
+      }
+    ]
+  }
+];
+
+const selections = JSON.parse(localStorage.getItem("m3ImprovementSelections") || "{}");
+
+function splitLines(value) {
+  return value.split("|").map((line) => line.trim());
+}
+
+function detailBlock(title, value) {
+  return `<details open><summary>${title}</summary><ol>${splitLines(value).map((line) => `<li>${line}</li>`).join("")}</ol></details>`;
+}
+
+function renderNav() {
+  document.getElementById("layerNav").innerHTML = layers.map((layer) => `<a href="#${layer.id}">${layer.id}</a>`).join("");
+}
+
+function renderSummary() {
+  const selectedCount = Object.keys(selections).length;
+  const summary = document.getElementById("selectionSummary");
+  summary.innerHTML = `
+    <div class="summary-card"><span>Layer count</span><strong>${layers.length}</strong><p class="muted">L0-L10</p></div>
+    <div class="summary-card"><span>Candidate count</span><strong>${layers.length * 3}</strong><p class="muted">각 L별 3개</p></div>
+    <div class="summary-card"><span>Selected</span><strong>${selectedCount}/${layers.length}</strong><p class="muted">local browser 저장</p></div>
+  `;
+}
+
+function renderLayers() {
+  const root = document.getElementById("layers");
+  root.innerHTML = layers.map((layer) => {
+    const cards = layer.candidates.map((candidate) => {
+      const selected = selections[layer.id] === candidate.id;
+      return `
+        <article class="candidate ${selected ? "selected" : ""}" id="${candidate.id}">
+          <div>
+            <div class="badge-row">
+              <span class="badge good">${candidate.id}</span>
+              <span class="badge">${layer.id}</span>
+              <span class="badge warn">단독 선택형</span>
+            </div>
+            <h3>${candidate.title}</h3>
+            <p>${candidate.summary}</p>
+          </div>
+          <div class="detail-grid">
+            ${detailBlock("장점", candidate.pros)}
+            ${detailBlock("단점", candidate.cons)}
+            ${detailBlock("우리 구조에 유리한 이유", candidate.why)}
+            ${detailBlock("유리한 파일 형식", candidate.formats)}
+            ${detailBlock("유리한 데이터 규모", candidate.scale)}
+          </div>
+          <div class="select-row">
+            <button class="button ${selected ? "primary" : ""}" type="button" data-layer="${layer.id}" data-candidate="${candidate.id}">${selected ? "선택됨" : "이 후보 선택"}</button>
+            <span class="decision">${selected ? "현재 선택" : ""}</span>
+          </div>
+        </article>
+      `;
+    }).join("");
+    return `
+      <section class="layer" id="${layer.id}">
+        <div class="layer-head">
+          <div>
+            <h2>${layer.id}. ${layer.name}</h2>
+            <p>${layer.focus}</p>
+          </div>
+          <div class="flow">${layer.flow}</div>
+        </div>
+        <div class="cards">${cards}</div>
+      </section>
+    `;
+  }).join("");
+}
+
+function currentDecisionPayload() {
+  return {
+    created_at: new Date().toISOString(),
+    board: "m3_l0_l10_improvement_options",
+    selected_count: Object.keys(selections).length,
+    selections: layers.map((layer) => {
+      const selectedId = selections[layer.id] || null;
+      const candidate = layer.candidates.find((item) => item.id === selectedId) || null;
+      return {
+        layer: layer.id,
+        layer_name: layer.name,
+        selected_candidate_id: selectedId,
+        selected_candidate_title: candidate ? candidate.title : null,
+        flow: layer.flow
+      };
+    })
+  };
+}
+
+function refresh() {
+  localStorage.setItem("m3ImprovementSelections", JSON.stringify(selections));
+  renderSummary();
+  renderLayers();
+  bindSelectButtons();
+}
+
+function bindSelectButtons() {
+  document.querySelectorAll("[data-layer][data-candidate]").forEach((button) => {
+    button.addEventListener("click", () => {
+      selections[button.dataset.layer] = button.dataset.candidate;
+      refresh();
+      document.getElementById(button.dataset.candidate).scrollIntoView({ block: "center", behavior: "smooth" });
+    });
+  });
+}
+
+document.getElementById("copyBtn").addEventListener("click", () => {
+  document.getElementById("decisionOutput").value = JSON.stringify(currentDecisionPayload(), null, 2);
+});
+
+document.getElementById("exportBtn").addEventListener("click", () => {
+  const payload = JSON.stringify(currentDecisionPayload(), null, 2);
+  const blob = new Blob([payload], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "m3-l0-l10-improvement-decisions.json";
+  link.click();
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById("clearBtn").addEventListener("click", () => {
+  Object.keys(selections).forEach((key) => delete selections[key]);
+  document.getElementById("decisionOutput").value = "";
+  refresh();
+});
+
+renderNav();
+refresh();
+</script>
+</body>
+</html>

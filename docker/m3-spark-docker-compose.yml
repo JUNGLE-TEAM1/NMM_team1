@@ -1,0 +1,53 @@
+services:
+  m3-spark-master:
+    image: apache/spark:4.0.1
+    container_name: m3-spark-master
+    user: root
+    command: ["/opt/spark/bin/spark-class", "org.apache.spark.deploy.master.Master", "--host", "0.0.0.0", "--port", "7077", "--webui-port", "8080"]
+    environment:
+      SPARK_NO_DAEMONIZE: "true"
+    ports:
+      - "172.21.102.126:7077:7077"
+      - "172.21.102.126:8080:8080"
+    networks:
+      - m3-spark-net
+
+  m3-spark-worker-1:
+    image: apache/spark:4.0.1
+    container_name: m3-spark-worker-1
+    user: root
+    depends_on:
+      - m3-spark-master
+    command: ["/opt/spark/bin/spark-class", "org.apache.spark.deploy.worker.Worker", "--cores", "4", "--memory", "4g", "spark://m3-spark-master:7077"]
+    environment:
+      SPARK_NO_DAEMONIZE: "true"
+    networks:
+      - m3-spark-net
+
+  m3-spark-worker-2:
+    image: apache/spark:4.0.1
+    container_name: m3-spark-worker-2
+    user: root
+    depends_on:
+      - m3-spark-master
+    command: ["/opt/spark/bin/spark-class", "org.apache.spark.deploy.worker.Worker", "--cores", "4", "--memory", "4g", "spark://m3-spark-master:7077"]
+    environment:
+      SPARK_NO_DAEMONIZE: "true"
+    networks:
+      - m3-spark-net
+
+  m3-spark-worker-3:
+    image: apache/spark:4.0.1
+    container_name: m3-spark-worker-3
+    user: root
+    depends_on:
+      - m3-spark-master
+    command: ["/opt/spark/bin/spark-class", "org.apache.spark.deploy.worker.Worker", "--cores", "4", "--memory", "4g", "spark://m3-spark-master:7077"]
+    environment:
+      SPARK_NO_DAEMONIZE: "true"
+    networks:
+      - m3-spark-net
+
+networks:
+  m3-spark-net:
+    name: m3-spark-net
