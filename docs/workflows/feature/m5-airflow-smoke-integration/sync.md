@@ -19,25 +19,26 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 | --- | --- | --- | --- |
 | 2026-06-27 | not checked by pull/merge/rebase | none known | 사람 확인 없이 sync-changing command는 실행하지 않음 |
 | 2026-06-27 | current branch is behind `origin/main` by 59 commits | unknown without approved sync | M5 local/demo 정리는 계속하되 pull/merge/rebase는 PR/sync 단계로 보류 |
+| 2026-06-27 | `origin/main` advanced through `e640f90` | M2 SQL runtime smoke docs/contracts plus prior M2/M6 changes | user approved "전부 진행"; merged `origin/main` into current branch, resolved first conflict set, then merged latest `e640f90` without conflict |
 
 ## Pre-Merge Sync
 
-- main commit: not checked by pull/merge/rebase
-- conflicts: none known locally
-- validation: local tests/smoke completed; no pre-merge pull/merge/rebase executed
-- result: combined M5 local/demo branch is ready for final local validation and PR preparation
-- deferral reason: repository policy requires human confirmation before pull/merge/rebase/PR merge; current branch also carries M5 demo cockpit UI changes intentionally
+- main commit: `e640f90`
+- conflicts: first approved merge required conflict resolution; latest `origin/main` merge had no additional conflicts
+- validation: post-sync `npm run build`, full backend pytest, strict harness, integration harness, and `git diff --check` passed
+- result: combined M5 local/demo branch is synced to latest checked `origin/main` and locally PR-ready
+- deferral reason: PR merge/finalize/cleanup remains deferred by policy; remote PR body guardrail correction still requires GitHub authentication
 
 ## PR Conflict Resolution
 
-- conflict detected at: not checked
-- conflict detection command: not run
-- conflict type: not applicable locally
-- affected files: not applicable locally
+- conflict detected at: 2026-06-27 during approved `origin/main` merge for PR #200
+- conflict detection command: `git merge --no-ff origin/main`
+- conflict type: Git text conflict across Source of Truth docs and UI integration surface
+- affected files: `docs/03-interface-reference.md`, `docs/05-acceptance-scenarios-and-checklist.md`, `docs/06-regression-and-failure-scenarios.md`, `frontend/src/app/App.jsx`, `frontend/src/app/styles.css`
 - resolution path: keep Airflow smoke + M5 demo cockpit UI together as one M5 local/demo completion PR candidate unless PR review asks for split
-- resolved files: not applicable locally
-- revalidation: run final local checks and `scripts/validate-harness.sh --integration`
-- remaining risk: remote main moved ahead; sync-changing reconciliation is deferred to PR/sync step
+- resolved files: same as affected files; latest follow-up merge through `e640f90` had no additional conflict
+- revalidation: `npm run build`; `PYTHONPATH=backend ./.venv/bin/python -m pytest backend/tests -q`; `scripts/validate-harness.sh --strict`; `scripts/validate-harness.sh --integration`; `git diff --check`
+- remaining risk: remote PR checks need body guardrail correction for linked issue/no-issue and large PR exception; PR merge/finalize/cleanup not executed
 
 ## Push / PR
 
@@ -48,5 +49,5 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 - PR closing keyword: 
 - pushed branch: feature/m5-airflow-smoke-integration
 - PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/200
-- merge status: open
+- merge status: open; latest local branch includes `origin/main` through `e640f90`
 - issue close status: n/a

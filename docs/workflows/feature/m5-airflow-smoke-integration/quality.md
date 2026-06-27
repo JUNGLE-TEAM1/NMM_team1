@@ -22,6 +22,11 @@
 | unit/focused test | `PYTHONPATH=backend ./.venv/bin/python -m pytest backend/tests/test_week2_airflow_adapter.py backend/tests/test_week2_workflow_catalog.py -q` | pass | 21 passed |
 | final focused test | `PYTHONPATH=backend ./.venv/bin/python -m pytest backend/tests/test_week2_airflow_adapter.py backend/tests/test_week2_workflow_catalog.py -q` | pass | 21 passed after combined M5 local/demo documentation cleanup |
 | backend regression | `PYTHONPATH=backend ./.venv/bin/python -m pytest backend/tests -q` | pass | 51 passed after installing `backend/requirements.txt` into `.venv` |
+| post-main-sync backend regression | `PYTHONPATH=backend ./.venv/bin/python -m pytest backend/tests -q` | pass | 66 passed after merging latest `origin/main` through `e640f90` |
+| post-main-sync frontend build | `npm run build` in `frontend/` | pass | Vite production build completed after merging latest `origin/main` through `e640f90` |
+| post-main-sync strict harness validation | `scripts/validate-harness.sh --strict` | pass | Harness validation passed |
+| post-main-sync integration harness validation | `scripts/validate-harness.sh --integration` | pass | Harness validation passed |
+| post-main-sync whitespace | `git diff --check` | pass | no output |
 | Airflow DAG syntax | `python3 -m py_compile airflow/dags/asklake_week2_reviews.py` | pass | DAG imports with stdlib-only smoke logic |
 | Airflow compose config | `docker compose -f docker-compose.airflow.yml config` | pass | compose renders successfully |
 | Airflow local smoke | `docker compose -f docker-compose.airflow.yml up -d`; `curl -s http://localhost:8080/health`; `curl -s -u airflow:airflow http://localhost:8080/api/v1/dags/asklake_week2_reviews`; backend POST to `/api/week2/workflows/pipeline_reviews_json_e2e/runs` with `executor=airflow` | pass | DAG active, DAG run `run_reviews_demo_065` state `success`, backend run status `succeeded` |
@@ -34,7 +39,7 @@
 ## CI/CD Gate / CI-CD 게이트
 
 - CI required: no local-only change in this turn
-- CI result: not run locally beyond test/build/smoke commands
+- CI result: PR #200 opened; remote `linked-issue` and `pr-size-hard-gate` require PR body correction, while local test/build/harness gates pass
 - Deploy/publish required: no
 - Deployment confirmation: not applicable
 - Rollback/smoke notes: local Airflow containers are started by `docker compose -f docker-compose.airflow.yml up -d`; stop with `docker compose -f docker-compose.airflow.yml down` when no longer needed.

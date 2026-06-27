@@ -14,7 +14,7 @@
 - Verified: adapter TDD, focused Week2 tests, full backend tests, frontend build, browser local runner smoke, DAG syntax, compose config, real local Airflow smoke, result artifact/output/Catalog, strict harness validation, integration harness validation.
 - Remaining: production Airflow deployment, MinIO/S3 storage, SparkRunner/M2 runtime, async UI are intentionally out of scope.
 - Next context: 사용자는 추천안 구현과 남은 M5 정리 전체 진행을 선택했다. 완료 범위는 local Airflow smoke + M5 demo cockpit UI를 묶은 M5 local/demo slice이며 production 완성이 아니다.
-- Risk: first local run requires pulling a large Airflow image; port `8080` must be free or `AIRFLOW_PORT` must be changed. current branch is behind `origin/main`, so PR/sync 단계에서 remote 충돌 여부를 다시 확인해야 한다.
+- Risk: first local run requires pulling a large Airflow image; port `8080` must be free or `AIRFLOW_PORT` must be changed. Latest checked `origin/main` through `e640f90` is merged locally, but remote PR body guardrails still need linked issue/no-issue and large PR exception correction before merge readiness.
 
 ## Changed Files / 변경 파일
 
@@ -34,7 +34,7 @@
 
 - `PYTHONPATH=backend ./.venv/bin/python -m pytest backend/tests/test_week2_airflow_adapter.py -q` -> 5 passed.
 - `PYTHONPATH=backend ./.venv/bin/python -m pytest backend/tests/test_week2_airflow_adapter.py backend/tests/test_week2_workflow_catalog.py -q` -> 21 passed.
-- `PYTHONPATH=backend ./.venv/bin/python -m pytest backend/tests -q` -> 51 passed.
+- `PYTHONPATH=backend ./.venv/bin/python -m pytest backend/tests -q` -> 51 passed before main sync; 66 passed after latest `origin/main` sync.
 - `npm run build` in `frontend/` -> passed.
 - Browser smoke at `http://127.0.0.1:5173/etl` -> run `run_reviews_demo_069`, four verdict cards, output URI, matching `CatalogMetadata.lineage.run_id`, browser error logs 0.
 - `python3 -m py_compile airflow/dags/asklake_week2_reviews.py` -> passed.
@@ -49,3 +49,4 @@
 - `curl -s http://127.0.0.1:18000/api/week2/catalog/dataset_reviews_gold` -> Catalog metrics and lineage updated from Airflow result.
 - `scripts/validate-harness.sh --strict` -> Harness validation passed.
 - `scripts/validate-harness.sh --integration` -> Harness validation passed.
+- Post-main-sync validation after merging `origin/main` through `e640f90`: `npm run build`, full backend pytest, strict harness, integration harness, and `git diff --check` all passed.
