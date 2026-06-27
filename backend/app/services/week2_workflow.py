@@ -5,11 +5,12 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from app.domain.runtime_config import RuntimeConfig
+from app.domain.runtime_config import RuntimeConfig, StorageConfig
 from app.services.week2_airflow_adapter import Week2AirflowAdapter, Week2AirflowError
 from app.services.week2_catalog_store import Week2CatalogStore
 from app.services.week2_local_runner import Week2LocalRunner, Week2RunnerResult
 from app.services.week2_spark_runner import Week2SparkRunner
+from app.services.week2_storage_adapter import StorageLocation, Week2StorageAdapter
 
 SUCCESSFUL_RUN_STATUSES = {"succeeded", "fallback_succeeded"}
 AIRFLOW_SUCCESS_STATUS = "succeeded"
@@ -49,6 +50,7 @@ class Week2WorkflowService:
             output_root=self.output_root,
         )
         self.spark_runner = spark_runner or Week2SparkRunner()
+        self.storage_adapter = Week2StorageAdapter()
         self.runs = self.catalog_store.load_runs()
         self.catalog = self.catalog_store.load_catalog()
         self.sequence = self.catalog_store.sequence_start(self.runs)
@@ -158,13 +160,13 @@ class Week2WorkflowService:
             input_format=source_options.get("format", "jsonl"),
             input_path=source_ref["path"],
             output_format="parquet",
-            output_path=str(self._spark_output_path(run_id, target_dataset)),
-            options={"compression": self._parquet_compression()},
+            output_root=str(self.output_root),
+            storage=self._runtime_storage_config(),
+            options={
+                "compression": self._parquet_compression(),
+                "output_file_name": f"{target_dataset}.parquet",
+            },
         )
-
-    def _spark_output_path(self, run_id: str, target_dataset: str) -> Path:
-        prefix = replace_run_id(self.catalog_template["storage"]["prefix"], run_id)
-        return self.output_root / Path(prefix) / f"{target_dataset}.parquet"
 
     def _parquet_compression(self) -> str:
         runtime_config_path = self.contracts_dir / "runtime_config.sample.json"
@@ -174,11 +176,28 @@ class Week2WorkflowService:
             runtime_config = json.load(runtime_config_file)
         return runtime_config.get("parquet", {}).get("compression", "snappy")
 
+    def _runtime_storage_config(self) -> StorageConfig:
+        runtime_config_path = self.contracts_dir / "runtime_config.sample.json"
+        runtime_storage: dict[str, Any] = {}
+        if runtime_config_path.exists():
+            with runtime_config_path.open(encoding="utf-8") as runtime_config_file:
+                runtime_storage = json.load(runtime_config_file).get("storage", {})
+        return StorageConfig(
+            profile=runtime_storage.get("profile", self.catalog_template["storage"].get("profile", "minio")),
+            bucket=runtime_storage.get("bucket", self.catalog_template["storage"].get("bucket", "asklake-demo")),
+            endpoint=runtime_storage.get("endpoint"),
+            prefix=self.catalog_template["storage"]["prefix"],
+            local_fallback_root=str(self.output_root),
+        )
+
     def _catalog_for_run(self, run_id: str, timestamp: str, runner_result: Any) -> dict[str, Any]:
         catalog = deepcopy(self.catalog_template)
-        catalog["s3_uri"] = replace_run_id(catalog["s3_uri"], run_id)
-        catalog["storage"]["prefix"] = replace_run_id(catalog["storage"]["prefix"], run_id)
-        catalog["storage"]["local_fallback_path"] = runner_result.output_path
+        output_file_name = Path(runner_result.output_path).name if runner_result.output_path else f"{catalog['dataset_id']}.parquet"
+        storage_location = self._catalog_storage_location(run_id, output_file_name)
+        catalog["s3_uri"] = storage_location.uri
+        catalog["storage"]["bucket"] = storage_location.bucket
+        catalog["storage"]["prefix"] = storage_location.prefix
+        catalog["storage"]["local_fallback_path"] = runner_result.output_path or str(storage_location.local_path)
         catalog["metrics"]["row_count"] = output_row_count(runner_result)
         catalog["metrics"]["bytes"] = output_bytes(runner_result)
         catalog["metrics"]["quality"]["schema_match"] = "passed"
@@ -186,6 +205,14 @@ class Week2WorkflowService:
         catalog["lineage"]["run_id"] = run_id
         catalog["updated_at"] = timestamp
         return catalog
+
+    def _catalog_storage_location(self, run_id: str, output_file_name: str) -> StorageLocation:
+        return self.storage_adapter.build_location(
+            self._runtime_storage_config(),
+            run_id=run_id,
+            file_name=output_file_name,
+            local_root=self.output_root,
+        )
 
     def _logs_for_executor(
         self,
