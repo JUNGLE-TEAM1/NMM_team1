@@ -109,6 +109,18 @@ Target MVP 기능이 구현될 때 아래 경로를 단계별로 실제 manual v
 9. Week 2 공통 hardening으로 API/UI route, ID 규칙, storage path pattern, workflow/run status, `QueryResult`, guardrail failure shape, daily smoke evidence 형식이 `docs/03`에 정리되어 있는지 확인한다.
 10. `contracts/ai_query_result.sample.json`의 `query_result` 필드가 `docs/03`의 `QueryResult` 필드와 일치하는지 확인한다.
 11. M2 Taxi local batch evidence를 확인할 때 `scripts/week2_m2_taxi_local_batch_evidence.py --profile fixed`가 하루치 Taxi row를 Gold Parquet 1행으로 만들고, `--profile local-full-month`가 월별 파일 전체 row count와 Gold output path를 evidence JSON에 남기는지 확인한다.
+12. M2 Taxi 5GB local Spark evidence를 확인할 때는 로컬 Taxi Parquet directory를 아래처럼 실행한다. 성공 기준은 summary JSON에 `status=succeeded`, input row/bytes, duration, output path, output row/bytes가 남고, output Parquet을 실제로 읽을 수 있는 것이다. 이 검증은 Docker Spark cluster, MinIO/S3 durable write, Product Health 대표 경로를 대체하지 않는다.
+
+```bash
+PYTHONPATH=backend SPARK_LOCAL_IP=127.0.0.1 .venv/bin/python scripts/week2_m2_taxi_spark_local_evidence.py \
+  --input '<LOCAL_TAXI_PARQUET_DIR>' \
+  --profile local-full-month \
+  --run-id run_taxi_5gb_local_spark_001 \
+  --master 'local[2]' \
+  --driver-memory 8g \
+  --disable-vectorized-reader \
+  --summary-path data/results/m2_taxi_5gb_local_evidence/run_taxi_5gb_local_spark_001_summary.json
+```
 
 ### Week 2 상품 리스크 대표 경로 점검
 

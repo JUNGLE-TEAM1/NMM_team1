@@ -37,6 +37,8 @@ def run_evidence(args: argparse.Namespace) -> dict[str, Any]:
             compression=args.compression,
             master=args.master,
             app_name=args.app_name,
+            driver_memory=args.driver_memory,
+            parquet_vectorized_reader=not args.disable_vectorized_reader,
             storage=storage,
             upload_to_object_storage=args.minio_upload,
         )
@@ -67,6 +69,8 @@ def run_evidence(args: argparse.Namespace) -> dict[str, Any]:
             "name": "taxi_spark_local_runner",
             "implementation": "Week2TaxiSparkRunner",
             "spark_master": args.master,
+            "driver_memory": args.driver_memory,
+            "parquet_vectorized_reader": not args.disable_vectorized_reader,
             "runtime_note": "PySpark local mode evidence; Docker Spark cluster is a required follow-up for final M2 completion.",
         },
         "task_results": result.task_results,
@@ -133,6 +137,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--compression", default="snappy")
     parser.add_argument("--master", default="local[1]")
     parser.add_argument("--app-name", default="asklake-m2-taxi-spark-local")
+    parser.add_argument("--driver-memory", default=None)
+    parser.add_argument("--disable-vectorized-reader", action="store_true")
     parser.add_argument("--summary-path", type=Path, default=None)
     parser.add_argument("--minio-upload", action="store_true")
     parser.add_argument("--bucket", default="asklake-demo")
