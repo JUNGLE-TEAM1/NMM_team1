@@ -45,7 +45,17 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 - issue creation result: created
 - issue project result: added to JUNGLE-TEAM1 project 3; initially observed as Done/closed after creation, then issue #255 was reopened for this unexecuted Phase. During execution, Project item status was corrected from `Done` to `In Progress`.
 - PR closing keyword: Closes #255
-- pushed branch:
-- PR link:
-- merge status:
-- issue close status:
+- pushed branch: `origin/feature/m1-post-merge-readiness-smoke`
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/256
+- merge status: open
+- issue close status: open
+
+## Remote operations reconciliation
+
+- checked at: 2026-06-29
+- remote branch: `origin/feature/m1-post-merge-readiness-smoke`
+- PR: #256 open, ready for checks
+- PR draft status: false
+- issue: #255 open
+- issue Project Status: `In Progress` before PR creation
+- next action: PR checks 통과 후, 사용자가 이번 지시에서 승인한 범위에 따라 merge/finalize/cleanup을 진행한다.
