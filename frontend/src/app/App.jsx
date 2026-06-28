@@ -116,10 +116,32 @@ const stepIcons = {
   workflow: GitBranch,
 };
 
-const demoQuestions = [
-  "Amazon reviews에서 평점 높은 상품 알려줘",
-  "리뷰가 가장 많은 상품 알려줘",
-  "Amazon reviews의 product_id별 review_count를 보여줘",
+const demoQuestionGroups = [
+  {
+    title: "Product Health SQL intents",
+    tone: "primary",
+    questions: [
+      ["top_risk", "리뷰가 나쁘고 구매 전환도 낮고 배송 지연까지 겹친 문제 상품군을 찾아줘."],
+      ["top_negative_review", "부정 리뷰율이 가장 높은 상품을 보여줘."],
+      ["low_conversion", "구매 전환율이 가장 낮은 상품을 찾아줘."],
+      ["top_late_delivery", "배송 지연율이 가장 높은 상품을 알려줘."],
+      ["top_rating", "평점이 가장 높은 Product Health 상품을 보여줘."],
+    ],
+  },
+  {
+    title: "Unsupported guardrail",
+    tone: "warning",
+    questions: [["unsupported", "다음 분기 매출을 예측하고 광고 문구까지 생성해줘."]],
+  },
+  {
+    title: "Legacy reviews path",
+    tone: "secondary",
+    questions: [
+      ["legacy_rating", "Amazon reviews에서 평점 높은 상품 알려줘"],
+      ["legacy_count", "리뷰가 가장 많은 상품 알려줘"],
+      ["legacy_table", "Amazon reviews의 product_id별 review_count를 보여줘"],
+    ],
+  },
 ];
 
 function normalizePath(pathname) {
@@ -1846,18 +1868,29 @@ function AiQueryPage({ navigate, setNotice }) {
             {queryState.loading ? "실행 중" : "질문 실행"}
           </button>
           {queryState.error ? <p className="form-error">{queryState.error}</p> : null}
-          <div className="demo-question-list" aria-label="Demo question candidates">
-            {demoQuestions.map((question) => (
-              <button
-                key={question}
-                type="button"
-                className="ghost-action"
-                onClick={() => submitQuery(question)}
-                disabled={queryState.loading}
-              >
-                <Sparkles size={14} />
-                {question}
-              </button>
+          <div className="demo-question-groups" aria-label="Product Health demo question candidates">
+            {demoQuestionGroups.map((group) => (
+              <section key={group.title} className={`demo-question-group ${group.tone}`}>
+                <div className="demo-question-heading">
+                  <span>{group.title}</span>
+                  <small>{group.tone === "warning" ? "blocked route" : group.tone === "primary" ? "SQL route" : "supporting path"}</small>
+                </div>
+                <div className="demo-question-list">
+                  {group.questions.map(([intent, question]) => (
+                    <button
+                      key={intent}
+                      type="button"
+                      className={`ghost-action ${group.tone === "warning" ? "warning" : ""}`}
+                      onClick={() => submitQuery(question)}
+                      disabled={queryState.loading}
+                    >
+                      <Sparkles size={14} />
+                      <span>{question}</span>
+                      <small>{intent}</small>
+                    </button>
+                  ))}
+                </div>
+              </section>
             ))}
           </div>
         </div>
