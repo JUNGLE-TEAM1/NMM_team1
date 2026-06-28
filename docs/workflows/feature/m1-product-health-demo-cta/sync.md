@@ -40,12 +40,23 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 
 ## Push / PR
 
-- linked GitHub issue: `#251`
+- linked GitHub issue: #251
 - issue link: https://github.com/JUNGLE-TEAM1/NMM_team1/issues/251
 - issue creation result: created manually with `gh issue create`
 - issue project result: no project item attached
 - PR closing keyword: `Closes #251`
-- pushed branch: pending
-- PR link: pending
-- merge status: not created yet
-- issue close status: open until PR merge
+- pushed branch: `origin/feature/m1-product-health-demo-cta`
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/252
+- merge status: open
+- issue close status: open
+
+## Remote operations reconciliation
+
+- checked at: 2026-06-29
+- remote branch: `origin/feature/m1-product-health-demo-cta`
+- PR: #252 open, ready for review
+- PR draft status: false
+- issue audit: #251 body-template-missing drift corrected with feature issue template sections
+- merge state: `CLEAN`
+- checks: `harness`, `container-smoke`, `manifest-smoke`, `migration-schema-security`, `linked-issue`, `risk-warning`, `pr-size-hard-gate`, `pr-template-drift` passed
+- next action: GitHub checks 완료 후 merge/finalize/cleanup은 사람 확인을 받고 진행한다.

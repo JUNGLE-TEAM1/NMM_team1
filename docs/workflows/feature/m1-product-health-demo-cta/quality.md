@@ -29,11 +29,24 @@
 
 ## CI/CD Gate / CI-CD 게이트
 
-- CI required: yes, PR 생성 후 GitHub checks 확인
-- CI result: pending until PR creation
+- CI required: yes
+- CI result: passed on PR #252
 - Deploy/publish required: no
 - Deployment confirmation: local docker compose smoke only
 - Rollback/smoke notes: 변경은 M1 UI CTA 표시 추가에 한정된다. rollback은 `frontend/src/app/App.jsx`, `frontend/src/app/styles.css`의 `demoQuestionGroups`와 관련 CSS를 이전 flat button list로 되돌린다.
+
+### GitHub Checks
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| harness | passed | PR #252 GitHub check rollup에서 `SUCCESS` 확인. |
+| container-smoke | passed | PR #252 GitHub check rollup에서 `SUCCESS` 확인. |
+| manifest-smoke | passed | PR #252 GitHub check rollup에서 `SUCCESS` 확인. |
+| migration-schema-security | passed | PR #252 GitHub check rollup에서 `SUCCESS` 확인. |
+| linked-issue | passed | PR #252 GitHub check rollup에서 `SUCCESS` 확인. |
+| risk-warning | passed | PR #252 GitHub check rollup에서 `SUCCESS` 확인. |
+| pr-size-hard-gate | passed | PR #252 GitHub check rollup에서 `SUCCESS` 확인. |
+| pr-template-drift | passed | PR #252 GitHub check rollup에서 `SUCCESS` 확인. |
 
 ## Skipped Checks / 생략한 검증
 
