@@ -16,6 +16,12 @@ pytestmark = pytest.mark.skipif(shutil.which("java") is None, reason="PySpark lo
 def write_taxi_fixture(path: Path) -> None:
     """PySpark Taxi smoke에 필요한 최소 Parquet fixture를 만든다."""
 
+    write_taxi_fixture_with_passenger_counts(path, [1, 2, 3])
+
+
+def write_taxi_fixture_with_passenger_counts(path: Path, passenger_counts: list[int | float]) -> None:
+    """passenger_count type 차이를 재현할 수 있는 Taxi Parquet fixture를 만든다."""
+
     table = pa.table(
         {
             "tpep_pickup_datetime": [
@@ -28,7 +34,7 @@ def write_taxi_fixture(path: Path) -> None:
                 datetime(2024, 1, 1, 11, 45),
                 datetime(2024, 1, 2, 9, 20),
             ],
-            "passenger_count": [1, 2, 3],
+            "passenger_count": passenger_counts,
             "trip_distance": [2.5, 3.5, -1.0],
             "fare_amount": [12.0, 18.0, 5.0],
             "tip_amount": [2.0, 3.0, 0.0],
@@ -84,3 +90,30 @@ def test_taxi_spark_runner_writes_daily_gold_metrics(tmp_path: Path, monkeypatch
             "invalid_trip_count": 0,
         }
     ]
+
+
+def test_taxi_spark_runner_reports_directory_input_bytes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """디렉터리 입력이면 Parquet 파일 크기 합계를 input bytes로 보고한다."""
+
+    monkeypatch.setenv("SPARK_LOCAL_IP", "127.0.0.1")
+    input_dir = tmp_path / "yellow_tripdata"
+    input_dir.mkdir()
+    first_input = input_dir / "yellow_tripdata_2024-01.parquet"
+    second_input = input_dir / "yellow_tripdata_2024-02.parquet"
+    output_root = tmp_path / "spark_results"
+    write_taxi_fixture(first_input)
+    write_taxi_fixture_with_passenger_counts(second_input, [1.0, 2.0, 3.0])
+
+    result = Week2TaxiSparkRunner().run(
+        TaxiSparkConfig(
+            input_path=str(input_dir),
+            output_root=str(output_root),
+            run_id="run_taxi_spark_test_directory",
+            profile="local-full-month",
+            master="local[1]",
+        )
+    )
+
+    assert result.status == "succeeded"
+    assert result.row_count == 6
+    assert result.bytes == first_input.stat().st_size + second_input.stat().st_size
