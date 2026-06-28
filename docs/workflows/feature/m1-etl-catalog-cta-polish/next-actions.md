@@ -5,7 +5,7 @@
 ## Current State / 현재 상태
 
 - State: ready-for-review
-- Summary: `/etl` Catalog detail CTA를 live Catalog detail route로 고정했고 local build/browser/harness 검증이 통과했다.
+- Summary: `/etl` Catalog detail CTA를 live Catalog detail route로 고정했고 local build/browser/harness 검증이 통과했다. PR #260이 생성됐고 remote checks는 생성 직후 진행 중이다.
 
 ## Recommended Next Action / 권장 다음 행동
 

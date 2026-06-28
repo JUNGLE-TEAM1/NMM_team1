@@ -43,9 +43,9 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 - linked GitHub issue: #257
 - issue link: https://github.com/JUNGLE-TEAM1/NMM_team1/issues/257
 - issue creation result: created
-- issue project result: added to JUNGLE-TEAM1 project 3; start script recorded In Progress, but `gh issue view` later showed Project Status `Done`; issue #257 was reopened because the Phase is still in progress. Project status correction was attempted but GitHub still reported `Done`.
+- issue project result: added to JUNGLE-TEAM1 project 3; start script recorded In Progress, later drifted to `Done`, then #257 was reopened. After PR creation GitHub reported Project Status `Ready`.
 - PR closing keyword: Closes #257
-- pushed branch:
-- PR link:
-- merge status:
-- issue close status:
+- pushed branch: `feature/m1-etl-catalog-cta-polish`
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/260
+- merge status: open, checks in progress at creation
+- issue close status: open

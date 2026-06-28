@@ -29,7 +29,7 @@
 ## CI/CD Gate / CI-CD 게이트
 
 - CI required: yes, after PR creation
-- CI result: pending
+- CI result: pending for PR #260 at creation
 - Deploy/publish required: no
 - Deployment confirmation: 
 - Rollback/smoke notes: 문제 발생 시 `frontend/src/app/App.jsx`의 route helper와 ETL handoff CTA 변경을 되돌린다. Docker buildx 세션 오류는 classic builder fallback(`DOCKER_BUILDKIT=0`)으로 우회했다.
