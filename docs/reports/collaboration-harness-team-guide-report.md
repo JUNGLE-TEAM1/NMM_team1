@@ -4,8 +4,8 @@
 
 - Type: docs
 - Date: 2026-06-28
-- Changed: 팀원이 AskLake 협업 하네스를 실제 작업에서 사용할 수 있도록 `AskLake 협업 하네스 사용 가이드`를 추가하고, 사람의 책임과 AI의 책임 구분을 보강했으며, branch workspace와 report index를 연결했다.
-- Verified: `rg -n "AskLake 협업 하네스 사용 가이드|하네스를 사용할 때 사람의 책임과 AI의 책임|AI는 책임을 대신 지지 않는다|Pre-PR Human Checkpoint|팀원이 기억할 최소 규칙" docs/reports/collaboration-harness-team-usage-guide.md docs/reports/README.md`, `git diff --check`, `scripts/validate-harness.sh`, `scripts/validate-harness.sh --strict`
+- Changed: 팀원이 AskLake 협업 하네스를 실제 작업에서 사용할 수 있도록 `AskLake 협업 하네스 사용 가이드`를 추가하고, 처음 보는 사람도 빠르게 이해할 수 있는 `3분 요약`과 사람/AI 책임 구분을 보강했으며, branch workspace와 report index를 연결했다.
+- Verified: `rg -n "AskLake 협업 하네스 사용 가이드|3분 요약|AI는 손과 기록 담당이다|하네스를 사용할 때 사람의 책임과 AI의 책임|AI는 책임을 대신 지지 않는다|Pre-PR Human Checkpoint|팀원이 기억할 최소 규칙" docs/reports/collaboration-harness-team-usage-guide.md docs/reports/README.md`, `git diff --check`, `scripts/validate-harness.sh`, `scripts/validate-harness.sh --strict`
 - Remaining: 팀 리뷰 뒤 실제 팀 표현, 실습 예시, 발표 자료가 필요하면 후속 Phase로 보강한다.
 - Next context: 팀원은 이 guide를 먼저 읽고 Phase 시작, mid-phase steering, 확인 gate, PR/merge 경계를 자연어 요청으로 다룬다.
 - Risk: 이 문서는 Source of Truth 규칙 변경이 아니라 설명/온보딩 guide다. 공식 workflow 변경이 필요하면 별도 Source of Truth 전파 Phase가 필요하다.
@@ -53,6 +53,7 @@
 ## Implementation Summary / 구현 요약
 
 - 기존 "도입자 책임 설명" 관점이 아니라 "팀원이 실제로 어떻게 요청하고 확인해야 하는지"를 중심으로 문서를 작성했다.
+- 처음 보는 팀원도 앞부분만 읽고 핵심을 잡을 수 있도록 `3분 요약`과 안전한 요청/위험한 요청 예시를 추가했다.
 - 하네스에서 사람은 작업 요청자이자 결정 승인자이고, AI는 작업 실행자이자 상태 기록자라는 책임 구분을 추가했다.
 - `사람의 책임 / AI의 책임`, `사람이 확인해야 할 질문 / AI에게 시킬 수 있는 일`, `나쁜 응답 / 왜 위험한가 / 더 나은 응답` 표를 추가했다.
 - Phase, branch workspace, Source of Truth, confirmation gate, PR 생성과 merge의 차이를 초보자용 문장으로 정리했다.
@@ -77,7 +78,7 @@
 ## Verification Commands / 검증 명령
 
 ```bash
-rg -n "AskLake 협업 하네스 사용 가이드|하네스를 사용할 때 사람의 책임과 AI의 책임|AI는 책임을 대신 지지 않는다|Pre-PR Human Checkpoint|팀원이 기억할 최소 규칙" docs/reports/collaboration-harness-team-usage-guide.md docs/reports/README.md
+rg -n "AskLake 협업 하네스 사용 가이드|3분 요약|AI는 손과 기록 담당이다|하네스를 사용할 때 사람의 책임과 AI의 책임|AI는 책임을 대신 지지 않는다|Pre-PR Human Checkpoint|팀원이 기억할 최소 규칙" docs/reports/collaboration-harness-team-usage-guide.md docs/reports/README.md
 git diff --check
 scripts/validate-harness.sh
 scripts/validate-harness.sh --strict
