@@ -118,6 +118,16 @@
 | Verification method | `backend/tests/test_duckdb_sql_engine.py`, `backend/tests/test_week2_ai_query_duckdb.py`, `scripts/week2_m2_sql_runtime_smoke.py`를 확인한다. |
 | Related docs/interface/Phase | `docs/03`, `contracts/catalog_metadata.sample.json`, M2 SQL runtime smoke |
 
+### M6 route 또는 retrieval trace가 응답 근거와 어긋나는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | `AIQueryResult.route`는 실제 실행 경로를 나타내고, `retrieval_trace`는 선택된 evidence와 연결되어야 한다. |
+| Failure condition | SQL 실행 응답인데 route가 `rag`로 표시되거나, unsupported 질문이 `sql`로 표시되거나, trace의 `evidence_index`가 없는 evidence를 가리킨다. |
+| Expected behavior | SQL-first 응답은 `route=sql`, 지원하지 않는 질문은 `route=unsupported`를 반환한다. Catalog 기반 trace는 `source_type=catalog`, `source_id=<dataset_id>`, score, matched_terms, evidence index를 포함한다. |
+| Verification method | `backend/tests/test_week2_ai_query.py` route/retrieval_trace regression과 `contracts/ai_query_result.sample.json`을 확인한다. |
+| Related docs/interface/Phase | `docs/03`, `docs/05`, `contracts/ai_query_result.sample.json`, M6 response contract |
+
 ### Mock/Fake Boundary를 넘어 실제 접근으로 진행되는 경우
 
 | 항목 | 내용 |
