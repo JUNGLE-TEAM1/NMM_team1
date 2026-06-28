@@ -23,6 +23,7 @@
 | focused runner regression | `PYTHONPATH=backend .venv/bin/python -m pytest backend/tests/test_week2_spark_runner.py backend/tests/test_week2_product_health_l6_evidence.py -q` | passed | 14 passed |
 | full backend tests | `PYTHONPATH=backend .venv/bin/python -m pytest backend/tests -q` | passed with escalation | sandbox run failed because PySpark local Py4J socket bind was blocked; escalated run passed, 92 passed |
 | backend Docker pytest | `docker run --rm asklake-backend:m2-product-health-l6-fix python -m pytest` | passed | 91 passed, 1 skipped |
+| post-main-sync focused check | `PYTHONPATH=backend .venv/bin/python -m pytest backend/tests/test_week2_product_health_l6_evidence.py -q`; `.venv/bin/python scripts/week2_m2_product_health_l6_evidence.py`; `git diff --check`; `scripts/validate-harness.sh --strict` | passed | after merging `origin/main` `09a19f1`, focused test 1 passed and CLI smoke succeeded |
 | build/typecheck | `.venv/bin/python -m compileall backend/app scripts/week2_m2_product_health_l6_evidence.py` | passed | Python syntax/import compile OK |
 | diff check | `git diff --check` | passed | no whitespace errors |
 | harness validation | `scripts/validate-harness.sh` | passed | Harness validation passed |

@@ -18,6 +18,7 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 | Checked At | Upstream Changes | Impacted Source of Truth | Action |
 | --- | --- | --- | --- |
 | 2026-06-28 | `origin/main` advanced from `94e67c5` to `8443863` | M1 final browser smoke docs and report index | fast-forward merge completed with no conflicts; M2 changed files were not touched by upstream |
+| 2026-06-28 | `origin/main` advanced from `8443863` to `09a19f1` | M1 query route trace UI docs/frontend | `git merge origin/main` completed with no conflicts; M2 focused test, evidence CLI, diff check, strict harness passed |
 
 ## Pre-Merge Sync
 
@@ -57,3 +58,11 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 - fix: `infra/docker/backend.Dockerfile` copies `scripts` into the backend image.
 - local revalidation: `docker run --rm asklake-backend:m2-product-health-l6-fix python -m pytest` passed, 91 passed and 1 skipped.
 - remote CI rerun: passed after branch push and PR body `API/schema 영향` field correction.
+
+## Pre-Merge Re-Sync / merge 전 재동기화
+
+- main commit: `09a19f1`
+- command: `git merge origin/main`
+- conflicts: none
+- validation: focused M2 test 1 passed; Product Health L6 evidence CLI succeeded; `git diff --check` passed; `scripts/validate-harness.sh --strict` passed.
+- result: ready to push updated PR branch and rerun CI.
