@@ -17,15 +17,15 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 
 | Checked At | Upstream Changes | Impacted Source of Truth | Action |
 | --- | --- | --- | --- |
-|  |  |  |  |
+| 2026-06-29 | `git fetch origin main` 기준 `origin/main` = `44fea82` | 없음 | 현재 branch base와 remote main 일치. |
 
 ## Pre-Merge Sync
 
-- main commit:
-- conflicts:
-- validation:
-- result:
-- deferral reason:
+- main commit: `44fea82`
+- conflicts: none observed before PR preparation
+- validation: `git fetch origin main`, local build/smoke 진행
+- result: remote main matched Phase base during implementation
+- deferral reason: 사용자가 이번 지시에서 PR merge/finalize/cleanup에 필요한 승인을 제공했으므로 PR checks 통과 후 진행한다.
 
 ## PR Conflict Resolution
 
@@ -43,7 +43,7 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 - linked GitHub issue: #255
 - issue link: https://github.com/JUNGLE-TEAM1/NMM_team1/issues/255
 - issue creation result: created
-- issue project result: added to JUNGLE-TEAM1 project 3; initially observed as Done/closed after creation, then issue #255 was reopened for this unexecuted Phase. Project item status still shows `Done` and should be rechecked during Phase execution.
+- issue project result: added to JUNGLE-TEAM1 project 3; initially observed as Done/closed after creation, then issue #255 was reopened for this unexecuted Phase. During execution, Project item status was corrected from `Done` to `In Progress`.
 - PR closing keyword: Closes #255
 - pushed branch:
 - PR link:

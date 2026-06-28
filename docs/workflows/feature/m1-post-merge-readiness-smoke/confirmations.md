@@ -4,23 +4,23 @@ AI가 멈추고 사람 확인을 받아야 하는 지점을 기록한다.
 
 ## Scope Confirm / 범위 확인
 
-- Status: pending
+- Status: completed
 - Ask human to confirm:
   - branch/workspace
   - 포함 범위
   - 제외 범위
   - 영향받는 Source of Truth 문서
-- Human response:
+- Human response: 사용자가 남은 Phase 진행과 검수/보완/PR 마무리에 필요한 모든 승인을 승인했다. Branch/workspace는 `feature/m1-post-merge-readiness-smoke`, 범위는 최신 main 기준 M1 `/query` browser smoke와 stale M1 report 정리다.
 
 ## Contract Confirm / 계약 확인
 
-- Status: pending
+- Status: completed
 - Ask human to confirm:
   - data model 변경
   - interface/API/CLI/UI contract 변경
   - external dependency
   - 공유 Source of Truth 변경
-- Human response: 
+- Human response: backend/API/schema/data contract 변경 없이 M1 smoke와 문서 정리만 수행한다. Product Health ready 상태를 근거 없이 올리지 않는다.
 
 ## Scope Change Confirm / 범위 변경 확인
 
@@ -33,33 +33,33 @@ AI가 멈추고 사람 확인을 받아야 하는 지점을 기록한다.
 
 ## Verification Confirm / 검증 확인
 
-- Status: pending
+- Status: completed
 - Ask human to confirm:
   - test/build/smoke 명령
   - TDD 증거 또는 skip reason
   - CI/check 명령
   - manual verification 경로
   - completion criteria
-- Human response: 
+- Human response: `cd frontend && npm run build`, Docker compose backend/frontend smoke, browser `/query` readiness/CTA/route trace 확인, `git diff --check`, `scripts/validate-harness.sh --strict`, PR checks로 검증한다.
 
 ## Quality Gate Confirm / 품질 게이트 확인
 
-- Status: pending
+- Status: completed
 - Ask human to confirm:
   - TDD 적용 또는 의도적 생략
   - 필요한 branch check와 CI gate
   - 생략한 검증과 이유
   - 관련 있는 deploy/publish gate
-- Human response: 
+- Human response: 기본 범위는 smoke/document Phase라 TDD는 생략한다. smoke가 code regression을 드러낼 때만 focused test 또는 fix를 추가한다. deploy/publish gate 없음.
 
 ## Git Sync Confirm / Git sync 확인
 
-- Status: pending
+- Status: completed
 - Ask human to confirm:
   - 구현 전 start sync command/result
   - mid-phase upstream change action
   - 완료 전 pre-merge sync command/result
-- Human response: 
+- Human response: Start sync는 `44fea82` 기준 workspace 생성으로 기록했다. 완료 전 remote main과 PR 상태를 재확인하고, 승인된 범위 안에서 PR merge/finalize/cleanup까지 진행한다.
 
 ## Sync Conflict Confirm / sync 충돌 확인
 
@@ -89,13 +89,13 @@ AI가 멈추고 사람 확인을 받아야 하는 지점을 기록한다.
 
 ## Completion Confirm / 완료 확인
 
-- Status: pending
+- Status: completed
 - Ask human to confirm:
   - 변경 요약
   - 검증 결과
   - 남은 위험
   - 다음 작업 문맥
-- Human response: 
+- Human response: 이번 지시로 완료 확인까지 승인했다. 최종 변경/검증/남은 위험은 `report.md`, `quality.md`, final response에 기록한다.
 
 ## Integration Conflict Confirm / 통합 충돌 확인
 
