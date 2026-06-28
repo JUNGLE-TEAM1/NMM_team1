@@ -43,9 +43,10 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 - linked GitHub issue: #236
 - issue link: https://github.com/JUNGLE-TEAM1/NMM_team1/issues/236
 - issue creation result: created during Phase start
-- issue project result: `gh project item-add` returned item id `PVTI_lADOEVx8xs4BbEjqzgxEGS8`; issue #236 is present in JUNGLE-TEAM1 project 3 with Status `Backlog`; `gh project item-list` did not expose item id for status edit, so `In Progress` update was not confirmed
+- issue project result: set to Review in JUNGLE-TEAM1 project 3
 - PR closing keyword: Closes #236
-- pushed branch:
-- PR link:
-- merge status:
-- issue close status:
+- pushed branch: feature/m1-final-browser-smoke
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/238
+- merge status: open
+- issue close status: open
+- issue reopen result: already open
