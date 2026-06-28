@@ -58,4 +58,4 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 - PR draft status: false
 - merge state: `CLEAN`
 - checks: `harness`, `container-smoke`, `manifest-smoke`, `migration-schema-security`, `linked-issue`, `risk-warning`, `pr-size-hard-gate`, `pr-template-drift` passed
-- next action: GitHub checks 완료 후 merge/finalize/cleanup은 사람 확인을 받고 진행한다.
+- next action: GitHub checks는 통과했다. merge/finalize/cleanup은 사람 확인을 받고 진행한다.
