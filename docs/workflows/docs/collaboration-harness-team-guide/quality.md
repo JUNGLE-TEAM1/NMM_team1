@@ -17,7 +17,7 @@
 
 | Check | Command | Result | Evidence |
 | --- | --- | --- | --- |
-| markdown artifact search | `rg -n "AskLake 협업 하네스 사용 가이드|Pre-PR Human Checkpoint|팀원이 기억할 최소 규칙" docs/reports/collaboration-harness-team-usage-guide.md docs/reports/README.md` | passed | 문서 제목, 핵심 섹션, index link 확인 |
+| markdown artifact search | `rg -n "AskLake 협업 하네스 사용 가이드|하네스를 사용할 때 사람의 책임과 AI의 책임|AI는 책임을 대신 지지 않는다|Pre-PR Human Checkpoint|팀원이 기억할 최소 규칙" docs/reports/collaboration-harness-team-usage-guide.md docs/reports/README.md` | passed | 문서 제목, 책임 경계 보강 섹션, 핵심 섹션, index link 확인 |
 | whitespace check | `git diff --check` | passed | trailing whitespace 없음 |
 | harness validation | `scripts/validate-harness.sh` | passed | workspace/report 기본 검증 통과 |
 | strict harness validation | `scripts/validate-harness.sh --strict` | passed | Source of Truth preflight 포함 strict 검증 통과 |
