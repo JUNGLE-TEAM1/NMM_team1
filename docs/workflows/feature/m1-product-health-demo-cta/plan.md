@@ -14,7 +14,7 @@
 ## 범위
 
 - `/query` 화면의 demo question 후보를 Product Health 중심으로 정리한다.
-- `top_risk`, `top_negative_review`, `low_conversion`, `top_late_delivery`, `top_rating`에 대응하는 한국어 질문 버튼을 추가한다.
+- `top_risk`, `top_negative_review`, `low_conversion`, `top_late_delivery`에 대응하는 한국어 질문 버튼을 추가한다.
 - 클릭 시 기존 query input/action 흐름을 재사용한다.
 - Product Health Gold가 준비되지 않은 경우 readiness 안내와 함께 query가 blocked될 수 있음을 표시한다.
 - 기존 Amazon Reviews 질문 후보가 필요하면 legacy/supporting path로 구분한다.

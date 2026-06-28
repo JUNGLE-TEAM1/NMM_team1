@@ -20,7 +20,7 @@
 
 | Decision | Deferred Reason | Revisit Trigger | Target Branch / Phase |
 | --- | --- | --- | --- |
-| Product Health SQL success CTA smoke | `dataset_product_health_gold` CatalogMetadata와 Gold output이 준비된 뒤 실제 supported CTA가 `route=sql`과 DuckDB rows를 반환하는지 확인해야 한다. | Product Health integration evidence 완료 후 후속 M1/M6 smoke Phase |
+| Product Health SQL success CTA smoke | `dataset_product_health_gold` CatalogMetadata와 Gold output이 준비된 뒤 실제 supported CTA가 `route=sql`과 DuckDB rows를 반환하는지 확인해야 한다. | Product Health integration evidence 완료 후 | 후속 M1/M6 supported CTA SQL success smoke Phase |
 
 ## Revisit / Rollback Conditions / 재검토 또는 롤백 조건
 

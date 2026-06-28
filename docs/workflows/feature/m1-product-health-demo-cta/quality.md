@@ -19,10 +19,11 @@
 | --- | --- | --- | --- |
 | lint | not run | skipped | 별도 lint script를 확인하지 않았고 build/smoke로 대체했다. |
 | unit/focused test | not run | skipped | UI-only CTA 변경이며 기존 focused UI test harness가 없어 browser smoke로 대체했다. |
+| CTA intent classification | `PYTHONPATH=backend python - <<'PY' ...` | passed | `top_risk`, `top_negative_review`, `low_conversion`, `top_late_delivery`, `unsupported` CTA 문구가 기대 intent로 분류됨을 확인했다. |
 | integration/contract test | browser smoke `/query?smoke=product-health-cta` | passed | CTA 클릭 후 unsupported route/blocked 표시를 확인했다. |
-| build/typecheck | `cd frontend && npm run build` | passed | Vite build 통과, 최종 asset `index-Bw9K6oKL.js`. |
-| CTA keyword scan | `rg -n "demoQuestionGroups|top_risk|top_negative_review|low_conversion|top_late_delivery|top_rating|unsupported|demo-question-groups|demo-question-group|Product Health SQL intents|Unsupported guardrail|Legacy reviews path" frontend/src/app/App.jsx frontend/src/app/styles.css` | passed | Product Health CTA 그룹과 intent label이 기대 위치에 존재한다. |
-| docker browser smoke | `docker compose -p asklake_m1_product_health_cta up -d backend frontend`; browser `/query?smoke=product-health-cta` | passed | Product Health SQL intents 5개, unsupported 1개, legacy 3개 표시. unsupported CTA 클릭 후 textarea 반영, `route=unsupported`, blocked SQL message, console error 없음. |
+| build/typecheck | `cd frontend && npm run build` | passed | Vite build 통과, 최종 asset `index-0ZfdRy-Y.js`. |
+| CTA keyword scan | `rg -n "demoQuestionGroups|top_risk|top_negative_review|low_conversion|top_late_delivery|unsupported|demo-question-groups|demo-question-group|Product Health SQL intents|Unsupported guardrail|Legacy reviews path" frontend/src/app/App.jsx frontend/src/app/styles.css` | passed | Product Health CTA 그룹과 intent label이 기대 위치에 존재한다. |
+| docker browser smoke | `docker compose -p asklake_m1_product_health_cta build frontend && docker compose -p asklake_m1_product_health_cta up -d backend frontend`; browser `/query?smoke=product-health-cta-remediation` | passed | Product Health SQL intents 4개, unsupported 1개, legacy 3개 표시, Product Health 그룹 내 `top_rating` 없음. unsupported CTA 클릭 후 textarea 반영, `route=unsupported`, blocked SQL message, console error 없음. |
 | diff whitespace | `git diff --check` | passed | whitespace error 없음. |
 | harness validation | `scripts/validate-harness.sh --strict` | passed | strict 실행에 포함되어 `Harness validation passed.` 확인. |
 | strict harness validation | `scripts/validate-harness.sh --strict` | passed | `Harness validation passed.` |

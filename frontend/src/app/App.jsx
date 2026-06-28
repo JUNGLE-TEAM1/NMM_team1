@@ -121,11 +121,10 @@ const demoQuestionGroups = [
     title: "Product Health SQL intents",
     tone: "primary",
     questions: [
-      ["top_risk", "리뷰가 나쁘고 구매 전환도 낮고 배송 지연까지 겹친 문제 상품군을 찾아줘."],
+      ["top_risk", "위험 점수가 높고 부정 리뷰, 낮은 구매 전환, 배송 지연이 겹친 문제 상품군을 찾아줘."],
       ["top_negative_review", "부정 리뷰율이 가장 높은 상품을 보여줘."],
       ["low_conversion", "구매 전환율이 가장 낮은 상품을 찾아줘."],
       ["top_late_delivery", "배송 지연율이 가장 높은 상품을 알려줘."],
-      ["top_rating", "평점이 가장 높은 Product Health 상품을 보여줘."],
     ],
   },
   {
