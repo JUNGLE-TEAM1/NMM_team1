@@ -12,6 +12,7 @@ from app.domain.ai_query import (
     SelectedDataset,
     SqlEngineContext,
 )
+from app.domain.retrieval_index import RetrievalIndexHit
 from app.domain.target_contracts import now_iso
 from app.ports.catalog_source import CatalogSource
 from app.ports.sql_engine import SqlEngineAdapter
@@ -87,6 +88,7 @@ class Week2AIQueryService:
                 reason_terms=retrieval.reason_terms,
                 score=retrieval.score,
                 evidence_index=0,
+                index_hits=retrieval.index_hits,
             ),
             status=status,
             sql=query_result.sql,
@@ -152,10 +154,11 @@ class Week2AIQueryService:
         self,
         catalog: dict[str, Any],
         reason_terms: list[str],
-        score: int,
+        score: int | float,
         evidence_index: int,
+        index_hits: list[RetrievalIndexHit] | None = None,
     ) -> list[RetrievalTraceItem]:
-        return [
+        trace = [
             RetrievalTraceItem(
                 source_type="catalog",
                 source_id=catalog["dataset_id"],
@@ -164,6 +167,19 @@ class Week2AIQueryService:
                 evidence_index=evidence_index,
             )
         ]
+        for hit in index_hits or []:
+            if hit.source_type == "catalog" and hit.source_id == catalog["dataset_id"]:
+                continue
+            trace.append(
+                RetrievalTraceItem(
+                    source_type=hit.source_type,
+                    source_id=hit.source_id,
+                    score=hit.score,
+                    matched_terms=hit.matched_terms,
+                    evidence_index=evidence_index,
+                )
+            )
+        return trace
 
     def _summary(
         self,
