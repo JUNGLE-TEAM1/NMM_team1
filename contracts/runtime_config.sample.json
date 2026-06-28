@@ -17,6 +17,38 @@
     "output_root": "data/week2",
     "result_fields": ["status", "row_count", "bytes", "duration_ms", "output_path"]
   },
+  "product_health_runtime_smoke": {
+    "runner": "spark_runner",
+    "source_inputs": [
+      {
+        "source_id": "reviews_seed",
+        "input_format": "jsonl",
+        "input_path": "backend/samples/product_health_reviews_seed.jsonl"
+      },
+      {
+        "source_id": "behavior_events_seed",
+        "input_format": "jsonl",
+        "input_path": "backend/samples/product_health_behavior_events_seed.jsonl"
+      },
+      {
+        "source_id": "delivery_trips_seed",
+        "input_format": "jsonl",
+        "input_path": "backend/samples/product_health_delivery_trips_seed.jsonl"
+      },
+      {
+        "source_id": "product_master_seed",
+        "input_format": "jsonl",
+        "input_path": "backend/samples/product_health_product_master_seed.jsonl"
+      }
+    ],
+    "output_format": "parquet",
+    "output_root": "data/week2",
+    "options": {
+      "output_file_name_template": "{source_id}.parquet"
+    },
+    "result_fields": ["status", "row_count", "bytes", "duration_ms", "output_path", "task_results"],
+    "ownership_note": "M2 pass-through runtime evidence only; M3 owns Bronze/Silver/Gold TransformSpec semantics."
+  },
   "storage": {
     "profile": "minio",
     "bucket": "asklake-demo",
@@ -56,5 +88,5 @@
       "ASKLAKE_DEMO_MINIO_SECRET_KEY"
     ]
   },
-  "updated_at": "2026-06-26T00:00:00+09:00"
+  "updated_at": "2026-06-28T00:00:00+09:00"
 }

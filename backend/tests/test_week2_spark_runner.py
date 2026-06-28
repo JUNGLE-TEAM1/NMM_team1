@@ -142,6 +142,59 @@ def test_week2_spark_runner_uploads_output_when_option_enabled(tmp_path: Path, m
     assert result.logs[-1]["message"] == "spark_runner upload succeeded"
 
 
+def test_week2_spark_runner_writes_multiple_product_health_sources(tmp_path: Path) -> None:
+    """M2가 여러 source를 pass-through로 읽고 source별 실행 증거를 남기는지 검증한다."""
+
+    input_root = tmp_path / "raw"
+    output_root = tmp_path / "week2"
+    input_root.mkdir()
+    reviews_path = input_root / "reviews_seed.jsonl"
+    behavior_path = input_root / "behavior_events_seed.jsonl"
+    delivery_path = input_root / "delivery_trips_seed.jsonl"
+    products_path = input_root / "product_master_seed.jsonl"
+    write_jsonl(reviews_path, [{"review_id": "R1", "product_id": "B1", "rating": 2}])
+    write_jsonl(
+        behavior_path,
+        [
+            {"event_id": "E1", "product_id": "B1", "event_type": "view"},
+            {"event_id": "E2", "product_id": "B1", "event_type": "purchase"},
+        ],
+    )
+    write_jsonl(delivery_path, [{"trip_id": "T1", "product_id": "B1", "late_minutes": 18}])
+    write_jsonl(products_path, [{"product_id": "B1", "category": "gift_cards"}])
+
+    runtime_config = RuntimeConfig(
+        runner="spark_runner",
+        output_format="parquet",
+        output_root=str(output_root),
+        source_inputs=[
+            {"source_id": "reviews_seed", "input_format": "jsonl", "input_path": str(reviews_path)},
+            {"source_id": "behavior_events_seed", "input_format": "jsonl", "input_path": str(behavior_path)},
+            {"source_id": "delivery_trips_seed", "input_format": "jsonl", "input_path": str(delivery_path)},
+            {"source_id": "product_master_seed", "input_format": "jsonl", "input_path": str(products_path)},
+        ],
+        options={"output_file_name_template": "{source_id}.parquet"},
+    )
+
+    result = Week2SparkRunner().run(runtime_config, run_id="run_product_health_runtime_001")
+
+    output_path = output_root / "spark_smoke" / "run_id=run_product_health_runtime_001"
+    assert result.status == "succeeded"
+    assert result.row_count == 5
+    assert result.output_row_count == 5
+    assert result.bytes == sum(path.stat().st_size for path in [reviews_path, behavior_path, delivery_path, products_path])
+    assert result.output_path == str(output_path)
+    assert pq.read_table(output_path / "reviews_seed.parquet").num_rows == 1
+    assert pq.read_table(output_path / "behavior_events_seed.parquet").num_rows == 2
+    assert pq.read_table(output_path / "delivery_trips_seed.parquet").num_rows == 1
+    assert pq.read_table(output_path / "product_master_seed.parquet").num_rows == 1
+    task_by_node = {task["node_id"]: task for task in result.task_results}
+    assert task_by_node["spark_read:reviews_seed"]["source_id"] == "reviews_seed"
+    assert task_by_node["spark_write:behavior_events_seed"]["output_path"] == str(
+        output_path / "behavior_events_seed.parquet"
+    )
+
+
 class FakeStorageAdapter:
     """SparkRunner가 storage adapter를 호출하는지만 보는 테스트 double."""
 
