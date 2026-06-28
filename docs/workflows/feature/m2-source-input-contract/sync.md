@@ -17,14 +17,15 @@ main 동기화와 integration readiness를 기록한다.
 | --- | --- | --- | --- |
 | 2026-06-28 | not checked with network fetch because this side task did not request remote sync | none known | keep local branch scoped to additive RuntimeConfig change |
 | 2026-06-28 | GitHub auth restored | issue/project lifecycle | created linked issue #233 and set Project Status to In Progress |
+| 2026-06-28 | `origin/main` advanced from `e1ddef2` to `0a9247c` | `docs/03`, `docs/reports/README.md`, M6 SQL planner files | merged `origin/main` into feature branch with no conflicts |
 
 ## Pre-Merge Sync
 
-- main commit: `e1ddef2`
-- conflicts: not checked against new remote changes
-- validation: focused runner test passed; Product Health runtime smoke passed; contract JSON validation passed; diff check passed; compileall passed; harness validation passed
-- result: local-ready; issue created and project status set
-- deferral reason: remote branch/PR pending commit and push
+- main commit: `0a9247c`
+- conflicts: none; `git merge origin/main --no-edit` completed with automatic merges in `docs/03-interface-reference.md` and `docs/reports/README.md`
+- validation: focused runner test 7 passed; backend full tests 85 passed with escalated local run due Spark socket sandbox restriction; contract JSON validation passed; diff check passed; compileall passed; strict harness validation passed
+- result: ready to push synced branch and wait for PR CI
+- deferral reason: none
 
 ## Push / PR
 

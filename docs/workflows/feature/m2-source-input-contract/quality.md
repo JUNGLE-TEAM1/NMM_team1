@@ -24,6 +24,7 @@
 | compileall | `.venv/bin/python -m compileall backend/app scripts/week2_m2_product_health_runtime_smoke.py` | passed | Python syntax/import compile OK |
 | harness validation | `scripts/validate-harness.sh` | passed | Harness validation passed |
 | strict harness validation | `scripts/validate-harness.sh --strict` | passed | Harness validation passed |
+| backend full tests after main sync | `PYTHONPATH=backend .venv/bin/python -m pytest backend/tests -q` | passed with escalation | 85 passed; sandboxed run hit Spark localhost socket restriction |
 
 ## CI/CD Gate / CI-CD 게이트
 
@@ -37,8 +38,7 @@
 
 | Check | Reason | Human Confirmed |
 | --- | --- | --- |
-| full backend tests | focused runner contract change라 직접 관련 test와 smoke를 우선 실행 | no explicit separate confirmation |
-| remote CI | GitHub auth/permission blocks push/PR | blocked |
+| remote CI after main sync | main sync branch push 이후 GitHub Actions 재실행 필요 | pending |
 | actual S3/PostgreSQL/MongoDB/Kafka connector smoke | 이번 scope는 contract compatibility only | user requested compatibility change |
 
 ## 예정 검증
