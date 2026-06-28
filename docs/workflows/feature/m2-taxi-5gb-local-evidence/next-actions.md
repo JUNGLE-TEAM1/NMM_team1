@@ -4,8 +4,8 @@
 
 ## Current State / 현재 상태
 
-- State: local evidence complete; PR prep pending
-- Summary: PySpark local mode로 Taxi 5GB급 Parquet directory를 읽고 daily Gold Parquet을 생성했다. 이제 문서/검증을 마무리하고 PR로 올릴 수 있다.
+- State: PR-ready
+- Summary: PySpark local mode로 Taxi 5GB급 Parquet directory를 읽고 daily Gold Parquet을 생성했다. 최신 `origin/main` merge와 재검증까지 끝났으므로 PR 생성과 merge 확인으로 넘어갈 수 있다.
 
 ## Recommended Next Action / 권장 다음 행동
 

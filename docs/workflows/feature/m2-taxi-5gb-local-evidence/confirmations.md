@@ -54,12 +54,12 @@ AI가 멈추고 사람 확인을 받아야 하는 지점을 기록한다.
 
 ## Git Sync Confirm / Git sync 확인
 
-- Status: pending before PR
+- Status: confirmed
 - Ask human to confirm:
   - 구현 전 start sync command/result
   - mid-phase upstream change action
   - 완료 전 pre-merge sync command/result
-- Human response: PR 전 `origin/main` 변경을 확인해야 한다.
+- Human response: 사용자가 "작업 끝나고 문제 없으면 merge 진행"을 승인했고, `origin/main` `53e07e04`를 충돌 없이 merge한 뒤 재검증했다.
 
 ## Sync Conflict Confirm / sync 충돌 확인
 
@@ -89,13 +89,13 @@ AI가 멈추고 사람 확인을 받아야 하는 지점을 기록한다.
 
 ## Completion Confirm / 완료 확인
 
-- Status: pending PR handoff
+- Status: confirmed
 - Ask human to confirm:
   - 변경 요약
   - 검증 결과
   - 남은 위험
   - 다음 작업 문맥
-- Human response: 
+- Human response: 사용자가 문제 없으면 merge 진행 후 다음 작업으로 넘어가라고 지시했다.
 
 ## Integration Conflict Confirm / 통합 충돌 확인
 

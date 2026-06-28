@@ -22,10 +22,10 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 ## Pre-Merge Sync
 
 - main commit: `53e07e04`
-- conflicts: not checked by merge; changed file comparison shows no overlap with this branch's M2 Taxi Spark files.
-- validation: local validation passed before sync check; rerun required after any merge/rebase.
-- result: pending human confirmation for merge/rebase/pull.
-- deferral reason: `origin/main` advanced with M1 UI/docs changes; no direct file overlap found, but applying main requires human confirmation under `docs/11-git-sync-policy.md`.
+- conflicts: none; `git merge --no-edit origin/main` completed with the `ort` strategy.
+- validation: `git diff --check`, `py_compile`, `scripts/validate-harness.sh --strict`, and focused PySpark test passed after merge.
+- result: merged `origin/main` `53e07e04` into `feature/m2-taxi-5gb-local-evidence`.
+- deferral reason: n/a
 
 ## PR Conflict Resolution
 

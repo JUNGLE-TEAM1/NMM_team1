@@ -17,12 +17,12 @@
 
 | Check | Command | Result | Evidence |
 | --- | --- | --- | --- |
-| lint | `git diff --check` | passed | no output |
-| unit/focused test | `PYTHONPATH=backend SPARK_LOCAL_IP=127.0.0.1 .venv/bin/python -m pytest backend/tests/test_week2_taxi_spark_runner.py -q` | passed | `2 passed in 7.91s` |
+| lint | `git diff --check` | passed | no output after merging `origin/main` `53e07e04` |
+| unit/focused test | `PYTHONPATH=backend SPARK_LOCAL_IP=127.0.0.1 .venv/bin/python -m pytest backend/tests/test_week2_taxi_spark_runner.py -q` | passed | `2 passed in 7.14s` after merging `origin/main` `53e07e04` |
 | integration/contract test | `PYTHONPATH=backend SPARK_LOCAL_IP=127.0.0.1 .venv/bin/python scripts/week2_m2_taxi_spark_local_evidence.py --input '<LOCAL_TAXI_PARQUET_DIR>' --profile local-full-month --run-id run_taxi_5gb_local_spark_001 --master 'local[2]' --driver-memory 8g --disable-vectorized-reader --summary-path data/results/m2_taxi_5gb_local_evidence/run_taxi_5gb_local_spark_001_summary.json` | passed | input `308,010,490 rows`, `4,871,531,583 bytes`; output `2,608 rows`, `225,057 bytes`; duration `107,366ms` |
-| build/typecheck | `PYTHONPATH=backend .venv/bin/python -m py_compile backend/app/services/week2_taxi_spark_runner.py scripts/week2_m2_taxi_spark_local_evidence.py` | passed | no output |
+| build/typecheck | `PYTHONPATH=backend .venv/bin/python -m py_compile backend/app/services/week2_taxi_spark_runner.py scripts/week2_m2_taxi_spark_local_evidence.py` | passed | no output after merging `origin/main` `53e07e04` |
 | harness validation | `scripts/validate-harness.sh` | passed | `Harness validation passed.` |
-| strict harness validation | `scripts/validate-harness.sh --strict` | passed | `Harness validation passed.` |
+| strict harness validation | `scripts/validate-harness.sh --strict` | passed | `Harness validation passed.` after merging `origin/main` `53e07e04` |
 
 ## CI/CD Gate / CI-CD 게이트
 
