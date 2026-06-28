@@ -44,6 +44,7 @@ def run_evidence(args: argparse.Namespace) -> dict[str, Any]:
         )
     )
 
+    runner_name, runtime_note = runner_identity(args.master)
     evidence = {
         "status": result.status,
         "run_id": args.run_id,
@@ -66,12 +67,12 @@ def run_evidence(args: argparse.Namespace) -> dict[str, Any]:
         },
         "metrics": {"duration_ms": result.duration_ms},
         "runner": {
-            "name": "taxi_spark_local_runner",
+            "name": runner_name,
             "implementation": "Week2TaxiSparkRunner",
             "spark_master": args.master,
             "driver_memory": args.driver_memory,
             "parquet_vectorized_reader": not args.disable_vectorized_reader,
-            "runtime_note": "PySpark local mode evidence; Docker Spark cluster is a required follow-up for final M2 completion.",
+            "runtime_note": runtime_note,
         },
         "task_results": result.task_results,
         "logs": result.logs,
@@ -84,6 +85,20 @@ def run_evidence(args: argparse.Namespace) -> dict[str, Any]:
     if result.status != "succeeded":
         evidence["error"] = result.task_results[0].get("error") if result.task_results else "unknown error"
     return evidence
+
+
+def runner_identity(master: str) -> tuple[str, str]:
+    """Spark master 값으로 local 실행과 Docker cluster 실행 evidence를 구분한다."""
+
+    if master.startswith("local"):
+        return (
+            "taxi_spark_local_runner",
+            "PySpark local mode evidence; Docker Spark cluster evidence is recorded by spark:// master runs.",
+        )
+    return (
+        "taxi_spark_docker_cluster_runner",
+        "Docker Spark cluster evidence using a Spark standalone master and worker containers.",
+    )
 
 
 def build_storage_config(args: argparse.Namespace, output_root: Path) -> StorageConfig:

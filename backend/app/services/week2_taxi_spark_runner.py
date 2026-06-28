@@ -16,7 +16,7 @@ from app.services.week2_taxi_batch_runner import GOLD_DATASET_ID, GOLD_TABLE_NAM
 
 @dataclass(frozen=True)
 class TaxiSparkConfig:
-    """PySpark local mode Taxi evidence 실행에 필요한 입력/출력 설정."""
+    """Taxi Spark evidence 실행에 필요한 입력/출력 설정."""
 
     input_path: str
     output_root: str | None = None
@@ -35,14 +35,14 @@ class TaxiSparkConfig:
 
 
 class Week2TaxiSparkRunner:
-    """TLC Taxi Parquet을 PySpark local mode로 Gold metric Parquet까지 처리한다.
+    """TLC Taxi Parquet을 Spark로 Gold metric Parquet까지 처리한다.
 
     이번 runner는 Spark 실행 경로 증거를 만들기 위한 얇은 adapter다.
-    Docker Spark cluster와 M3 TransformSpec 기반 일반화는 후속 단계에서 붙인다.
+    M3 TransformSpec 기반 일반화는 후속 단계에서 붙인다.
     """
 
     def run(self, config: TaxiSparkConfig | dict[str, Any]) -> Week2RunnerResult:
-        """Spark local mode로 Taxi daily Gold metric을 만들고 Week2RunnerResult로 반환한다."""
+        """Spark로 Taxi daily Gold metric을 만들고 Week2RunnerResult로 반환한다."""
 
         started = perf_counter()
         taxi_config = coerce_config(config)
@@ -114,9 +114,9 @@ class Week2TaxiSparkRunner:
 
 
 def build_spark_session(config: TaxiSparkConfig) -> Any:
-    """PySpark local session을 만든다. sandbox 밖 실행에서는 localhost gateway가 열린다."""
+    """master 설정에 맞춰 PySpark session을 만든다."""
 
-    os.environ.setdefault("SPARK_LOCAL_IP", "127.0.0.1")
+    configure_spark_network_environment(config.master)
     try:
         from pyspark.sql import SparkSession
     except ImportError as error:
@@ -132,6 +132,13 @@ def build_spark_session(config: TaxiSparkConfig) -> Any:
     if config.driver_memory:
         builder = builder.config("spark.driver.memory", config.driver_memory)
     return builder.getOrCreate()
+
+
+def configure_spark_network_environment(master: str) -> None:
+    """local master에서만 localhost gateway를 기본값으로 둔다."""
+
+    if master.startswith("local"):
+        os.environ.setdefault("SPARK_LOCAL_IP", "127.0.0.1")
 
 
 def validate_required_columns(columns: list[str]) -> None:

@@ -122,6 +122,14 @@ PYTHONPATH=backend SPARK_LOCAL_IP=127.0.0.1 .venv/bin/python scripts/week2_m2_ta
   --summary-path data/results/m2_taxi_5gb_local_evidence/run_taxi_5gb_local_spark_001_summary.json
 ```
 
+13. M2 Taxi Docker Spark evidence를 확인할 때는 host의 Taxi directory를 container의 `/data/taxi`로 mount하고, repo의 `data/results/...`를 container의 `/app/data/results/...`로 쓴다. 작은 파일을 먼저 돌린 뒤 같은 Spark master/worker 경로로 5GB directory를 돌린다. 성공 기준은 summary JSON에 `status=succeeded`, Spark master가 `spark://m2-spark-master:7077`, input row/bytes, duration, output path, output row/bytes가 남고, output Parquet을 실제로 읽을 수 있는 것이다. 끝나면 cluster를 내려둔다.
+
+```bash
+ASKLAKE_TAXI_HOST_DIR='<LOCAL_TAXI_PARENT_DIR>' scripts/week2_m2_taxi_spark_docker_evidence.sh small
+ASKLAKE_TAXI_HOST_DIR='<LOCAL_TAXI_PARENT_DIR>' scripts/week2_m2_taxi_spark_docker_evidence.sh 5gb
+scripts/week2_m2_taxi_spark_docker_evidence.sh down
+```
+
 ### Week 2 상품 리스크 대표 경로 점검
 
 이 경로는 Week2 발표 대표 path가 5GB 이상 fact input을 처리해 `gold_product_health`를 만들고, Catalog/SQL/UI까지 이어지는지 확인한다.

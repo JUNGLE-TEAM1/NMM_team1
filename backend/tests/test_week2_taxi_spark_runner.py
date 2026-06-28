@@ -1,4 +1,5 @@
 from datetime import datetime
+import os
 from pathlib import Path
 import shutil
 
@@ -6,11 +7,31 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 
-from app.services.week2_taxi_spark_runner import TaxiSparkConfig, Week2TaxiSparkRunner
+from app.services.week2_taxi_spark_runner import TaxiSparkConfig, Week2TaxiSparkRunner, configure_spark_network_environment
+from scripts.week2_m2_taxi_spark_local_evidence import runner_identity
 
 
 pytest.importorskip("pyspark")
 pytestmark = pytest.mark.skipif(shutil.which("java") is None, reason="PySpark local mode smoke requires Java")
+
+
+def test_taxi_spark_runner_does_not_force_local_ip_for_cluster_master(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Docker Spark cluster에서는 worker가 driver를 찾아야 하므로 localhost를 강제하지 않는다."""
+
+    monkeypatch.delenv("SPARK_LOCAL_IP", raising=False)
+
+    configure_spark_network_environment("spark://m2-spark-master:7077")
+
+    assert "SPARK_LOCAL_IP" not in os.environ
+
+
+def test_taxi_spark_evidence_labels_cluster_master() -> None:
+    """spark:// master evidence는 Docker cluster runner로 표시한다."""
+
+    runner_name, runtime_note = runner_identity("spark://m2-spark-master:7077")
+
+    assert runner_name == "taxi_spark_docker_cluster_runner"
+    assert "Docker Spark cluster" in runtime_note
 
 
 def write_taxi_fixture(path: Path) -> None:

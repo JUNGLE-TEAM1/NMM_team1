@@ -1,0 +1,87 @@
+services:
+  m2-spark-master:
+    image: ${ASKLAKE_M2_SPARK_IMAGE:-apache/spark:4.0.1}
+    container_name: m2-spark-master
+    user: root
+    command:
+      - /opt/spark/bin/spark-class
+      - org.apache.spark.deploy.master.Master
+      - --host
+      - 0.0.0.0
+      - --port
+      - "7077"
+      - --webui-port
+      - "8080"
+    environment:
+      SPARK_NO_DAEMONIZE: "true"
+    ports:
+      - "${M2_SPARK_MASTER_PORT:-17077}:7077"
+      - "${M2_SPARK_MASTER_WEB_PORT:-18080}:8080"
+    volumes: &m2-spark-volumes
+      - ../:/app
+      - "${ASKLAKE_TAXI_HOST_DIR:-/Users/liamtsy/Desktop/asklake_taxi_data copy}:/data/taxi:ro"
+    networks:
+      - m2-spark-net
+
+  m2-spark-worker-1:
+    image: ${ASKLAKE_M2_SPARK_IMAGE:-apache/spark:4.0.1}
+    container_name: m2-spark-worker-1
+    user: root
+    depends_on:
+      - m2-spark-master
+    command:
+      - /opt/spark/bin/spark-class
+      - org.apache.spark.deploy.worker.Worker
+      - --cores
+      - "${M2_SPARK_WORKER_CORES:-2}"
+      - --memory
+      - "${M2_SPARK_WORKER_MEMORY:-3g}"
+      - spark://m2-spark-master:7077
+    environment:
+      SPARK_NO_DAEMONIZE: "true"
+    volumes: *m2-spark-volumes
+    networks:
+      - m2-spark-net
+
+  m2-spark-worker-2:
+    image: ${ASKLAKE_M2_SPARK_IMAGE:-apache/spark:4.0.1}
+    container_name: m2-spark-worker-2
+    user: root
+    depends_on:
+      - m2-spark-master
+    command:
+      - /opt/spark/bin/spark-class
+      - org.apache.spark.deploy.worker.Worker
+      - --cores
+      - "${M2_SPARK_WORKER_CORES:-2}"
+      - --memory
+      - "${M2_SPARK_WORKER_MEMORY:-3g}"
+      - spark://m2-spark-master:7077
+    environment:
+      SPARK_NO_DAEMONIZE: "true"
+    volumes: *m2-spark-volumes
+    networks:
+      - m2-spark-net
+
+  m2-spark-driver:
+    image: ${ASKLAKE_M2_SPARK_IMAGE:-apache/spark:4.0.1}
+    container_name: m2-spark-driver
+    hostname: m2-spark-driver
+    user: root
+    working_dir: /app
+    depends_on:
+      - m2-spark-master
+      - m2-spark-worker-1
+      - m2-spark-worker-2
+    environment:
+      PYTHONPATH: /app/backend
+      SPARK_LOCAL_HOSTNAME: m2-spark-driver
+    volumes: *m2-spark-volumes
+    networks:
+      m2-spark-net:
+        aliases:
+          - m2-spark-driver
+
+networks:
+  m2-spark-net:
+    name: m2-spark-net
