@@ -7,16 +7,12 @@ integration branch는 branch 작업을 합치기 전에 이 파일을 읽는다.
 
 | File | Proposed Change | Reason | Merge Risk |
 | --- | --- | --- | --- |
-| `docs/02-architecture.md` |  |  |  |
-| `docs/03-interface-reference.md` |  |  |  |
-| `docs/05-acceptance-scenarios-and-checklist.md` |  |  |  |
-| `docs/06-regression-and-failure-scenarios.md` |  |  |  |
-| `docs/07-manual-verification-playbook.md` |  |  |  |
+| `docs/reports/m1-demo-readiness-panel.md` | Phase 실행 증거 report 추가 | 이번 작업은 새 backend readiness API나 M2/M3/M5/M6 contract를 정의하지 않고 M1 `/query` 화면에서 모듈별 readiness를 보수적으로 표시하는 UI 보강만 수행했다. Source of Truth 변경은 없고 증거 계층만 추가한다. | 낮음. durable report 추가이며 공유 contract 변경 없음. |
 
 ## Integration Notes / 통합 메모
 
--
+- `docs/03`, `docs/05`, `docs/06`, `docs/07`의 Product Health representative path와 fake success 금지 기준을 구현 범위 판단에 사용했다.
 
 ## Conflicts To Resolve / 해결할 충돌
 
--
+- 없음

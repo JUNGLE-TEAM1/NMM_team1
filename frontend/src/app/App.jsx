@@ -108,16 +108,39 @@ const navItems = [
   },
 ];
 
+const PRODUCT_HEALTH_DATASET_ID = "dataset_product_health_gold";
+
 const stepIcons = {
   source: Database,
   schema: FileJson,
   workflow: GitBranch,
 };
 
-const demoQuestions = [
-  "Amazon reviews에서 평점 높은 상품 알려줘",
-  "리뷰가 가장 많은 상품 알려줘",
-  "Amazon reviews의 product_id별 review_count를 보여줘",
+const demoQuestionGroups = [
+  {
+    title: "Product Health SQL intents",
+    tone: "primary",
+    questions: [
+      ["top_risk", "위험 점수가 높고 부정 리뷰, 낮은 구매 전환, 배송 지연이 겹친 문제 상품군을 찾아줘."],
+      ["top_negative_review", "부정 리뷰율이 가장 높은 상품을 보여줘."],
+      ["low_conversion", "구매 전환율이 가장 낮은 상품을 찾아줘."],
+      ["top_late_delivery", "배송 지연율이 가장 높은 상품을 알려줘."],
+    ],
+  },
+  {
+    title: "Unsupported guardrail",
+    tone: "warning",
+    questions: [["unsupported", "다음 분기 매출을 예측하고 광고 문구까지 생성해줘."]],
+  },
+  {
+    title: "Legacy reviews path",
+    tone: "secondary",
+    questions: [
+      ["legacy_rating", "Amazon reviews에서 평점 높은 상품 알려줘"],
+      ["legacy_count", "리뷰가 가장 많은 상품 알려줘"],
+      ["legacy_table", "Amazon reviews의 product_id별 review_count를 보여줘"],
+    ],
+  },
 ];
 
 function normalizePath(pathname) {
@@ -904,7 +927,7 @@ function compactJson(value) {
   return JSON.stringify(value, null, 2);
 }
 
-function useWeek2CatalogState() {
+function useWeek2CatalogState(datasetId = WEEK2_DEFAULT_DATASET_ID) {
   const [catalogState, setCatalogState] = useState({
     catalog: null,
     error: "",
@@ -914,7 +937,7 @@ function useWeek2CatalogState() {
   async function refreshCatalog() {
     setCatalogState((previous) => ({ ...previous, error: "", loading: true }));
     try {
-      const catalog = await getWeek2Catalog();
+      const catalog = await getWeek2Catalog(datasetId);
       setCatalogState({ catalog, error: "", loading: false });
     } catch (error) {
       setCatalogState((previous) => ({
@@ -930,7 +953,7 @@ function useWeek2CatalogState() {
 
     async function loadCatalog() {
       try {
-        const catalog = await getWeek2Catalog();
+        const catalog = await getWeek2Catalog(datasetId);
         if (isMounted) setCatalogState({ catalog, error: "", loading: false });
       } catch (error) {
         if (isMounted) setCatalogState({ catalog: null, error: error.message, loading: false });
@@ -941,9 +964,102 @@ function useWeek2CatalogState() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [datasetId]);
 
   return { catalogState, refreshCatalog };
+}
+
+function productHealthReadiness(catalog, error, loading) {
+  const hasCatalog = Boolean(catalog);
+  const hasLocalPath = Boolean(catalog?.storage?.local_fallback_path);
+  const hasAllowedColumns = Boolean(catalog?.query?.allowed_columns?.length);
+  const allowsReadonlySql = Boolean(catalog?.query?.allow_readonly_sql);
+  const hasLineage = Boolean(catalog?.lineage?.run_id);
+  const ready = hasCatalog && hasLocalPath && hasAllowedColumns && allowsReadonlySql && hasLineage;
+
+  if (loading) {
+    return {
+      status: "checking",
+      title: "Product Health Gold 확인 중",
+      body: `${PRODUCT_HEALTH_DATASET_ID} CatalogMetadata를 조회하고 있습니다.`,
+      checks: [
+        ["CatalogMetadata", "checking", "M5 Catalog 조회 중"],
+        ["Gold local path", "checking", "storage.local_fallback_path 확인 중"],
+        ["Query contract", "checking", "allowlist 확인 중"],
+        ["Lineage", "checking", "run_id 확인 중"],
+      ],
+    };
+  }
+
+  if (!hasCatalog) {
+    const missingBody = `${PRODUCT_HEALTH_DATASET_ID} CatalogMetadata가 없습니다. M2/M3/M5가 gold_product_health output과 Catalog lineage를 먼저 닫아야 합니다.`;
+    return {
+      status: "missing",
+      title: "Product Health Gold가 아직 준비되지 않았습니다",
+      body: error ? `${missingBody} (${error})` : missingBody,
+      checks: [
+        ["CatalogMetadata", "missing", "M5 Catalog 등록 필요"],
+        ["Gold output", "missing", "M3 TransformSpec과 M2 runtime output 필요"],
+        ["Query evidence", "missing", "M6가 읽을 local fallback path 없음"],
+        ["Next owner", "missing", "M2/M3/M5 통합 후 M1 재확인"],
+      ],
+    };
+  }
+
+  return {
+    status: ready ? "ready" : "partial",
+    title: ready ? "Product Health Gold query 준비됨" : "Product Health Gold evidence가 일부 부족합니다",
+    body: ready
+      ? "CatalogMetadata, lineage, local fallback path, readonly SQL allowlist가 모두 보입니다."
+      : "Catalog는 보이지만 local path, allowed columns, lineage 중 일부가 빠져 있어 성공으로 표시하지 않습니다.",
+    checks: [
+      ["CatalogMetadata", "ready", catalog.dataset_id],
+      ["Gold local path", hasLocalPath ? "ready" : "missing", catalog.storage?.local_fallback_path || "storage.local_fallback_path 필요"],
+      ["Query contract", hasAllowedColumns && allowsReadonlySql ? "ready" : "missing", catalog.query?.table_name || "allowed_columns 또는 allow_readonly_sql 필요"],
+      ["Lineage", hasLineage ? "ready" : "missing", catalog.lineage?.run_id || "M5 lineage.run_id 필요"],
+    ],
+  };
+}
+
+function demoReadinessItems(readiness) {
+  const checkState = Object.fromEntries(readiness.checks.map(([label, state, detail]) => [label, { state, detail }]));
+  const catalogReady = checkState.CatalogMetadata?.state === "ready";
+  const goldOutputReady = checkState["Gold output"]?.state === "ready" || checkState["Gold local path"]?.state === "ready";
+  const lineageReady = checkState.Lineage?.state === "ready";
+  const queryReady = readiness.status === "ready";
+
+  return [
+    {
+      module: "M2",
+      label: "Runtime evidence",
+      state: goldOutputReady ? "ready" : readiness.status === "checking" ? "unknown" : "not-ready",
+      detail: goldOutputReady ? "Gold output local path 확인됨" : "source별 runtime output evidence 대기",
+    },
+    {
+      module: "M3",
+      label: "Gold semantics",
+      state: goldOutputReady ? "unknown" : "not-ready",
+      detail: goldOutputReady ? "metric 의미 최종 확인 필요" : "gold_product_health TransformSpec/output 대기",
+    },
+    {
+      module: "M5",
+      label: "Catalog lineage",
+      state: catalogReady && lineageReady ? "ready" : readiness.status === "checking" ? "unknown" : "not-ready",
+      detail: catalogReady && lineageReady ? "CatalogMetadata와 run_id 확인됨" : "dataset_product_health_gold Catalog lineage 대기",
+    },
+    {
+      module: "M6",
+      label: "SQL evidence",
+      state: queryReady ? "ready" : readiness.status === "checking" ? "unknown" : "blocked",
+      detail: queryReady ? "readonly SQL + local fallback 실행 가능" : "Product Health SQL success smoke 대기",
+    },
+    {
+      module: "M1",
+      label: "Browser smoke",
+      state: "ready",
+      detail: "CTA/readiness UI smoke 가능, 실제 SQL success는 upstream 준비 후 재확인",
+    },
+  ];
 }
 
 function catalogQualityRows(catalog) {
@@ -1477,9 +1593,18 @@ function RawJsonBlock({ title, value }) {
 function CatalogPage({ navigate }) {
   const [selectedTag, setSelectedTag] = useState("전체");
   const { catalogState, refreshCatalog } = useWeek2CatalogState();
+  const {
+    catalogState: productHealthCatalogState,
+    refreshCatalog: refreshProductHealthCatalog,
+  } = useWeek2CatalogState(PRODUCT_HEALTH_DATASET_ID);
   const tags = ["전체", "bronze", "silver", "gold"];
   const catalog = catalogState.catalog;
   const isVisible = selectedTag === "전체" || selectedTag === (catalog?.layer || m1CatalogPlaceholder.layer);
+  const productHealthStatus = productHealthReadiness(
+    productHealthCatalogState.catalog,
+    productHealthCatalogState.error,
+    productHealthCatalogState.loading,
+  );
 
   return (
     <div className="page-stack">
@@ -1511,6 +1636,12 @@ function CatalogPage({ navigate }) {
       {catalogState.loading ? (
         <EmptyState icon={Loader2} title="CatalogMetadata 조회 중" body={WEEK2_DEFAULT_DATASET_ID} />
       ) : null}
+      <ProductHealthReadinessPanel
+        readiness={productHealthStatus}
+        onRefresh={refreshProductHealthCatalog}
+        loading={productHealthCatalogState.loading}
+        compact={false}
+      />
       {catalog && isVisible ? (
         <>
           <section className="catalog-feature">
@@ -1721,6 +1852,13 @@ function AiQueryPage({ navigate, setNotice }) {
   const displaySql = queryState.result
     ? queryDisplaySql(queryResult?.sql ?? queryState.result.sql)
     : m1AiQueryPlaceholder.sql;
+  const { catalogState: productHealthCatalogState, refreshCatalog: refreshProductHealthCatalog } =
+    useWeek2CatalogState(PRODUCT_HEALTH_DATASET_ID);
+  const productHealthStatus = productHealthReadiness(
+    productHealthCatalogState.catalog,
+    productHealthCatalogState.error,
+    productHealthCatalogState.loading,
+  );
 
   async function submitQuery(nextQuestion = queryText) {
     const question = nextQuestion.trim();
@@ -1770,18 +1908,29 @@ function AiQueryPage({ navigate, setNotice }) {
             {queryState.loading ? "실행 중" : "질문 실행"}
           </button>
           {queryState.error ? <p className="form-error">{queryState.error}</p> : null}
-          <div className="demo-question-list" aria-label="Demo question candidates">
-            {demoQuestions.map((question) => (
-              <button
-                key={question}
-                type="button"
-                className="ghost-action"
-                onClick={() => submitQuery(question)}
-                disabled={queryState.loading}
-              >
-                <Sparkles size={14} />
-                {question}
-              </button>
+          <div className="demo-question-groups" aria-label="Product Health demo question candidates">
+            {demoQuestionGroups.map((group) => (
+              <section key={group.title} className={`demo-question-group ${group.tone}`}>
+                <div className="demo-question-heading">
+                  <span>{group.title}</span>
+                  <small>{group.tone === "warning" ? "blocked route" : group.tone === "primary" ? "SQL route" : "supporting path"}</small>
+                </div>
+                <div className="demo-question-list">
+                  {group.questions.map(([intent, question]) => (
+                    <button
+                      key={intent}
+                      type="button"
+                      className={`ghost-action ${group.tone === "warning" ? "warning" : ""}`}
+                      onClick={() => submitQuery(question)}
+                      disabled={queryState.loading}
+                    >
+                      <Sparkles size={14} />
+                      <span>{question}</span>
+                      <small>{intent}</small>
+                    </button>
+                  ))}
+                </div>
+              </section>
             ))}
           </div>
         </div>
@@ -1832,6 +1981,13 @@ function AiQueryPage({ navigate, setNotice }) {
           <p>Chart spec: {formatChartSpec(queryState.result?.chart_spec)}</p>
         </div>
       </section>
+      <ProductHealthReadinessPanel
+        readiness={productHealthStatus}
+        onRefresh={refreshProductHealthCatalog}
+        loading={productHealthCatalogState.loading}
+        compact
+      />
+      <DemoReadinessPanel items={demoReadinessItems(productHealthStatus)} />
       {queryState.result ? (
         <section className="ask-result-stack">
           <div className="grid three">
@@ -2006,6 +2162,72 @@ function RetrievalTracePanel({ trace, route }) {
       )}
     </section>
   );
+}
+
+function ProductHealthReadinessPanel({ readiness, onRefresh, loading, compact }) {
+  return (
+    <section className={`product-health-readiness ${readiness.status} ${compact ? "compact" : ""}`}>
+      <header>
+        <div>
+          <p className="eyebrow">Product Health readiness</p>
+          <h3>{readiness.title}</h3>
+          <p>{readiness.body}</p>
+        </div>
+        <div className="product-health-actions">
+          <span className={`badge ${productHealthBadgeClass(readiness.status)}`}>{readiness.status}</span>
+          <button type="button" className="icon-link" onClick={onRefresh} disabled={loading} aria-label="Product Health readiness 새로고침">
+            {loading ? <Loader2 size={16} className="spin" /> : <RefreshCw size={16} />}
+          </button>
+        </div>
+      </header>
+      <div className="product-health-checks">
+        {readiness.checks.map(([label, state, detail]) => (
+          <article key={label}>
+            <RuntimeCheck label={label} ready={state === "ready"} />
+            <span>{detail}</span>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function DemoReadinessPanel({ items }) {
+  return (
+    <section className="demo-readiness-panel" aria-label="M1 demo readiness by module">
+      <header>
+        <div>
+          <p className="eyebrow">Demo readiness</p>
+          <h3>M2/M3/M5/M6/M1 발표 준비 상태</h3>
+          <p>확인되지 않은 항목은 성공으로 표시하지 않고 다음 책임 영역을 그대로 보여줍니다.</p>
+        </div>
+      </header>
+      <div className="demo-readiness-grid">
+        {items.map((item) => (
+          <article key={item.module} className={`demo-readiness-item ${item.state}`}>
+            <div className="demo-readiness-title">
+              <strong>{item.module}</strong>
+              <span className={`badge ${demoReadinessBadgeClass(item.state)}`}>{item.state}</span>
+            </div>
+            <span>{item.label}</span>
+            <p>{item.detail}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function productHealthBadgeClass(status) {
+  if (status === "ready") return "green";
+  if (status === "partial" || status === "checking") return "orange";
+  return "red";
+}
+
+function demoReadinessBadgeClass(state) {
+  if (state === "ready") return "green";
+  if (state === "blocked" || state === "not-ready") return "red";
+  return "orange";
 }
 
 function formatTraceTerms(terms) {

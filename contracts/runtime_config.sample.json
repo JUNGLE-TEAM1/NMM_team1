@@ -117,6 +117,25 @@
     "operation_parameter_rule": "hash requires hash_policy.algorithm=hmac_sha256 and a salt_secret_id env reference; quarantine_if_invalid requires a validation rule; explode_array is bounded by cardinality guard/default max output rows",
     "ownership_note": "M3 owns L6 TransformSpec semantics; M2 only executes preview-compatible operations and records evidence."
   },
+  "product_health_l6_gold_preview_smoke": {
+    "runner": "spark_runner",
+    "input_format": "jsonl",
+    "input_path": "backend/samples/product_health_reviews_seed.jsonl",
+    "output_format": "parquet",
+    "output_root": "data/results/m2_product_health_l6_evidence",
+    "transform_spec_path": "backend/samples/product_health_l6_gold_generation_spec.json",
+    "options": {
+      "output_file_name": "gold_product_health.parquet"
+    },
+    "result_fields": ["status", "row_count", "bytes", "duration_ms", "output_path", "output_row_count", "output_bytes", "task_results"],
+    "sql_smoke": {
+      "engine": "duckdb",
+      "table_name": "gold_product_health",
+      "query": "SELECT product_id, review_count, average_rating FROM gold_product_health LIMIT 100",
+      "expected_min_rows": 1
+    },
+    "scope_note": "Small Product Health L6 execution evidence. This pairs with product_health_runtime_smoke source_inputs[] evidence. Final negative_review_rate/conversion_rate/late_delivery_rate/risk_score semantics remain M3-owned."
+  },
   "storage": {
     "profile": "minio",
     "bucket": "asklake-demo",
