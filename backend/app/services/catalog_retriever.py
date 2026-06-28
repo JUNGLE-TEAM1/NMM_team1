@@ -15,6 +15,10 @@ class CatalogRetriever:
         "review_count": ("인기", "리뷰", "review", "reviews"),
         "product_id": ("상품", "product", "products"),
         "average_rating": ("평점", "별점", "rating", "ratings"),
+        "risk_score": ("위험", "리스크", "risk", "risks"),
+        "negative_review_rate": ("부정", "불만", "negative", "negatives"),
+        "conversion_rate": ("전환", "전환율", "conversion", "conversions"),
+        "late_delivery_rate": ("배송", "지연", "지연율", "late", "delivery"),
     }
 
     def retrieve(self, question: str, catalogs: list[dict[str, Any]]) -> CatalogRetrievalResult:
