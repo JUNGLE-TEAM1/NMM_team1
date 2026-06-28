@@ -50,3 +50,4 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 - merge status: open
 - issue close status: open
 - issue reopen result: reopened closed issue before PR open
+- latest remote check result: PR #230 checks 8/8 passed after PR body `Large PR Exception: approved` update for size gate

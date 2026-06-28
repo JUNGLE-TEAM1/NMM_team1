@@ -29,7 +29,7 @@
 ## CI/CD Gate / CI-CD 게이트
 
 - CI required: yes, after PR
-- CI result: previous PR #230 remote checks 8/8 passed before allowlist expansion. After this update is pushed, GitHub Actions must rerun and be checked again.
+- CI result: PR #230 remote checks 8/8 passed after latest main sync and allowlist expansion. `pr-size-hard-gate` initially failed because non-evidence line count was 1054 > 600; PR body was updated with `Large PR Exception: approved` and reason, then `container-smoke`, `harness`, `linked-issue`, `manifest-smoke`, `migration-schema-security`, `pr-size-hard-gate`, `pr-template-drift`, `risk-warning` all passed.
 - Deploy/publish required: no
 - Deployment confirmation: not required
 - Rollback/smoke notes: revert `RuntimeConfig.transform_spec*` fields and L6 preview adapter if M3/M5 handoff contract changes before merge.

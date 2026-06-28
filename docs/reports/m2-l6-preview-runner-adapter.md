@@ -5,7 +5,7 @@
 - Type: feature
 - Date: 2026-06-28
 - Changed: `RuntimeConfig.transform_spec` / `transform_spec_path`를 추가하고, `Week2SparkRunner`가 M3 L6 preview-only spec을 받아 local preview Parquet와 `Week2RunnerResult` 호환 evidence를 만들 수 있게 했다. 지원 operation은 M3 L6 allowlist의 `select`, `rename`, `cast`, `parse_timestamp`, `normalize_null`, `flatten_struct`, `explode_array`, `json_string`, `mask`, `hash`, `drop`, `quarantine_if_invalid`, `aggregate`이며, unsupported operation이나 필수 안전 parameter 누락은 failed result로 반환한다.
-- Verified: TDD failing test first 확인, `backend/tests/test_week2_spark_runner.py` 13 passed, `contracts/runtime_config.sample.json` L6 preview smoke succeeded, `jq -e . contracts/*.sample.json`, backend tests 91 passed with escalation, `git diff --check`, compileall, `scripts/validate-harness.sh`, `scripts/validate-harness.sh --strict`.
+- Verified: TDD failing test first 확인, `backend/tests/test_week2_spark_runner.py` 13 passed, `contracts/runtime_config.sample.json` L6 preview smoke succeeded, `jq -e . contracts/*.sample.json`, backend tests 91 passed with escalation, `git diff --check`, compileall, `scripts/validate-harness.sh`, `scripts/validate-harness.sh --strict`, PR #230 remote checks 8/8 passed after large PR exception body update.
 - Remaining: 실제 Product Health `gold_product_health` L6 spec 실행, 5GB input evidence, Docker Spark cluster, Airflow DAG 내부 SparkRunner 호출은 후속 작업이다.
 - Next context: M3는 실제 L6 spec 의미와 compiler validation을 계속 소유한다. M2는 spec/input을 받아 preview 실행과 row/bytes/duration/output evidence를 만들고, M5는 inline `transform_spec` 또는 `transform_spec_path`를 `RuntimeConfig`에 넘기면 된다.
 - Risk: 현재 경로는 local pyarrow preview adapter다. 분산 Spark 성능, production write, quarantine side table 분리, secret manager 연동, M3 L7-L9 quality gate는 증명하지 않는다.
@@ -66,7 +66,7 @@ scripts/validate-harness.sh --strict
 - Workspace file: `docs/workflows/feature/m2-l6-preview-runner-adapter/quality.md`
 - Quality gate status: passed
 - TDD status: applied. 새 L6 tests가 먼저 실패했고 기존 runner가 `transform_spec`을 무시하는 상태를 확인한 뒤 구현했다.
-- CI/check result: local checks passed after allowlist expansion. Remote CI는 push 후 재확인한다.
+- CI/check result: local checks passed after allowlist expansion. PR #230 remote checks passed after PR body `Large PR Exception: approved` update for size gate.
 - Skipped checks: Docker Spark cluster, Airflow DAG-internal SparkRunner invocation, 5GB Product Health input run.
 - CD/deploy gate: not required.
 
