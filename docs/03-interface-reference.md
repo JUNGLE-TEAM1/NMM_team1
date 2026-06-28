@@ -256,6 +256,8 @@ Locked Week 2 contract decisions:
 - `SourceConfig` is not owned by M1 alone. M1 owns demo tenant, source id, and UI input shell; M3 owns CSV/JSON/JSONL source-specific options; M4 owns Kafka source-specific options.
 - `TransformSpec` is the M3-owned intent contract. It does not create Spark sessions, choose runner implementation, or write Catalog state directly.
 - `RuntimeConfig` is the M2-owned runtime contract. M5 consumes it for runner selection and M6 consumes its SQL runtime profile, but M2 does not define transform semantics. `RuntimeConfig.storage` is the S3-compatible storage mapping used to calculate both `s3_uri` and the local fallback path during MVP smoke runs.
+- `RuntimeConfig` supports either a single `input_format`/`input_path` pair or a `source_inputs[]` list. `source_inputs[]` is for M2 multi-source pass-through runtime evidence such as reviews/behavior/delivery/product Product Health inputs; it does not define Bronze/Silver/Gold transform semantics.
+- `RuntimeConfig.source_inputs[]` keeps legacy `input_format` / `input_path` for compatibility and also accepts `source_type` / `format` / `path`. `source_type` means where the input lives or how it is reached, such as `local_file`, `s3`, `postgres`, `mongodb`, or `kafka`. `format` means the payload shape, such as `json`, `jsonl`, or `parquet`. Current M2 runner execution supports `source_type=local_file` only; other source types are accepted as contract shape but must fail clearly until their connector is implemented.
 - Week 2 workflow run request `executor` accepts `local_runner`, `airflow`, or `spark_runner`. `spark_runner` means M5 calls the M2 `Week2SparkRunner` boundary directly; it does not mean Airflow DAG-internal Spark execution is already implemented.
 - `KafkaTopicContract` is evidence and raw-event handoff for Week 2. Kafka is not a blocker for the 1st-stage `gold_product_health` main E2E path unless a later Phase explicitly changes the main path.
 - `ExecutionResult.duration_ms` is part of the locked execution evidence and comes from `Week2RunnerResult.duration_ms`.
@@ -314,10 +316,35 @@ Week 2 draft API/UI route contract:
 | Workflow run | `POST /api/week2/workflows/{pipeline_id}/runs` / `/runs` | M5 + M1 | `ExecutionResult` |
 | Run status | `GET /api/week2/runs/{run_id}` / `/runs/{run_id}` | M5 + M1 | `ExecutionResult` |
 | Catalog detail | `GET /api/week2/catalog/{dataset_id}` / `/catalog/{dataset_id}` | M5 + M1 | `CatalogMetadata` |
+| Kafka replay health | `GET /api/week2/kafka-replay/health` | M4 + M5 | `KafkaReplayEvidence` summary |
+| Kafka replay runs | `GET /api/week2/kafka-replay/runs`, `GET /api/week2/kafka-replay/runs/{run_id}` | M4 + M5 | `KafkaReplayEvidence` |
 | AI query | `POST /api/week2/ai/query` / `/ask` | M6 + M1 | `AIQueryResult` |
 
 These are Week 2 draft routes, not final product API routes. If an implementation uses existing baseline `/api/sources`, `/api/pipelines`, or `/api/catalog/datasets` routes, it must either adapt to these fixture names at the boundary or update this section before module work continues.
-Locked for this contract pass: Source register and schema preview routes remain fixture-first until a later implementation PR adds them. The currently executable Week 2 routes are workflow run, run status, catalog detail, and AI query. M1 may replace placeholders with fixture/API state, but placeholder identifiers must converge on the shared Week 2 IDs in this section.
+Locked for this contract pass: Source register and schema preview routes remain fixture-first until a later implementation PR adds them. The currently executable Week 2 routes are workflow run, run status, catalog detail, Kafka replay evidence, and AI query. M1 may replace placeholders with fixture/API state, but placeholder identifiers must converge on the shared Week 2 IDs in this section.
+
+M4 Kafka replay writes harness-readable evidence under `data/results/week2/_metadata/kafka_replay/`.
+Each replay run produces `<run_id>.json` plus `latest.json`. The minimum `KafkaReplayEvidence` shape is:
+
+| Field | Required | Notes |
+| --- | --- | --- |
+| `contract` | yes | `KafkaReplayEvidence` |
+| `run_id` | yes | `run_kafka_replay_<timestamp>_<suffix>` |
+| `status` | yes | `queued`, `starting`, `running`, `paused`, `stopped`, `succeeded`, or `failed` |
+| `source_file` | yes | CSV path replayed by M4 |
+| `topic` | yes | Kafka topic written by M4 |
+| `partitions` | yes | Topic partition count requested for replay |
+| `records_per_second` | yes | Producer throttle setting |
+| `batch_size` | yes | Producer batch size setting |
+| `key_column` | no | Kafka key source column, or `null` when Kafka chooses partitions |
+| `metrics.sent_rows` | yes | Rows successfully produced to Kafka |
+| `metrics.error_count` | yes | Replay job error count |
+| `metrics.throughput_per_second` | yes | Job-level rows/sec based on sent rows and elapsed runtime |
+| `lineage.source_file` | yes | Source file node |
+| `lineage.kafka_topic` | yes | Kafka target node |
+| `health.status` | yes | `running`, `ok`, or `error` for status center display |
+
+Kafka UI remains the live view for broker-side message count, consumer lag, and live throughput. `KafkaReplayEvidence` is the durable harness receipt that AskLake backend/report flows can read after the replay job.
 
 Week 2 storage path pattern:
 
@@ -362,6 +389,20 @@ Minimum `QueryResult` shape:
 `AIQueryResult.query_result` is the canonical SQL execution result for Week 2.
 Top-level `AIQueryResult.sql` and `AIQueryResult.rows` may remain as backward-compatible M1 display convenience fields, but they must mirror `query_result.sql` and `query_result.rows`.
 
+Minimum `AIQueryResult` route and retrieval trace shape:
+
+| Field | Required | Notes |
+| --- | --- | --- |
+| `route` | yes | `sql`, `rag`, `hybrid`, or `unsupported`. Current SQL-first M6 returns `sql` for supported SQL attempts and `unsupported` when no safe route exists. |
+| `retrieval_trace[]` | yes | Ordered explanation of the retrieval/route evidence used by M6. It may be empty only when no catalog/evidence source was available and the response is blocked. |
+| `retrieval_trace[].source_type` | yes | `catalog`, `schema`, `metric`, `lineage`, or `chunk` |
+| `retrieval_trace[].source_id` | yes | dataset id, field name, metric key, lineage id, or chunk id |
+| `retrieval_trace[].score` | yes | numeric score assigned by M6 retrieval/scoring |
+| `retrieval_trace[].matched_terms` | yes | question terms, aliases, or metadata terms that contributed to the score |
+| `retrieval_trace[].evidence_index` | no | index into `AIQueryResult.evidence[]` when the trace item directly supports an evidence item |
+
+`route` and `retrieval_trace` are additive fields. Existing M1 consumers may continue reading `status`, `sql`, `query_result`, `rows`, `summary`, and `evidence`, while richer Week 2 displays can show why M6 selected a SQL/RAG/Hybrid/Unsupported path.
+
 Minimum `AIQueryResult.evidence[]` grounding shape:
 
 | Field | Required | Notes |
@@ -384,7 +425,7 @@ Minimum SQL guardrail failure shape:
 | --- | --- |
 | `status` | `succeeded`, `blocked`, `failed` |
 | `guardrail.validation_status` | `passed`, `blocked`, `failed` |
-| `guardrail.failure_code` | `non_select_sql`, `table_not_allowed`, `column_not_allowed`, `timeout`, `limit_required`, `engine_unavailable`, or `null` |
+| `guardrail.failure_code` | `non_select_sql`, `table_not_allowed`, `column_not_allowed`, `timeout`, `limit_required`, `local_path_missing`, `engine_unavailable`, `unsupported_question`, or `null` |
 | `guardrail.failure_message` | human-readable reason or `null` |
 
 Week 2 workflow/run status values:

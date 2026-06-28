@@ -18,6 +18,7 @@ from app.services.catalog_trust import CatalogTrustService
 from app.services.pipeline import PipelineService
 from app.services.source_catalog import SourceCatalogService
 from app.services.week2_catalog_store import Week2CatalogStore
+from app.services.week2_kafka_replay_evidence import Week2KafkaReplayEvidenceService
 from app.services.week2_workflow import Week2WorkflowService
 
 
@@ -28,6 +29,7 @@ class AppContainer:
         self.source_connectors = self.create_source_connectors()
         self.result_store = self.create_result_store()
         self.week2_catalog_store = self.create_week2_catalog_store()
+        self.week2_kafka_replay_evidence_service = self.create_week2_kafka_replay_evidence_service()
         self.catalog_source = self.create_catalog_source()
         self.sql_engine = self.create_sql_engine()
         self.catalog_trust_service = self.create_catalog_trust_service()
@@ -47,6 +49,9 @@ class AppContainer:
 
     def create_week2_catalog_store(self) -> Week2CatalogStore:
         return Week2CatalogStore(self.week2_output_root() / "_metadata")
+
+    def create_week2_kafka_replay_evidence_service(self) -> Week2KafkaReplayEvidenceService:
+        return Week2KafkaReplayEvidenceService(self.week2_output_root())
 
     def create_catalog_source(self) -> CatalogSource:
         return Week2CatalogStoreSource(

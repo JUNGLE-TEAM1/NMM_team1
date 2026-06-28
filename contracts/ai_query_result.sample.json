@@ -44,6 +44,16 @@
       "retrieval_terms": ["review_count", "average_rating"]
     }
   ],
+  "route": "sql",
+  "retrieval_trace": [
+    {
+      "source_type": "catalog",
+      "source_id": "dataset_reviews_gold",
+      "score": 6,
+      "matched_terms": ["review_count", "product_id"],
+      "evidence_index": 0
+    }
+  ],
   "status": "succeeded",
   "sql": "SELECT product_id, review_count, average_rating FROM reviews_gold ORDER BY review_count DESC LIMIT 10",
   "query_result": {

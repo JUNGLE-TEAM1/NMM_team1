@@ -3,7 +3,7 @@ from pathlib import Path
 from time import perf_counter
 from typing import Any
 
-from app.domain.runtime_config import RuntimeConfig
+from app.domain.runtime_config import RuntimeConfig, RuntimeSourceInput
 from app.services.week2_storage_adapter import StorageLocation, Week2StorageAdapter
 from app.services.week2_local_runner import Week2RunnerResult, elapsed_ms, path_size, repo_root
 
@@ -30,6 +30,11 @@ class Week2SparkRunner:
         ]
 
         try:
+            if config.source_inputs:
+                return run_source_inputs(config, run_id, started, logs)
+
+            if config.input_path is None or config.input_format is None:
+                raise Week2SparkRunnerError("input_path and input_format are required")
             input_path = resolve_input_path(config.input_path)
             storage_adapter = Week2StorageAdapter()
             output_location = output_location_for_config(config, input_path, run_id, storage_adapter)
@@ -69,6 +74,110 @@ class Week2SparkRunner:
             output_row_count=len(rows),
             output_bytes=output_bytes,
         )
+
+
+def run_source_inputs(
+    config: RuntimeConfig,
+    run_id: str,
+    started: float,
+    logs: list[dict[str, str]],
+) -> Week2RunnerResult:
+    """여러 source를 의미 변환 없이 source별 Parquet output과 evidence로 남긴다."""
+
+    storage_adapter = Week2StorageAdapter()
+    task_results: list[dict[str, Any]] = []
+    output_paths: list[Path] = []
+    total_rows = 0
+    total_input_bytes = 0
+    total_output_bytes = 0
+
+    for source in config.source_inputs:
+        ensure_local_file_source(source)
+        input_format = source_effective_format(source)
+        input_path = resolve_input_path(source_effective_path(source))
+        output_location = output_location_for_source_config(config, source, run_id, storage_adapter)
+        output_path = output_location.local_path
+        rows = read_rows(input_path, input_format)
+        write_parquet(rows, output_path, merged_options(config, source))
+        input_bytes = path_size(input_path) or 0
+        output_bytes = path_size(output_path) or 0
+        output_paths.append(output_path)
+        total_rows += len(rows)
+        total_input_bytes += input_bytes
+        total_output_bytes += output_bytes
+        task_results.append(
+            succeeded_task_result(
+                f"spark_read:{source.source_id}",
+                row_count=len(rows),
+                bytes=input_bytes,
+                source_id=source.source_id,
+                source_type=source.source_type,
+                input_path=str(input_path),
+                input_format=input_format,
+            )
+        )
+        task_results.append(
+            succeeded_task_result(
+                f"spark_write:{source.source_id}",
+                row_count=len(rows),
+                bytes=output_bytes,
+                source_id=source.source_id,
+                output_path=str(output_path),
+            )
+        )
+        if should_upload_to_object_storage(config):
+            upload_result = storage_adapter.upload_file(config.storage, output_location)
+            task_results.append(
+                succeeded_task_result(
+                    f"spark_upload:{source.source_id}",
+                    row_count=len(rows),
+                    bytes=upload_result.bytes,
+                    source_id=source.source_id,
+                    output_path=upload_result.object_uri,
+                )
+            )
+
+    logs.append({"level": "info", "message": "spark_runner multi-source smoke succeeded"})
+    output_root = output_paths[0].parent if output_paths else runtime_output_root(config, run_id)
+    return Week2RunnerResult(
+        status="succeeded",
+        task_results=task_results,
+        logs=logs,
+        row_count=total_rows,
+        bytes=total_input_bytes,
+        duration_ms=elapsed_ms(started),
+        output_path=str(output_root),
+        output_row_count=total_rows,
+        output_bytes=total_output_bytes,
+    )
+
+
+def ensure_local_file_source(source: RuntimeSourceInput) -> None:
+    """현재 runner smoke에서 실제 실행 가능한 source type인지 확인한다."""
+
+    if source.source_type == "local_file":
+        return
+    raise Week2SparkRunnerError(
+        f"Unsupported source_type for Week2SparkRunner local smoke: {source.source_type}"
+    )
+
+
+def source_effective_format(source: RuntimeSourceInput) -> str:
+    """새 `format` 또는 legacy `input_format` 중 실제 reader가 쓸 값을 돌려준다."""
+
+    input_format = source.effective_format
+    if input_format is None:
+        raise Week2SparkRunnerError(f"source {source.source_id} requires format or input_format")
+    return input_format
+
+
+def source_effective_path(source: RuntimeSourceInput) -> str:
+    """새 `path` 또는 legacy `input_path` 중 실제 reader가 쓸 값을 돌려준다."""
+
+    input_path = source.effective_path
+    if input_path is None:
+        raise Week2SparkRunnerError(f"source {source.source_id} requires path or input_path")
+    return input_path
 
 
 def read_rows(path: Path, input_format: str) -> list[dict[str, Any]]:
@@ -184,6 +293,66 @@ def output_location_for_config(
     )
 
 
+def output_location_for_source_config(
+    config: RuntimeConfig,
+    source: RuntimeSourceInput,
+    run_id: str,
+    storage_adapter: Week2StorageAdapter | None = None,
+) -> StorageLocation:
+    """source별 output 파일 위치를 RuntimeConfig의 공통 prefix 아래로 계산한다."""
+
+    file_name = source_output_file_name(config, source)
+    if config.storage is not None:
+        adapter = storage_adapter or Week2StorageAdapter()
+        return adapter.build_location(
+            config.storage,
+            run_id=run_id,
+            file_name=file_name,
+            local_root=config.output_root,
+            default_prefix="spark_smoke/run_id=<run_id>/",
+        )
+    output_root = runtime_output_root(config, run_id)
+    return StorageLocation(
+        uri=None,
+        bucket=None,
+        prefix=f"spark_smoke/run_id={run_id}/",
+        object_key="",
+        object_uri=None,
+        local_path=output_root / file_name,
+    )
+
+
+def runtime_output_root(config: RuntimeConfig, run_id: str) -> Path:
+    """multi-source output을 담을 run 단위 directory를 계산한다."""
+
+    if config.output_root is None:
+        if config.storage is None:
+            raise Week2SparkRunnerError("output_root or storage is required for source_inputs")
+        return resolve_path(config.storage.local_fallback_root) / "spark_smoke" / f"run_id={run_id}"
+    return resolve_path(config.output_root) / "spark_smoke" / f"run_id={run_id}"
+
+
+def source_output_file_name(config: RuntimeConfig, source: RuntimeSourceInput) -> str:
+    """source별 output 파일명을 만든다. 변환 의미가 아니라 storage naming만 담당한다."""
+
+    if source.output_file_name:
+        file_name = source.output_file_name
+    else:
+        template = config.options.get("output_file_name_template")
+        file_name = str(template).format(source_id=source.source_id) if template else f"{source.source_id}.parquet"
+    if Path(file_name).name != file_name:
+        raise Week2SparkRunnerError("source output file name must not include directory segments")
+    if not file_name:
+        raise Week2SparkRunnerError("source output file name is required")
+    return file_name
+
+
+def merged_options(config: RuntimeConfig, source: RuntimeSourceInput) -> dict[str, Any]:
+    """공통 runner option과 source별 option을 합친다."""
+
+    return {**config.options, **source.options}
+
+
 def should_upload_to_object_storage(config: RuntimeConfig) -> bool:
     """명시 옵션이 켜지고 storage 설정이 있을 때만 object upload를 수행한다.
 
@@ -230,10 +399,15 @@ def pyarrow_modules() -> tuple[Any, Any]:
     return arrow, parquet
 
 
-def succeeded_task_result(node_id: str, row_count: int, bytes: int | None) -> dict[str, Any]:
+def succeeded_task_result(
+    node_id: str,
+    row_count: int,
+    bytes: int | None,
+    **extra: Any,
+) -> dict[str, Any]:
     """성공한 read/write 단계를 Week2RunnerResult의 task result 모양으로 만든다."""
 
-    return {
+    result = {
         "node_id": node_id,
         "status": "succeeded",
         "attempt": 1,
@@ -241,6 +415,8 @@ def succeeded_task_result(node_id: str, row_count: int, bytes: int | None) -> di
         "bytes": bytes,
         "error": None,
     }
+    result.update(extra)
+    return result
 
 
 def failed_task_result(error: str) -> dict[str, Any]:
