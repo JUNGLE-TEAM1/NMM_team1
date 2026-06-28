@@ -5,7 +5,7 @@
 - Type: docs
 - Date: 2026-06-28
 - Changed: 팀원이 AskLake 협업 하네스를 실제 작업에서 사용할 수 있도록 `AskLake 협업 하네스 사용 가이드`를 추가하고, 처음 보는 사람도 빠르게 이해할 수 있는 `3분 요약`, 하네스 사용 이점, 공유 문맥 정렬 책임, 하네스 관리 항목별 이유 문단, 사람/AI 책임 구분, 팀원의 5가지 협업 책임을 보강했으며, branch workspace와 report index를 연결했다.
-- Verified: `rg -n "AskLake 협업 하네스 사용 가이드|3분 요약|이 하네스를 쓰면 좋아지는 것|팀이 길을 덜 잃습니다|협업 안전장치|AI 설명이 애매하면 다시 묻는다|공유 문맥 정렬 책임|AI는 판단 재료를 정리한다|모르면 묻는 것도 책임|한 번에 여러 일을 섞지 않고|코드 변경만 보고는 작업 범위|팀의 공식 기준|PR 생성은 공유이고, merge는 별도 승인|하네스를 쓰는 팀원의 5가지 책임|맡은 기능을 구현한다|왜 그렇게 구현했는지 설명할 수 있다|인터페이스를 지킨다|AI는 손과 기록 담당이다|하네스를 사용할 때 사람의 책임과 AI의 책임|AI는 책임을 대신 지지 않는다|Pre-PR Human Checkpoint|팀원이 기억할 최소 규칙" docs/reports/collaboration-harness-team-usage-guide.md docs/reports/README.md`, `git diff --check`, `scripts/validate-harness.sh`, `scripts/validate-harness.sh --strict`
+- Verified: `rg -n "AskLake 협업 하네스 사용 가이드|3분 요약|크게 터질 문제를 앞에서 작게|이 하네스를 쓰면 좋아지는 것|팀이 길을 덜 잃습니다|협업 안전장치|AI 설명이 애매하면 다시 묻는다|공유 문맥 정렬 책임|AI는 판단 재료를 정리한다|모르면 묻는 것도 책임|한 번에 여러 일을 섞지 않고|코드 변경만 보고는 작업 범위|팀의 공식 기준|PR 생성은 공유이고, merge는 별도 승인|하네스를 쓰는 팀원의 5가지 책임|맡은 기능을 구현한다|왜 그렇게 구현했는지 설명할 수 있다|인터페이스를 지킨다|AI는 손과 기록 담당이다|하네스를 사용할 때 사람의 책임과 AI의 책임|AI는 책임을 대신 지지 않는다|Pre-PR Human Checkpoint|팀원이 기억할 최소 규칙" docs/reports/collaboration-harness-team-usage-guide.md docs/reports/README.md`, `git diff --check`, `scripts/validate-harness.sh`, `scripts/validate-harness.sh --strict`
 - Remaining: 팀 리뷰 뒤 실제 팀 표현, 실습 예시, 발표 자료가 필요하면 후속 Phase로 보강한다.
 - Next context: 팀원은 이 guide를 먼저 읽고 Phase 시작, mid-phase steering, 확인 gate, PR/merge 경계를 자연어 요청으로 다룬다.
 - Risk: 이 문서는 Source of Truth 규칙 변경이 아니라 설명/온보딩 guide다. 공식 workflow 변경이 필요하면 별도 Source of Truth 전파 Phase가 필요하다.
@@ -82,7 +82,7 @@
 ## Verification Commands / 검증 명령
 
 ```bash
-rg -n "AskLake 협업 하네스 사용 가이드|3분 요약|이 하네스를 쓰면 좋아지는 것|팀이 길을 덜 잃습니다|협업 안전장치|AI 설명이 애매하면 다시 묻는다|공유 문맥 정렬 책임|AI는 판단 재료를 정리한다|모르면 묻는 것도 책임|한 번에 여러 일을 섞지 않고|코드 변경만 보고는 작업 범위|팀의 공식 기준|PR 생성은 공유이고, merge는 별도 승인|하네스를 쓰는 팀원의 5가지 책임|맡은 기능을 구현한다|왜 그렇게 구현했는지 설명할 수 있다|인터페이스를 지킨다|AI는 손과 기록 담당이다|하네스를 사용할 때 사람의 책임과 AI의 책임|AI는 책임을 대신 지지 않는다|Pre-PR Human Checkpoint|팀원이 기억할 최소 규칙" docs/reports/collaboration-harness-team-usage-guide.md docs/reports/README.md
+rg -n "AskLake 협업 하네스 사용 가이드|3분 요약|크게 터질 문제를 앞에서 작게|이 하네스를 쓰면 좋아지는 것|팀이 길을 덜 잃습니다|협업 안전장치|AI 설명이 애매하면 다시 묻는다|공유 문맥 정렬 책임|AI는 판단 재료를 정리한다|모르면 묻는 것도 책임|한 번에 여러 일을 섞지 않고|코드 변경만 보고는 작업 범위|팀의 공식 기준|PR 생성은 공유이고, merge는 별도 승인|하네스를 쓰는 팀원의 5가지 책임|맡은 기능을 구현한다|왜 그렇게 구현했는지 설명할 수 있다|인터페이스를 지킨다|AI는 손과 기록 담당이다|하네스를 사용할 때 사람의 책임과 AI의 책임|AI는 책임을 대신 지지 않는다|Pre-PR Human Checkpoint|팀원이 기억할 최소 규칙" docs/reports/collaboration-harness-team-usage-guide.md docs/reports/README.md
 git diff --check
 scripts/validate-harness.sh
 scripts/validate-harness.sh --strict
