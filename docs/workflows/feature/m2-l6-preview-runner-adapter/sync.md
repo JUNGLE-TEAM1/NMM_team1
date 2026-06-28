@@ -17,15 +17,15 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 
 | Checked At | Upstream Changes | Impacted Source of Truth | Action |
 | --- | --- | --- | --- |
-|  |  |  |  |
+| 2026-06-28 | `origin/main` advanced from `e1ddef2` to `0a9247c` | `docs/03-interface-reference.md`, `docs/reports/README.md`, M6 SQL planner files | merged `origin/main` into feature branch with no conflicts before allowlist expansion |
 
 ## Pre-Merge Sync
 
-- main commit: `e1ddef2`
-- conflicts: none
-- validation: `git fetch origin`; `git rev-parse main`; `git rev-parse origin/main`; `git merge-base --is-ancestor origin/main HEAD`
-- result: `main`, `origin/main`, and branch base are all `e1ddef2`; no merge/rebase needed before PR.
-- deferral reason: not needed
+- main commit: `0a9247c`
+- conflicts: none; `git merge origin/main --no-edit` completed before implementation update
+- validation: focused runner test 11 passed; contract sample smoke passed; contract JSON validation passed; backend full tests 89 passed with escalation; compileall passed; diff check passed; harness validation passed; strict harness validation passed
+- result: ready to push updated PR branch and wait for PR CI
+- deferral reason: none
 
 ## PR Conflict Resolution
 

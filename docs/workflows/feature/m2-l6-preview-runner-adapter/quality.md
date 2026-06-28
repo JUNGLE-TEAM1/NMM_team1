@@ -8,28 +8,28 @@
 
 - Applies: yes
 - Reason: `RuntimeConfig`와 `Week2SparkRunner`의 runner contract가 바뀌고 M3 L6 spec handoff를 소비하므로 focused regression test가 필요하다.
-- Failing test first: `test_week2_spark_runner_executes_l6_silver_preview_spec`, `test_week2_spark_runner_executes_l6_gold_aggregate_spec`, `test_week2_spark_runner_fails_l6_unsupported_operation`
+- Failing test first: `test_week2_spark_runner_executes_l6_silver_preview_spec`, `test_week2_spark_runner_executes_l6_gold_aggregate_spec`, `test_week2_spark_runner_executes_l6_nested_and_quarantine_operations`, `test_week2_spark_runner_executes_l6_hash_operation`, `test_week2_spark_runner_fails_l6_hash_without_policy`, `test_week2_spark_runner_fails_l6_unsupported_operation`
 - Expected failure command/result: `PYTHONPATH=backend .venv/bin/python -m pytest backend/tests/test_week2_spark_runner.py -q` -> 3 failed, 5 passed. 기존 runner가 `transform_spec`을 무시하고 pass-through output만 만들었다.
-- Pass command/result: `PYTHONPATH=backend .venv/bin/python -m pytest backend/tests/test_week2_spark_runner.py -q` -> 8 passed
-- Refactor notes: 기존 single-input 및 `source_inputs[]` pass-through 경로는 유지하고, `transform_spec` 또는 `transform_spec_path`가 있을 때만 L6 preview adapter로 분기했다.
+- Pass command/result: `PYTHONPATH=backend /Users/liamtsy/Desktop/krafton_jungle/NMM_team1/.venv/bin/python -m pytest backend/tests/test_week2_spark_runner.py -q` -> 11 passed after allowlist expansion
+- Refactor notes: 기존 single-input 및 `source_inputs[]` pass-through 경로는 유지하고, `transform_spec` 또는 `transform_spec_path`가 있을 때만 L6 preview adapter로 분기했다. M3 L6 allowlist 13개 operation을 preview 범위에서 지원하되, `hash`는 HMAC-SHA256 policy/secret reference가 없으면 실패시키고 `quarantine_if_invalid`는 rule이 없으면 실패시킨다.
 
 ## Branch Checks / 브랜치 검증
 
 | Check | Command | Result | Evidence |
 | --- | --- | --- | --- |
 | diff check | `git diff --check` | passed | whitespace conflict 없음 |
-| unit/focused test | `PYTHONPATH=backend .venv/bin/python -m pytest backend/tests/test_week2_spark_runner.py -q` | passed | 8 passed |
-| contract sample smoke | `PYTHONPATH=backend .venv/bin/python -c '...'` | passed | `contracts/runtime_config.sample.json`의 `l6_preview_runtime_smoke` 실행 성공, 3 rows, output 1176 bytes |
+| unit/focused test | `PYTHONPATH=backend /Users/liamtsy/Desktop/krafton_jungle/NMM_team1/.venv/bin/python -m pytest backend/tests/test_week2_spark_runner.py -q` | passed | 11 passed |
+| contract sample smoke | `PYTHONPATH=backend /Users/liamtsy/Desktop/krafton_jungle/NMM_team1/.venv/bin/python -c '...'` | passed | `contracts/runtime_config.sample.json`의 `l6_preview_runtime_smoke` 실행 성공, 3 rows, output 1176 bytes |
 | contract JSON validation | `jq -e . contracts/*.sample.json` | passed | 모든 contract sample JSON parse OK |
-| backend full tests | `PYTHONPATH=backend .venv/bin/python -m pytest backend/tests -q` | passed with escalation | sandbox에서는 PySpark socket bind 제한으로 Taxi Spark test 1개 실패. 권한 확장 재실행 결과 76 passed |
-| build/typecheck | `.venv/bin/python -m compileall backend/app scripts` | passed | Python syntax/import compile OK |
+| backend full tests | `PYTHONPATH=backend /Users/liamtsy/Desktop/krafton_jungle/NMM_team1/.venv/bin/python -m pytest backend/tests -q` | passed with escalation | 89 passed |
+| build/typecheck | `/Users/liamtsy/Desktop/krafton_jungle/NMM_team1/.venv/bin/python -m compileall backend/app scripts` | passed | Python syntax/import compile OK |
 | harness validation | `scripts/validate-harness.sh` | passed | Harness validation passed |
 | strict harness validation | `scripts/validate-harness.sh --strict` | passed | Harness validation passed |
 
 ## CI/CD Gate / CI-CD 게이트
 
 - CI required: yes, after PR
-- CI result: PR #230 remote checks 8/8 passed. `harness`, `container-smoke`, `manifest-smoke`, `linked-issue`, `migration-schema-security`, `pr-size-hard-gate`, `pr-template-drift`, `risk-warning` all succeeded.
+- CI result: previous PR #230 remote checks 8/8 passed before allowlist expansion. After this update is pushed, GitHub Actions must rerun and be checked again.
 - Deploy/publish required: no
 - Deployment confirmation: not required
 - Rollback/smoke notes: revert `RuntimeConfig.transform_spec*` fields and L6 preview adapter if M3/M5 handoff contract changes before merge.

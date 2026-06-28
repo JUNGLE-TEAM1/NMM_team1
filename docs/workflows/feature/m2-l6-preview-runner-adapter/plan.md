@@ -15,16 +15,17 @@
 
 - `RuntimeConfig`가 inline `transform_spec` 또는 `transform_spec_path`를 받을 수 있게 한다.
 - `Week2SparkRunner`에 L6 preview spec 실행 분기를 추가한다.
-- 이번 PR에서 지원하는 최소 operation은 `select`, `rename`, `cast`, `parse_timestamp`, `normalize_null`, `json_string`, `mask`, `drop`, `aggregate`로 제한한다.
-- 지원하지 않는 operation은 성공처럼 넘기지 않고 `Week2RunnerResult.status=failed`와 task error로 기록한다.
-- 작은 JSONL/Parquet preview input으로 Silver select/cast 계열과 Gold aggregate 계열 smoke test를 남긴다.
+- 이번 PR에서 M3 L6 allowlist의 `select`, `rename`, `cast`, `parse_timestamp`, `normalize_null`, `flatten_struct`, `explode_array`, `json_string`, `mask`, `hash`, `drop`, `quarantine_if_invalid`, `aggregate`를 preview 범위에서 지원한다.
+- `hash`는 HMAC-SHA256 policy와 secret reference가 없으면 실패시키고, `quarantine_if_invalid`는 validation rule이 없으면 실패시키며, `explode_array`는 cardinality guard 안에서만 실행한다.
+- 지원하지 않는 operation 또는 필수 안전 parameter가 빠진 operation은 성공처럼 넘기지 않고 `Week2RunnerResult.status=failed`와 task error로 기록한다.
+- 작은 JSONL/Parquet preview input으로 Silver select/cast/nested/hash/quarantine 계열과 Gold aggregate 계열 smoke test를 남긴다.
 
 ## 범위 제외
 
 - M3의 Bronze/Silver/Gold 정책 생성 또는 품질 판정 구현은 하지 않는다.
 - Docker Spark cluster, Airflow DAG 내부 SparkRunner 호출, 5GB scale evidence는 이번 PR에서 하지 않는다.
 - Product Health 최종 `gold_product_health` 의미 정의나 대용량 실행은 후속 Phase로 남긴다.
-- M3 L6 action vocabulary 전체를 구현하지 않는다. 이번 PR은 runner adapter의 첫 얇은 실행 경로다.
+- production-grade Spark operator 최적화, quarantine side table 분리, PII secret manager 연동, 전체 data quality gate 판정은 후속 Phase로 남긴다.
 
 ## Source of Truth 문맥
 

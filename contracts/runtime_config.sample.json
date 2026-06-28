@@ -79,8 +79,23 @@
     "options": {
       "output_file_name": "silver_preview.parquet"
     },
-    "supported_operations": ["select", "rename", "cast", "parse_timestamp", "normalize_null", "json_string", "mask", "drop", "aggregate"],
+    "supported_operations": [
+      "select",
+      "rename",
+      "cast",
+      "parse_timestamp",
+      "normalize_null",
+      "flatten_struct",
+      "explode_array",
+      "json_string",
+      "mask",
+      "hash",
+      "drop",
+      "quarantine_if_invalid",
+      "aggregate"
+    ],
     "unsupported_operation_rule": "return failed Week2RunnerResult instead of silently succeeding",
+    "operation_parameter_rule": "hash requires hash_policy.algorithm=hmac_sha256 and a salt_secret_id env reference; quarantine_if_invalid requires a validation rule; explode_array is bounded by cardinality guard/default max output rows",
     "ownership_note": "M3 owns L6 TransformSpec semantics; M2 only executes preview-compatible operations and records evidence."
   },
   "storage": {

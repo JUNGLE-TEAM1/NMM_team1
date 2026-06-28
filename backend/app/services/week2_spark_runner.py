@@ -1,4 +1,7 @@
+import hashlib
+import hmac
 import json
+import os
 from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -16,9 +19,13 @@ L6_PREVIEW_SUPPORTED_OPERATIONS = {
     "cast",
     "parse_timestamp",
     "normalize_null",
+    "flatten_struct",
+    "explode_array",
     "json_string",
     "mask",
+    "hash",
     "drop",
+    "quarantine_if_invalid",
     "aggregate",
 }
 
@@ -225,12 +232,20 @@ def apply_l6_preview_operation(rows: list[dict[str, Any]], operation: str, param
         return parse_timestamp_rows(rows, params)
     if operation == "normalize_null":
         return normalize_null_rows(rows, params)
+    if operation == "flatten_struct":
+        return flatten_struct_rows(rows, params)
+    if operation == "explode_array":
+        return explode_array_rows(rows, params)
     if operation == "json_string":
         return json_string_rows(rows, params)
     if operation == "mask":
         return mask_rows(rows, params)
+    if operation == "hash":
+        return hash_rows(rows, params)
     if operation == "drop":
         return drop_rows(rows, params)
+    if operation == "quarantine_if_invalid":
+        return quarantine_invalid_rows(rows, params)
     if operation == "aggregate":
         return aggregate_rows(rows, params)
     raise Week2SparkRunnerError(f"Unsupported L6 operation: {operation}")
@@ -289,6 +304,56 @@ def normalize_null_rows(rows: list[dict[str, Any]], params: dict[str, Any]) -> l
     return [{**row, target_name: None if row.get(source_path) in markers else row.get(source_path)} for row in rows]
 
 
+def flatten_struct_rows(rows: list[dict[str, Any]], params: dict[str, Any]) -> list[dict[str, Any]]:
+    """dict column을 preview용 평평한 column들로 펼친다."""
+
+    source_path = required_param(params, "source_path")
+    target_prefix = target_column_name(params, fallback=safe_column_name(source_path))
+    assert_paths_exist(rows, [source_path])
+    max_depth = bounded_positive_int(params, "max_depth", default=1)
+    flattened = []
+    for row in rows:
+        value = get_path_value(row, source_path)
+        if value is not None and not isinstance(value, dict):
+            raise Week2SparkRunnerError(f"flatten_struct operation requires object value: {source_path}")
+        next_row = remove_path_value(row, source_path)
+        for nested_path, nested_value in flatten_object(value or {}, max_depth=max_depth):
+            next_row[f"{target_prefix}_{nested_path}"] = scalar_preview_value(nested_value)
+        flattened.append(next_row)
+    return flattened
+
+
+def explode_array_rows(rows: list[dict[str, Any]], params: dict[str, Any]) -> list[dict[str, Any]]:
+    """array column을 여러 preview row로 펼친다."""
+
+    source_path = required_param(params, "source_path")
+    target_prefix = target_column_name(params, fallback=safe_column_name(source_path))
+    assert_paths_exist(rows, [source_path])
+    max_output_rows = explode_max_output_rows(params)
+    exploded: list[dict[str, Any]] = []
+    for row in rows:
+        value = get_path_value(row, source_path)
+        if value is None or value == []:
+            continue
+        if not isinstance(value, list):
+            raise Week2SparkRunnerError(f"explode_array operation requires array value: {source_path}")
+        for item in value:
+            next_row = remove_path_value(row, source_path)
+            if isinstance(item, dict):
+                for nested_path, nested_value in flatten_object(item, max_depth=1):
+                    next_row[f"{target_prefix}_{nested_path}"] = scalar_preview_value(nested_value)
+            else:
+                next_row[target_prefix] = scalar_preview_value(item)
+            exploded.append(next_row)
+            if len(exploded) > max_output_rows:
+                raise Week2SparkRunnerError(f"explode_array cardinality exceeded max_output_rows={max_output_rows}")
+
+    max_expansion_ratio = params.get("max_expansion_ratio")
+    if isinstance(max_expansion_ratio, (int, float)) and rows and len(exploded) / len(rows) > max_expansion_ratio:
+        raise Week2SparkRunnerError(f"explode_array cardinality exceeded max_expansion_ratio={max_expansion_ratio}")
+    return exploded
+
+
 def json_string_rows(rows: list[dict[str, Any]], params: dict[str, Any]) -> list[dict[str, Any]]:
     """nested value를 M6가 읽을 수 있는 JSON string column으로 보존한다."""
 
@@ -312,11 +377,57 @@ def mask_rows(rows: list[dict[str, Any]], params: dict[str, Any]) -> list[dict[s
     return [{**row, target_name: None if row.get(source_path) is None else "***MASKED***"} for row in rows]
 
 
+def hash_rows(rows: list[dict[str, Any]], params: dict[str, Any]) -> list[dict[str, Any]]:
+    """PII preview 값을 HMAC-SHA256 digest로 바꾼다."""
+
+    source_path = required_param(params, "source_path")
+    target_name = target_column_name(params, fallback=safe_column_name(source_path))
+    assert_paths_exist(rows, [source_path])
+    hash_policy = params.get("hash_policy")
+    if not isinstance(hash_policy, dict):
+        raise Week2SparkRunnerError("hash operation requires hash_policy")
+    algorithm = str(hash_policy.get("algorithm", "")).lower().replace("-", "_")
+    if algorithm != "hmac_sha256":
+        raise Week2SparkRunnerError("hash operation requires hash_policy.algorithm=hmac_sha256")
+    secret_ref = hash_policy.get("salt_secret_id") or hash_policy.get("salt_secret_ref") or hash_policy.get("salt_secret_env")
+    if not isinstance(secret_ref, str) or not secret_ref:
+        raise Week2SparkRunnerError("hash operation requires hash_policy.salt_secret_id")
+    salt_secret = os.environ.get(secret_ref)
+    if salt_secret is None:
+        raise Week2SparkRunnerError(f"hash operation salt secret env is not set: {secret_ref}")
+
+    hashed = []
+    for row in rows:
+        value = get_path_value(row, source_path)
+        next_row = remove_path_value(row, source_path)
+        next_row[target_name] = None if value is None else hmac_sha256_hex(str(value), salt_secret)
+        hashed.append(next_row)
+    return hashed
+
+
 def drop_rows(rows: list[dict[str, Any]], params: dict[str, Any]) -> list[dict[str, Any]]:
     """지정 column을 preview output에서 제거한다."""
 
     source_path = required_param(params, "source_path")
     return [{key: value for key, value in row.items() if key != source_path} for row in rows]
+
+
+def quarantine_invalid_rows(rows: list[dict[str, Any]], params: dict[str, Any]) -> list[dict[str, Any]]:
+    """검증 rule에 실패한 row를 preview output에서 표시한다."""
+
+    source_path = required_param(params, "source_path")
+    rule = params.get("rule")
+    if not rule:
+        raise Week2SparkRunnerError("quarantine_if_invalid operation requires rule")
+    assert_paths_exist(rows, [source_path])
+    flag_column = string_param(params, "quarantine_flag_column", "_quarantined")
+    reason_column = string_param(params, "quarantine_reason_column", "_quarantine_reason")
+    default_reason = string_param(params, "reason", f"{source_path} failed validation")
+    checked = []
+    for row in rows:
+        invalid, reason = evaluate_quarantine_rule(get_path_value(row, source_path), rule, default_reason)
+        checked.append({**row, flag_column: invalid, reason_column: reason if invalid else None})
+    return checked
 
 
 def aggregate_rows(rows: list[dict[str, Any]], params: dict[str, Any]) -> list[dict[str, Any]]:
@@ -430,6 +541,174 @@ def assert_columns_exist(rows: list[dict[str, Any]], columns: list[str]) -> None
     missing = sorted({column for column in columns if any(column not in row for row in rows)})
     if missing:
         raise Week2SparkRunnerError(f"Missing column(s) for L6 preview: {', '.join(missing)}")
+
+
+def assert_paths_exist(rows: list[dict[str, Any]], paths: list[str]) -> None:
+    """flat column 또는 dotted path가 모든 preview row에 있는지 확인한다."""
+
+    missing = sorted({path for path in paths if any(get_path_value(row, path, missing_marker=True) is MISSING for row in rows)})
+    if missing:
+        raise Week2SparkRunnerError(f"Missing column(s) for L6 preview: {', '.join(missing)}")
+
+
+def get_path_value(row: dict[str, Any], path: str, missing_marker: bool = False) -> Any:
+    """row에서 flat column을 우선 찾고, 없으면 dotted path를 따라 값을 읽는다."""
+
+    if path in row:
+        return row[path]
+    current: Any = row
+    for part in path.split("."):
+        if not isinstance(current, dict) or part not in current:
+            return MISSING if missing_marker else None
+        current = current[part]
+    return current
+
+
+def remove_path_value(row: dict[str, Any], path: str) -> dict[str, Any]:
+    """source column을 제거한 shallow copy를 만든다."""
+
+    next_row = dict(row)
+    if path in next_row:
+        next_row.pop(path)
+    return next_row
+
+
+def target_column_name(params: dict[str, Any], fallback: str) -> str:
+    """M3 문서의 target_column과 현재 compiler의 target_name을 모두 받아들인다."""
+
+    value = params.get("target_column", params.get("target_name", fallback))
+    if not isinstance(value, str) or not value:
+        raise Week2SparkRunnerError("L6 operation target column must be a string")
+    return safe_column_name(value)
+
+
+def safe_column_name(name: str) -> str:
+    """preview output에 쓸 수 있게 path 문자를 column 문자로 바꾼다."""
+
+    return name.replace(".", "_").replace("[", "_").replace("]", "").replace("-", "_")
+
+
+def bounded_positive_int(params: dict[str, Any], name: str, default: int) -> int:
+    """옵션이 있으면 양의 정수인지 확인하고 없으면 default를 쓴다."""
+
+    value = params.get(name, default)
+    if not isinstance(value, int) or value <= 0:
+        raise Week2SparkRunnerError(f"L6 operation requires positive integer {name}")
+    return value
+
+
+def explode_max_output_rows(params: dict[str, Any]) -> int:
+    """explode preview가 너무 커지지 않도록 output row 상한을 계산한다."""
+
+    cardinality_guard = params.get("cardinality_guard", {})
+    if isinstance(cardinality_guard, dict):
+        for key in ("max_output_rows", "max_group_count", "max_groups"):
+            value = cardinality_guard.get(key)
+            if isinstance(value, int) and value > 0:
+                return value
+    value = params.get("max_output_rows")
+    if isinstance(value, int) and value > 0:
+        return value
+    return 100_000
+
+
+def flatten_object(value: dict[str, Any], max_depth: int, prefix: str = "") -> list[tuple[str, Any]]:
+    """nested dict를 bounded depth 안에서 column path와 값 목록으로 바꾼다."""
+
+    flattened: list[tuple[str, Any]] = []
+    for key, child in value.items():
+        child_name = safe_column_name(str(key))
+        column_path = f"{prefix}_{child_name}" if prefix else child_name
+        if isinstance(child, dict) and max_depth > 1:
+            flattened.extend(flatten_object(child, max_depth=max_depth - 1, prefix=column_path))
+        else:
+            flattened.append((column_path, child))
+    return flattened
+
+
+def scalar_preview_value(value: Any) -> Any:
+    """Parquet preview column에 넣기 애매한 nested value는 JSON string으로 보존한다."""
+
+    if isinstance(value, (dict, list)):
+        return json.dumps(value, ensure_ascii=False, sort_keys=True)
+    return value
+
+
+def hmac_sha256_hex(value: str, salt_secret: str) -> str:
+    """HMAC-SHA256 digest를 hex string으로 만든다."""
+
+    return hmac.new(salt_secret.encode("utf-8"), value.encode("utf-8"), hashlib.sha256).hexdigest()
+
+
+def string_param(params: dict[str, Any], name: str, default: str) -> str:
+    """선택 문자열 parameter를 읽는다."""
+
+    value = params.get(name, default)
+    if not isinstance(value, str) or not value:
+        raise Week2SparkRunnerError(f"L6 operation {name} must be a string")
+    return value
+
+
+def evaluate_quarantine_rule(value: Any, rule: Any, default_reason: str) -> tuple[bool, str]:
+    """현재 preview에서 지원하는 quarantine rule을 평가한다."""
+
+    if isinstance(rule, str):
+        return evaluate_named_quarantine_rule(value, rule, default_reason)
+    if not isinstance(rule, dict):
+        raise Week2SparkRunnerError("quarantine_if_invalid rule must be a string or object")
+
+    rule_type = rule.get("type")
+    reason = rule.get("reason", default_reason)
+    if not isinstance(reason, str) or not reason:
+        raise Week2SparkRunnerError("quarantine_if_invalid rule.reason must be a string")
+
+    if rule_type == "not_null":
+        return value is None, reason
+    if rule_type == "not_empty":
+        return value == "", reason
+    if rule_type == "not_null_or_empty":
+        return value is None or value == "", reason
+    if rule_type == "not_in":
+        invalid_values = rule.get("values")
+        if not isinstance(invalid_values, list):
+            raise Week2SparkRunnerError("quarantine_if_invalid not_in rule requires values[]")
+        return value in invalid_values, reason
+    if rule_type == "range":
+        return value_outside_numeric_range(value, rule), reason
+    raise Week2SparkRunnerError(f"Unsupported quarantine_if_invalid rule: {rule_type}")
+
+
+def evaluate_named_quarantine_rule(value: Any, rule: str, default_reason: str) -> tuple[bool, str]:
+    """짧은 문자열 rule을 평가한다."""
+
+    if rule == "not_null":
+        return value is None, default_reason
+    if rule == "not_empty":
+        return value == "", default_reason
+    if rule == "not_null_or_empty":
+        return value is None or value == "", default_reason
+    raise Week2SparkRunnerError(f"Unsupported quarantine_if_invalid rule: {rule}")
+
+
+def value_outside_numeric_range(value: Any, rule: dict[str, Any]) -> bool:
+    """숫자 range rule을 평가한다."""
+
+    if value is None:
+        return True
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return True
+    minimum = rule.get("min")
+    maximum = rule.get("max")
+    if isinstance(minimum, (int, float)) and number < minimum:
+        return True
+    if isinstance(maximum, (int, float)) and number > maximum:
+        return True
+    return False
+
+
+MISSING = object()
 
 
 def output_location_for_l6_preview(

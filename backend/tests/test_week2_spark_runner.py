@@ -1,3 +1,5 @@
+import hashlib
+import hmac
 import json
 from pathlib import Path
 
@@ -316,6 +318,171 @@ def test_week2_spark_runner_executes_l6_gold_aggregate_spec(tmp_path: Path) -> N
     ]
 
 
+def test_week2_spark_runner_executes_l6_nested_and_quarantine_operations(tmp_path: Path) -> None:
+    """M3 allowlist의 nested/explode/quarantine operation을 preview로 실행한다."""
+
+    source_path = tmp_path / "reviews.jsonl"
+    output_root = tmp_path / "week2"
+    write_jsonl(
+        source_path,
+        [
+            {
+                "review_id": "R1",
+                "product_id": "B1",
+                "rating": 5,
+                "review_meta": {"country": "KR", "verified": True},
+                "tags": [{"name": "fast"}, {"name": "fresh"}],
+            },
+            {
+                "review_id": "R2",
+                "product_id": "B2",
+                "rating": 0,
+                "review_meta": {"country": "US", "verified": False},
+                "tags": [{"name": "broken"}],
+            },
+        ],
+    )
+    silver_spec = {
+        "artifact_type": "silver_transform_spec",
+        "write_mode": "preview_only",
+        "operations": [
+            {
+                "operation_id": "select_nested_fields",
+                "operation": "select",
+                "params": {"columns": ["review_id", "product_id", "rating", "review_meta", "tags"]},
+            },
+            {
+                "operation_id": "flatten_review_meta",
+                "operation": "flatten_struct",
+                "params": {"source_path": "review_meta", "target_name": "meta"},
+            },
+            {
+                "operation_id": "quarantine_bad_rating",
+                "operation": "quarantine_if_invalid",
+                "params": {
+                    "source_path": "rating",
+                    "rule": {"type": "range", "min": 1, "max": 5, "reason": "rating must be between 1 and 5"},
+                },
+            },
+            {
+                "operation_id": "explode_tags",
+                "operation": "explode_array",
+                "params": {"source_path": "tags", "target_name": "tag", "cardinality_guard": {"max_output_rows": 10}},
+            },
+        ],
+    }
+    runtime_config = RuntimeConfig(
+        runner="spark_runner",
+        input_format="jsonl",
+        input_path=str(source_path),
+        output_format="parquet",
+        output_root=str(output_root),
+        transform_spec=silver_spec,
+        options={"output_file_name": "silver_nested_preview.parquet"},
+    )
+
+    result = Week2SparkRunner().run(runtime_config, run_id="run_l6_nested_preview_001")
+
+    output_path = output_root / "l6_preview" / "run_id=run_l6_nested_preview_001" / "silver_nested_preview.parquet"
+    rows = sorted(pq.read_table(output_path).to_pylist(), key=lambda row: (row["review_id"], row["tag_name"]))
+    assert result.status == "succeeded"
+    assert result.row_count == 2
+    assert result.output_row_count == 3
+    assert [
+        {
+            "review_id": row["review_id"],
+            "meta_country": row["meta_country"],
+            "meta_verified": row["meta_verified"],
+            "tag_name": row["tag_name"],
+            "_quarantined": row["_quarantined"],
+        }
+        for row in rows
+    ] == [
+        {"review_id": "R1", "meta_country": "KR", "meta_verified": True, "tag_name": "fast", "_quarantined": False},
+        {"review_id": "R1", "meta_country": "KR", "meta_verified": True, "tag_name": "fresh", "_quarantined": False},
+        {"review_id": "R2", "meta_country": "US", "meta_verified": False, "tag_name": "broken", "_quarantined": True},
+    ]
+    assert rows[-1]["_quarantine_reason"] == "rating must be between 1 and 5"
+
+
+def test_week2_spark_runner_executes_l6_hash_operation(tmp_path: Path, monkeypatch) -> None:
+    """hash operation은 HMAC-SHA256 secret ref가 있을 때만 preview digest를 만든다."""
+
+    monkeypatch.setenv("ASKLAKE_TEST_HASH_SECRET", "demo-secret")
+    source_path = tmp_path / "reviews.jsonl"
+    output_root = tmp_path / "week2"
+    write_jsonl(source_path, [{"reviewer_email": "user@example.com", "rating": 5}])
+    silver_spec = {
+        "artifact_type": "silver_transform_spec",
+        "write_mode": "preview_only",
+        "operations": [
+            {
+                "operation_id": "hash_reviewer_email",
+                "operation": "hash",
+                "params": {
+                    "source_path": "reviewer_email",
+                    "target_column": "reviewer_email_hash",
+                    "hash_policy": {
+                        "algorithm": "hmac_sha256",
+                        "salt_secret_id": "ASKLAKE_TEST_HASH_SECRET",
+                        "salt_version": "v1",
+                    },
+                },
+            }
+        ],
+    }
+    runtime_config = RuntimeConfig(
+        runner="spark_runner",
+        input_format="jsonl",
+        input_path=str(source_path),
+        output_format="parquet",
+        output_root=str(output_root),
+        transform_spec=silver_spec,
+        options={"output_file_name": "silver_hash_preview.parquet"},
+    )
+
+    result = Week2SparkRunner().run(runtime_config, run_id="run_l6_hash_preview_001")
+
+    output_path = output_root / "l6_preview" / "run_id=run_l6_hash_preview_001" / "silver_hash_preview.parquet"
+    rows = pq.read_table(output_path).to_pylist()
+    expected_hash = hmac.new(b"demo-secret", b"user@example.com", hashlib.sha256).hexdigest()
+    assert result.status == "succeeded"
+    assert [{key: row[key] for key in ["rating", "reviewer_email_hash"]} for row in rows] == [
+        {"rating": 5, "reviewer_email_hash": expected_hash}
+    ]
+
+
+def test_week2_spark_runner_fails_l6_hash_without_policy(tmp_path: Path) -> None:
+    """hash_policy가 없으면 PII hash를 성공으로 위장하지 않는다."""
+
+    source_path = tmp_path / "reviews.jsonl"
+    output_root = tmp_path / "week2"
+    write_jsonl(source_path, [{"reviewer_email": "user@example.com"}])
+    runtime_config = RuntimeConfig(
+        runner="spark_runner",
+        input_format="jsonl",
+        input_path=str(source_path),
+        output_format="parquet",
+        output_root=str(output_root),
+        transform_spec={
+            "artifact_type": "silver_transform_spec",
+            "write_mode": "preview_only",
+            "operations": [
+                {
+                    "operation_id": "hash_reviewer_email",
+                    "operation": "hash",
+                    "params": {"source_path": "reviewer_email"},
+                }
+            ],
+        },
+    )
+
+    result = Week2SparkRunner().run(runtime_config, run_id="run_l6_hash_missing_policy_001")
+
+    assert result.status == "failed"
+    assert "hash operation requires hash_policy" in result.task_results[0]["error"]
+
+
 def test_week2_spark_runner_fails_l6_unsupported_operation(tmp_path: Path) -> None:
     """지원하지 않는 L6 operation은 성공으로 위장하지 않고 실패 결과로 남긴다."""
 
@@ -333,8 +500,8 @@ def test_week2_spark_runner_fails_l6_unsupported_operation(tmp_path: Path) -> No
             "write_mode": "preview_only",
             "operations": [
                 {
-                    "operation_id": "explode_nested_payload",
-                    "operation": "explode_array",
+                    "operation_id": "generated_code_execution",
+                    "operation": "generated_code_execution",
                     "params": {"source_path": "items"},
                 }
             ],
