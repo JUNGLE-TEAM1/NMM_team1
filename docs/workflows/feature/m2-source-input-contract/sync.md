@@ -31,7 +31,10 @@ main 동기화와 integration readiness를 기록한다.
 - linked GitHub issue: #233
 - issue link: https://github.com/JUNGLE-TEAM1/NMM_team1/issues/233
 - issue creation result: created
-- issue project result: added to JUNGLE-TEAM1 project 3; status set to In Progress
+- issue project result: set to Review in JUNGLE-TEAM1 project 3
 - PR closing keyword: Closes #233
-- pushed branch: not pushed
-- PR link: pending
+- pushed branch: feature/m2-source-input-contract
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/234
+- issue reopen result: reopened closed issue before PR open
+- merge status: open
+- issue close status: open

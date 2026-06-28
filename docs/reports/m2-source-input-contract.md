@@ -15,7 +15,7 @@
 - Type: feature
 - Branch/work location: `feature/m2-source-input-contract`, `docs/workflows/feature/m2-source-input-contract`
 - Date: 2026-06-28
-- Workspace state: local-ready; linked issue #233 created and added to Project `In Progress`.
+- Workspace state: PR open; linked issue #233 created and PR #234 opened.
 
 ## Reference Docs / 참고 문서
 
@@ -83,7 +83,7 @@ python3 -m json.tool contracts/runtime_config.sample.json
 - Environment: local `.venv`, repository sample JSONL fixtures.
 - Result: Product Health runtime smoke succeeded.
 - Evidence: 4 logical sources, 11 input rows, 1412 input bytes, 6719 output bytes.
-- Failure/limitation: initial GitHub issue/remote branch creation was blocked by invalid `gh` token and GitHub App 403. `gh` auth was restored and issue #233 was created; remote branch/PR remained pending at report time.
+- Failure/limitation: initial GitHub issue/remote branch creation was blocked by invalid `gh` token and GitHub App 403. `gh` auth was restored, issue #233 was created, and PR #234 was opened.
 
 ## docs/05 Acceptance Link / 수용 기준 연결
 
