@@ -120,7 +120,13 @@ class FakeSqlEngine:
     def _fixture_row(self, selected_columns: list[str]) -> dict[str, object]:
         available = {
             "product_id": "B001",
+            "category": "electronics",
+            "product_name": "Demo Product",
             "review_count": 42,
             "average_rating": 4.8,
+            "risk_score": 0.92,
+            "negative_review_rate": 0.34,
+            "conversion_rate": 0.08,
+            "late_delivery_rate": 0.21,
         }
         return {name: available.get(name) for name in selected_columns}
