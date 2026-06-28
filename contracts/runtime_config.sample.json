@@ -22,25 +22,44 @@
     "source_inputs": [
       {
         "source_id": "reviews_seed",
+        "source_type": "local_file",
+        "format": "jsonl",
+        "path": "backend/samples/product_health_reviews_seed.jsonl",
         "input_format": "jsonl",
         "input_path": "backend/samples/product_health_reviews_seed.jsonl"
       },
       {
         "source_id": "behavior_events_seed",
+        "source_type": "local_file",
+        "format": "jsonl",
+        "path": "backend/samples/product_health_behavior_events_seed.jsonl",
         "input_format": "jsonl",
         "input_path": "backend/samples/product_health_behavior_events_seed.jsonl"
       },
       {
         "source_id": "delivery_trips_seed",
+        "source_type": "local_file",
+        "format": "jsonl",
+        "path": "backend/samples/product_health_delivery_trips_seed.jsonl",
         "input_format": "jsonl",
         "input_path": "backend/samples/product_health_delivery_trips_seed.jsonl"
       },
       {
         "source_id": "product_master_seed",
+        "source_type": "local_file",
+        "format": "jsonl",
+        "path": "backend/samples/product_health_product_master_seed.jsonl",
         "input_format": "jsonl",
         "input_path": "backend/samples/product_health_product_master_seed.jsonl"
       }
     ],
+    "source_input_contract": {
+      "source_type": "where the source lives or how it is reached; current runner executes local_file only",
+      "format": "data shape for file/message payloads such as json, jsonl, or parquet",
+      "path": "preferred local_file path field",
+      "legacy_fields": ["input_format", "input_path"],
+      "unsupported_source_types_for_current_runner": ["s3", "postgres", "mongodb", "kafka"]
+    },
     "output_format": "parquet",
     "output_root": "data/week2",
     "options": {

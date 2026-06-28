@@ -192,9 +192,11 @@ def read_runtime_input_rows(config: RuntimeConfig) -> tuple[list[Path], list[dic
         input_paths: list[Path] = []
         rows: list[dict[str, Any]] = []
         for source in config.source_inputs:
-            input_path = resolve_input_path(source.input_path)
+            ensure_local_file_source(source)
+            input_format = source_effective_format(source)
+            input_path = resolve_input_path(source_effective_path(source))
             input_paths.append(input_path)
-            rows.extend(read_rows(input_path, source.input_format))
+            rows.extend(read_rows(input_path, input_format))
         return input_paths, rows
 
     if config.input_path is None or config.input_format is None:
@@ -768,10 +770,12 @@ def run_source_inputs(
     total_output_bytes = 0
 
     for source in config.source_inputs:
-        input_path = resolve_input_path(source.input_path)
-        rows = read_rows(input_path, source.input_format)
+        ensure_local_file_source(source)
+        input_format = source_effective_format(source)
+        input_path = resolve_input_path(source_effective_path(source))
         output_location = output_location_for_source_config(config, source, run_id, storage_adapter)
         output_path = output_location.local_path
+        rows = read_rows(input_path, input_format)
         write_parquet(rows, output_path, merged_options(config, source))
         input_bytes = path_size(input_path) or 0
         output_bytes = path_size(output_path) or 0
@@ -785,8 +789,9 @@ def run_source_inputs(
                 row_count=len(rows),
                 bytes=input_bytes,
                 source_id=source.source_id,
+                source_type=source.source_type,
                 input_path=str(input_path),
-                input_format=source.input_format,
+                input_format=input_format,
             )
         )
         task_results.append(
@@ -823,6 +828,34 @@ def run_source_inputs(
         output_row_count=total_rows,
         output_bytes=total_output_bytes,
     )
+
+
+def ensure_local_file_source(source: RuntimeSourceInput) -> None:
+    """현재 runner smoke에서 실제 실행 가능한 source type인지 확인한다."""
+
+    if source.source_type == "local_file":
+        return
+    raise Week2SparkRunnerError(
+        f"Unsupported source_type for Week2SparkRunner local smoke: {source.source_type}"
+    )
+
+
+def source_effective_format(source: RuntimeSourceInput) -> str:
+    """새 `format` 또는 legacy `input_format` 중 실제 reader가 쓸 값을 돌려준다."""
+
+    input_format = source.effective_format
+    if input_format is None:
+        raise Week2SparkRunnerError(f"source {source.source_id} requires format or input_format")
+    return input_format
+
+
+def source_effective_path(source: RuntimeSourceInput) -> str:
+    """새 `path` 또는 legacy `input_path` 중 실제 reader가 쓸 값을 돌려준다."""
+
+    input_path = source.effective_path
+    if input_path is None:
+        raise Week2SparkRunnerError(f"source {source.source_id} requires path or input_path")
+    return input_path
 
 
 def read_rows(path: Path, input_format: str) -> list[dict[str, Any]]:
