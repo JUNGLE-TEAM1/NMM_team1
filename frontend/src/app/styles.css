@@ -2086,6 +2086,74 @@ tbody tr:hover {
   gap: 16px;
 }
 
+.runtime-readiness-panel {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 18px;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+}
+
+.runtime-readiness-panel h3 {
+  margin-top: 4px;
+  color: #111827;
+  font-size: 17px;
+}
+
+.runtime-readiness-panel p:last-child {
+  margin-top: 5px;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.runtime-check-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.runtime-check-list.compact {
+  justify-content: flex-start;
+}
+
+.runtime-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.runtime-check.ready {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.runtime-check.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.runtime-warning {
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+  background: #fff7ed;
+  padding: 10px 12px;
+  color: #9a3412;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .query-summary-panel {
   display: grid;
   gap: 14px;

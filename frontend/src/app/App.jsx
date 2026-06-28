@@ -1550,6 +1550,18 @@ function CatalogPage({ navigate }) {
             </div>
             <p>{catalog.storage?.local_fallback_path}</p>
           </section>
+          <section className="runtime-readiness-panel">
+            <div>
+              <p className="eyebrow">M6 query readiness</p>
+              <h3>DuckDB Query가 읽을 evidence 확인</h3>
+              <p>AI Query는 CatalogMetadata의 read-only SQL 계약과 local fallback output을 기준으로 실행됩니다.</p>
+            </div>
+            <div className="runtime-check-list">
+              <RuntimeCheck label="local output" ready={Boolean(catalog.storage?.local_fallback_path)} />
+              <RuntimeCheck label="readonly SQL" ready={Boolean(catalog.query?.allow_readonly_sql)} />
+              <RuntimeCheck label="lineage" ready={Boolean(catalog.lineage?.run_id)} />
+            </div>
+          </section>
           <DataTable columns={["field", "type", "nullable"]} rows={catalogSchemaRows(catalog)} />
         </>
       ) : null}
@@ -1779,7 +1791,17 @@ function AiQueryPage({ navigate, setNotice }) {
           {queryState.result?.guardrail?.failure_message ? (
             <p className="form-error">{queryState.result.guardrail.failure_message}</p>
           ) : null}
+          {isMissingLocalPathError(queryState.error) ? (
+            <p className="runtime-warning">
+              Catalog output file이 아직 없어서 SQL 실행이 차단됐습니다. 먼저 실행/모니터링에서 Week2 workflow를 성공시킨 뒤 다시 질문하세요.
+            </p>
+          ) : null}
           <code>{queryResult?.sql || queryState.result?.sql || m1AiQueryPlaceholder.sql}</code>
+          <div className="runtime-check-list compact">
+            <RuntimeCheck label="DuckDB runtime" ready={isDuckDbEngine(queryResult?.engine)} />
+            <RuntimeCheck label="SQL rows" ready={rows.length > 0} />
+            <RuntimeCheck label="evidence" ready={evidence.length > 0} />
+          </div>
           <div className="segmented-control">
             {["table", "chart"].map((mode) => (
               <button
@@ -1804,7 +1826,7 @@ function AiQueryPage({ navigate, setNotice }) {
               value={queryState.result.selected_datasets?.[0]?.dataset_id}
               detail={queryState.result.selected_datasets?.[0]?.reason}
             />
-            <InfoCard title="Engine" value={queryResult?.engine} detail="M6 SqlEngineAdapter" />
+            <InfoCard title="Engine" value={queryRuntimeLabel(queryResult)} detail={queryRuntimeDetail(queryResult)} />
             <InfoCard
               title="Rows"
               value={formatMetric(queryResult?.row_count ?? rows.length)}
@@ -1870,6 +1892,34 @@ function queryStatusBadgeClass(result) {
   if (result.status === "blocked" || result.guardrail?.validation_status === "blocked") return "orange";
   if (result.status === "failed" || result.guardrail?.validation_status === "failed") return "red";
   return "blue";
+}
+
+function isDuckDbEngine(engine) {
+  return String(engine || "").toLowerCase() === "duckdb";
+}
+
+function queryRuntimeLabel(queryResult) {
+  if (!queryResult?.engine) return "대기";
+  return queryResult.engine;
+}
+
+function queryRuntimeDetail(queryResult) {
+  if (!queryResult?.engine) return "질문 실행 후 runtime 표시";
+  if (isDuckDbEngine(queryResult.engine)) return "M6 DuckDB 실제 SQL runtime";
+  return "fallback 또는 test SqlEngineAdapter";
+}
+
+function isMissingLocalPathError(message) {
+  return String(message || "").includes("local_path_missing");
+}
+
+function RuntimeCheck({ label, ready }) {
+  return (
+    <span className={`runtime-check ${ready ? "ready" : "pending"}`}>
+      {ready ? <ShieldCheck size={13} /> : <AlertCircle size={13} />}
+      {label}
+    </span>
+  );
 }
 
 function formatChartSpec(chartSpec) {
