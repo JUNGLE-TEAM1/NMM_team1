@@ -195,6 +195,159 @@ def test_week2_spark_runner_writes_multiple_product_health_sources(tmp_path: Pat
     )
 
 
+def test_week2_spark_runner_executes_l6_silver_preview_spec(tmp_path: Path) -> None:
+    """M3 L6 Silver spec을 받아 preview Parquet와 표준 실행 결과를 만드는지 검증한다."""
+
+    source_path = tmp_path / "reviews.jsonl"
+    output_root = tmp_path / "week2"
+    write_jsonl(
+        source_path,
+        [
+            {"review_id": "R1", "product_id": "B1", "rating": "5", "review_text": "good", "raw_blob": {"x": 1}},
+            {"review_id": "R2", "product_id": "B1", "rating": "2", "review_text": "bad", "raw_blob": {"x": 2}},
+        ],
+    )
+    silver_spec = {
+        "artifact_type": "silver_transform_spec",
+        "write_mode": "preview_only",
+        "operations": [
+            {
+                "operation_id": "select_silver_fields",
+                "operation": "select",
+                "params": {"columns": ["product_id", "rating", "review_text", "raw_blob"]},
+            },
+            {
+                "operation_id": "cast_rating",
+                "operation": "cast",
+                "params": {"source_path": "rating", "target_type": "integer"},
+            },
+            {
+                "operation_id": "mask_review_text",
+                "operation": "mask",
+                "params": {"source_path": "review_text"},
+            },
+            {
+                "operation_id": "json_string_raw_blob",
+                "operation": "json_string",
+                "params": {"source_path": "raw_blob", "target_name": "raw_blob"},
+            },
+        ],
+    }
+    runtime_config = RuntimeConfig(
+        runner="spark_runner",
+        input_format="jsonl",
+        input_path=str(source_path),
+        output_format="parquet",
+        output_root=str(output_root),
+        transform_spec=silver_spec,
+        options={"output_file_name": "silver_preview.parquet"},
+    )
+
+    result = Week2SparkRunner().run(runtime_config, run_id="run_l6_silver_preview_001")
+
+    output_path = output_root / "l6_preview" / "run_id=run_l6_silver_preview_001" / "silver_preview.parquet"
+    rows = pq.read_table(output_path).to_pylist()
+    assert result.status == "succeeded"
+    assert result.row_count == 2
+    assert result.output_row_count == 2
+    assert result.output_path == str(output_path)
+    preview_rows = [{key: row[key] for key in ["product_id", "rating", "review_text", "raw_blob"]} for row in rows]
+    assert preview_rows == [
+        {"product_id": "B1", "rating": 5, "review_text": "***MASKED***", "raw_blob": '{"x": 1}'},
+        {"product_id": "B1", "rating": 2, "review_text": "***MASKED***", "raw_blob": '{"x": 2}'},
+    ]
+
+
+def test_week2_spark_runner_executes_l6_gold_aggregate_spec(tmp_path: Path) -> None:
+    """M3 L6 Gold aggregate spec을 받아 preview metric Parquet를 만드는지 검증한다."""
+
+    source_path = tmp_path / "silver_reviews.jsonl"
+    output_root = tmp_path / "week2"
+    write_jsonl(
+        source_path,
+        [
+            {"product_id": "B1", "rating": 5},
+            {"product_id": "B1", "rating": 3},
+            {"product_id": "B2", "rating": 1},
+        ],
+    )
+    gold_spec = {
+        "artifact_type": "gold_generation_spec",
+        "write_mode": "preview_only",
+        "operations": [
+            {
+                "operation_id": "aggregate_gold_product_rating",
+                "operation": "aggregate",
+                "params": {
+                    "input_ref": "silver_preview",
+                    "group_by": ["product_id"],
+                    "dimensions": ["product_id"],
+                    "measures": [
+                        {"name": "review_count", "operation": "count", "field": "*"},
+                        {"name": "avg_rating", "operation": "avg", "field": "rating"},
+                    ],
+                    "time_window": {"enabled": False, "field": None, "window": None},
+                    "cardinality_guard": {"max_groups": 10, "on_exceed": "block_preview"},
+                },
+            }
+        ],
+    }
+    runtime_config = RuntimeConfig(
+        runner="spark_runner",
+        input_format="jsonl",
+        input_path=str(source_path),
+        output_format="parquet",
+        output_root=str(output_root),
+        transform_spec=gold_spec,
+        options={"output_file_name": "gold_preview.parquet"},
+    )
+
+    result = Week2SparkRunner().run(runtime_config, run_id="run_l6_gold_preview_001")
+
+    output_path = output_root / "l6_preview" / "run_id=run_l6_gold_preview_001" / "gold_preview.parquet"
+    rows = sorted(pq.read_table(output_path).to_pylist(), key=lambda row: row["product_id"])
+    assert result.status == "succeeded"
+    assert result.row_count == 3
+    assert result.output_row_count == 2
+    preview_rows = [{key: row[key] for key in ["product_id", "review_count", "avg_rating"]} for row in rows]
+    assert preview_rows == [
+        {"product_id": "B1", "review_count": 2, "avg_rating": 4.0},
+        {"product_id": "B2", "review_count": 1, "avg_rating": 1.0},
+    ]
+
+
+def test_week2_spark_runner_fails_l6_unsupported_operation(tmp_path: Path) -> None:
+    """지원하지 않는 L6 operation은 성공으로 위장하지 않고 실패 결과로 남긴다."""
+
+    source_path = tmp_path / "reviews.jsonl"
+    output_root = tmp_path / "week2"
+    write_jsonl(source_path, [{"review_id": "R1", "product_id": "B1"}])
+    runtime_config = RuntimeConfig(
+        runner="spark_runner",
+        input_format="jsonl",
+        input_path=str(source_path),
+        output_format="parquet",
+        output_root=str(output_root),
+        transform_spec={
+            "artifact_type": "silver_transform_spec",
+            "write_mode": "preview_only",
+            "operations": [
+                {
+                    "operation_id": "explode_nested_payload",
+                    "operation": "explode_array",
+                    "params": {"source_path": "items"},
+                }
+            ],
+        },
+    )
+
+    result = Week2SparkRunner().run(runtime_config, run_id="run_l6_unsupported_001")
+
+    assert result.status == "failed"
+    assert result.task_results[0]["status"] == "failed"
+    assert "Unsupported L6 operation" in result.task_results[0]["error"]
+
+
 class FakeStorageAdapter:
     """SparkRunner가 storage adapter를 호출하는지만 보는 테스트 double."""
 

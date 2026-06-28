@@ -49,6 +49,40 @@
     "result_fields": ["status", "row_count", "bytes", "duration_ms", "output_path", "task_results"],
     "ownership_note": "M2 pass-through runtime evidence only; M3 owns Bronze/Silver/Gold TransformSpec semantics."
   },
+  "l6_preview_runtime_smoke": {
+    "runner": "spark_runner",
+    "input_format": "jsonl",
+    "input_path": "backend/samples/product_health_reviews_seed.jsonl",
+    "output_format": "parquet",
+    "output_root": "data/week2",
+    "transform_spec": {
+      "artifact_type": "silver_transform_spec",
+      "write_mode": "preview_only",
+      "operations": [
+        {
+          "operation_id": "select_product_review_fields",
+          "operation": "select",
+          "params": {
+            "columns": ["product_id", "rating", "review_text"]
+          }
+        },
+        {
+          "operation_id": "cast_rating",
+          "operation": "cast",
+          "params": {
+            "source_path": "rating",
+            "target_type": "number"
+          }
+        }
+      ]
+    },
+    "options": {
+      "output_file_name": "silver_preview.parquet"
+    },
+    "supported_operations": ["select", "rename", "cast", "parse_timestamp", "normalize_null", "json_string", "mask", "drop", "aggregate"],
+    "unsupported_operation_rule": "return failed Week2RunnerResult instead of silently succeeding",
+    "ownership_note": "M3 owns L6 TransformSpec semantics; M2 only executes preview-compatible operations and records evidence."
+  },
   "storage": {
     "profile": "minio",
     "bucket": "asklake-demo",

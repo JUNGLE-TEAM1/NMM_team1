@@ -47,6 +47,8 @@ class RuntimeConfig(BaseModel):
     output_format: Literal["parquet"] = "parquet"
     output_path: str | None = Field(default=None, min_length=1)
     output_root: str | None = Field(default=None, min_length=1)
+    transform_spec: dict[str, Any] | None = None
+    transform_spec_path: str | None = Field(default=None, min_length=1)
     storage: StorageConfig | None = None
     app_name: str = Field(default="asklake-week2", min_length=1)
     options: dict[str, Any] = Field(default_factory=dict)
@@ -54,6 +56,9 @@ class RuntimeConfig(BaseModel):
     @model_validator(mode="after")
     def require_output_location(self) -> "RuntimeConfig":
         """단일 입력 또는 여러 source 입력에 필요한 최소 위치 설정을 검증한다."""
+
+        if self.transform_spec is not None and self.transform_spec_path is not None:
+            raise ValueError("transform_spec and transform_spec_path cannot be used together")
 
         if self.source_inputs:
             if self.output_path is not None:
