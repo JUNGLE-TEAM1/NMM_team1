@@ -1,26 +1,26 @@
-# M1 demo readiness panel 사람 확인 게이트
+# Harness neutral decision guidance 사람 확인 게이트
 
 AI가 멈추고 사람 확인을 받아야 하는 지점을 기록한다.
 
 ## Scope Confirm / 범위 확인
 
-- Status: completed
+- Status: confirmed
 - Ask human to confirm:
   - branch/workspace
   - 포함 범위
   - 제외 범위
   - 영향받는 Source of Truth 문서
-- Human response: 사용자가 "다음 페이즈를 진행해줘"로 Phase 10 실행을 지시했다. 계획 범위 그대로 `/query` demo readiness panel만 수행했다.
+- Human response: 사용자가 기존 PR은 merge하고, AI 답변 중립성/반대 관점/제안자 책임/협업 감정 비용은 별도 PR로 분리해 진행하라고 지시함.
 
 ## Contract Confirm / 계약 확인
 
-- Status: completed
+- Status: not needed
 - Ask human to confirm:
   - data model 변경
   - interface/API/CLI/UI contract 변경
   - external dependency
   - 공유 Source of Truth 변경
-- Human response: backend/API/schema/data contract 변경 없이 M1 UI 표시 계층에서 기존 Product Health Catalog readiness를 보수적으로 파생한다.
+- Human response: 문서-only guide 보강이며 data model, API, CLI, UI contract, external dependency 변경 없음.
 
 ## Scope Change Confirm / 범위 변경 확인
 
@@ -29,37 +29,37 @@ AI가 멈추고 사람 확인을 받아야 하는 지점을 기록한다.
   - 작업이 `plan.md` 범위를 넘을 때
   - 기능을 다른 branch로 분리해야 할 때
   - 구현 중 새 제품 결정이 드러날 때
-- Human response:
+- Human response: 
 
 ## Verification Confirm / 검증 확인
 
-- Status: completed
+- Status: confirmed
 - Ask human to confirm:
   - test/build/smoke 명령
   - TDD 증거 또는 skip reason
   - CI/check 명령
   - manual verification 경로
   - completion criteria
-- Human response: `npm run build`, readiness keyword scan, docker browser smoke, mobile viewport smoke, `git diff --check`, harness validation으로 검증한다.
+- Human response: 문서-only 변경으로 `rg`, `git diff --check`, `scripts/validate-harness.sh`, `scripts/validate-harness.sh --strict`를 검증 기준으로 사용.
 
 ## Quality Gate Confirm / 품질 게이트 확인
 
-- Status: completed
+- Status: confirmed
 - Ask human to confirm:
   - TDD 적용 또는 의도적 생략
   - 필요한 branch check와 CI gate
   - 생략한 검증과 이유
   - 관련 있는 deploy/publish gate
-- Human response: TDD는 UI-only panel 표시 보강이라 생략하고 browser smoke로 대체했다. deploy/publish gate 없음.
+- Human response: TDD는 runtime logic 변경이 아니므로 적용하지 않음. local docs/harness validation으로 품질 게이트 확인.
 
 ## Git Sync Confirm / Git sync 확인
 
-- Status: completed
+- Status: confirmed
 - Ask human to confirm:
   - 구현 전 start sync command/result
   - mid-phase upstream change action
   - 완료 전 pre-merge sync command/result
-- Human response: branch base와 `origin/main`이 모두 `af93eacd3d9bfad35eaa0ec1be4966dc5aecb4ac`임을 확인했다. pull/merge/rebase는 실행하지 않았다.
+- Human response: PR #249 merge 후 `origin/main` ee4b2e01 기준 새 branch `docs/harness-neutral-decision-guidance`를 생성함.
 
 ## Sync Conflict Confirm / sync 충돌 확인
 
@@ -68,7 +68,7 @@ AI가 멈추고 사람 확인을 받아야 하는 지점을 기록한다.
   - Phase 중 main이 바뀐 경우
   - 공유 Source of Truth 문서가 이 branch와 충돌하는 경우
   - merge/rebase/pull/PR merge/finalize/cleanup action이 필요한 경우
-- Human response:
+- Human response: 
 
 ## PR Conflict Confirm / PR 충돌 확인
 
@@ -89,13 +89,13 @@ AI가 멈추고 사람 확인을 받아야 하는 지점을 기록한다.
 
 ## Completion Confirm / 완료 확인
 
-- Status: completed
+- Status: confirmed
 - Ask human to confirm:
   - 변경 요약
   - 검증 결과
   - 남은 위험
   - 다음 작업 문맥
-- Human response: Phase 변경, 검증, 남은 위험을 `report.md`, `quality.md`, final response에 기록한다. PR merge/finalize/cleanup은 사람 확인 전 실행하지 않는다.
+- Human response: AI 답변 중립성, 반대 관점, 추천도, 제안자 책임, 협업 감정 비용을 사용 가이드/FAQ/checklist/report에 반영함. PR 리뷰에서 표현 강도는 추가 조정 가능.
 
 ## Integration Conflict Confirm / 통합 충돌 확인
 
@@ -104,4 +104,4 @@ AI가 멈추고 사람 확인을 받아야 하는 지점을 기록한다.
   - 이 branch가 여러 source branch를 통합하는 경우
   - 공유 data model 또는 interface 충돌이 있는 경우
   - acceptance/regression/manual verification 경로가 충돌하는 경우
-- Human response:
+- Human response: 
