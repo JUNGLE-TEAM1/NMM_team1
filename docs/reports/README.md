@@ -71,6 +71,7 @@ report가 늘어나면 영역별 최신 report index를 작게 유지한다. 이
 | Week2 M3 JSON main path decision | [`week2-m3-json-main-path-decision.md`](week2-m3-json-main-path-decision.md) | 과거 M3 JSON path decision evidence. 현재 M3 기준은 `gold_product_health` TransformSpec과 PR #105 selective recovery를 함께 확인 |
 | Week2 runner boundary decision | [`week2-runner-boundary-decision.md`](week2-runner-boundary-decision.md) | M2 SparkRunner, M3 TransformSpec/job logic, M5 runner selection이 공유할 input/output boundary 확인 |
 | M2 Product Health runtime smoke | [`m2-product-health-runtime-smoke.md`](m2-product-health-runtime-smoke.md) | M2가 reviews/behavior/delivery/product raw input을 multi-source pass-through Parquet/evidence로 처리하는 additive RuntimeConfig 경계 확인 |
+| M2 L6 preview runner adapter | [`m2-l6-preview-runner-adapter.md`](m2-l6-preview-runner-adapter.md) | M2 `Week2SparkRunner`가 M3 L6 preview-only spec을 받아 local preview Parquet와 `Week2RunnerResult` evidence를 만드는 경계 확인 |
 | M2 source input 계약 확장 | [`m2-source-input-contract.md`](m2-source-input-contract.md) | `RuntimeConfig.source_inputs[]`가 legacy `input_format`/`input_path`와 새 `source_type`/`format`/`path`를 함께 받는 호환 계약 확인 |
 | Week2 team handoff summary | [`week2-team-handoff-summary.md`](week2-team-handoff-summary.md) | Phase 1~6 이후 팀원이 읽을 현재 분업/진행상황/다음 병렬 구현 순서 확인 |
 | Week2 상품 리스크 Source of Truth 전파 | [`week2-product-risk-source-of-truth-propagation.md`](week2-product-risk-source-of-truth-propagation.md) | Week2 대표 경로가 5GB raw/bronze input 기반 `gold_product_health`로 갱신된 Source of Truth 전파 범위와 남은 구현 gap 확인 |
