@@ -74,7 +74,7 @@
 | --- | --- |
 | Must not break | AskLake 2주차 M1~M6 구현은 `SourceConfig`, `SchemaDefinition`, `TransformSpec`, `RuntimeConfig`, `KafkaTopicContract`, `WorkflowDefinition`, `ExecutionResult`, `CatalogMetadata`, `AIQueryResult` fixture contract 없이 시작하지 않는다. |
 | Failure condition | 각 모듈이 tenant id, source id, dataset id, runtime/transform/input event, workflow result, catalog metadata, SQL result shape를 서로 다르게 정의한다. |
-| Expected behavior | `contracts/*.sample.json`과 `docs/03`의 Week 2 contract package를 먼저 확인하고, 불확실한 path/row count/MinIO layout은 TODO 또는 decision으로 남긴다. |
+| Expected behavior | `contracts/*.sample.json`과 `docs/03`의 Week 2 contract package를 먼저 확인하고, 불확실한 path/row count/MinIO layout은 TODO 또는 decision으로 남긴다. `RuntimeConfig.source_inputs[]`는 legacy `input_format`/`input_path`와 새 `source_type`/`format`/`path`를 호환 유지하며, `source_type`과 `format`을 같은 계층으로 섞지 않는다. |
 | Verification method | JSON fixture 유효성, `docs/03` contract package, branch workspace `quality.md`와 `decisions.md`를 확인한다. |
 | Related docs/interface/Phase | `contracts/`, `docs/03`, `docs/project-context/asklake-week2-module-plan/` |
 

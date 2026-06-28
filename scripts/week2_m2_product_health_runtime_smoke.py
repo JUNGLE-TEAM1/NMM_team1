@@ -33,6 +33,9 @@ def run_smoke(args: argparse.Namespace) -> dict[str, Any]:
     source_inputs = [
         {
             "source_id": source_id,
+            "source_type": "local_file",
+            "format": "jsonl",
+            "path": str(resolve_repo_path(path)),
             "input_format": "jsonl",
             "input_path": str(resolve_repo_path(path)),
         }
