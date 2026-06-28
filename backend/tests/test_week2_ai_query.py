@@ -140,6 +140,16 @@ def test_week2_ai_query_returns_fixture_backed_ai_query_result() -> None:
     assert payload["selected_datasets"][0]["dataset_id"] == "dataset_reviews_gold"
     assert "review_count" in payload["selected_datasets"][0]["reason"]
     assert payload["status"] == "succeeded"
+    assert payload["route"] == "sql"
+    assert payload["retrieval_trace"] == [
+        {
+            "source_type": "catalog",
+            "source_id": "dataset_reviews_gold",
+            "score": 6.0,
+            "matched_terms": ["review_count", "product_id"],
+            "evidence_index": 0,
+        }
+    ]
     assert payload["guardrail"]["validation_status"] == "passed"
     assert payload["sql"] == payload["query_result"]["sql"]
     assert payload["rows"] == payload["query_result"]["rows"]
@@ -298,6 +308,7 @@ def test_week2_ai_query_blocks_when_catalog_local_fallback_path_is_missing() -> 
     result = service.answer("리뷰가 가장 많은 상품 알려줘")
 
     assert result.status == "blocked"
+    assert result.route == "sql"
     assert result.guardrail.validation_status == "blocked"
     assert result.guardrail.failure_code == "local_path_missing"
     assert result.query_result.rows == []
@@ -318,6 +329,7 @@ def test_week2_ai_query_blocks_unsupported_question_without_sql_engine_call() ->
     result = service.answer("내일 매출을 예측해줘")
 
     assert result.status == "blocked"
+    assert result.route == "unsupported"
     assert result.sql == ""
     assert result.query_result.sql == ""
     assert result.query_result.rows == []
@@ -370,6 +382,12 @@ def test_week2_ai_query_selects_product_health_catalog_for_risk_question() -> No
     result = service.answer("위험 점수가 높은 상품 알려줘")
 
     assert result.selected_datasets[0].dataset_id == "dataset_product_health_gold"
+    assert result.route == "sql"
+    assert result.retrieval_trace[0].source_type == "catalog"
+    assert result.retrieval_trace[0].source_id == "dataset_product_health_gold"
+    assert result.retrieval_trace[0].score == 6
+    assert result.retrieval_trace[0].matched_terms == ["product_id", "risk_score"]
+    assert result.retrieval_trace[0].evidence_index == 0
     assert result.evidence[0].dataset_id == "dataset_product_health_gold"
     assert result.evidence[0].lineage["pipeline_id"] == "pipeline_product_health_e2e"
     assert "risk_score" in result.selected_datasets[0].reason
