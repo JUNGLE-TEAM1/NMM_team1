@@ -1,0 +1,4 @@
+{"event_id":"E001","product_id":"B001","event_type":"view","event_time":"2026-06-20T10:01:00Z","quantity":1}
+{"event_id":"E002","product_id":"B001","event_type":"cart","event_time":"2026-06-20T10:03:00Z","quantity":1}
+{"event_id":"E003","product_id":"B001","event_type":"purchase","event_time":"2026-06-20T10:08:00Z","quantity":1}
+{"event_id":"E004","product_id":"B002","event_type":"view","event_time":"2026-06-22T09:16:00Z","quantity":1}

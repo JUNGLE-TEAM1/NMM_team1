@@ -1,0 +1,2 @@
+{"trip_id":"T001","product_id":"B001","order_id":"O001","promised_at":"2026-06-21T09:00:00Z","delivered_at":"2026-06-21T10:05:00Z","late_minutes":65}
+{"trip_id":"T002","product_id":"B002","order_id":"O002","promised_at":"2026-06-23T09:00:00Z","delivered_at":"2026-06-23T08:55:00Z","late_minutes":0}
