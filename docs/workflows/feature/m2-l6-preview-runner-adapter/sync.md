@@ -20,11 +20,12 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 | 2026-06-28 | `origin/main` advanced from `e1ddef2` to `0a9247c` | `docs/03-interface-reference.md`, `docs/reports/README.md`, M6 SQL planner files | merged `origin/main` into feature branch with no conflicts before allowlist expansion |
 | 2026-06-28 | `origin/main` advanced from `0a9247c` to `abe497e` | M2 source input contract, `RuntimeConfig`, `Week2SparkRunner`, runner tests, `docs/03`, report index | merged `origin/main`, resolved conflicts by preserving source input alias support and L6 preview tests/docs |
 | 2026-06-28 | `origin/main` advanced from `abe497e` to `eaf209a` | M6 response trace files and `docs/03` / report index | merged `origin/main` with no conflicts |
+| 2026-06-28 | `origin/main` advanced from `eaf209a` to `8c59d34` | M1 Week2 final demo flow docs and frontend demo files | merged `origin/main` with no conflicts; M2 runner code unchanged |
 
 ## Pre-Merge Sync
 
-- main commit: `eaf209a`
-- conflicts: #234 source input merge produced conflicts in `backend/tests/test_week2_spark_runner.py`, `docs/03-interface-reference.md`, `docs/reports/README.md`; resolved by keeping latest main source input contract and L6 allowlist adapter content. #235 response trace merge had no conflicts.
+- main commit: `8c59d34`
+- conflicts: #234 source input merge produced conflicts in `backend/tests/test_week2_spark_runner.py`, `docs/03-interface-reference.md`, `docs/reports/README.md`; resolved by keeping latest main source input contract and L6 allowlist adapter content. #235 response trace merge and #223 M1 demo flow merge had no conflicts.
 - validation: focused runner test 13 passed; contract sample smoke passed; contract JSON validation passed; backend full tests 91 passed with escalation; compileall passed; diff check passed; harness validation passed; strict harness validation passed
 - result: ready to push updated PR branch and wait for PR CI
 - deferral reason: none
