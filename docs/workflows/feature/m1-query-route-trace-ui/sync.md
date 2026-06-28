@@ -43,9 +43,10 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 - linked GitHub issue: #240
 - issue link: https://github.com/JUNGLE-TEAM1/NMM_team1/issues/240
 - issue creation result: created during Phase start
-- issue project result: not assigned to project at issue creation
+- issue project result: set to Review in JUNGLE-TEAM1 project 3
 - PR closing keyword: Closes #240
-- pushed branch:
-- PR link:
-- merge status:
-- issue close status:
+- pushed branch: feature/m1-query-route-trace-ui
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/242
+- merge status: open
+- issue close status: open
+- issue reopen result: already open
