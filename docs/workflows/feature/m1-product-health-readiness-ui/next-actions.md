@@ -4,17 +4,17 @@
 
 ## Current State / 현재 상태
 
-- State: completed locally, PR-ready pending final harness/remote PR checks
+- State: PR open, checks passed, BEHIND latest main
 - Summary: `/catalog`와 `/query`에 `dataset_product_health_gold` readiness panel을 추가했다. 현재 API 404 상태에서는 missing badge와 M2/M3/M5 후속 책임이 보이고, ready 문구는 표시되지 않는다.
 
 ## Recommended Next Action / 권장 다음 행동
 
-- PR 생성 후 GitHub checks를 확인하고, 사람 확인 뒤 merge/finalize/cleanup을 진행한다.
-- Reason: 로컬 build/smoke는 통과했고 PR merge는 하네스 정책상 사람 확인이 필요하다.
+- 사람 확인 후 최신 `main` 반영 방식을 선택하고, 재check 후 merge/finalize/cleanup을 진행한다.
+- Reason: PR #248 required checks는 통과했지만 GitHub merge state가 `BEHIND`다. 하네스 정책상 pull/merge/rebase는 사람 확인 없이 실행하지 않는다.
 
 ## Options / 선택지
 
-1. PR checks가 통과하면 merge를 승인한다.
+1. 최신 `main` 반영을 승인하고 재check 후 merge한다.
 2. Product Health 실제 M2/M3/M5/M6 integration evidence가 닫힌 뒤 ready 상태 smoke를 별도 Phase로 수행한다.
 3. 이 Phase를 보류하고 후속 구현을 기다린다.
 
