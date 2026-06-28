@@ -114,6 +114,14 @@ Target MVP 기능이 구현될 때 아래 경로를 단계별로 실제 manual v
 
 이 경로는 Week2 발표 대표 path가 5GB 이상 fact input을 처리해 `gold_product_health`를 만들고, Catalog/SQL/UI까지 이어지는지 확인한다.
 
+작은 입력으로 먼저 M2 실행 경로만 확인할 때는 아래 smoke를 실행한다.
+
+```bash
+PYTHONPATH=backend .venv/bin/python scripts/week2_m2_product_health_l6_evidence.py
+```
+
+이 smoke는 Product Health source별 read/write evidence, M3 L6 preview-only aggregate spec 실행, `gold_product_health.parquet` 생성, DuckDB SQL read를 확인한다. 5GB input 처리와 `risk_score` 최종 의미 확정은 포함하지 않는다.
+
 1. `pipeline_product_health_e2e` run을 실행하거나 사전 실행된 5GB run id를 선택한다.
 2. `ExecutionResult.status`가 `succeeded`인지 확인한다.
 3. `ExecutionResult.bytes` 또는 run metrics의 `input_total_bytes`가 5GB 이상인지 확인한다.

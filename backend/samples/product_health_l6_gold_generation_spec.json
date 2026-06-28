@@ -1,0 +1,41 @@
+{
+  "artifact_type": "gold_generation_spec",
+  "execution_owner": "M2",
+  "request_state": "approved",
+  "write_mode": "preview_only",
+  "input_ref": "product_health_reviews_seed",
+  "output_ref": "gold_product_health_preview",
+  "operations": [
+    {
+      "operation_id": "aggregate_product_review_health",
+      "operation": "aggregate",
+      "params": {
+        "input_ref": "silver_product_reviews_preview",
+        "group_by": ["product_id"],
+        "dimensions": ["product_id"],
+        "measures": [
+          {
+            "name": "review_count",
+            "operation": "count",
+            "field": "*"
+          },
+          {
+            "name": "average_rating",
+            "operation": "avg",
+            "field": "rating"
+          }
+        ],
+        "time_window": {
+          "enabled": false,
+          "field": null,
+          "window": null
+        },
+        "cardinality_guard": {
+          "max_groups": 100000,
+          "on_exceed": "block_preview"
+        }
+      }
+    }
+  ],
+  "scope_note": "Small Product Health L6 preview evidence. M3 still owns final negative_review_rate, conversion_rate, late_delivery_rate, and risk_score semantics."
+}
