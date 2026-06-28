@@ -108,6 +108,8 @@ const navItems = [
   },
 ];
 
+const PRODUCT_HEALTH_DATASET_ID = "dataset_product_health_gold";
+
 const stepIcons = {
   source: Database,
   schema: FileJson,
@@ -904,7 +906,7 @@ function compactJson(value) {
   return JSON.stringify(value, null, 2);
 }
 
-function useWeek2CatalogState() {
+function useWeek2CatalogState(datasetId = WEEK2_DEFAULT_DATASET_ID) {
   const [catalogState, setCatalogState] = useState({
     catalog: null,
     error: "",
@@ -914,7 +916,7 @@ function useWeek2CatalogState() {
   async function refreshCatalog() {
     setCatalogState((previous) => ({ ...previous, error: "", loading: true }));
     try {
-      const catalog = await getWeek2Catalog();
+      const catalog = await getWeek2Catalog(datasetId);
       setCatalogState({ catalog, error: "", loading: false });
     } catch (error) {
       setCatalogState((previous) => ({
@@ -930,7 +932,7 @@ function useWeek2CatalogState() {
 
     async function loadCatalog() {
       try {
-        const catalog = await getWeek2Catalog();
+        const catalog = await getWeek2Catalog(datasetId);
         if (isMounted) setCatalogState({ catalog, error: "", loading: false });
       } catch (error) {
         if (isMounted) setCatalogState({ catalog: null, error: error.message, loading: false });
@@ -941,9 +943,61 @@ function useWeek2CatalogState() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [datasetId]);
 
   return { catalogState, refreshCatalog };
+}
+
+function productHealthReadiness(catalog, error, loading) {
+  const hasCatalog = Boolean(catalog);
+  const hasLocalPath = Boolean(catalog?.storage?.local_fallback_path);
+  const hasAllowedColumns = Boolean(catalog?.query?.allowed_columns?.length);
+  const allowsReadonlySql = Boolean(catalog?.query?.allow_readonly_sql);
+  const hasLineage = Boolean(catalog?.lineage?.run_id);
+  const ready = hasCatalog && hasLocalPath && hasAllowedColumns && allowsReadonlySql && hasLineage;
+
+  if (loading) {
+    return {
+      status: "checking",
+      title: "Product Health Gold 확인 중",
+      body: `${PRODUCT_HEALTH_DATASET_ID} CatalogMetadata를 조회하고 있습니다.`,
+      checks: [
+        ["CatalogMetadata", "checking", "M5 Catalog 조회 중"],
+        ["Gold local path", "checking", "storage.local_fallback_path 확인 중"],
+        ["Query contract", "checking", "allowlist 확인 중"],
+        ["Lineage", "checking", "run_id 확인 중"],
+      ],
+    };
+  }
+
+  if (!hasCatalog) {
+    const missingBody = `${PRODUCT_HEALTH_DATASET_ID} CatalogMetadata가 없습니다. M2/M3/M5가 gold_product_health output과 Catalog lineage를 먼저 닫아야 합니다.`;
+    return {
+      status: "missing",
+      title: "Product Health Gold가 아직 준비되지 않았습니다",
+      body: error ? `${missingBody} (${error})` : missingBody,
+      checks: [
+        ["CatalogMetadata", "missing", "M5 Catalog 등록 필요"],
+        ["Gold output", "missing", "M3 TransformSpec과 M2 runtime output 필요"],
+        ["Query evidence", "missing", "M6가 읽을 local fallback path 없음"],
+        ["Next owner", "missing", "M2/M3/M5 통합 후 M1 재확인"],
+      ],
+    };
+  }
+
+  return {
+    status: ready ? "ready" : "partial",
+    title: ready ? "Product Health Gold query 준비됨" : "Product Health Gold evidence가 일부 부족합니다",
+    body: ready
+      ? "CatalogMetadata, lineage, local fallback path, readonly SQL allowlist가 모두 보입니다."
+      : "Catalog는 보이지만 local path, allowed columns, lineage 중 일부가 빠져 있어 성공으로 표시하지 않습니다.",
+    checks: [
+      ["CatalogMetadata", "ready", catalog.dataset_id],
+      ["Gold local path", hasLocalPath ? "ready" : "missing", catalog.storage?.local_fallback_path || "storage.local_fallback_path 필요"],
+      ["Query contract", hasAllowedColumns && allowsReadonlySql ? "ready" : "missing", catalog.query?.table_name || "allowed_columns 또는 allow_readonly_sql 필요"],
+      ["Lineage", hasLineage ? "ready" : "missing", catalog.lineage?.run_id || "M5 lineage.run_id 필요"],
+    ],
+  };
 }
 
 function catalogQualityRows(catalog) {
@@ -1477,9 +1531,18 @@ function RawJsonBlock({ title, value }) {
 function CatalogPage({ navigate }) {
   const [selectedTag, setSelectedTag] = useState("전체");
   const { catalogState, refreshCatalog } = useWeek2CatalogState();
+  const {
+    catalogState: productHealthCatalogState,
+    refreshCatalog: refreshProductHealthCatalog,
+  } = useWeek2CatalogState(PRODUCT_HEALTH_DATASET_ID);
   const tags = ["전체", "bronze", "silver", "gold"];
   const catalog = catalogState.catalog;
   const isVisible = selectedTag === "전체" || selectedTag === (catalog?.layer || m1CatalogPlaceholder.layer);
+  const productHealthStatus = productHealthReadiness(
+    productHealthCatalogState.catalog,
+    productHealthCatalogState.error,
+    productHealthCatalogState.loading,
+  );
 
   return (
     <div className="page-stack">
@@ -1511,6 +1574,12 @@ function CatalogPage({ navigate }) {
       {catalogState.loading ? (
         <EmptyState icon={Loader2} title="CatalogMetadata 조회 중" body={WEEK2_DEFAULT_DATASET_ID} />
       ) : null}
+      <ProductHealthReadinessPanel
+        readiness={productHealthStatus}
+        onRefresh={refreshProductHealthCatalog}
+        loading={productHealthCatalogState.loading}
+        compact={false}
+      />
       {catalog && isVisible ? (
         <>
           <section className="catalog-feature">
@@ -1721,6 +1790,13 @@ function AiQueryPage({ navigate, setNotice }) {
   const displaySql = queryState.result
     ? queryDisplaySql(queryResult?.sql ?? queryState.result.sql)
     : m1AiQueryPlaceholder.sql;
+  const { catalogState: productHealthCatalogState, refreshCatalog: refreshProductHealthCatalog } =
+    useWeek2CatalogState(PRODUCT_HEALTH_DATASET_ID);
+  const productHealthStatus = productHealthReadiness(
+    productHealthCatalogState.catalog,
+    productHealthCatalogState.error,
+    productHealthCatalogState.loading,
+  );
 
   async function submitQuery(nextQuestion = queryText) {
     const question = nextQuestion.trim();
@@ -1832,6 +1908,12 @@ function AiQueryPage({ navigate, setNotice }) {
           <p>Chart spec: {formatChartSpec(queryState.result?.chart_spec)}</p>
         </div>
       </section>
+      <ProductHealthReadinessPanel
+        readiness={productHealthStatus}
+        onRefresh={refreshProductHealthCatalog}
+        loading={productHealthCatalogState.loading}
+        compact
+      />
       {queryState.result ? (
         <section className="ask-result-stack">
           <div className="grid three">
@@ -2006,6 +2088,40 @@ function RetrievalTracePanel({ trace, route }) {
       )}
     </section>
   );
+}
+
+function ProductHealthReadinessPanel({ readiness, onRefresh, loading, compact }) {
+  return (
+    <section className={`product-health-readiness ${readiness.status} ${compact ? "compact" : ""}`}>
+      <header>
+        <div>
+          <p className="eyebrow">Product Health readiness</p>
+          <h3>{readiness.title}</h3>
+          <p>{readiness.body}</p>
+        </div>
+        <div className="product-health-actions">
+          <span className={`badge ${productHealthBadgeClass(readiness.status)}`}>{readiness.status}</span>
+          <button type="button" className="icon-link" onClick={onRefresh} disabled={loading} aria-label="Product Health readiness 새로고침">
+            {loading ? <Loader2 size={16} className="spin" /> : <RefreshCw size={16} />}
+          </button>
+        </div>
+      </header>
+      <div className="product-health-checks">
+        {readiness.checks.map(([label, state, detail]) => (
+          <article key={label}>
+            <RuntimeCheck label={label} ready={state === "ready"} />
+            <span>{detail}</span>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function productHealthBadgeClass(status) {
+  if (status === "ready") return "green";
+  if (status === "partial" || status === "checking") return "orange";
+  return "red";
 }
 
 function formatTraceTerms(terms) {
