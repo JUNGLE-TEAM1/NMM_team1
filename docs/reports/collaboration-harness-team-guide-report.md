@@ -4,8 +4,8 @@
 
 - Type: docs
 - Date: 2026-06-28
-- Changed: 팀원이 AskLake 협업 하네스를 실제 작업에서 사용할 수 있도록 `AskLake 협업 하네스 사용 가이드`를 추가하고, 처음 보는 사람도 빠르게 이해할 수 있는 `3분 요약`과 사람/AI 책임 구분을 보강했으며, branch workspace와 report index를 연결했다.
-- Verified: `rg -n "AskLake 협업 하네스 사용 가이드|3분 요약|AI는 손과 기록 담당이다|하네스를 사용할 때 사람의 책임과 AI의 책임|AI는 책임을 대신 지지 않는다|Pre-PR Human Checkpoint|팀원이 기억할 최소 규칙" docs/reports/collaboration-harness-team-usage-guide.md docs/reports/README.md`, `git diff --check`, `scripts/validate-harness.sh`, `scripts/validate-harness.sh --strict`
+- Changed: 팀원이 AskLake 협업 하네스를 실제 작업에서 사용할 수 있도록 `AskLake 협업 하네스 사용 가이드`를 추가하고, 처음 보는 사람도 빠르게 이해할 수 있는 `3분 요약`, 사람/AI 책임 구분, 팀원의 5가지 협업 책임을 보강했으며, branch workspace와 report index를 연결했다.
+- Verified: `rg -n "AskLake 협업 하네스 사용 가이드|3분 요약|하네스를 쓰는 팀원의 5가지 책임|맡은 기능을 구현한다|왜 그렇게 구현했는지 설명할 수 있다|인터페이스를 지킨다|AI는 손과 기록 담당이다|하네스를 사용할 때 사람의 책임과 AI의 책임|AI는 책임을 대신 지지 않는다|Pre-PR Human Checkpoint|팀원이 기억할 최소 규칙" docs/reports/collaboration-harness-team-usage-guide.md docs/reports/README.md`, `git diff --check`, `scripts/validate-harness.sh`, `scripts/validate-harness.sh --strict`
 - Remaining: 팀 리뷰 뒤 실제 팀 표현, 실습 예시, 발표 자료가 필요하면 후속 Phase로 보강한다.
 - Next context: 팀원은 이 guide를 먼저 읽고 Phase 시작, mid-phase steering, 확인 gate, PR/merge 경계를 자연어 요청으로 다룬다.
 - Risk: 이 문서는 Source of Truth 규칙 변경이 아니라 설명/온보딩 guide다. 공식 workflow 변경이 필요하면 별도 Source of Truth 전파 Phase가 필요하다.
@@ -55,6 +55,7 @@
 - 기존 "도입자 책임 설명" 관점이 아니라 "팀원이 실제로 어떻게 요청하고 확인해야 하는지"를 중심으로 문서를 작성했다.
 - 처음 보는 팀원도 앞부분만 읽고 핵심을 잡을 수 있도록 `3분 요약`과 안전한 요청/위험한 요청 예시를 추가했다.
 - 하네스에서 사람은 작업 요청자이자 결정 승인자이고, AI는 작업 실행자이자 상태 기록자라는 책임 구분을 추가했다.
+- 협업에서 팀원이 지켜야 할 5가지 책임을 `plan.md`, `Scope Confirm`, `decisions.md`, `quality.md`, `docs/03`, `Source of Truth Impact Gate`, `sync.md` 같은 하네스 장치와 연결했다.
 - `사람의 책임 / AI의 책임`, `사람이 확인해야 할 질문 / AI에게 시킬 수 있는 일`, `나쁜 응답 / 왜 위험한가 / 더 나은 응답` 표를 추가했다.
 - Phase, branch workspace, Source of Truth, confirmation gate, PR 생성과 merge의 차이를 초보자용 문장으로 정리했다.
 - `상황 / 팀원이 할 말 / AI가 하는 일`, `AI가 자동으로 할 수 있는 일 / 사람 확인이 필요한 일 / 이유`, `좋은 요청 / 애매한 요청 / 더 나은 표현`, `확인 게이트 / 언제 발생하는가 / 팀원이 결정할 것` 표를 포함했다.
@@ -78,7 +79,7 @@
 ## Verification Commands / 검증 명령
 
 ```bash
-rg -n "AskLake 협업 하네스 사용 가이드|3분 요약|AI는 손과 기록 담당이다|하네스를 사용할 때 사람의 책임과 AI의 책임|AI는 책임을 대신 지지 않는다|Pre-PR Human Checkpoint|팀원이 기억할 최소 규칙" docs/reports/collaboration-harness-team-usage-guide.md docs/reports/README.md
+rg -n "AskLake 협업 하네스 사용 가이드|3분 요약|하네스를 쓰는 팀원의 5가지 책임|맡은 기능을 구현한다|왜 그렇게 구현했는지 설명할 수 있다|인터페이스를 지킨다|AI는 손과 기록 담당이다|하네스를 사용할 때 사람의 책임과 AI의 책임|AI는 책임을 대신 지지 않는다|Pre-PR Human Checkpoint|팀원이 기억할 최소 규칙" docs/reports/collaboration-harness-team-usage-guide.md docs/reports/README.md
 git diff --check
 scripts/validate-harness.sh
 scripts/validate-harness.sh --strict
@@ -108,8 +109,8 @@ scripts/validate-harness.sh --strict
 
 ## Failure Scenario / 실패 시나리오
 
-- Reviewed failure: 팀원이 `올려줘`, `진행해`, `알아서 해줘` 같은 애매한 요청으로 PR 생성과 merge 승인을 혼동하거나 AI가 책임을 대신 진다고 오해하는 상황
-- Expected behavior: guide가 `PR만 올려줘`, `현재 PR 진행해`, `scope가 커지면 먼저 물어봐줘`, `검증 결과와 남은 위험을 보고 완료 처리해` 같은 더 나은 표현을 제시한다.
+- Reviewed failure: 팀원이 `올려줘`, `진행해`, `알아서 해줘` 같은 애매한 요청으로 PR 생성과 merge 승인을 혼동하거나 AI가 책임을 대신 진다고 오해하는 상황. 또한 맡은 기능, 구현 이유, 문제 해결, 인터페이스, 팀 영향 책임을 놓치는 상황.
+- Expected behavior: guide가 `PR만 올려줘`, `현재 PR 진행해`, `scope가 커지면 먼저 물어봐줘`, `검증 결과와 남은 위험을 보고 완료 처리해`, `API 응답이 바뀌는지 먼저 확인해줘` 같은 더 나은 표현을 제시한다.
 - Verification: 문서 내 요청 예시와 PR/merge 경계 섹션 확인
 - Result: passed
 
