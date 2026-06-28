@@ -47,7 +47,7 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 - PR closing keyword: `Closes #246`
 - pushed branch: `feature/m1-product-health-readiness-ui`
 - PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/248
-- merge status: open, mergeable, BEHIND latest main
+- merge status: open
 - issue close status: open until PR merge
 
 ## Remote Reconciliation / 원격 상태 대조
@@ -61,3 +61,4 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 - Project Status: no project item attached
 - GitHub record drift audit: PR template check passed after PR body update. Full `scripts/audit-github-records.sh` not run locally.
 - Human checkpoint: 최신 `main` 반영은 pull/merge/rebase 정책상 사람 확인 후 수행한다.
+- Residual risk: `merge status`는 PR open/merged 상태만 기록하고, mergeability와 `BEHIND`는 위 원격 대조 항목으로 분리한다.
