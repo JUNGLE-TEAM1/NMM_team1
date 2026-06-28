@@ -30,10 +30,23 @@
 ## CI/CD Gate / CI-CD 게이트
 
 - CI required: yes
-- CI result: pending until PR creation
+- CI result: in progress on PR #254
 - Deploy/publish required: no
 - Deployment confirmation: local docker compose smoke only
 - Rollback/smoke notes: 변경은 M1 UI readiness panel 표시에 한정된다. rollback은 `frontend/src/app/App.jsx`, `frontend/src/app/styles.css`의 `DemoReadinessPanel`/`demoReadinessItems`와 관련 CSS를 제거한다.
+
+### GitHub Checks
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| linked-issue | passed | PR #254 GitHub check rollup에서 `SUCCESS` 확인. |
+| risk-warning | passed | PR #254 GitHub check rollup에서 `SUCCESS` 확인. |
+| harness | in progress | PR #254 생성 직후 GitHub check rollup에서 `IN_PROGRESS` 확인. |
+| container-smoke | in progress | PR #254 생성 직후 GitHub check rollup에서 `IN_PROGRESS` 확인. |
+| manifest-smoke | queued | PR #254 생성 직후 GitHub check rollup에서 `QUEUED` 확인. |
+| migration-schema-security | in progress | PR #254 생성 직후 GitHub check rollup에서 `IN_PROGRESS` 확인. |
+| pr-size-hard-gate | in progress | PR #254 생성 직후 GitHub check rollup에서 `IN_PROGRESS` 확인. |
+| pr-template-drift | in progress | PR #254 생성 직후 GitHub check rollup에서 `IN_PROGRESS` 확인. |
 
 ## Skipped Checks / 생략한 검증
 
