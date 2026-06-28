@@ -8,6 +8,7 @@ from app.domain.ai_query import (
     GuardrailResult,
     QueryEvidence,
     QueryResult,
+    RetrievalTraceItem,
     SelectedDataset,
     SqlEngineContext,
 )
@@ -73,12 +74,20 @@ class Week2AIQueryService:
                 guardrail = validation.guardrail
 
         evidence = self._evidence_from_catalog(catalog, retrieval.reason_terms)
+        route = self._route_from_plan(plan)
 
         return AIQueryResult(
             tenant_id=catalog["tenant_id"],
             question=question,
             selected_datasets=[selected_dataset],
             evidence=evidence,
+            route=route,
+            retrieval_trace=self._retrieval_trace_from_catalog(
+                catalog=catalog,
+                reason_terms=retrieval.reason_terms,
+                score=retrieval.score,
+                evidence_index=0,
+            ),
             status=status,
             sql=query_result.sql,
             query_result=query_result,
@@ -88,6 +97,11 @@ class Week2AIQueryService:
             guardrail=guardrail,
             executed_at=now_iso(),
         )
+
+    def _route_from_plan(self, plan: SqlPlan) -> str:
+        if plan.intent == "unsupported":
+            return "unsupported"
+        return "sql"
 
     def _context_from_catalog(self, catalog: dict[str, Any]) -> SqlEngineContext:
         fields = catalog["schema"]["fields"]
@@ -131,6 +145,23 @@ class Week2AIQueryService:
                 ),
                 lineage=deepcopy(lineage),
                 retrieval_terms=list(reason_terms),
+            )
+        ]
+
+    def _retrieval_trace_from_catalog(
+        self,
+        catalog: dict[str, Any],
+        reason_terms: list[str],
+        score: int,
+        evidence_index: int,
+    ) -> list[RetrievalTraceItem]:
+        return [
+            RetrievalTraceItem(
+                source_type="catalog",
+                source_id=catalog["dataset_id"],
+                score=float(score),
+                matched_terms=list(reason_terms),
+                evidence_index=evidence_index,
             )
         ]
 

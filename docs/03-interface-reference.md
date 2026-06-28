@@ -389,6 +389,20 @@ Minimum `QueryResult` shape:
 `AIQueryResult.query_result` is the canonical SQL execution result for Week 2.
 Top-level `AIQueryResult.sql` and `AIQueryResult.rows` may remain as backward-compatible M1 display convenience fields, but they must mirror `query_result.sql` and `query_result.rows`.
 
+Minimum `AIQueryResult` route and retrieval trace shape:
+
+| Field | Required | Notes |
+| --- | --- | --- |
+| `route` | yes | `sql`, `rag`, `hybrid`, or `unsupported`. Current SQL-first M6 returns `sql` for supported SQL attempts and `unsupported` when no safe route exists. |
+| `retrieval_trace[]` | yes | Ordered explanation of the retrieval/route evidence used by M6. It may be empty only when no catalog/evidence source was available and the response is blocked. |
+| `retrieval_trace[].source_type` | yes | `catalog`, `schema`, `metric`, `lineage`, or `chunk` |
+| `retrieval_trace[].source_id` | yes | dataset id, field name, metric key, lineage id, or chunk id |
+| `retrieval_trace[].score` | yes | numeric score assigned by M6 retrieval/scoring |
+| `retrieval_trace[].matched_terms` | yes | question terms, aliases, or metadata terms that contributed to the score |
+| `retrieval_trace[].evidence_index` | no | index into `AIQueryResult.evidence[]` when the trace item directly supports an evidence item |
+
+`route` and `retrieval_trace` are additive fields. Existing M1 consumers may continue reading `status`, `sql`, `query_result`, `rows`, `summary`, and `evidence`, while richer Week 2 displays can show why M6 selected a SQL/RAG/Hybrid/Unsupported path.
+
 Minimum `AIQueryResult.evidence[]` grounding shape:
 
 | Field | Required | Notes |

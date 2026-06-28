@@ -121,7 +121,7 @@ Target MVP 기능이 구현될 때 아래 경로를 단계별로 실제 manual v
 5. bronze output path, silver output path, gold output path가 같은 `run_id`와 연결되는지 확인한다.
 6. `GET /api/week2/catalog/dataset_product_health_gold` 또는 대응 Catalog 화면에서 `gold_product_health` output path, Gold row count, Gold bytes, lineage를 확인한다.
 7. M6 AI Query에서 "리뷰가 나쁘고 구매 전환도 낮고 배송 지연까지 겹친 문제 상품군을 찾아줘."를 실행한다.
-8. `AIQueryResult.query_result.engine=duckdb`, SELECT-only SQL, returned rows, evidence `dataset_id=dataset_product_health_gold`가 확인되는지 본다.
+8. `AIQueryResult.route=sql`, `AIQueryResult.query_result.engine=duckdb`, SELECT-only SQL, returned rows, evidence `dataset_id=dataset_product_health_gold`, `retrieval_trace[].source_id=dataset_product_health_gold`가 확인되는지 본다.
 9. M1에서 run -> catalog -> ask -> evidence 흐름이 끊기지 않고, 위험 상품군과 `risk_score`, `negative_review_rate`, `conversion_rate`, `late_delivery_rate`가 표시되는지 확인한다.
 10. 발표 문구나 UI가 "Gold 파일이 5GB"라고 설명하지 않고, 5GB를 input 처리 evidence로 표시하는지 확인한다.
 
