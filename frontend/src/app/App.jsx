@@ -69,6 +69,8 @@ import {
 } from "./m1StaticShellData";
 import "./styles.css";
 
+const WEEK2_DEFAULT_CATALOG_DETAIL_URL = `/catalog/${WEEK2_DEFAULT_DATASET_ID}`;
+
 const navItems = [
   {
     path: "/sources",
@@ -182,7 +184,7 @@ export function App() {
 
   function navigate(path) {
     const nextPath = normalizePath(path);
-    const displayPath = routeToUrl(nextPath);
+    const displayPath = path.startsWith("/catalog/") ? path : routeToUrl(nextPath);
     window.history.pushState({}, "", displayPath);
     setActivePath(nextPath);
   }
@@ -296,7 +298,7 @@ function routeToUrl(path) {
   if (path === "/etl-visual") return "/etl/visual";
   if (path === "/runs") return "/etl";
   if (path === "/ask") return "/query";
-  if (path === "/catalog-detail") return "/catalog/dataset_reviews_gold";
+  if (path === "/catalog-detail") return WEEK2_DEFAULT_CATALOG_DETAIL_URL;
   return path;
 }
 
@@ -1241,7 +1243,7 @@ function RunStatusPage({ navigate }) {
             <p>{currentRun.run_id} 실행 결과가 만든 dataset metadata를 확인한 뒤 AI Query로 이어갑니다.</p>
           </div>
           <div className="handoff-actions">
-            <button type="button" className="primary-action" onClick={() => navigate("/catalog-detail")}>
+            <button type="button" className="primary-action" onClick={() => navigate(WEEK2_DEFAULT_CATALOG_DETAIL_URL)}>
               Catalog detail
               <ArrowRight size={16} />
             </button>
