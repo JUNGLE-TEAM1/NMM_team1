@@ -45,7 +45,16 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 - issue creation result: created manually with `gh issue create`
 - issue project result: no project item attached
 - PR closing keyword: `Closes #246`
-- pushed branch: pending
-- PR link: pending
-- merge status: not merged
+- pushed branch: `feature/m1-product-health-readiness-ui`
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/248
+- merge status: open, mergeable
 - issue close status: open until PR merge
+
+## Remote Reconciliation / 원격 상태 대조
+
+- checked at: 2026-06-28
+- PR state: OPEN
+- PR mergeable: MERGEABLE
+- linked issue: `#246`, OPEN, closing reference detected
+- Project Status: no project item attached
+- GitHub record drift audit: not run; issue/PR link was checked with `gh pr view 248` and `gh issue view 246`

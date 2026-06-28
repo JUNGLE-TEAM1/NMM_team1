@@ -30,7 +30,7 @@
 ## CI/CD Gate / CI-CD 게이트
 
 - CI required: yes, PR 생성 후 GitHub checks 확인
-- CI result: pending until PR creation
+- CI result: in progress on PR #248 at first check
 - Deploy/publish required: no
 - Deployment confirmation: local docker compose smoke only
 - Rollback/smoke notes: 변경은 M1 UI 표시 추가에 한정된다. rollback은 `frontend/src/app/App.jsx`, `frontend/src/app/styles.css`의 Product Health readiness panel 제거.
