@@ -1,5 +1,7 @@
 # M4 Kafka contract smoke fixture 정리 결정 기록
 
+- Decision status: accepted
+
 ## Decision Option Briefs
 
 - not needed. 기존 smoke evidence 값을 fixture에 반영하는 낮은 위험의 정리 작업이다.
