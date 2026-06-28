@@ -2185,6 +2185,7 @@ tbody tr:hover {
 }
 
 .chart-spec-panel,
+.retrieval-trace-panel,
 .evidence-card {
   border: 1px solid #e5e7eb;
   border-radius: 8px;
@@ -2211,6 +2212,93 @@ tbody tr:hover {
   margin-top: 5px;
   color: #6b7280;
   line-height: 1.5;
+}
+
+.retrieval-trace-panel {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.retrieval-trace-panel header {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.retrieval-trace-panel h3 {
+  margin-top: 4px;
+  color: #111827;
+  font-size: 17px;
+}
+
+.retrieval-trace-list {
+  display: grid;
+  gap: 10px;
+}
+
+.retrieval-trace-list article {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f9fafb;
+  padding: 12px;
+}
+
+.trace-node-icon {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 8px;
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.trace-title-row {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.trace-title-row strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: #111827;
+  font-size: 14px;
+}
+
+.retrieval-trace-list p,
+.retrieval-trace-list small,
+.trace-empty {
+  overflow-wrap: anywhere;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.retrieval-trace-list p {
+  margin-top: 6px;
+}
+
+.retrieval-trace-list small {
+  display: block;
+  margin-top: 4px;
+}
+
+.trace-empty {
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 12px;
 }
 
 .evidence-grid {
