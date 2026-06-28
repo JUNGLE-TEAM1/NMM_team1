@@ -4,23 +4,23 @@ AI가 멈추고 사람 확인을 받아야 하는 지점을 기록한다.
 
 ## Scope Confirm / 범위 확인
 
-- Status: pending
+- Status: completed
 - Ask human to confirm:
   - branch/workspace
   - 포함 범위
   - 제외 범위
   - 영향받는 Source of Truth 문서
-- Human response:
+- Human response: 사용자가 "다음 페이즈를 수행해줘"라고 지시해 Phase 7 `M1 query route trace UI` 범위로 진행.
 
 ## Contract Confirm / 계약 확인
 
-- Status: pending
+- Status: completed
 - Ask human to confirm:
   - data model 변경
   - interface/API/CLI/UI contract 변경
   - external dependency
   - 공유 Source of Truth 변경
-- Human response:
+- Human response: backend contract 변경 없이 기존 M6 `AIQueryResult.route`와 `retrieval_trace[]` 소비 UI만 추가.
 
 ## Scope Change Confirm / 범위 변경 확인
 
@@ -33,33 +33,33 @@ AI가 멈추고 사람 확인을 받아야 하는 지점을 기록한다.
 
 ## Verification Confirm / 검증 확인
 
-- Status: pending
+- Status: completed
 - Ask human to confirm:
   - test/build/smoke 명령
   - TDD 증거 또는 skip reason
   - CI/check 명령
   - manual verification 경로
   - completion criteria
-- Human response:
+- Human response: frontend build, API route samples, browser SQL/unsupported route smoke, mobile trace panel overflow check, strict harness validation 수행.
 
 ## Quality Gate Confirm / 품질 게이트 확인
 
-- Status: pending
+- Status: completed
 - Ask human to confirm:
   - TDD 적용 또는 의도적 생략
   - 필요한 branch check와 CI gate
   - 생략한 검증과 이유
   - 관련 있는 deploy/publish gate
-- Human response:
+- Human response: TDD는 backend/core logic 변경이 없어 생략하고 UI smoke/build/harness evidence로 대체.
 
 ## Git Sync Confirm / Git sync 확인
 
-- Status: pending
+- Status: completed
 - Ask human to confirm:
   - 구현 전 start sync command/result
   - mid-phase upstream change action
   - 완료 전 pre-merge sync command/result
-- Human response:
+- Human response: `feature/m1-query-route-trace-ui` branch를 `origin/main` merge commit `8443863`에서 시작하고 issue #240을 연결.
 
 ## Sync Conflict Confirm / sync 충돌 확인
 
@@ -89,13 +89,13 @@ AI가 멈추고 사람 확인을 받아야 하는 지점을 기록한다.
 
 ## Completion Confirm / 완료 확인
 
-- Status: pending
+- Status: completed
 - Ask human to confirm:
   - 변경 요약
   - 검증 결과
   - 남은 위험
   - 다음 작업 문맥
-- Human response:
+- Human response: route/trace UI 구현과 검증 완료. PR 생성 뒤 merge/finalize/cleanup은 별도 사람 확인 필요.
 
 ## Integration Conflict Confirm / 통합 충돌 확인
 

@@ -1713,6 +1713,14 @@ function AiQueryPage({ navigate, setNotice }) {
     ? queryResult.columns.map((column) => column.name)
     : Object.keys(rows[0] || {});
   const evidence = queryState.result?.evidence || [];
+  const route = queryState.result?.route;
+  const retrievalTrace = Array.isArray(queryState.result?.retrieval_trace)
+    ? queryState.result.retrieval_trace
+    : [];
+  const routeIsExecutableSql = route === "sql" && queryState.result?.status === "succeeded";
+  const displaySql = queryState.result
+    ? queryDisplaySql(queryResult?.sql ?? queryState.result.sql)
+    : m1AiQueryPlaceholder.sql;
 
   async function submitQuery(nextQuestion = queryText) {
     const question = nextQuestion.trim();
@@ -1791,14 +1799,20 @@ function AiQueryPage({ navigate, setNotice }) {
           {queryState.result?.guardrail?.failure_message ? (
             <p className="form-error">{queryState.result.guardrail.failure_message}</p>
           ) : null}
+          {route && !routeIsExecutableSql ? (
+            <p className="runtime-warning">
+              Query route가 `{route}`로 분기되어 SQL 성공 결과처럼 처리하지 않습니다.
+            </p>
+          ) : null}
           {isMissingLocalPathError(queryState.error) ? (
             <p className="runtime-warning">
               Catalog output file이 아직 없어서 SQL 실행이 차단됐습니다. 먼저 실행/모니터링에서 Week2 workflow를 성공시킨 뒤 다시 질문하세요.
             </p>
           ) : null}
-          <code>{queryResult?.sql || queryState.result?.sql || m1AiQueryPlaceholder.sql}</code>
+          <code>{displaySql}</code>
           <div className="runtime-check-list compact">
             <RuntimeCheck label="DuckDB runtime" ready={isDuckDbEngine(queryResult?.engine)} />
+            <RuntimeCheck label={`route=${route || "pending"}`} ready={routeIsExecutableSql} />
             <RuntimeCheck label="SQL rows" ready={rows.length > 0} />
             <RuntimeCheck label="evidence" ready={evidence.length > 0} />
           </div>
@@ -1827,6 +1841,11 @@ function AiQueryPage({ navigate, setNotice }) {
               detail={queryState.result.selected_datasets?.[0]?.reason}
             />
             <InfoCard title="Engine" value={queryRuntimeLabel(queryResult)} detail={queryRuntimeDetail(queryResult)} />
+            <InfoCard
+              title="Route"
+              value={route || "pending"}
+              detail={routeDetail(queryState.result)}
+            />
             <InfoCard
               title="Rows"
               value={formatMetric(queryResult?.row_count ?? rows.length)}
@@ -1870,6 +1889,8 @@ function AiQueryPage({ navigate, setNotice }) {
             </section>
           )}
 
+          <RetrievalTracePanel trace={retrievalTrace} route={route} />
+
           <section className="evidence-grid">
             {evidence.map((item) => (
               <EvidenceCard key={`${item.dataset_id}:${item.run_id || item.s3_uri || item.table_name}`} evidence={item} />
@@ -1892,6 +1913,25 @@ function queryStatusBadgeClass(result) {
   if (result.status === "blocked" || result.guardrail?.validation_status === "blocked") return "orange";
   if (result.status === "failed" || result.guardrail?.validation_status === "failed") return "red";
   return "blue";
+}
+
+function queryRouteBadgeClass(route) {
+  if (route === "sql") return "green";
+  if (route === "unsupported") return "orange";
+  if (route === "rag" || route === "hybrid") return "blue";
+  return "gray";
+}
+
+function routeDetail(result) {
+  if (!result?.route) return "M6 route 대기";
+  if (result.route === "sql" && result.status === "succeeded") return "SQL runtime으로 실행됨";
+  if (result.route === "unsupported") return "지원하지 않는 질문으로 SQL 실행 차단";
+  return `${formatMetric(result.status)} 상태로 처리`;
+}
+
+function queryDisplaySql(sql) {
+  if (typeof sql === "string" && sql.trim()) return sql;
+  return "SQL not generated: blocked or unsupported route";
 }
 
 function isDuckDbEngine(engine) {
@@ -1929,6 +1969,48 @@ function formatChartSpec(chartSpec) {
 
 function queryRows(rows, columns) {
   return rows.map((row) => columns.map((column) => formatMetric(row[column])));
+}
+
+function RetrievalTracePanel({ trace, route }) {
+  return (
+    <section className="retrieval-trace-panel">
+      <header>
+        <div>
+          <p className="eyebrow">Retrieval trace</p>
+          <h3>M6가 선택한 evidence 경로</h3>
+        </div>
+        <span className={`badge ${queryRouteBadgeClass(route)}`}>route={route || "pending"}</span>
+      </header>
+      {trace.length ? (
+        <div className="retrieval-trace-list">
+          {trace.map((item, index) => (
+            <article key={`${item.source_type || "source"}:${item.source_id || index}:${item.evidence_index ?? index}`}>
+              <div className="trace-node-icon">
+                <Route size={16} />
+              </div>
+              <div>
+                <div className="trace-title-row">
+                  <strong>{formatMetric(item.source_id, `trace ${index + 1}`)}</strong>
+                  <span className="badge slate">{formatMetric(item.source_type, "source")}</span>
+                </div>
+                <p>
+                  score {formatMetric(item.score)} / evidence index {formatMetric(item.evidence_index)}
+                </p>
+                <small>matched terms: {formatTraceTerms(item.matched_terms)}</small>
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <p className="trace-empty">retrieval_trace가 비어 있습니다. M1은 빈 trace를 성공 근거로 꾸미지 않습니다.</p>
+      )}
+    </section>
+  );
+}
+
+function formatTraceTerms(terms) {
+  if (!Array.isArray(terms) || terms.length === 0) return "-";
+  return terms.map((term) => formatMetric(term)).join(", ");
 }
 
 function EvidenceCard({ evidence }) {
