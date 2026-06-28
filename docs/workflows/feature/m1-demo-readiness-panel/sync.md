@@ -56,6 +56,6 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 - remote branch: `origin/feature/m1-demo-readiness-panel`
 - PR: #254 open, ready for review
 - PR draft status: false
-- merge state: `BLOCKED` while required checks are running
-- checks: `linked-issue` passed, `risk-warning` passed, `harness` in progress, `container-smoke` in progress, `manifest-smoke` queued, `migration-schema-security` in progress, `pr-size-hard-gate` in progress, `pr-template-drift` in progress
+- merge state: `CLEAN`
+- checks: `harness`, `container-smoke`, `manifest-smoke`, `migration-schema-security`, `linked-issue`, `risk-warning`, `pr-size-hard-gate`, `pr-template-drift` passed
 - next action: GitHub checks 완료 후 merge/finalize/cleanup은 사람 확인을 받고 진행한다.
