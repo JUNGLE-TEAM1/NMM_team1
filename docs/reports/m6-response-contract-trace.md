@@ -6,7 +6,7 @@
 - Date: 2026-06-28
 - Branch/work location: `feature/m6-response-contract-trace`, `docs/workflows/feature/m6-response-contract-trace`
 - Changed: `AIQueryResult`에 `route`와 `retrieval_trace`를 additive field로 추가했다. SQL-first 응답은 `route=sql`, unsupported 질문은 `route=unsupported`를 반환하고, Catalog retrieval score/matched terms/evidence index를 trace로 노출한다. `contracts/ai_query_result.sample.json`과 `docs/03`, `docs/05`, `docs/06`, `docs/07`도 같은 계약으로 갱신했다.
-- Verified: TDD expected failure first; focused M6/SQL/DuckDB tests 26 passed; full backend tests 82 passed, 1 skipped; `git diff --check`; `jq -e . contracts/*.sample.json`; `scripts/validate-harness.sh`; `scripts/validate-harness.sh --strict`.
+- Verified: TDD expected failure first; focused M6/SQL/DuckDB tests 26 passed; full backend tests 82 passed, 1 skipped before PR; post-rebase full backend tests 84 passed, 1 skipped; `git diff --check`; `jq -e . contracts/*.sample.json`; `scripts/validate-harness.sh`; `scripts/validate-harness.sh --strict`.
 - Remaining: remote CI, merge/finalize/cleanup은 아직 진행하지 않았다. `rag`와 `hybrid` route 실행은 후속 단계다.
 - Next context: 다음 M6 개발은 Catalog RAG Index 또는 M1 route/trace display follow-up 중 하나를 선택한다. 현재 trace는 CatalogMetadata selection 단위다.
 - Risk: route enum에는 `rag`/`hybrid`가 포함됐지만 현재 M6 실행 경로는 SQL/Unsupported만 사용한다.

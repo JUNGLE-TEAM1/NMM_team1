@@ -18,14 +18,15 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 | Checked At | Upstream Changes | Impacted Source of Truth | Action |
 | --- | --- | --- | --- |
 | 2026-06-28 | not checked with pull/merge/rebase | none known | feature branch work continued from start base |
+| 2026-06-28 | `git fetch origin main` updated `origin/main` from `0a9247c` to `abe497e` via PR #234 M2 source input contract | `contracts/runtime_config.sample.json`, backend M2 runtime tests; no direct conflict with M6 response contract | `git rebase origin/main` completed without conflict, then local validation reran |
 
 ## Pre-Merge Sync
 
-- main commit: `origin/main` `0a9247c`
-- conflicts: no merge/rebase/pull executed in this turn; no unmerged paths observed during local validation
-- validation: focused M6/SQL/DuckDB tests 26 passed; full backend tests 82 passed/1 skipped; diff check passed; contract JSON passed; harness validation passed; strict harness validation passed
-- result: local implementation validated on branch base `0a9247c`; user requested commit and PR handoff after validation
-- deferral reason: remote CI and merge/finalize/cleanup remain after PR creation
+- main commit: `origin/main` `abe497e`
+- conflicts: `git rebase origin/main` completed without manual conflict resolution
+- validation: focused M6/SQL/DuckDB tests 26 passed before PR; post-rebase full backend tests 84 passed/1 skipped; diff check passed; contract JSON passed; harness validation passed; strict harness validation passed
+- result: local implementation validated and rebased onto current `origin/main` after user requested commit and PR handoff
+- deferral reason: remote CI and merge/finalize/cleanup remain after updated PR branch push
 
 ## PR Conflict Resolution
 
