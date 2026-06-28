@@ -3265,6 +3265,8 @@ tbody tr:hover {
   .page-header {
     align-items: flex-start;
     flex-direction: column;
+    margin-right: 0;
+    margin-left: 0;
   }
 
   .topbar-actions {
