@@ -10,7 +10,7 @@
 - Primary context read: `AGENTS.md`, `docs/00-layer-map.md`, this workspace `plan.md`, `docs/project-context/asklake-week2-module-plan/ver2/m1-live-ui-phase-plan.md`
 - Escalated context read: `docs/05-acceptance-scenarios-and-checklist.md`, `docs/06-regression-and-failure-scenarios.md`, `docs/07-manual-verification-playbook.md`, browser skill
 - Context omitted intentionally: M2/M3/M5/M6 backend internals beyond existing `AIQueryResult` route/trace contract
-- Changed: `/query` 화면에 route card, `route=<value>` runtime check, unsupported/blocked warning, `retrieval_trace[]` panel을 추가했다.
+- Changed: `/query` 화면에 route card, `route=<value>` runtime check, unsupported/blocked warning, `retrieval_trace[]` panel을 추가하고, blocked/unsupported 결과의 빈 SQL이 placeholder SQL로 보이지 않게 했다.
 - Verified: frontend build, keyword scan, API SQL/unsupported route samples, browser SQL/unsupported route smoke, mobile trace panel overflow check, strict harness validation.
 - Remaining: Product Health 대표 경로 route/trace는 후속 M1 Product Health Phase에서 확인한다. 전체 모바일 page overflow는 기존 evidence tables에서 남는다.
 - Next context: 다음 M1 Phase는 Product Health readiness UI 또는 `/etl` Catalog CTA fix를 선택한다.
@@ -38,7 +38,7 @@
 ## Implementation Summary / 구현 요약
 
 - `/query` summary panel에 `route=<value>` runtime check와 Route info card를 추가했다.
-- SQL 성공이 아닌 `route`/`status`는 runtime warning으로 표시해 성공 결과처럼 보이지 않게 했다.
+- SQL 성공이 아닌 `route`/`status`는 runtime warning으로 표시하고 빈 SQL은 `SQL not generated: blocked or unsupported route`로 보여 성공 결과처럼 보이지 않게 했다.
 - `RetrievalTracePanel`을 추가해 source id, source type, score, matched terms, evidence index를 표시한다.
 - `retrieval_trace[]`가 비어도 빈 trace 상태를 명시하고 화면이 깨지지 않게 했다.
 
@@ -59,7 +59,7 @@ scripts/validate-harness.sh --strict
 
 - Document executed: `docs/07-manual-verification-playbook.md`의 Query/Ask evidence 기준과 workspace plan.
 - Environment: Docker Compose project `asklake_m1_trace_ui`, backend `http://127.0.0.1:18003`, frontend `http://127.0.0.1:13003`, in-app browser.
-- Result: SQL 질문은 `route=sql`, trace source `dataset_reviews_gold`, score, matched terms, evidence index, DuckDB rows를 표시했다. Unsupported 질문은 `route=unsupported`, `blocked`, failure message, SQL 성공으로 처리하지 않는 warning을 표시했다.
+- Result: SQL 질문은 `route=sql`, trace source `dataset_reviews_gold`, score, matched terms, evidence index, DuckDB rows를 표시했다. Unsupported 질문은 `route=unsupported`, `blocked`, failure message, SQL 성공으로 처리하지 않는 warning, `SQL not generated: blocked or unsupported route`를 표시했다.
 - Limitation: 모바일 390px에서 trace panel 자체 overflow는 없었지만, 기존 evidence table은 page-level horizontal overflow를 만든다.
 
 ## Acceptance / Regression

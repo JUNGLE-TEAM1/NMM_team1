@@ -1718,6 +1718,9 @@ function AiQueryPage({ navigate, setNotice }) {
     ? queryState.result.retrieval_trace
     : [];
   const routeIsExecutableSql = route === "sql" && queryState.result?.status === "succeeded";
+  const displaySql = queryState.result
+    ? queryDisplaySql(queryResult?.sql ?? queryState.result.sql)
+    : m1AiQueryPlaceholder.sql;
 
   async function submitQuery(nextQuestion = queryText) {
     const question = nextQuestion.trim();
@@ -1806,7 +1809,7 @@ function AiQueryPage({ navigate, setNotice }) {
               Catalog output file이 아직 없어서 SQL 실행이 차단됐습니다. 먼저 실행/모니터링에서 Week2 workflow를 성공시킨 뒤 다시 질문하세요.
             </p>
           ) : null}
-          <code>{queryResult?.sql || queryState.result?.sql || m1AiQueryPlaceholder.sql}</code>
+          <code>{displaySql}</code>
           <div className="runtime-check-list compact">
             <RuntimeCheck label="DuckDB runtime" ready={isDuckDbEngine(queryResult?.engine)} />
             <RuntimeCheck label={`route=${route || "pending"}`} ready={routeIsExecutableSql} />
@@ -1924,6 +1927,11 @@ function routeDetail(result) {
   if (result.route === "sql" && result.status === "succeeded") return "SQL runtime으로 실행됨";
   if (result.route === "unsupported") return "지원하지 않는 질문으로 SQL 실행 차단";
   return `${formatMetric(result.status)} 상태로 처리`;
+}
+
+function queryDisplaySql(sql) {
+  if (typeof sql === "string" && sql.trim()) return sql;
+  return "SQL not generated: blocked or unsupported route";
 }
 
 function isDuckDbEngine(engine) {

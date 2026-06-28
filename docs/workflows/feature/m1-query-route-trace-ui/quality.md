@@ -23,7 +23,7 @@
 | API SQL route sample | `POST /api/week2/ai/query` after `pipeline_reviews_json_e2e` local run | passed | `status=succeeded`, `route=sql`, `engine=duckdb`, rows=3, `retrieval_trace[0].source_id=dataset_reviews_gold` |
 | API unsupported route sample | `POST /api/week2/ai/query` with unsupported weather question | passed | `status=blocked`, `route=unsupported`, guardrail failure message returned |
 | browser SQL route smoke | in-app browser at `http://127.0.0.1:13003/query` | passed | UI displayed `route=sql`, trace title, `dataset_reviews_gold`, `score 15`, matched terms, `evidence index 0`, DuckDB rows |
-| browser unsupported route smoke | in-app browser at `http://127.0.0.1:13003/query` | passed | UI displayed `route=unsupported`, blocked/failure text, warning that it is not handled as SQL success |
+| browser unsupported route smoke | in-app browser at `http://127.0.0.1:13003/query` | passed | UI displayed `route=unsupported`, blocked/failure text, warning that it is not handled as SQL success, and `SQL not generated: blocked or unsupported route` instead of placeholder SQL |
 | browser console errors | `tab.dev.logs({ levels: ['error'], limit: 20 })` | passed | `[]` before/after browser route smoke |
 | mobile trace panel overflow | 390px viewport browser check | passed with existing-page limitation | trace panel had no horizontal overflow; overall page horizontal overflow remains from pre-existing evidence tables |
 | strict harness validation | `scripts/validate-harness.sh --strict` | passed | strict harness validation passed after workspace/report updates |
