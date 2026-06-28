@@ -19,8 +19,17 @@
     "source_file": "TODO: confirm M4 replay source file"
   },
   "evidence": {
-    "metrics": ["message_count", "throughput_per_second", "consumer_lag", "error_count", "restart_result"],
-    "output_path": "TODO: confirm raw event evidence output path",
+    "contract": "KafkaReplayEvidence",
+    "metrics": ["sent_rows", "throughput_per_second", "error_count", "progress_percent", "duration_ms"],
+    "output_path": "data/results/week2/_metadata/kafka_replay/<run_id>.json",
+    "latest_path": "data/results/week2/_metadata/kafka_replay/latest.json",
+    "backend_routes": [
+      "GET /api/week2/kafka-replay/health",
+      "GET /api/week2/kafka-replay/runs",
+      "GET /api/week2/kafka-replay/runs/{run_id}"
+    ],
+    "lineage": ["source_file", "kafka_topic", "source_ref", "target_ref"],
+    "kafka_ui_metrics": ["message_count", "consumer_lag", "throughput_per_second"],
     "main_path_blocker": false
   },
   "handoff": {
