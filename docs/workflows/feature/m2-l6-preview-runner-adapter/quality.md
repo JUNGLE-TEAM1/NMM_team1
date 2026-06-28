@@ -29,7 +29,7 @@
 ## CI/CD Gate / CI-CD 게이트
 
 - CI required: yes, after PR
-- CI result: pending PR creation
+- CI result: PR #230 remote checks 8/8 passed. `harness`, `container-smoke`, `manifest-smoke`, `linked-issue`, `migration-schema-security`, `pr-size-hard-gate`, `pr-template-drift`, `risk-warning` all succeeded.
 - Deploy/publish required: no
 - Deployment confirmation: not required
 - Rollback/smoke notes: revert `RuntimeConfig.transform_spec*` fields and L6 preview adapter if M3/M5 handoff contract changes before merge.

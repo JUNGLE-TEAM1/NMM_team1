@@ -5,7 +5,7 @@
 - Type: feature
 - Date: 2026-06-28
 - Changed: `RuntimeConfig.transform_spec` / `transform_spec_path`를 추가하고, `Week2SparkRunner`가 M3 L6 preview-only spec을 받아 local preview Parquet와 `Week2RunnerResult` 호환 evidence를 만들 수 있게 했다. 지원 operation은 `select`, `rename`, `cast`, `parse_timestamp`, `normalize_null`, `json_string`, `mask`, `drop`, `aggregate`로 제한하고, unsupported operation은 failed result로 반환한다.
-- Verified: TDD failing test first 확인, `backend/tests/test_week2_spark_runner.py` 8 passed, `contracts/runtime_config.sample.json` L6 preview smoke succeeded, `jq -e . contracts/*.sample.json`, backend tests 76 passed with escalation, `git diff --check`, compileall, `scripts/validate-harness.sh`, `scripts/validate-harness.sh --strict`.
+- Verified: TDD failing test first 확인, `backend/tests/test_week2_spark_runner.py` 8 passed, `contracts/runtime_config.sample.json` L6 preview smoke succeeded, `jq -e . contracts/*.sample.json`, backend tests 76 passed with escalation, `git diff --check`, compileall, `scripts/validate-harness.sh`, `scripts/validate-harness.sh --strict`, PR #230 remote CI 8/8 passed.
 - Remaining: 실제 Product Health `gold_product_health` L6 spec 실행, 5GB input evidence, Docker Spark cluster, Airflow DAG 내부 SparkRunner 호출은 후속 작업이다.
 - Next context: M3는 실제 L6 spec 의미와 compiler validation을 계속 소유한다. M2는 spec/input을 받아 preview 실행과 row/bytes/duration/output evidence를 만들고, M5는 inline `transform_spec` 또는 `transform_spec_path`를 `RuntimeConfig`에 넘기면 된다.
 - Risk: 현재 경로는 local pyarrow preview adapter다. 분산 Spark 성능, production write, 전체 action vocabulary, M3 L7-L9 quality gate는 증명하지 않는다.
