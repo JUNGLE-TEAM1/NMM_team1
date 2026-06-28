@@ -3,6 +3,10 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field, model_validator
 
 
+RuntimeInputFormat = Literal["json", "jsonl", "parquet"]
+RuntimeSourceType = Literal["local_file", "s3", "postgres", "mongodb", "kafka"]
+
+
 class StorageConfig(BaseModel):
     """M2 runtime output을 local fallback과 S3-compatible object storage에 매핑하는 설정.
 
@@ -22,16 +26,50 @@ class StorageConfig(BaseModel):
 
 
 class RuntimeSourceInput(BaseModel):
-    """M2 runner가 source별 입력 위치와 format만 받기 위한 설정.
+    """M2 runner가 source별 입력 위치와 데이터 형식을 받기 위한 설정.
 
     source 의미, Bronze/Silver/Gold 변환 규칙은 M3 `TransformSpec` 책임이므로 여기에 넣지 않는다.
+    기존 `input_format`/`input_path`와 새 `format`/`path`를 모두 받아서 UI source
+    connection 계약으로 넘어가는 동안 하위 호환을 유지한다.
     """
 
     source_id: str = Field(min_length=1)
-    input_format: Literal["json", "jsonl", "parquet"]
-    input_path: str = Field(min_length=1)
+    source_type: RuntimeSourceType = "local_file"
+    format: RuntimeInputFormat | None = None
+    path: str | None = Field(default=None, min_length=1)
+    input_format: RuntimeInputFormat | None = None
+    input_path: str | None = Field(default=None, min_length=1)
+    connection_ref: str | None = Field(default=None, min_length=1)
+    table: str | None = Field(default=None, min_length=1)
+    topic: str | None = Field(default=None, min_length=1)
+    query: str | None = Field(default=None, min_length=1)
+    message_format: str | None = Field(default=None, min_length=1)
     output_file_name: str | None = Field(default=None, min_length=1)
     options: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def validate_compatible_input_fields(self) -> "RuntimeSourceInput":
+        """legacy 필드와 새 필드가 동시에 들어와도 같은 뜻인지 확인한다."""
+
+        if self.format is not None and self.input_format is not None and self.format != self.input_format:
+            raise ValueError("format and input_format must match when both are provided")
+        if self.path is not None and self.input_path is not None and self.path != self.input_path:
+            raise ValueError("path and input_path must match when both are provided")
+        if self.source_type == "local_file" and (self.effective_format is None or self.effective_path is None):
+            raise ValueError("local_file source requires format/path or input_format/input_path")
+        return self
+
+    @property
+    def effective_format(self) -> RuntimeInputFormat | None:
+        """새 `format`을 우선하고 없으면 legacy `input_format`을 사용한다."""
+
+        return self.format or self.input_format
+
+    @property
+    def effective_path(self) -> str | None:
+        """새 `path`를 우선하고 없으면 legacy `input_path`를 사용한다."""
+
+        return self.path or self.input_path
 
 
 class RuntimeConfig(BaseModel):
@@ -41,7 +79,7 @@ class RuntimeConfig(BaseModel):
     """
 
     runner: Literal["local_runner", "spark_runner"] = "spark_runner"
-    input_format: Literal["json", "jsonl", "parquet"] | None = None
+    input_format: RuntimeInputFormat | None = None
     input_path: str | None = Field(default=None, min_length=1)
     source_inputs: list[RuntimeSourceInput] = Field(default_factory=list)
     output_format: Literal["parquet"] = "parquet"

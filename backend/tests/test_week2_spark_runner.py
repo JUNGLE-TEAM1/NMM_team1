@@ -195,6 +195,72 @@ def test_week2_spark_runner_writes_multiple_product_health_sources(tmp_path: Pat
     )
 
 
+def test_week2_spark_runner_accepts_source_type_format_path_aliases(tmp_path: Path) -> None:
+    """미래 UI source connection에 맞춘 source_type/format/path 입력도 기존 파일 입력처럼 처리한다."""
+
+    input_root = tmp_path / "raw"
+    output_root = tmp_path / "week2"
+    input_root.mkdir()
+    reviews_path = input_root / "reviews_seed.jsonl"
+    products_path = input_root / "product_master_seed.jsonl"
+    write_jsonl(reviews_path, [{"review_id": "R1", "product_id": "B1", "rating": 2}])
+    write_jsonl(products_path, [{"product_id": "B1", "category": "gift_cards"}])
+
+    runtime_config = RuntimeConfig(
+        runner="spark_runner",
+        output_format="parquet",
+        output_root=str(output_root),
+        source_inputs=[
+            {
+                "source_id": "reviews_seed",
+                "source_type": "local_file",
+                "format": "jsonl",
+                "path": str(reviews_path),
+            },
+            {
+                "source_id": "product_master_seed",
+                "source_type": "local_file",
+                "format": "jsonl",
+                "path": str(products_path),
+            },
+        ],
+        options={"output_file_name_template": "{source_id}.parquet"},
+    )
+
+    result = Week2SparkRunner().run(runtime_config, run_id="run_source_contract_001")
+
+    output_path = output_root / "spark_smoke" / "run_id=run_source_contract_001"
+    assert result.status == "succeeded"
+    assert result.row_count == 2
+    assert pq.read_table(output_path / "reviews_seed.parquet").num_rows == 1
+    task_by_node = {task["node_id"]: task for task in result.task_results}
+    assert task_by_node["spark_read:reviews_seed"]["source_type"] == "local_file"
+    assert task_by_node["spark_read:reviews_seed"]["input_format"] == "jsonl"
+
+
+def test_week2_spark_runner_fails_for_unsupported_connection_source_type(tmp_path: Path) -> None:
+    """DB/Kafka 같은 직접 연결 source는 connector 구현 전까지 성공으로 위장하지 않는다."""
+
+    runtime_config = RuntimeConfig(
+        runner="spark_runner",
+        output_format="parquet",
+        output_root=str(tmp_path / "week2"),
+        source_inputs=[
+            {
+                "source_id": "orders",
+                "source_type": "postgres",
+                "connection_ref": "source_postgres_orders",
+                "table": "orders",
+            }
+        ],
+    )
+
+    result = Week2SparkRunner().run(runtime_config, run_id="run_unsupported_source_001")
+
+    assert result.status == "failed"
+    assert "Unsupported source_type" in result.task_results[0]["error"]
+
+
 class FakeStorageAdapter:
     """SparkRunner가 storage adapter를 호출하는지만 보는 테스트 double."""
 
