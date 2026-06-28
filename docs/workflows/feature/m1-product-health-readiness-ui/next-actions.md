@@ -4,32 +4,28 @@
 
 ## Current State / 현재 상태
 
-- State: draft, scope proposed
-- Summary: M1 후속 Phase 8로 생성됐다. `dataset_product_health_gold` 준비/미준비 상태를 fake success 없이 보여주는 UI Phase다.
+- State: PR open, checks passed, merge state BEHIND latest main
+- Summary: `/catalog`와 `/query`에 `dataset_product_health_gold` readiness panel을 추가했다. 현재 API 404 상태에서는 missing badge와 M2/M3/M5 후속 책임이 보이고, ready 문구는 표시되지 않는다.
 
 ## Recommended Next Action / 권장 다음 행동
 
-- Phase 6 browser smoke와 Phase 7 route/trace 표시 이후 진행한다.
-- Reason: Gold 준비 상태와 query route 상태를 함께 보아야 화면 문구가 정확해진다.
+- 사람 확인 후 최신 `main` 반영 방식을 선택하고, 재check 후 merge/finalize/cleanup을 진행한다.
+- Reason: PR #248 required checks는 통과했지만 GitHub merge state가 `BEHIND`다. 하네스 정책상 pull/merge/rebase는 사람 확인 없이 실행하지 않는다.
 
 ## Options / 선택지
 
-1. Phase 6/7 이후 이 Phase를 구현한다.
-2. Gold readiness만 먼저 구현한다.
-3. readiness panel Phase와 합친다.
-4. 이 workspace를 멈춘다.
+1. 최신 `main` 반영을 승인하고 재check 후 merge한다.
+2. PR을 열린 상태로 보류하고 재개 조건을 기록한다.
+3. 추가 보강 커밋을 요청한다.
 
 ## Waiting On Human / 사람 응답 대기
 
-- 번호를 고르거나 자연어로 지시한다.
+- PR merge/finalize/cleanup은 사람 확인 필요.
 
 ## Last User Choice / 마지막 사용자 선택
 
--
+- 2026-06-28: 다음 Phase 수행 지시.
 
 ## Next AI Action / 다음 AI 행동
 
-- option 1이면 `confirmations.md`를 업데이트하고 공유 contract를 초안 작성 또는 확인한다.
-- option 2이면 `plan.md`와 `shared-docs.md`를 업데이트한다.
-- option 3이면 `scripts/start-workflow.sh`로 다른 workspace를 만든다.
-- option 4이면 pause reason을 `notes.md`에 기록한다.
+- 사람 선택에 따라 최신 `main` 반영/recheck/merge를 진행하거나, PR 보류 또는 추가 보강을 수행한다.
