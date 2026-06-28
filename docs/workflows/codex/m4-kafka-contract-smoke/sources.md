@@ -7,6 +7,7 @@
 - `docs/11-git-sync-policy.md`
 - `contracts/kafka_topic_contract.sample.json`
 - `data/results/week2/_metadata/kafka_replay/latest.json`
+- `docs/workflows/codex/m4-kafka-contract-smoke/decisions.md`
 
 ## Source Branch Base Records
 

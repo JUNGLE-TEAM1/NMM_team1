@@ -24,6 +24,14 @@
 | TODO check | `rg -n "TODO: confirm M4 replay" contracts/kafka_topic_contract.sample.json` | no matches | local command |
 | strict harness | `scripts/validate-harness.sh --strict` | passed | local command |
 
+## CI/CD Gate
+
+- CI required: yes before merge
+- CI result: PR #226 checks pending after push
+- Deploy/publish required: no
+- Deployment confirmation: not applicable
+- Rollback/smoke notes: revert the fixture value commit if the smoke fixture is no longer representative
+
 ## Skipped Checks
 
 | Check | Reason | Human Confirmed |

@@ -1,5 +1,9 @@
 # M4 Kafka contract smoke fixture 정리 결정 기록
 
+## Decision Option Briefs
+
+- not needed. 기존 smoke evidence 값을 fixture에 반영하는 낮은 위험의 정리 작업이다.
+
 ## Accepted Decisions
 
 | Decision | Selected Option | Reason | Confirmed By / At |
@@ -12,3 +16,9 @@
 | Decision | Deferred Reason | Revisit Trigger | Target Branch / Phase |
 | --- | --- | --- | --- |
 | behavior event replay evidence | 1차 발표 blocker가 아님 | 2차 이후 streaming ingestion evidence를 product-health behavior source로 연결할 때 | future M4/M5 follow-up |
+
+## Revisit / Rollback Conditions
+
+| Decision | Condition | Action |
+| --- | --- | --- |
+| Fixture source | 더 최신 M4 replay smoke evidence를 대표값으로 채택할 때 | `contracts/kafka_topic_contract.sample.json`의 replay fixture 값을 새 evidence로 갱신 |
