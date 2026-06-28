@@ -4,32 +4,28 @@
 
 ## Current State / 현재 상태
 
-- State: draft, scope proposed
-- Summary: M1 후속 Phase 8로 생성됐다. `dataset_product_health_gold` 준비/미준비 상태를 fake success 없이 보여주는 UI Phase다.
+- State: completed locally, PR-ready pending final harness/remote PR checks
+- Summary: `/catalog`와 `/query`에 `dataset_product_health_gold` readiness panel을 추가했다. 현재 API 404 상태에서는 missing badge와 M2/M3/M5 후속 책임이 보이고, ready 문구는 표시되지 않는다.
 
 ## Recommended Next Action / 권장 다음 행동
 
-- Phase 6 browser smoke와 Phase 7 route/trace 표시 이후 진행한다.
-- Reason: Gold 준비 상태와 query route 상태를 함께 보아야 화면 문구가 정확해진다.
+- PR 생성 후 GitHub checks를 확인하고, 사람 확인 뒤 merge/finalize/cleanup을 진행한다.
+- Reason: 로컬 build/smoke는 통과했고 PR merge는 하네스 정책상 사람 확인이 필요하다.
 
 ## Options / 선택지
 
-1. Phase 6/7 이후 이 Phase를 구현한다.
-2. Gold readiness만 먼저 구현한다.
-3. readiness panel Phase와 합친다.
-4. 이 workspace를 멈춘다.
+1. PR checks가 통과하면 merge를 승인한다.
+2. Product Health 실제 M2/M3/M5/M6 integration evidence가 닫힌 뒤 ready 상태 smoke를 별도 Phase로 수행한다.
+3. 이 Phase를 보류하고 후속 구현을 기다린다.
 
 ## Waiting On Human / 사람 응답 대기
 
-- 번호를 고르거나 자연어로 지시한다.
+- PR merge/finalize/cleanup은 사람 확인 필요.
 
 ## Last User Choice / 마지막 사용자 선택
 
--
+- 2026-06-28: 다음 Phase 수행 지시.
 
 ## Next AI Action / 다음 AI 행동
 
-- option 1이면 `confirmations.md`를 업데이트하고 공유 contract를 초안 작성 또는 확인한다.
-- option 2이면 `plan.md`와 `shared-docs.md`를 업데이트한다.
-- option 3이면 `scripts/start-workflow.sh`로 다른 workspace를 만든다.
-- option 4이면 pause reason을 `notes.md`에 기록한다.
+- final validation, commit, push, PR 생성까지 진행한다.
