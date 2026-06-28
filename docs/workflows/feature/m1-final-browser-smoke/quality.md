@@ -35,7 +35,7 @@
 ## CI/CD Gate / CI-CD 게이트
 
 - CI required: if PR is created
-- CI result: local checks passed; remote CI not run yet
+- CI result: local checks passed; remote CI passed on PR #238. GitHub checks `harness`, `container-smoke`, `manifest-smoke`, `linked-issue`, `pr-size-hard-gate`, `pr-template-drift`, `migration-schema-security`, and `risk-warning` all completed with `SUCCESS`.
 - Deploy/publish required: no
 - Deployment confirmation:
 - Rollback/smoke notes: local compose project `asklake_m1_final_smoke` was used only for smoke and was stopped with `docker compose -p asklake_m1_final_smoke down --remove-orphans`.

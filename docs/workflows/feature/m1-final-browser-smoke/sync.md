@@ -25,7 +25,7 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 - conflicts: none checked; docs/evidence-only branch
 - validation: Docker Compose build/run, frontend build, browser smoke, `git diff --check`, `scripts/validate-harness.sh --strict` passed
 - result: local smoke passed with follow-up
-- deferral reason: PR/push not started yet
+- deferral reason: PR #238 and branch push are complete; PR remains open and GitHub reports `mergeStateStatus=BEHIND`, `mergeable=MERGEABLE`, checks `SUCCESS`. Latest `main` 반영은 pull/merge/rebase를 포함하므로 사람 승인 전에는 실행하지 않는다.
 
 ## PR Conflict Resolution
 
@@ -47,6 +47,6 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 - PR closing keyword: Closes #236
 - pushed branch: feature/m1-final-browser-smoke
 - PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/238
-- merge status: open
+- merge status: open; `mergeStateStatus=BEHIND`, `mergeable=MERGEABLE`
 - issue close status: open
 - issue reopen result: already open
