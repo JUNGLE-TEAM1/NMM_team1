@@ -30,7 +30,7 @@
 - issue creation result: created
 - issue project result: pending PR creation update
 - PR closing keyword: `Closes #225`
-- pushed branch:
-- PR link:
-- merge status:
+- pushed branch: `codex/m4-kafka-contract-smoke`
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/226
+- merge status: open
 - issue close status: open
