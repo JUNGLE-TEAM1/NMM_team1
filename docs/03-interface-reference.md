@@ -403,6 +403,20 @@ Minimum `AIQueryResult` route and retrieval trace shape:
 
 `route` and `retrieval_trace` are additive fields. Existing M1 consumers may continue reading `status`, `sql`, `query_result`, `rows`, `summary`, and `evidence`, while richer Week 2 displays can show why M6 selected a SQL/RAG/Hybrid/Unsupported path.
 
+Minimum M6 Catalog RAG-lite index boundary:
+
+| Field / Source | Included in M6 index | Notes |
+| --- | --- | --- |
+| dataset identity | yes | `dataset_id`, `name`, `layer` |
+| schema fields | yes | field name, type, nullable, and local semantic aliases |
+| metrics | yes | metric keys and safe scalar metric values such as row count, bytes, quality, semantics |
+| lineage | yes | `pipeline_id`, `run_id`, `source_ids`, `upstream_datasets` |
+| query allowlist | yes | `query.table_name`, `query.allowed_columns`, `default_limit`, timeout metadata |
+| freshness | yes | `updated_at` and freshness interval values |
+| storage/local path | no | `storage.local_fallback_path`, raw file paths, whole source files, secrets, credentials, and API keys must not be indexed |
+
+The M6 Catalog RAG-lite index is a derived cache, not the Catalog source of truth. Its cache signature is based on `dataset_id + lineage.run_id + updated_at`; when any of those values change, the index is stale and must be rebuilt before retrieval. The current Week 2 route remains SQL-first, but `retrieval_trace[]` may include additional `schema`, `metric`, or `lineage` items from the index.
+
 Minimum `AIQueryResult.evidence[]` grounding shape:
 
 | Field | Required | Notes |
