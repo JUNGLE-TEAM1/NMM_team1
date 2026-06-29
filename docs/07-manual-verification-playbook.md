@@ -47,6 +47,15 @@
 6. `docs/05`, `docs/06`, `docs/07`, `docs/08`이 같은 milestone/phase 이름을 사용하는지 확인한다.
 7. 과거 M0~M5 report가 historical evidence로만 남고 새 기준에 맞춰 소급 수정되지 않았는지 확인한다.
 
+## 협업 전제 확인 수동 점검
+
+1. `docs/09-collaboration-agreement.md`에 Context Assumption Check 합의가 있는지 확인한다.
+2. `docs/13-human-command-flow.md`가 개념 질문, 저장소 규칙 질문, 실행 요청, 정책 결정을 구분하는 예시를 포함하는지 확인한다.
+3. `docs/08-development-workflow.md`의 Phase 시작 gate가 Context Assumption Check를 Context Loading/Context Budget 전에 적용하는지 확인한다.
+4. `docs/15-context-budget-rule.md`가 문맥 읽기 범위와 답변 전제 판별을 다른 책임으로 구분하는지 확인한다.
+5. `docs/10-next-action-menu.md`에 전제가 불명확할 때 사용할 메뉴가 있는지 확인한다.
+6. 단순 개념 질문은 불필요하게 막지 않고, 답이 달라지는 경우 `일반론 기준 / 이 저장소 기준`으로 나누어 답하도록 되어 있는지 확인한다.
+
 ## Current Baseline 수동 점검
 
 0. Docker가 필요한 경우 `command -v docker`, `docker --version`, `docker compose version`, `docker info`를 확인한다. macOS에서 `/Applications/Docker.app`이 설치되어 있고 꺼져 있으면 macOS 전용 safe start로 `open -a Docker`를 시도한 뒤 readiness loop를 돈다. Windows는 WSL2 + Docker Desktop integration shell에서 검증하는 것을 기본 경로로 두고, native PowerShell/CMD 동일 실행은 별도 evidence 없이는 미검증으로 기록한다. host `node`/`npm`은 Docker Compose Tier 1 경로에는 필수가 아니며, host frontend direct run을 검증할 때만 추가로 확인한다.
@@ -109,10 +118,45 @@ Target MVP 기능이 구현될 때 아래 경로를 단계별로 실제 manual v
 9. Week 2 공통 hardening으로 API/UI route, ID 규칙, storage path pattern, workflow/run status, `QueryResult`, guardrail failure shape, daily smoke evidence 형식이 `docs/03`에 정리되어 있는지 확인한다.
 10. `contracts/ai_query_result.sample.json`의 `query_result` 필드가 `docs/03`의 `QueryResult` 필드와 일치하는지 확인한다.
 11. M2 Taxi local batch evidence를 확인할 때 `scripts/week2_m2_taxi_local_batch_evidence.py --profile fixed`가 하루치 Taxi row를 Gold Parquet 1행으로 만들고, `--profile local-full-month`가 월별 파일 전체 row count와 Gold output path를 evidence JSON에 남기는지 확인한다.
+12. M2 Taxi 5GB local Spark evidence를 확인할 때는 로컬 Taxi Parquet directory를 아래처럼 실행한다. 성공 기준은 summary JSON에 `status=succeeded`, input row/bytes, duration, output path, output row/bytes가 남고, output Parquet을 실제로 읽을 수 있는 것이다. 이 검증은 Docker Spark cluster, MinIO/S3 durable write, Product Health 대표 경로를 대체하지 않는다.
+
+```bash
+PYTHONPATH=backend SPARK_LOCAL_IP=127.0.0.1 .venv/bin/python scripts/week2_m2_taxi_spark_local_evidence.py \
+  --input '<LOCAL_TAXI_PARQUET_DIR>' \
+  --profile local-full-month \
+  --run-id run_taxi_5gb_local_spark_001 \
+  --master 'local[2]' \
+  --driver-memory 8g \
+  --disable-vectorized-reader \
+  --summary-path data/results/m2_taxi_5gb_local_evidence/run_taxi_5gb_local_spark_001_summary.json
+```
+
+13. M2 Taxi Docker Spark evidence를 확인할 때는 host의 Taxi directory를 container의 `/data/taxi`로 mount하고, repo의 `data/results/...`를 container의 `/app/data/results/...`로 쓴다. 작은 파일을 먼저 돌린 뒤 같은 Spark master/worker 경로로 5GB directory를 돌린다. 성공 기준은 summary JSON에 `status=succeeded`, Spark master가 `spark://m2-spark-master:7077`, input row/bytes, duration, output path, output row/bytes가 남고, output Parquet을 실제로 읽을 수 있는 것이다. 끝나면 cluster를 내려둔다.
+
+```bash
+ASKLAKE_TAXI_HOST_DIR='<LOCAL_TAXI_PARENT_DIR>' scripts/week2_m2_taxi_spark_docker_evidence.sh small
+ASKLAKE_TAXI_HOST_DIR='<LOCAL_TAXI_PARENT_DIR>' scripts/week2_m2_taxi_spark_docker_evidence.sh 5gb
+scripts/week2_m2_taxi_spark_docker_evidence.sh down
+```
+
+14. M2 Taxi Docker Spark MinIO output smoke를 확인할 때는 같은 Docker Spark cluster compose에 포함된 `m2-minio`를 함께 띄운다. 성공 기준은 summary JSON에 `status=succeeded`, `spark_upload_taxi_daily_metrics` task success, local output path, `s3://asklake-demo/...` object URI, input/output row와 bytes가 남는 것이다. 이 검증은 Spark가 직접 `s3a://`로 쓰는 경로가 아니라, Spark local fallback write 뒤 `Week2StorageAdapter`가 같은 output file을 S3-compatible object로 업로드하는 경로다.
+
+```bash
+ASKLAKE_TAXI_HOST_DIR='<LOCAL_TAXI_PARENT_DIR>' scripts/week2_m2_taxi_spark_docker_evidence.sh minio-small
+scripts/week2_m2_taxi_spark_docker_evidence.sh down
+```
 
 ### Week 2 상품 리스크 대표 경로 점검
 
 이 경로는 Week2 발표 대표 path가 5GB 이상 fact input을 처리해 `gold_product_health`를 만들고, Catalog/SQL/UI까지 이어지는지 확인한다.
+
+작은 입력으로 먼저 M2 실행 경로만 확인할 때는 아래 smoke를 실행한다.
+
+```bash
+PYTHONPATH=backend .venv/bin/python scripts/week2_m2_product_health_l6_evidence.py
+```
+
+이 smoke는 Product Health source별 read/write evidence, M3 L6 preview-only aggregate spec 실행, `gold_product_health.parquet` 생성, DuckDB SQL read를 확인한다. 5GB input 처리와 `risk_score` 최종 의미 확정은 포함하지 않는다.
 
 1. `pipeline_product_health_e2e` run을 실행하거나 사전 실행된 5GB run id를 선택한다.
 2. `ExecutionResult.status`가 `succeeded`인지 확인한다.

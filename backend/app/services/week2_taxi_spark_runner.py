@@ -16,7 +16,7 @@ from app.services.week2_taxi_batch_runner import GOLD_DATASET_ID, GOLD_TABLE_NAM
 
 @dataclass(frozen=True)
 class TaxiSparkConfig:
-    """PySpark local mode Taxi evidence 실행에 필요한 입력/출력 설정."""
+    """Taxi Spark evidence 실행에 필요한 입력/출력 설정."""
 
     input_path: str
     output_root: str | None = None
@@ -28,19 +28,21 @@ class TaxiSparkConfig:
     compression: str = "snappy"
     master: str = "local[1]"
     app_name: str = "asklake-m2-taxi-spark-local"
+    driver_memory: str | None = None
+    parquet_vectorized_reader: bool = True
     storage: StorageConfig | dict[str, Any] | None = None
     upload_to_object_storage: bool = False
 
 
 class Week2TaxiSparkRunner:
-    """TLC Taxi Parquet을 PySpark local mode로 Gold metric Parquet까지 처리한다.
+    """TLC Taxi Parquet을 Spark로 Gold metric Parquet까지 처리한다.
 
     이번 runner는 Spark 실행 경로 증거를 만들기 위한 얇은 adapter다.
-    Docker Spark cluster와 M3 TransformSpec 기반 일반화는 후속 단계에서 붙인다.
+    M3 TransformSpec 기반 일반화는 후속 단계에서 붙인다.
     """
 
     def run(self, config: TaxiSparkConfig | dict[str, Any]) -> Week2RunnerResult:
-        """Spark local mode로 Taxi daily Gold metric을 만들고 Week2RunnerResult로 반환한다."""
+        """Spark로 Taxi daily Gold metric을 만들고 Week2RunnerResult로 반환한다."""
 
         started = perf_counter()
         taxi_config = coerce_config(config)
@@ -60,15 +62,14 @@ class Week2TaxiSparkRunner:
             spark = build_spark_session(taxi_config)
             logs.append({"level": "info", "message": f"spark local session started: {spark.version}"})
 
-            source_df = spark.read.parquet(str(input_path))
-            validate_required_columns(source_df.columns)
+            source_df = read_taxi_parquet_frame(spark, input_path)
             scoped_df = scope_taxi_frame(source_df, taxi_config)
             gold_df = build_daily_gold_frame(scoped_df)
 
             input_row_count = scoped_df.count()
             output_row_count = gold_df.count()
             write_single_parquet(gold_df, output_location.local_path, taxi_config.compression)
-            input_bytes = path_size(input_path)
+            input_bytes = input_path_size(input_path)
             output_bytes = path_size(output_location.local_path)
 
             task_results = [
@@ -93,7 +94,10 @@ class Week2TaxiSparkRunner:
             )
         finally:
             if spark is not None:
-                spark.stop()
+                try:
+                    spark.stop()
+                except Exception as stop_error:
+                    logs.append({"level": "warn", "message": f"spark stop failed after run: {stop_error}"})
 
         logs.append({"level": "info", "message": "taxi spark succeeded"})
         return Week2RunnerResult(
@@ -110,21 +114,31 @@ class Week2TaxiSparkRunner:
 
 
 def build_spark_session(config: TaxiSparkConfig) -> Any:
-    """PySpark local session을 만든다. sandbox 밖 실행에서는 localhost gateway가 열린다."""
+    """master 설정에 맞춰 PySpark session을 만든다."""
 
-    os.environ.setdefault("SPARK_LOCAL_IP", "127.0.0.1")
+    configure_spark_network_environment(config.master)
     try:
         from pyspark.sql import SparkSession
     except ImportError as error:
         raise Week2TaxiSparkRunnerError("pyspark is required for Taxi Spark local evidence") from error
 
-    return (
+    builder = (
         SparkSession.builder.master(config.master)
         .appName(config.app_name)
         .config("spark.sql.session.timeZone", "UTC")
         .config("spark.ui.enabled", "false")
-        .getOrCreate()
+        .config("spark.sql.parquet.enableVectorizedReader", str(config.parquet_vectorized_reader).lower())
     )
+    if config.driver_memory:
+        builder = builder.config("spark.driver.memory", config.driver_memory)
+    return builder.getOrCreate()
+
+
+def configure_spark_network_environment(master: str) -> None:
+    """local master에서만 localhost gateway를 기본값으로 둔다."""
+
+    if master.startswith("local"):
+        os.environ.setdefault("SPARK_LOCAL_IP", "127.0.0.1")
 
 
 def validate_required_columns(columns: list[str]) -> None:
@@ -133,6 +147,46 @@ def validate_required_columns(columns: list[str]) -> None:
     missing = [column for column in REQUIRED_TAXI_COLUMNS if column not in columns]
     if missing:
         raise Week2TaxiSparkRunnerError(f"Missing Taxi column(s): {', '.join(missing)}")
+
+
+def read_taxi_parquet_frame(spark: Any, input_path: Path) -> Any:
+    """파일별 Taxi Parquet schema drift를 공통 타입으로 맞춘 Spark DataFrame을 만든다."""
+
+    paths = taxi_parquet_paths(input_path)
+    frames = [canonicalize_taxi_frame(spark.read.parquet(str(path))) for path in paths]
+    merged = frames[0]
+    for frame in frames[1:]:
+        merged = merged.unionByName(frame)
+    return merged
+
+
+def taxi_parquet_paths(input_path: Path) -> list[Path]:
+    """단일 파일 또는 디렉터리 입력에서 처리할 Parquet 파일 목록을 구한다."""
+
+    if input_path.is_file():
+        return [input_path]
+    if input_path.is_dir():
+        paths = sorted(path for path in input_path.rglob("*.parquet") if path.is_file())
+        if paths:
+            return paths
+    raise Week2TaxiSparkRunnerError(f"No Parquet input files found: {input_path}")
+
+
+def canonicalize_taxi_frame(frame: Any) -> Any:
+    """월별 Taxi schema 차이를 daily metric에 필요한 공통 타입으로 정규화한다."""
+
+    validate_required_columns(frame.columns)
+    functions = spark_functions()
+    return frame.select(
+        functions.col("tpep_pickup_datetime").cast("timestamp").alias("tpep_pickup_datetime"),
+        functions.col("tpep_dropoff_datetime").cast("timestamp").alias("tpep_dropoff_datetime"),
+        functions.col("passenger_count").cast("double").alias("passenger_count"),
+        functions.col("trip_distance").cast("double").alias("trip_distance"),
+        functions.col("fare_amount").cast("double").alias("fare_amount"),
+        functions.col("tip_amount").cast("double").alias("tip_amount"),
+        functions.col("tolls_amount").cast("double").alias("tolls_amount"),
+        functions.col("total_amount").cast("double").alias("total_amount"),
+    )
 
 
 def scope_taxi_frame(frame: Any, config: TaxiSparkConfig) -> Any:
@@ -292,6 +346,16 @@ def resolve_path(path_value: str) -> Path:
 
     path = Path(path_value)
     return path if path.is_absolute() else repo_root() / path
+
+
+def input_path_size(path: Path) -> int | None:
+    """파일 또는 디렉터리 Taxi 입력의 실제 처리 대상 bytes를 계산한다."""
+
+    if path.is_file():
+        return path_size(path)
+    if path.is_dir():
+        return sum(file.stat().st_size for file in path.rglob("*.parquet") if file.is_file())
+    return None
 
 
 def coerce_config(config: TaxiSparkConfig | dict[str, Any]) -> TaxiSparkConfig:

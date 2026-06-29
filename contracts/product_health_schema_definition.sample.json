@@ -1,0 +1,29 @@
+{
+  "contract": "SchemaDefinition",
+  "producer": "M3",
+  "consumers": ["M1", "M5", "M6"],
+  "tenant_id": "tenant_demo",
+  "source_id": "source_product_health_composite",
+  "dataset_id": "dataset_product_health_gold",
+  "schema_version": "schema_product_health_gold_v1",
+  "layer": "gold",
+  "query_table": "gold_product_health",
+  "fields": [
+    {"path": "product_id", "type": "string", "nullable": false, "array": false, "override": true, "missing_ratio": 0, "nested_kind": "scalar"},
+    {"path": "product_name", "type": "string", "nullable": true, "array": false, "override": true, "missing_ratio": null, "nested_kind": "scalar"},
+    {"path": "category_l1", "type": "string", "nullable": true, "array": false, "override": true, "missing_ratio": null, "nested_kind": "scalar"},
+    {"path": "review_count", "type": "integer", "nullable": false, "array": false, "override": true, "missing_ratio": 0, "nested_kind": "scalar"},
+    {"path": "average_rating", "type": "number", "nullable": true, "array": false, "override": true, "missing_ratio": null, "nested_kind": "scalar"},
+    {"path": "negative_review_rate", "type": "number", "nullable": true, "array": false, "override": true, "missing_ratio": null, "nested_kind": "scalar"},
+    {"path": "view_count", "type": "integer", "nullable": false, "array": false, "override": true, "missing_ratio": 0, "nested_kind": "scalar"},
+    {"path": "purchase_count", "type": "integer", "nullable": false, "array": false, "override": true, "missing_ratio": 0, "nested_kind": "scalar"},
+    {"path": "conversion_rate", "type": "number", "nullable": true, "array": false, "override": true, "missing_ratio": null, "nested_kind": "scalar"},
+    {"path": "delivery_count", "type": "integer", "nullable": false, "array": false, "override": true, "missing_ratio": 0, "nested_kind": "scalar"},
+    {"path": "late_delivery_rate", "type": "number", "nullable": true, "array": false, "override": true, "missing_ratio": null, "nested_kind": "scalar"},
+    {"path": "risk_score", "type": "number", "nullable": true, "array": false, "override": true, "missing_ratio": null, "nested_kind": "scalar"}
+  ],
+  "semantic_contract_ref": "contracts/product_health_gold_contract.sample.json",
+  "sample_size": null,
+  "sample_size_decision": "Small smoke and 5GB+ run must use the same product_health transform semantics; only runtime scale differs.",
+  "captured_at": "2026-06-28T00:00:00+09:00"
+}

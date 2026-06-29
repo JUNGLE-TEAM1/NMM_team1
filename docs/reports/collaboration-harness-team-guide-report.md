@@ -1,0 +1,163 @@
+# 협업 하네스 팀 사용 가이드 보고서
+
+## Short Report / 짧은 보고
+
+- Type: docs
+- Date: 2026-06-28
+- Changed: 팀원이 AskLake 협업 하네스를 실제 작업에서 사용할 수 있도록 `AskLake 협업 하네스 사용 가이드`를 추가하고, 처음 보는 사람도 빠르게 이해할 수 있는 `3분 요약`, 하네스 사용 이점, 문맥 저장 핵심 기능, 사람/AI 책임 섹션의 전진 배치, 도구 한계 이해 책임, 스코프 이해 책임, 문맥 충분성 확인 책임, 공유 문맥 정렬 책임, 책임별 이점/리스크/주의점, 책임이 병렬 작업/작은 PR/리뷰/인수인계 이점으로 이어지는 실전 이점 섹션, 하네스 관리 항목별 이유 문단, 팀원의 5가지 협업 책임을 보강했으며, branch workspace와 report index를 연결했다.
+- Verified: `rg -n "AskLake 협업 하네스 사용 가이드|3분 요약|작업 문맥을 저장|문맥을 저장해서 협업 책임|저장된 문맥|도구 한계 이해 책임|AI에게 책임을 넘기는 것이 아니라|AI가 도와줄 수 있는 범위|AI가 할 수 있는 일과 사람이 판단|스코프 이해 책임|사람은 자기 스코프를 이해|문맥 충분성 확인 책임|작업 문맥 초안|다음 사람이 오해 없이|이 책임을 지키면|이 책임을 놓치면|주의할 점|하네스를 잘 쓰면 생기는 실전 이점|병렬 작업이 가능|PR이 작아진다|인수인계가 쉬워진다|merge 전에 문제를 작게|크게 터질 문제를 앞에서 작게|이 하네스를 쓰면 좋아지는 것|팀이 길을 덜 잃습니다|협업 안전장치|AI 설명이 애매하면 다시 묻는다|공유 문맥 정렬 책임|AI는 판단 재료를 정리한다|모르면 묻는 것도 책임|한 번에 여러 일을 섞지 않고|코드 변경만 보고는 작업 범위|팀의 공식 기준|PR 생성은 공유이고, merge는 별도 승인|하네스를 쓰는 팀원의 5가지 책임|맡은 기능을 구현한다|왜 그렇게 구현했는지 설명할 수 있다|인터페이스를 지킨다|AI는 손과 기록 담당이다|하네스를 사용할 때 사람의 책임과 AI의 책임|AI는 책임을 대신 지지 않는다|Pre-PR Human Checkpoint|팀원이 기억할 최소 규칙" docs/reports/collaboration-harness-team-usage-guide.md docs/reports/README.md`, `git diff --check`, `scripts/validate-harness.sh`, `scripts/validate-harness.sh --strict`
+- Remaining: 팀 리뷰 뒤 실제 팀 표현, 실습 예시, 발표 자료가 필요하면 후속 Phase로 보강한다.
+- Next context: 팀원은 이 guide를 먼저 읽고 Phase 시작, mid-phase steering, 확인 gate, PR/merge 경계를 자연어 요청으로 다룬다.
+- Risk: 이 문서는 Source of Truth 규칙 변경이 아니라 설명/온보딩 guide다. 공식 workflow 변경이 필요하면 별도 Source of Truth 전파 Phase가 필요하다.
+
+---
+
+## Phase
+
+- Type: docs
+- Branch/work location: `docs/collaboration-harness-team-guide`, `docs/workflows/docs/collaboration-harness-team-guide`
+- Date: 2026-06-28
+- Workspace state: complete
+
+## Reference Docs / 참고 문서
+
+- `AGENTS.md`
+- `docs/00-layer-map.md`
+- `docs/08-development-workflow.md`
+- `docs/09-collaboration-agreement.md`
+- `docs/10-next-action-menu.md`
+- `docs/11-git-sync-policy.md`
+- `docs/13-human-command-flow.md`
+- 17주차 참고 양식: `AskLake/06_AskLake_MVP와_데모전략_학습.md`
+- 17주차 참고 양식: `study/04-backend-control-security-observability-template.md`
+
+## Goal / 목표
+
+- 팀원들이 하네스의 작업 흐름, 사람/AI 책임 경계, 확인 게이트, PR/merge 경계, 문서 기록 방식을 이해해서 하네스 도입자 한 사람이 운영 부담을 혼자 지지 않도록 팀 공통 사용 가이드를 만든다.
+
+## Changed Files / 변경 파일
+
+- `docs/reports/collaboration-harness-team-usage-guide.md`
+- `docs/reports/collaboration-harness-team-guide-report.md`
+- `docs/reports/README.md`
+- `docs/workflows/docs/collaboration-harness-team-guide/plan.md`
+- `docs/workflows/docs/collaboration-harness-team-guide/notes.md`
+- `docs/workflows/docs/collaboration-harness-team-guide/quality.md`
+- `docs/workflows/docs/collaboration-harness-team-guide/sync.md`
+- `docs/workflows/docs/collaboration-harness-team-guide/confirmations.md`
+- `docs/workflows/docs/collaboration-harness-team-guide/decisions.md`
+- `docs/workflows/docs/collaboration-harness-team-guide/shared-docs.md`
+- `docs/workflows/docs/collaboration-harness-team-guide/next-actions.md`
+- `docs/workflows/docs/collaboration-harness-team-guide/report.md`
+
+## Implementation Summary / 구현 요약
+
+- 기존 "도입자 책임 설명" 관점이 아니라 "팀원이 실제로 어떻게 요청하고 확인해야 하는지"를 중심으로 문서를 작성했다.
+- 처음 보는 팀원도 앞부분만 읽고 핵심을 잡을 수 있도록 `3분 요약`과 안전한 요청/위험한 요청 예시를 추가했다.
+- 사람/AI 책임 섹션과 팀원의 5가지 책임 섹션을 사용법 설명보다 앞에 배치해, 책임 경계를 이해한 뒤 작업 흐름을 읽도록 재구성했다.
+- `이 하네스를 왜 쓰는가`에서 하네스의 핵심 기능을 작업 문맥 저장으로 먼저 설명하고, 책임 분리는 저장된 문맥으로 생기는 결과로 분리했다.
+- 도구 한계 이해 책임을 추가해 AI가 도와줄 수 있는 일과 사람이 판단해야 할 일을 구분하는 것이 하네스 사용자의 기본 책임임을 명시했다.
+- 스코프 이해 책임을 추가해 사람이 자기 작업 범위, 제외 범위, 완료 기준을 이해한 뒤 AI에게 작업을 요청해야 함을 명시했다.
+- 하네스가 문맥을 자동 완성하는 것이 아니라 AI가 작업 문맥 초안을 만들고 사람이 문맥 충분성을 확인해야 한다는 책임 경계를 추가했다.
+- 각 책임을 지켰을 때 얻는 이점, 놓쳤을 때의 리스크, 주의할 점을 함께 설명해 팀원이 책임의 목적을 이해할 수 있게 했다.
+- 책임이 실제 운영에서 작은 PR, 병렬 작업, 인수인계, AI 위임, 결정 기록, merge 전 위험 축소로 이어지는 실전 이점 섹션을 추가했다.
+- 팀원이 문서를 읽을 동기를 얻을 수 있도록 하네스를 썼을 때 좋아지는 협업/프로젝트 진행 효과를 앞부분에 설명했다.
+- 사람이 AI 설명을 이해했는지 확인하고, 모호하면 다시 묻고, 같은 문맥으로 맞춘 뒤 결정하는 `공유 문맥 정렬 책임`을 추가했다.
+- `협업 하네스란 무엇인가`에서 표 대신 짧은 문단으로 각 구성 요소가 필요한 이유를 바로 확인할 수 있게 했다.
+- 하네스에서 사람은 작업 요청자이자 결정 승인자이고, AI는 작업 실행자이자 상태 기록자라는 책임 구분을 추가했다.
+- 협업에서 팀원이 지켜야 할 5가지 책임을 `plan.md`, `Scope Confirm`, `decisions.md`, `quality.md`, `docs/03`, `Source of Truth Impact Gate`, `sync.md` 같은 하네스 장치와 연결했다.
+- `사람의 책임 / AI의 책임`, `사람이 확인해야 할 질문 / AI에게 시킬 수 있는 일`, `나쁜 응답 / 왜 위험한가 / 더 나은 응답` 표를 추가했다.
+- Phase, branch workspace, Source of Truth, confirmation gate, PR 생성과 merge의 차이를 초보자용 문장으로 정리했다.
+- `상황 / 팀원이 할 말 / AI가 하는 일`, `AI가 자동으로 할 수 있는 일 / 사람 확인이 필요한 일 / 이유`, `좋은 요청 / 애매한 요청 / 더 나은 표현`, `확인 게이트 / 언제 발생하는가 / 팀원이 결정할 것` 표를 포함했다.
+- Phase 시작부터 PR 생성 뒤 Pre-PR Human Checkpoint까지 Mermaid 흐름도를 포함했다.
+- 기존 `collaboration-harness-beginner-guide*`는 보존하고 새 팀원 사용 guide를 별도 파일로 추가했다.
+
+## Skill / Tool Usage / skill 또는 tool 사용
+
+- Used skill/plugin/tool: default filesystem/git tooling, `apply_patch`
+- Reason: Markdown 문서와 하네스 workspace evidence 작성 작업
+- Impact: 특화 skill 없이 repo-local 문서 규칙과 하네스 validation을 따랐다.
+- Not used because: 문서/PDF/PPTX 산출물이 아니라 Markdown guide 작성이다.
+
+## Context Budget Evidence / 컨텍스트 예산 증거
+
+- Context Budget mode: Lite Read
+- Primary context read: `AGENTS.md`, `docs/00-layer-map.md`, `docs/08-development-workflow.md`, `docs/09-collaboration-agreement.md`, `docs/10-next-action-menu.md`, `docs/11-git-sync-policy.md`, `docs/13-human-command-flow.md`
+- Escalated context read: 사용자 지정 17주차 양식 파일 2개
+- Context omitted intentionally: runtime code internals, unrelated Week2 feature reports, unrelated branch workspaces
+
+## Verification Commands / 검증 명령
+
+```bash
+rg -n "AskLake 협업 하네스 사용 가이드|3분 요약|작업 문맥을 저장|문맥을 저장해서 협업 책임|저장된 문맥|도구 한계 이해 책임|AI에게 책임을 넘기는 것이 아니라|AI가 도와줄 수 있는 범위|AI가 할 수 있는 일과 사람이 판단|스코프 이해 책임|사람은 자기 스코프를 이해|문맥 충분성 확인 책임|작업 문맥 초안|다음 사람이 오해 없이|이 책임을 지키면|이 책임을 놓치면|주의할 점|하네스를 잘 쓰면 생기는 실전 이점|병렬 작업이 가능|PR이 작아진다|인수인계가 쉬워진다|merge 전에 문제를 작게|크게 터질 문제를 앞에서 작게|이 하네스를 쓰면 좋아지는 것|팀이 길을 덜 잃습니다|협업 안전장치|AI 설명이 애매하면 다시 묻는다|공유 문맥 정렬 책임|AI는 판단 재료를 정리한다|모르면 묻는 것도 책임|한 번에 여러 일을 섞지 않고|코드 변경만 보고는 작업 범위|팀의 공식 기준|PR 생성은 공유이고, merge는 별도 승인|하네스를 쓰는 팀원의 5가지 책임|맡은 기능을 구현한다|왜 그렇게 구현했는지 설명할 수 있다|인터페이스를 지킨다|AI는 손과 기록 담당이다|하네스를 사용할 때 사람의 책임과 AI의 책임|AI는 책임을 대신 지지 않는다|Pre-PR Human Checkpoint|팀원이 기억할 최소 규칙" docs/reports/collaboration-harness-team-usage-guide.md docs/reports/README.md
+git diff --check
+scripts/validate-harness.sh
+scripts/validate-harness.sh --strict
+```
+
+## Quality Gate Evidence / 품질 게이트 증거
+
+- Workspace file: `docs/workflows/docs/collaboration-harness-team-guide/quality.md`
+- Quality gate status: passed
+- TDD status: not applicable; docs-only learning guide
+- CI/check result: local docs/harness validation passed
+- Skipped checks: frontend/backend test/build skipped because runtime code did not change
+- CD/deploy gate: not required
+
+## Decision Evidence / 결정 증거
+
+- Workspace file: `docs/workflows/docs/collaboration-harness-team-guide/decisions.md`
+- Decision status: accepted
+- Accepted/deferred decisions: guide 위치는 `docs/reports/`, Source of Truth 정식 반영은 필요 시 후속 Phase로 보류
+- Revisit/rollback condition: 팀이 guide를 공식 운영 규칙으로 승격하거나 별도 onboarding folder를 원할 때 이동/전파 Phase를 연다.
+
+## Regression Guard / 회귀 보호
+
+- Checked feature: 협업 하네스 설명/온보딩 guide
+- Protected behavior: PR 생성과 merge/finalize/cleanup의 경계를 흐리지 않고, 사람 확인 gate를 팀원이 이해할 수 있게 유지한다.
+- Result: passed
+
+## Failure Scenario / 실패 시나리오
+
+- Reviewed failure: 팀원이 `올려줘`, `진행해`, `알아서 해줘` 같은 애매한 요청으로 PR 생성과 merge 승인을 혼동하거나 AI가 책임을 대신 진다고 오해하는 상황. 또한 AI 설명을 이해하지 못한 상태로 승인하거나, 맡은 기능, 구현 이유, 문제 해결, 인터페이스, 팀 영향 책임을 놓치는 상황.
+- Expected behavior: guide가 `PR만 올려줘`, `현재 PR 진행해`, `scope가 커지면 먼저 물어봐줘`, `검증 결과와 남은 위험을 보고 완료 처리해`, `추천안이 A인 이유를 한 문장으로 다시 설명해줘`, `API 응답이 바뀌는지 먼저 확인해줘` 같은 더 나은 표현을 제시한다.
+- Verification: 문서 내 요청 예시와 PR/merge 경계 섹션 확인
+- Result: passed
+
+## Manual Verification / 수동 검증
+
+- Document executed: documentation review only
+- Environment: local Markdown files
+- Result: guide가 제목, 목차, 핵심 메시지, Mermaid 흐름도, 표, FAQ, 체크리스트를 포함한다.
+- Failure/limitation: 실제 팀 온보딩 세션에서 이해도 테스트는 아직 수행하지 않았다.
+- Evidence: `docs/reports/collaboration-harness-team-usage-guide.md`
+
+## docs/05 Acceptance Link / 수용 기준 연결
+
+- Related item: documentation-only team collaboration guide
+- Status: passed by local documentation review
+- Evidence: guide artifact and harness validation
+
+## Document Updates / 문서 업데이트
+
+- Updated: `docs/reports/collaboration-harness-team-usage-guide.md`, `docs/reports/README.md`, branch workspace, Phase report
+- Not updated and why: `docs/01`~`docs/13` Source of Truth 문서는 규칙/제품/API/검증 계약 변경이 아니므로 수정하지 않았다.
+
+## Failed / Incomplete / Follow-Up TODO
+
+- 팀 리뷰 뒤 구체 팀 사례, 실습 문제, 발표 자료가 필요하면 별도 Phase로 보강한다.
+
+## Context For Next Phase / 다음 Phase 문맥
+
+- 다음 Phase 후보: `협업 하네스 실습 체크리스트`, `팀 온보딩 발표 자료`, `PR/merge 요청 문장 cheat sheet`
+
+## Secret / Migration / Env Check
+
+- Secret check: no secrets added
+- Migration/data change: none
+- Env change: none
+
+## Final Judgment / 최종 판단
+
+- Done: yes
+- Remaining risk: guide는 설명 문서라 실제 팀 적용 후 피드백에 따라 문구와 예시를 조정해야 할 수 있다.

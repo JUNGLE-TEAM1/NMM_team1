@@ -25,6 +25,20 @@ M1 UI shell은 이미 `frontend/src/app/App.jsx`, `frontend/src/app/m1StaticShel
 | 4 | M1 AI Query Live UI | `/ask`에서 M6 `AIQueryResult`를 표시 | question -> SQL/rows/summary/evidence 표시 |
 | 5 | M1 Demo Click Flow Polish | 발표 순서 CTA와 상태 전이를 연결 | run -> catalog -> query 흐름 완주 |
 
+## 후속 Phase Queue - 2026-06-28 기준
+
+아래 Phase들은 M1이 현재 바로 진행할 수 있는 후속 작업이다. M2/M3/M5/M6의 backend 책임을 대신 구현하지 않고, 화면 검증과 방어적 표시를 보강한다.
+
+| Phase | 이름 | Branch workspace | 핵심 목표 | 선행 조건 |
+| --- | --- | --- | --- | --- |
+| 6 | M1 final browser smoke | `docs/workflows/feature/m1-final-browser-smoke` | 최신 main 기준 `/etl -> /catalog -> /query` browser smoke 증거 기록 | PR #223 merge 완료 |
+| 7 | M1 query route trace UI | `docs/workflows/feature/m1-query-route-trace-ui` | M6 `AIQueryResult.route`와 `retrieval_trace` 표시 | M6 response contract trace merge |
+| 8 | M1 product health readiness UI | `docs/workflows/feature/m1-product-health-readiness-ui` | `dataset_product_health_gold` 미준비/준비 상태를 fake success 없이 표시 | Product Health 대표 경로 기준 확정 |
+| 9 | M1 product health demo CTA | `docs/workflows/feature/m1-product-health-demo-cta` | M6 planner intent에 맞춘 Product Health 질문 버튼 추가 | M6 SQL planner intent merge |
+| 10 | M1 demo readiness panel | `docs/workflows/feature/m1-demo-readiness-panel` | M2/M3/M5/M6/M1 readiness를 발표 화면에서 요약 | Phase 6 결과 또는 현재 report 기준 |
+
+후속 Phase 실행 순서는 6 -> 7 -> 8 -> 9 -> 10을 권장한다. Phase 6은 검증 전용이므로 먼저 수행하면 실제 UI 보강의 필요 지점을 더 정확히 알 수 있다.
+
 ## 공통 제외 범위
 
 아래 항목은 모든 M1 Phase에서 제외한다.
