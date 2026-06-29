@@ -215,6 +215,107 @@ Integration Spine:
 - Query / Policy mock은 실제 권한 엔진, 실제 데이터 접근, Trino, 외부 LLM 호출을 포함하지 않는다. 이 경계를 넘으면 `docs/14-decision-option-brief.md`와 workstream `decisions.md`가 필요하다.
 - 제외 후보: 실제 고급 PII 탐지, Trino, 외부 LLM, production cloud resource.
 
+## Data Integration UX Rebuild Queue
+
+상태: Superseded.
+
+회의 피드백에 따라 데이터 통합 화면은 AskLake 데모의 주 무대로 다룬다.
+먼저 화면을 비우고, XFlow의 기본 생성 흐름을 read-only reference로 삼아 `Source -> Transform -> Target -> Run`을 작은 확인 단위로 다시 쌓는다.
+각 Phase는 독립 확인 가능해야 하며, 이전 Phase를 사람이 확인한 뒤 다음 Phase를 시작한다.
+
+2026-06-29 논의 결과, 이 큐는 generic pipeline/job 생성 흐름으로 보이는 문제가 있어 `Dataset Creation UX Reframe Queue`로 대체한다.
+이미 생성/구현된 `data-integration-*` workspace는 삭제하지 않고 prototype evidence로 보존한다.
+아직 구현 전이던 `feature/data-integration-review-run-step`은 보류하고, target dataset 생성의 Review/Scheduling Phase로 재구성한다.
+
+| 순서 | Branch / workspace | 목표 | 선행 조건 | 완료 기준 |
+| --- | --- | --- | --- | --- |
+| A | `feature/data-integration-screen-reset` | 데이터 통합 화면의 보조 컨테이너와 내부 placeholder를 걷어내고 최소 진입점만 남긴다 | 사람의 데이터 통합 UX 재구성 결정 | 화면 목적이 "파이프라인을 만드는 곳"으로 보이고 다른 nav/API/schema 변경이 없음 |
+| B-1 | `feature/data-integration-flow-skeleton` | `Source -> Transform -> Target -> Run` 4단계 skeleton을 카드/stepper로 표시한다 | A 완료 또는 사람 확인 | 4단계 순서와 상태 label이 보이고 실제 동작은 아직 약속하지 않음 |
+| B-2 | `feature/data-integration-source-step` | Source step에서 source를 선택하고 Source 카드 상태에 반영한다 | B-1 완료 또는 사람 확인 | source 선택/empty state/schema preview 자리가 확인됨 |
+| B-3 | `feature/data-integration-transform-step` | Transform step에 `Select Fields` 컬럼 선택 UX를 추가한다 | B-2 완료 또는 사람 확인 | 선택 컬럼이 Transform 카드에 요약되고 추가 transform은 제외됨 |
+| B-3.5 | `feature/data-integration-wizard-flow` | 데이터 통합 화면을 AWS 설정 wizard처럼 한 번에 한 단계만 보이는 흐름으로 보완한다 | B-3 완료 또는 사람 확인 | Source 선택 -> Transform 설정 -> 뒤로가기/다음 흐름이 확인되고 기존 Source/Transform 기능이 유지됨 |
+| B-4 | `feature/data-integration-target-step` | Target step에 `target_name` 입력을 추가한다 | B-3.5 완료 또는 사람 확인 | 결과 dataset 이름이 Target 카드와 Review 준비 상태에 반영됨 |
+| B-5 | `feature/data-integration-review-run-step` | Review & Run에서 기존 pipeline create/run API를 호출하고 최소 실행 결과를 표시한다 | B-4 완료 또는 사람 확인 | validation, create/run, status/row count/result location 또는 error 표시가 확인됨 |
+
+범위 원칙:
+
+- XFlow는 UX 구조 참고용이며 코드를 복사하지 않는다.
+- full visual canvas, schedule, permission, lineage, CDC, streaming은 이 큐의 초기 범위가 아니다.
+- 상세 evidence panel, Catalog deep integration, Week2 workflow 연결은 B-5 이후 별도 Phase로 판단한다.
+- 각 Phase는 `docs/workflows/feature/data-integration-*/plan.md`를 기준으로 실행하고 report와 quality evidence를 남긴다.
+
+## Dataset Creation UX Reframe Queue
+
+상태: Superseded by `Dataset Creation IA Reframe Queue`.
+
+데모의 주 화면은 "데이터 통합"이 아니라 "데이터셋" 관리와 생성으로 재정의한다.
+`데이터셋 생성`을 누르면 먼저 Source Dataset과 Target Dataset 중 하나를 고르고, 이후 각 dataset type에 맞는 짧은 wizard로 이동한다.
+Target Dataset 생성은 XFlow처럼 source를 선택하고 process/schedule/review를 거쳐 output dataset과 ETL job definition을 함께 준비하는 흐름으로 표현한다.
+
+2026-06-29 논의 결과, 이 큐는 외부 데이터 연결 설정 단계가 빠져 Source Dataset 생성이 이미 등록된 데이터셋을 다시 고르는 것처럼 보이는 문제가 있었다.
+기존 `D-*` workspace는 구현 evidence로 보존하되, 후속 작업은 아래 `R-*` 큐를 기준으로 진행한다.
+
+| 순서 | Branch / workspace | 목표 | 선행 조건 | 완료 기준 |
+| --- | --- | --- | --- | --- |
+| D-1 | `feature/dataset-section-reframe` | nav/page title/empty copy를 `데이터셋` 중심으로 바꾸고 pipeline wording을 줄인다 | 기존 transform output preview 확인 | 화면 목적이 dataset 관리와 생성으로 읽히고 기존 source/transform demo state가 깨지지 않음 |
+| D-2 | `feature/dataset-create-type-choice` | `데이터셋 생성` 버튼에서 Source Dataset / Target Dataset 선택 modal을 연다 | D-1 완료 또는 사람 확인 | 두 선택지가 보이고 선택 후 각 wizard mode로 진입할 수 있음 |
+| D-3 | `feature/source-dataset-create-wizard` | Source Dataset 생성 3단계 wizard를 추가한다: 데이터 소스 선택, Configure, Review | D-2 완료 또는 사람 확인 | CSV/Kafka/PostgreSQL/MongoDB/API/S3 같은 source type 선택과 configure/review 흐름이 확인됨 |
+| D-4 | `feature/target-dataset-create-wizard-reframe` | 기존 generic flow를 Target Dataset 생성으로 재구성한다: Overview, Source 선택, Process | D-2 완료 또는 사람 확인 | target dataset 이름/설명, source 선택, field/process preview가 한 흐름으로 보임 |
+| D-5 | `feature/target-dataset-scheduling-review` | Target Dataset 생성에 Scheduling과 Review를 추가한다 | D-4 완료 또는 사람 확인 | schedule 기본값과 최종 review summary가 보이며 실제 backend 실행은 약속하지 않음 |
+
+범위 원칙:
+
+- 기존 `data-integration-*` 구현은 재사용 가능한 UI 재료로만 취급한다.
+- Source Dataset 생성은 connector 등록/metadata draft 시나리오이며 실제 credential 저장, 연결 테스트, backend schema 변경은 제외한다.
+- Target Dataset 생성은 output dataset과 ETL job definition을 준비하는 demo 시나리오이며 즉시 실행, run history, lineage, permission은 제외한다.
+- 각 Phase는 작게 구현하고, 사람이 화면을 확인한 뒤 다음 Phase로 진행한다.
+
+## Dataset Creation IA Reframe Queue
+
+데이터셋 생성 구조는 `External Connection -> Source Dataset -> Target Dataset` 순서로 재정의한다.
+External Connection은 외부 원천에 접속하기 위한 연결 설정이고, Source Dataset은 등록된 연결에서 raw/source table을 만드는 정의이며, Target Dataset은 Source Dataset을 가공해 output dataset과 ETL job definition을 준비하는 흐름이다.
+
+| 순서 | Branch / workspace | 목표 | 선행 조건 | 완료 기준 |
+| --- | --- | --- | --- | --- |
+| R-1 | `feature/dataset-creation-ia-reframe` | `데이터셋 생성` 선택지를 External Connection / Source Dataset / Target Dataset 3개로 재정의하고 화면 문구를 맞춘다 | 현재 PR 화면 또는 사람 확인 | 세 생성 유형의 역할이 구분되고, 기존 Source/Target 플로우는 아직 깊게 재작성하지 않음 |
+| R-2 | `feature/external-connection-create-wizard` | External Connection 생성 wizard를 추가한다: connector type, configure, review | R-1 완료 또는 사람 확인 | CSV/Kafka/PostgreSQL/S3/API 같은 외부 연결 설정 demo flow가 보이며 credential 저장/API 호출은 없음 |
+| R-3 | `feature/source-dataset-from-connection-wizard` | Source Dataset 생성 wizard를 등록된 External Connection 기반으로 보정한다: connection 선택, raw dataset configure, review | R-2 완료 또는 사람 확인 | 이미 등록된 Source Dataset 카드가 아니라 External Connection을 선택해 raw/source dataset을 만드는 구조로 보임 |
+| R-4 | `feature/target-dataset-job-alignment` | Target Dataset 생성 wizard 문구와 review를 ETL job definition 중심으로 정렬한다 | R-3 완료 또는 사람 확인 | Source Dataset 선택 -> process -> scheduling -> target dataset + ETL job 요약이 일관되게 보임 |
+
+범위 원칙:
+
+- External Connection은 연결 설정 demo이며 실제 secret, credential 저장, 연결 테스트는 제외한다.
+- Source Dataset은 데이터 레이크 raw/source 영역에 저장되는 원본 데이터셋 정의로 표현한다.
+- Target Dataset은 Source Dataset 기반의 가공 결과와 ETL job definition을 함께 준비하는 demo 시나리오로 표현한다.
+- 기존 `D-*` 구현은 R-1 이후 재사용 가능한 UI 재료로만 취급하고, 잘못된 개념 문구는 각 R Phase에서 제거한다.
+- 각 Phase는 독립 확인 가능해야 하며, 사람이 화면을 확인한 뒤 다음 Phase로 진행한다.
+
+## Dataset Module Connection Queue
+
+상태: Ready after PR #284 merge or explicit human confirmation to stack on current branch.
+
+`R-*` 큐가 정리한 draft UX를 실제 AskLake module 계약에 연결한다.
+연결 순서는 `External Connection persistence -> Source Dataset persistence -> Target Dataset + ETL Job draft -> M5 Run -> M2/M4 runtime evidence -> M3 CatalogMetadata -> M6 AI Query context`로 둔다.
+
+| 순서 | Branch / workspace | 목표 | 선행 조건 | 완료 기준 |
+| --- | --- | --- | --- | --- |
+| C-1 | `feature/external-connection-persistence` | External Connection 생성/목록 API를 추가하고 UI mock connection card를 API 응답으로 교체한다 | PR #284 merge 또는 사람 확인 | External Connection draft가 저장/조회되고 credential secret은 저장하지 않음 |
+| C-2 | `feature/source-dataset-persistence` | 등록된 External Connection에서 Source Dataset 생성/목록 API를 연결한다 | C-1 완료 또는 사람 확인 | Source Dataset이 connection id, raw scope, schema preview draft를 가진 metadata로 저장/조회됨 |
+| C-3 | `feature/target-dataset-job-draft` | Target Dataset과 ETL job definition draft 저장을 연결한다 | C-2 완료 또는 사람 확인 | Target Dataset review 결과가 source reference, process, schedule, job definition draft로 저장됨 |
+| C-4 | `feature/target-dataset-run-handoff` | 저장된 ETL job definition을 M5 workflow/run 생성으로 넘긴다 | C-3 완료 또는 사람 확인 | Target Dataset에서 run을 만들고 run status를 조회할 수 있음 |
+| C-5 | `feature/runtime-evidence-integration` | M2 batch/runtime과 M4 Kafka evidence를 run output evidence로 연결한다 | C-4 완료 또는 사람 확인 | ExecutionResult에 row count, bytes, duration, output path, Kafka replay evidence가 일관되게 남음 |
+| C-6 | `feature/catalog-metadata-integration` | 실행 결과를 M3/M5 CatalogMetadata로 등록하고 데이터 카탈로그 화면에 반영한다 | C-5 완료 또는 사람 확인 | CatalogMetadata가 schema, storage, metrics, lineage, SQL allowlist context를 제공함 |
+| C-7 | `feature/ai-query-dataset-context` | M6 AI Query가 CatalogMetadata와 Target Dataset context를 읽어 질문/SQL 결과를 만든다 | C-6 완료 또는 사람 확인 | AI Query가 선택된 dataset context로 read-only SQL/evidence 결과를 표시함 |
+
+범위 원칙:
+
+- PR #284의 화면 구조가 기준선이다. 연결 Phase는 UX를 다시 크게 바꾸지 않는다.
+- C-1에서 실제 credential secret 저장, 연결 테스트, production connector 실행은 제외한다.
+- C-2에서 ingest/run 실행은 제외하고 Source Dataset metadata 저장까지만 닫는다.
+- C-3에서 ETL job은 draft definition까지 저장하고 실행은 C-4 이후로 넘긴다.
+- C-4 이후 M5 실행 화면은 `M5 데모`가 아니라 `Job Runs` 또는 `실행 기록` 같은 사용자 언어로 재도입한다.
+- M2/M4/M3/M6는 독립 메뉴가 아니라 Dataset creation 이후의 runtime, evidence, catalog, query 소비자로 연결한다.
+
 ## Local Environment Follow-up Queue
 
 로컬 환경 요구사항은 `docs/04-development-guide.md`를 Source of Truth로 둔다.
