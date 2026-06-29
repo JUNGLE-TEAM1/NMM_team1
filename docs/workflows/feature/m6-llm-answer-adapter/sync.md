@@ -21,11 +21,11 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 
 ## Pre-Merge Sync
 
-- main commit:
-- conflicts: not checked by merge/rebase; feature branch local validation passed
-- validation: full backend, JSON contract, diff check, harness, strict harness passed locally
-- result: ready for PR preparation after user request
-- deferral reason: 사람 확인 없이 pull/merge/rebase/PR merge를 실행하지 않음
+- main commit: `31cf417`
+- conflicts: none; `git merge origin/main` completed with ort auto-merge
+- validation: full backend `106 passed, 1 skipped`; `jq -e . contracts/*.sample.json`; `python -m compileall -q backend/app`; `git diff --check`; `scripts/validate-harness.sh --strict`
+- result: latest `origin/main` merged into `feature/m6-llm-answer-adapter`; ready for PR creation and merge flow
+- deferral reason:
 
 ## PR Conflict Resolution
 
