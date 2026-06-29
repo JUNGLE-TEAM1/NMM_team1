@@ -71,6 +71,14 @@ data/results/week2/_metadata/kafka_replay/<run_id>.json
 data/results/week2/_metadata/kafka_replay/latest.json
 ```
 
+환경변수로 저장 위치와 보관 기준을 조정할 수 있다.
+
+```bash
+KAFKA_REPLAY_EVIDENCE_DIR=data/results/week2/_metadata/kafka_replay
+KAFKA_REPLAY_DEAD_LETTER_DIR=data/results/week2/_metadata/kafka_replay/dead-letter
+KAFKA_REPLAY_EVIDENCE_RETENTION_DAYS=7
+```
+
 backend가 켜져 있으면 아래 API로 같은 evidence를 확인한다.
 
 ```bash
@@ -84,6 +92,7 @@ curl -fsS http://localhost:8000/api/week2/kafka-replay/runs/<run_id>
 - `contract`가 `KafkaReplayEvidence`다.
 - `metrics.sent_rows`가 replay로 보낸 row 수와 맞는다.
 - `metrics.error_count`가 실패 시나리오가 아니면 `0`이다.
+- 실패한 producer batch가 있으면 `dead_letter_path`가 채워지고 `KAFKA_REPLAY_DEAD_LETTER_DIR/<run_id>.jsonl`에 실패 row가 남는다.
 - `lineage.source_file`에서 `lineage.kafka_topic`으로 흐름이 남는다.
 - `health.status`가 실행 중에는 `running`, 완료 뒤에는 `ok`다.
 
