@@ -118,6 +118,19 @@ PYTHONPATH=backend .venv/bin/python scripts/week2_m2_airflow_sparkrunner_handoff
 
 Target MVP 기능이 구현될 때 아래 경로를 단계별로 실제 manual verification 문서로 승격한다.
 
+### Dataset Module Source Dataset C-2 점검
+
+1. backend와 frontend를 실행한다.
+2. `/sources` 데이터셋 화면에서 `데이터셋 생성`을 누른다.
+3. `Source Dataset`을 선택한다.
+4. 1단계에서 등록된 External Connection 하나를 선택하고 schema preview가 표시되는지 확인한다.
+5. 2단계에서 `source_dataset_name`과 raw scope를 확인 또는 수정한다.
+6. 3단계 Review에서 `Source dataset 저장`을 누른다.
+7. 성공 알림이 표시되고 버튼이 `Source dataset 저장됨` 상태가 되는지 확인한다.
+8. `GET /api/source-datasets` 응답에 방금 저장한 dataset의 `connection_id`, `raw_scope`, `schema_preview`, `layer=source`, `status=metadata_ready`가 있는지 확인한다.
+9. `데이터셋 생성 -> Target Dataset -> Source 선택`에서 저장된 Source Dataset이 후보로 표시되는지 확인한다.
+10. 화면 어디에서도 ingest job, raw table creation, ETL 실행 완료처럼 보이지 않는지 확인한다.
+
 ### Modular Contract Baseline 점검
 
 1. `docs/03-interface-reference.md`에 `Dataset`, `TrustGateResult`, `PolicyDecision`, `EvidenceItem`, `AuditEvent` 같은 shared contract가 있는지 확인한다.

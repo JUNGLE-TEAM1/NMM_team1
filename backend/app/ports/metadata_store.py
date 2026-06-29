@@ -7,6 +7,8 @@ from app.domain.schemas import (
     PipelineRecord,
     PipelineRunRecord,
     SourceCreate,
+    SourceDatasetCreate,
+    SourceDatasetRecord,
     SourceRecord,
 )
 
@@ -25,6 +27,12 @@ class MetadataStore(Protocol):
     def list_sources(self) -> list[SourceRecord]: ...
 
     def get_source(self, source_id: str) -> SourceRecord | None: ...
+
+    def create_source_dataset(self, dataset: SourceDatasetCreate) -> SourceDatasetRecord: ...
+
+    def list_source_datasets(self) -> list[SourceDatasetRecord]: ...
+
+    def get_source_dataset(self, dataset_id: str) -> SourceDatasetRecord | None: ...
 
     def list_catalog_datasets(self) -> list[CatalogDataset]: ...
 

@@ -12,6 +12,8 @@ from app.domain.schemas import (
     PipelineRecord,
     PipelineRunRecord,
     SourceCreate,
+    SourceDatasetCreate,
+    SourceDatasetRecord,
     SourceRecord,
 )
 
@@ -54,6 +56,21 @@ class SQLiteMetadataStore:
                     error_message TEXT,
                     created_at TEXT NOT NULL,
                     FOREIGN KEY(source_id) REFERENCES sources(id)
+                );
+
+                CREATE TABLE IF NOT EXISTS source_datasets (
+                    id TEXT PRIMARY KEY,
+                    connection_id TEXT NOT NULL,
+                    connection_name TEXT NOT NULL,
+                    connection_type TEXT NOT NULL,
+                    name TEXT NOT NULL UNIQUE,
+                    raw_scope TEXT NOT NULL,
+                    resource_label TEXT NOT NULL,
+                    schema_preview_json TEXT NOT NULL,
+                    layer TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
                 );
 
                 CREATE TABLE IF NOT EXISTS pipelines (
@@ -142,6 +159,51 @@ class SQLiteMetadataStore:
         with self.connect() as connection:
             row = connection.execute("SELECT * FROM sources WHERE id = ?", (source_id,)).fetchone()
         return source_from_row(row) if row else None
+
+    def create_source_dataset(self, dataset: SourceDatasetCreate) -> SourceDatasetRecord:
+        dataset_id = str(uuid.uuid4())
+        created_at = now_iso()
+        schema_preview = json.dumps(
+            [column.model_dump() for column in dataset.schema_preview],
+            ensure_ascii=False,
+        )
+
+        with self.connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO source_datasets (
+                    id, connection_id, connection_name, connection_type, name, raw_scope,
+                    resource_label, schema_preview_json, layer, status, created_at, updated_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    dataset_id,
+                    dataset.connection_id,
+                    dataset.connection_name,
+                    dataset.connection_type,
+                    dataset.name,
+                    dataset.raw_scope,
+                    dataset.resource_label,
+                    schema_preview,
+                    "source",
+                    "metadata_ready",
+                    created_at,
+                    created_at,
+                ),
+            )
+
+        return self.get_source_dataset(dataset_id)  # type: ignore[return-value]
+
+    def list_source_datasets(self) -> list[SourceDatasetRecord]:
+        with self.connect() as connection:
+            rows = connection.execute("SELECT * FROM source_datasets ORDER BY created_at DESC").fetchall()
+        return [source_dataset_from_row(row) for row in rows]
+
+    def get_source_dataset(self, dataset_id: str) -> SourceDatasetRecord | None:
+        with self.connect() as connection:
+            row = connection.execute("SELECT * FROM source_datasets WHERE id = ?", (dataset_id,)).fetchone()
+        return source_dataset_from_row(row) if row else None
 
     def list_catalog_datasets(self) -> list[CatalogDataset]:
         with self.connect() as connection:
@@ -375,6 +437,23 @@ def dataset_from_row(row: sqlite3.Row) -> CatalogDataset:
         trust_gate_result=json.loads(row["trust_gate_result_json"]) if row["trust_gate_result_json"] else None,
         error_message=row["error_message"],
         created_at=row["created_at"],
+    )
+
+
+def source_dataset_from_row(row: sqlite3.Row) -> SourceDatasetRecord:
+    return SourceDatasetRecord(
+        id=row["id"],
+        connection_id=row["connection_id"],
+        connection_name=row["connection_name"],
+        connection_type=row["connection_type"],
+        name=row["name"],
+        raw_scope=row["raw_scope"],
+        resource_label=row["resource_label"],
+        schema_preview=[ColumnSchema(**item) for item in json.loads(row["schema_preview_json"])],
+        layer=row["layer"],
+        status=row["status"],
+        created_at=row["created_at"],
+        updated_at=row["updated_at"],
     )
 
 

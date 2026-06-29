@@ -49,6 +49,31 @@ class SourceRegistration(BaseModel):
     dataset: CatalogDataset
 
 
+class SourceDatasetCreate(BaseModel):
+    connection_id: str = Field(min_length=1, max_length=120)
+    connection_name: str = Field(min_length=1, max_length=120)
+    connection_type: Literal["csv", "kafka", "postgres", "mongodb", "api", "s3"]
+    name: str = Field(min_length=1, max_length=120)
+    raw_scope: str = Field(min_length=1, max_length=500)
+    resource_label: str = Field(min_length=1, max_length=80)
+    schema_preview: list[ColumnSchema] = Field(min_length=1)
+
+
+class SourceDatasetRecord(BaseModel):
+    id: str
+    connection_id: str
+    connection_name: str
+    connection_type: str
+    name: str
+    raw_scope: str
+    resource_label: str
+    schema_preview: list[ColumnSchema]
+    layer: Literal["source"] = "source"
+    status: str
+    created_at: str
+    updated_at: str
+
+
 class TrustGateEvaluationRequest(BaseModel):
     owner: str | None = Field(default=None, min_length=1, max_length=80)
     passed_gates: list[str] = []

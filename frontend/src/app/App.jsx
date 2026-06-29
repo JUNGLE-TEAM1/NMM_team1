@@ -54,6 +54,7 @@ import {
   getWeek2Run,
   triggerWeek2Run,
 } from "../api/asklakeClient";
+import { createSourceDataset, listSourceDatasets } from "../api/sourceDatasetApi";
 import asklakeLogo from "../assets/asklake-logo.png";
 import { StatusPill } from "../components/StatusPill";
 import {
@@ -283,6 +284,32 @@ const sourceSortOptions = [
   { id: "status", label: "상태순" },
   { id: "columns", label: "컬럼 수 많은 순" },
 ];
+
+function normalizeDatasetName(value) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+}
+
+function mapSourceDatasetRecord(record, rankOffset = 100) {
+  const schema = (record.schema_preview || []).map((field) => ({
+    name: field.name,
+    type: field.type,
+    sample: field.sample || "metadata draft",
+  }));
+
+  return {
+    id: record.id,
+    name: record.name,
+    sourceType: record.connection_type,
+    typeLabel: record.connection_type.toUpperCase(),
+    status: "Metadata ready",
+    description: `${record.connection_name}에서 정의한 raw/source dataset입니다.`,
+    resource: record.raw_scope,
+    updatedLabel: "방금",
+    updatedRank: rankOffset,
+    columns: schema.map((field) => field.name),
+    schema,
+  };
+}
 
 const externalConnectionTypes = [
   {
@@ -672,6 +699,11 @@ function SourcesPage({ navigate, setNotice }) {
   const [sourceDraft, setSourceDraft] = useState(null);
   const [sourceDatasetName, setSourceDatasetName] = useState("source_product_health_reviews");
   const [sourceRawScope, setSourceRawScope] = useState("");
+  const [apiSourceDatasets, setApiSourceDatasets] = useState([]);
+  const [isSourceDatasetsLoading, setIsSourceDatasetsLoading] = useState(false);
+  const [sourceDatasetError, setSourceDatasetError] = useState("");
+  const [isSavingSourceDataset, setIsSavingSourceDataset] = useState(false);
+  const [lastCreatedSourceDatasetId, setLastCreatedSourceDatasetId] = useState("");
   const [selectedSource, setSelectedSource] = useState(null);
   const [selectedFields, setSelectedFields] = useState([]);
   const [targetName, setTargetName] = useState("dataset_product_health_gold");
@@ -686,6 +718,11 @@ function SourcesPage({ navigate, setNotice }) {
   const selectedOutputSchema = selectedSource
     ? selectedSource.schema.filter((field) => selectedFields.includes(field.name))
     : [];
+  const savedSourceDatasets = useMemo(
+    () => apiSourceDatasets.map((record, index) => mapSourceDatasetRecord(record, 100 + apiSourceDatasets.length - index)),
+    [apiSourceDatasets],
+  );
+  const sourceDatasets = savedSourceDatasets.length > 0 ? savedSourceDatasets : demoSourceDatasets;
   const wizardSteps = [
     {
       id: "overview",
@@ -766,9 +803,35 @@ function SourcesPage({ navigate, setNotice }) {
   const canGoNextSource =
     (currentSourceStep.id === "connection" && Boolean(sourceDraft)) ||
     (currentSourceStep.id === "raw-config" && Boolean(sourceDatasetName.trim() && sourceRawScope.trim()));
+  const canCreateSourceDataset =
+    Boolean(sourceDraft && sourceDatasetName.trim() && sourceRawScope.trim()) && !isSavingSourceDataset;
   const canGoNextConnection =
     (currentConnectionStep.id === "connector-type" && Boolean(selectedConnectionType)) ||
     (currentConnectionStep.id === "configure" && Boolean(connectionName.trim() && connectionResource.trim()));
+
+  useEffect(() => {
+    let isActive = true;
+    setIsSourceDatasetsLoading(true);
+    listSourceDatasets()
+      .then((records) => {
+        if (!isActive) return;
+        setApiSourceDatasets(records);
+        setSourceDatasetError("");
+      })
+      .catch((error) => {
+        if (!isActive) return;
+        setSourceDatasetError(error.message);
+      })
+      .finally(() => {
+        if (isActive) {
+          setIsSourceDatasetsLoading(false);
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
   function handleSourceSelect(source) {
     setSelectedSource(source);
@@ -779,9 +842,39 @@ function SourcesPage({ navigate, setNotice }) {
 
   function selectSourceConnection(connection) {
     setSourceDraft(connection);
-    setSourceDatasetName(`source_${connection.name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "")}`);
+    setSourceDatasetName(`source_${normalizeDatasetName(connection.name)}`);
     setSourceRawScope(connection.resource);
+    setLastCreatedSourceDatasetId("");
     setNotice(`${connection.name} external connection을 선택했습니다.`);
+  }
+
+  async function saveSourceDataset() {
+    if (!canCreateSourceDataset) return;
+    setIsSavingSourceDataset(true);
+    setSourceDatasetError("");
+
+    try {
+      const record = await createSourceDataset({
+        connection_id: sourceDraft.id,
+        connection_name: sourceDraft.name,
+        connection_type: sourceDraft.connectorId,
+        name: sourceDatasetName.trim(),
+        raw_scope: sourceRawScope.trim(),
+        resource_label: sourceDraft.resourceLabel,
+        schema_preview: sourceDraft.schema.map(({ name, type }) => ({ name, type })),
+      });
+      setApiSourceDatasets((records) => [record, ...records.filter((item) => item.id !== record.id)]);
+      const mappedSource = mapSourceDatasetRecord(record);
+      setSelectedSource(mappedSource);
+      setSelectedFields(mappedSource.columns);
+      setLastCreatedSourceDatasetId(record.id);
+      setNotice(`${record.name} Source Dataset metadata를 저장했습니다.`);
+    } catch (error) {
+      setSourceDatasetError(error.message);
+      setNotice(`Source Dataset 저장 실패: ${error.message}`);
+    } finally {
+      setIsSavingSourceDataset(false);
+    }
   }
 
   function toggleField(column) {
@@ -851,6 +944,12 @@ function SourcesPage({ navigate, setNotice }) {
   function openSourcePicker(purpose) {
     setSourceModalPurpose(purpose);
     setIsSourceModalOpen(true);
+    listSourceDatasets()
+      .then((records) => {
+        setApiSourceDatasets(records);
+        setSourceDatasetError("");
+      })
+      .catch((error) => setSourceDatasetError(error.message));
   }
 
   function goNextSource() {
@@ -1113,9 +1212,9 @@ function SourcesPage({ navigate, setNotice }) {
                   <ArrowRight size={16} />
                 </button>
               ) : (
-                <button type="button" className="primary-action" disabled>
-                  Source dataset draft 준비
-                  <CheckCircle2 size={16} />
+                <button type="button" className="primary-action" onClick={saveSourceDataset} disabled={!canCreateSourceDataset}>
+                  {isSavingSourceDataset ? "저장 중" : lastCreatedSourceDatasetId ? "Source dataset 저장됨" : "Source dataset 저장"}
+                  {isSavingSourceDataset ? <Loader2 size={16} className="spin-icon" /> : <CheckCircle2 size={16} />}
                 </button>
               )}
             </footer>
@@ -1284,8 +1383,14 @@ function SourcesPage({ navigate, setNotice }) {
         </div>
         <div className="wizard-placeholder compact">
           <CheckCircle2 size={22} />
-          <strong>실제 ingest job, raw table 생성, backend 저장은 아직 호출하지 않습니다</strong>
+          <strong>저장하면 Source Dataset metadata만 생성됩니다. ingest job과 raw table 생성은 실행하지 않습니다.</strong>
         </div>
+        {sourceDatasetError ? (
+          <div className="wizard-placeholder compact warning">
+            <AlertCircle size={22} />
+            <strong>{sourceDatasetError}</strong>
+          </div>
+        ) : null}
       </section>
     );
   }
@@ -1730,12 +1835,15 @@ function SourcesPage({ navigate, setNotice }) {
       ) : null}
       {isSourceModalOpen ? (
         <SourceStartModal
-          sources={demoSourceDatasets}
+          sources={sourceDatasets}
+          isLoading={isSourceDatasetsLoading}
+          error={sourceDatasetError}
           onClose={() => setIsSourceModalOpen(false)}
           onSelect={handleSourceSelect}
           onCreateNew={() => {
             setIsSourceModalOpen(false);
-            setNotice("새 source dataset 생성 화면은 다음 Phase에서 연결합니다.");
+            startDatasetCreation("source");
+            setNotice("Source Dataset 생성 화면으로 이동했습니다.");
           }}
         />
       ) : null}
@@ -1787,7 +1895,7 @@ function DatasetTypeChoiceModal({ onClose, onSelect }) {
   );
 }
 
-function SourceStartModal({ sources, onClose, onSelect, onCreateNew }) {
+function SourceStartModal({ sources, isLoading, error, onClose, onSelect, onCreateNew }) {
   const [selectedType, setSelectedType] = useState("all");
   const [query, setQuery] = useState("");
   const [sortBy, setSortBy] = useState("recent");
@@ -1881,7 +1989,19 @@ function SourceStartModal({ sources, onClose, onSelect, onCreateNew }) {
               </select>
             </label>
           </div>
-          {visibleSources.length > 0 ? (
+          {isLoading ? (
+            <EmptyState
+              icon={Loader2}
+              title="Source Dataset 목록을 불러오는 중입니다"
+              body="저장된 metadata를 확인하고 있습니다."
+            />
+          ) : error && sources.length === 0 ? (
+            <EmptyState
+              icon={AlertCircle}
+              title="API 목록을 불러오지 못했습니다"
+              body="데모 fallback 없이 backend 연결을 다시 확인합니다."
+            />
+          ) : visibleSources.length > 0 ? (
             <div className="source-card-grid">
               {visibleSources.map((source) => (
                 <button key={source.id} type="button" className="source-card" onClick={() => onSelect(source)}>
@@ -1909,6 +2029,9 @@ function SourceStartModal({ sources, onClose, onSelect, onCreateNew }) {
               body="전체 보기로 바꾸거나 검색어를 줄여서 다시 확인합니다."
             />
           )}
+          {error && sources.length > 0 ? (
+            <p className="source-picker-hint">API 조회 실패 시 현재 화면은 demo fallback 또는 마지막 저장 목록을 표시합니다. {error}</p>
+          ) : null}
         </div>
         <footer>
           <button type="button" className="ghost-action" onClick={onClose}>

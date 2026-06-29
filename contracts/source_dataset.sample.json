@@ -1,0 +1,27 @@
+{
+  "id": "source_dataset_01JZ0C2SOURCE",
+  "connection_id": "conn_product_health_csv",
+  "connection_name": "Product Health CSV Connection",
+  "connection_type": "csv",
+  "name": "source_product_health_reviews",
+  "raw_scope": "/data/incoming/product_health_reviews.csv",
+  "resource_label": "file_path",
+  "schema_preview": [
+    {
+      "name": "review_id",
+      "type": "string"
+    },
+    {
+      "name": "product_id",
+      "type": "string"
+    },
+    {
+      "name": "rating",
+      "type": "number"
+    }
+  ],
+  "layer": "source",
+  "status": "metadata_ready",
+  "created_at": "2026-06-29T00:00:00Z",
+  "updated_at": "2026-06-29T00:00:00Z"
+}
