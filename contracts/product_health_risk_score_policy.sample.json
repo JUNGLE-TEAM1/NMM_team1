@@ -1,0 +1,130 @@
+{
+  "contract": "RiskScorePolicyRecommendation",
+  "producer": "M3",
+  "consumers": ["M1", "M2", "M5", "M6"],
+  "tenant_id": "tenant_demo",
+  "policy_target": "gold_product_health.risk_score",
+  "policy_version": "risk_score_policy_product_health_v1",
+  "policy_status": "draft_recommended",
+  "recommendation_mode": "ai_or_deterministic_fallback_from_l3_evidence",
+  "selection_rule": "M3 recommends candidate components and weights from observed source evidence; L9 must approve or edit the policy before M2 executes it.",
+  "weight_recommendation_rule": {
+    "mode": "source_evidence_adaptive",
+    "ai_role": "Recommend components, weights, and missing-component handling from L3 field evidence and retrieved metric templates.",
+    "deterministic_test_fallback": "Use default_weight_hint values as priors and renormalize over available components only when the configured AI model is not invoked in local tests.",
+    "not_global_constant": true
+  },
+  "weight_guardrails": {
+    "sum_must_equal": 1.0,
+    "min_weight": 0.0,
+    "max_single_component_weight": 0.65,
+    "normalization": "renormalize_over_available_approved_components",
+    "owner_can_override_with_reason": true
+  },
+  "output_field": {
+    "name": "risk_score",
+    "type": "number",
+    "range": {"min": 0, "max": 100},
+    "nullable": true,
+    "null_rule": "null_when_no_component_is_available"
+  },
+  "component_registry": [
+    {
+      "component_id": "negative_review_rate",
+      "metric_dependency": "negative_review_rate",
+      "direction": "higher_is_riskier",
+      "default_weight_hint": 0.35,
+      "hint_role": "prior_for_ai_or_test_fallback_not_final_weight",
+      "applicability_rule": "product key and rating or review text evidence exist"
+    },
+    {
+      "component_id": "low_rating_score",
+      "metric_dependency": "average_rating",
+      "direction": "higher_is_riskier",
+      "expression_template": "clamp((max_rating - average_rating) / (max_rating - min_rating), 0, 1)",
+      "default_weight_hint": 0.30,
+      "hint_role": "prior_for_ai_or_test_fallback_not_final_weight",
+      "applicability_rule": "rating field exists and rating scale is approved"
+    },
+    {
+      "component_id": "low_conversion_score",
+      "metric_dependency": "conversion_rate",
+      "direction": "higher_is_riskier",
+      "expression_template": "baseline_relative_underperformance(conversion_rate, category_or_global_baseline)",
+      "deterministic_test_fallback_expression": "1 - conversion_rate",
+      "fallback_boundary": "Local validation may use 1 - conversion_rate only to prove deterministic execution. Production policy should prefer an approved category/global baseline when one exists.",
+      "default_weight_hint": 0.20,
+      "hint_role": "prior_for_ai_or_test_fallback_not_final_weight",
+      "applicability_rule": "conversion numerator and denominator exist"
+    },
+    {
+      "component_id": "late_delivery_rate",
+      "metric_dependency": "late_delivery_rate",
+      "direction": "higher_is_riskier",
+      "default_weight_hint": 0.15,
+      "hint_role": "prior_for_ai_or_test_fallback_not_final_weight",
+      "applicability_rule": "delivery lateness evidence and delivery denominator exist"
+    }
+  ],
+  "candidate_policy_examples": [
+    {
+      "candidate_id": "full_product_health_signal",
+      "applies_when": ["review signal", "rating scale", "conversion denominator", "delivery lateness"],
+      "formula_template": "round(100 * weighted_average(negative_review_rate:0.35, low_rating_score:0.30, low_conversion_score:0.20, late_delivery_rate:0.15, renormalize_missing=true), 2)"
+    },
+    {
+      "candidate_id": "review_only_signal",
+      "applies_when": ["review signal", "rating scale"],
+      "formula_template": "round(100 * weighted_average(negative_review_rate:0.538462, low_rating_score:0.461538, renormalize_missing=true), 2)"
+    }
+  ],
+  "missing_component_handling": "exclude_from_weight_and_record_in_risk_score_coverage",
+  "coverage_metadata": {
+    "field": "risk_score_coverage",
+    "type": "object",
+    "public_query_default": "hidden",
+    "records": ["component_id", "source_metric_present", "weight_used", "reason_if_missing"]
+  },
+  "operation_contract": {
+    "operation": "apply_risk_score_policy",
+    "required_inputs": [
+      "approved RiskScorePolicyRecommendation",
+      "component metric columns referenced by the approved policy",
+      "risk_score_coverage output column"
+    ],
+    "params_schema": {
+      "risk_score_policy_ref": "string artifact_id or versioned contract path",
+      "approved_policy_required": "boolean true",
+      "output_range": {"min": 0, "max": 100},
+      "missing_component_handling": "exclude_from_weight_and_record_in_risk_score_coverage"
+    },
+    "execution_semantics": [
+      "Load the L9-approved policy.",
+      "Evaluate only components whose source metric is present and non-null for the row or product.",
+      "Renormalize approved weights over available components.",
+      "Return null when no approved component is available.",
+      "Write risk_score_coverage with component presence, weight_used, and missing reason."
+    ],
+    "block_conditions": [
+      "policy is not L9-approved",
+      "approved weights do not sum to 1 after normalization",
+      "component references a missing metric without a missing-component rule",
+      "risk_score is outside 0..100",
+      "risk_score_coverage is not emitted"
+    ]
+  },
+  "approval_contract": {
+    "l9_required": true,
+    "legacy_l5_required_before_logical_split": true,
+    "compile_allowed_before_approval": false,
+    "owner_may_edit_weights": true,
+    "owner_may_drop_components": true,
+    "owner_may_add_domain_component": true
+  },
+  "blocked_claims": [
+    "Risk score formula is not globally fixed for every unknown dataset.",
+    "AI recommendation chooses candidate components and weights from available evidence.",
+    "Missing components are not treated as zero.",
+    "The local 1 - conversion_rate fallback is not a universal production risk formula."
+  ]
+}

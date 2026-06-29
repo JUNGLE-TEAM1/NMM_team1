@@ -11,6 +11,10 @@ Context Budget balances two risks:
 
 This rule is not "read less at all costs." It is "start light, then expand when risk appears."
 
+Context Budget is about how much context to load.
+Context Assumption Check is about which lens to apply before answering or acting.
+AI should not replace assumption checks with broad reading, and should not replace required Source of Truth reading with a guessed assumption.
+
 ## Read Modes
 
 ### Lite Read
@@ -108,6 +112,20 @@ Accuracy beats token savings for:
 - high-impact architecture or contract decisions
 
 In those cases, Escalate Read or Audit Read is appropriate even if the request looks small.
+
+## Context Assumption Relationship
+
+For meaningful questions and commands, AI first identifies whether the user is asking for:
+
+- general practice
+- this repository's harness rule
+- a comparison between both
+- execution approval
+- policy or high-impact decision
+
+If that lens changes the answer, AI states the assumption at the start of the answer.
+If the lens is unclear and acting could change repository state, branch/remote state, PR/merge/finalize/cleanup state, verification scope, contract, deployment, data, secret, or team responsibility, AI asks the human before acting.
+This classification does not automatically escalate read mode; it escalates only when the risk signal requires more Source of Truth or evidence.
 
 ## AI Response Rule
 

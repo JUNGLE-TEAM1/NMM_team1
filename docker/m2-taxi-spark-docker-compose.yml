@@ -76,12 +76,38 @@ services:
     environment:
       PYTHONPATH: /app/backend
       SPARK_LOCAL_HOSTNAME: m2-spark-driver
+      ASKLAKE_DEMO_MINIO_ENDPOINT: http://m2-minio:9000
+      ASKLAKE_DEMO_MINIO_ACCESS_KEY: ${ASKLAKE_DEMO_MINIO_ACCESS_KEY:-minioadmin}
+      ASKLAKE_DEMO_MINIO_SECRET_KEY: ${ASKLAKE_DEMO_MINIO_SECRET_KEY:-minioadmin}
     volumes: *m2-spark-volumes
     networks:
       m2-spark-net:
         aliases:
           - m2-spark-driver
 
+  m2-minio:
+    image: ${ASKLAKE_M2_MINIO_IMAGE:-minio/minio:latest}
+    container_name: m2-minio
+    command:
+      - server
+      - /data
+      - --console-address
+      - ":9001"
+    environment:
+      MINIO_ROOT_USER: ${ASKLAKE_DEMO_MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${ASKLAKE_DEMO_MINIO_SECRET_KEY:-minioadmin}
+    ports:
+      - "${M2_MINIO_API_PORT:-19000}:9000"
+      - "${M2_MINIO_CONSOLE_PORT:-19001}:9001"
+    volumes:
+      - m2-minio-data:/data
+    networks:
+      - m2-spark-net
+
 networks:
   m2-spark-net:
     name: m2-spark-net
+
+volumes:
+  m2-minio-data:
+    name: m2-minio-data

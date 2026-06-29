@@ -266,7 +266,8 @@ Locked Week 2 contract decisions:
 - Week 2 product risk MVP uses `pipeline_product_health_e2e`, `dataset_product_health_gold`, and `gold_product_health` as the representative E2E identifiers. Amazon Reviews remains the reviews fact input, not the whole final analysis path.
 - 5GB processing evidence is measured on main pipeline input, not Gold output size. `ExecutionResult.bytes` records primary or total input bytes for the run; multi-source product health runs should also expose source-level rows/bytes/duration in `task_results[]` or metrics. `CatalogMetadata.metrics.bytes` remains Gold output bytes.
 - M5 Airflow local smoke uses a shared result artifact. `Week2AirflowAdapter` triggers DAG `asklake_week2_reviews` with `conf.airflow_result_file=<run_id>.json`; the DAG writes `data/week2/_airflow_results/<run_id>.json`; the artifact contains `week2_result` with the `Week2RunnerResult`-compatible fields `status`, `task_results`, `logs`, `row_count`, `bytes`, `duration_ms`, `output_path`, `output_row_count`, and `output_bytes`.
-- M2 Taxi local batch evidence uses `pipeline_taxi_daily_metrics`, `dataset_taxi_daily_metrics_gold`, and `gold_taxi_daily_metrics`. It is supporting Parquet execution evidence only, not the product risk representative path. PySpark local mode and Docker Spark standalone mode can read a single Parquet file or a Parquet directory and record input rows, input bytes, duration, output path, output rows, and output bytes. Docker Spark standalone evidence uses a public Spark image, one master, two workers, and a driver container; durable MinIO/S3 write, PostgreSQL loader, and Airflow DAG-internal invocation are later phases.
+- M2 Airflow SparkRunner handoff CLI is `scripts/week2_m2_airflow_sparkrunner_handoff.py`. An Airflow DAG task can call it with `--run-id`, optional `--runtime-config-path` / `--runtime-profile`, optional `--output-root`, and `--result-path`; it writes the same `week2_result` artifact shape that `Week2AirflowAdapter` already consumes. This is an execution handoff only: M5 still owns the Airflow service, DAG scheduling, polling, and Catalog persistence.
+- M2 Taxi local batch evidence uses `pipeline_taxi_daily_metrics`, `dataset_taxi_daily_metrics_gold`, and `gold_taxi_daily_metrics`. It is supporting Parquet execution evidence only, not the product risk representative path. PySpark local mode and Docker Spark standalone mode can read a single Parquet file or a Parquet directory and record input rows, input bytes, duration, output path, output rows, and output bytes. Docker Spark standalone evidence uses a public Spark image, one master, two workers, and a driver container. Docker Spark can run two MinIO-related smoke paths: `minio-small` writes a local fallback result and uploads it through `Week2StorageAdapter`, while `direct-s3a-small` configures Hadoop S3A and writes the Spark Parquet directory directly to `s3a://asklake-demo/...`. Direct S3A smoke still requires Hadoop AWS packages at submit time. 5GB direct S3A, real AWS S3/IAM, PostgreSQL loader, and Airflow DAG-internal invocation remain later phases.
 - The hardcoded Taxi daily Gold schema, aggregation, and valid-row mask are provisional evidence scaffolding, not durable M2-owned transform semantics. Final Gold metric definitions, quality rules, quarantine behavior, and period rules remain M3-owned `TransformSpec` / `QualityRule` responsibilities. M2's durable responsibility is runner/runtime/storage execution plus row_count, bytes, duration, output path, and related evidence. When the M3 spec execution path is available, this hardcoded Taxi Gold builder must be removed or demoted to a demo/test fixture.
 
 Provisional M2 Taxi daily metric evidence fields:
@@ -340,13 +341,26 @@ Each replay run produces `<run_id>.json` plus `latest.json`. The minimum `KafkaR
 | `batch_size` | yes | Producer batch size setting |
 | `key_column` | no | Kafka key source column, or `null` when Kafka chooses partitions |
 | `metrics.sent_rows` | yes | Rows successfully produced to Kafka |
+| `metrics.failed_rows` | yes | Kafka 재생 오류가 날 때 현재 producer batch에서 실패로 잡힌 row 수 |
+| `metrics.skipped_rows` | yes | 시작 row 또는 replay limit 때문에 건너뛴 row 수 |
 | `metrics.error_count` | yes | Replay job error count |
 | `metrics.throughput_per_second` | yes | Job-level rows/sec based on sent rows and elapsed runtime |
+| `dead_letter_path` | no | 실패 batch row JSONL 경로. 보통 `data/results/week2/_metadata/kafka_replay/dead-letter/<run_id>.jsonl` |
+| `retention.evidence_retention_days` | yes | `KAFKA_REPLAY_EVIDENCE_RETENTION_DAYS`에서 읽은 로컬 evidence 보관 일수. `0`이면 자동 삭제 없음 |
 | `lineage.source_file` | yes | Source file node |
 | `lineage.kafka_topic` | yes | Kafka target node |
 | `health.status` | yes | `running`, `ok`, or `error` for status center display |
 
-Kafka UI remains the live view for broker-side message count, consumer lag, and live throughput. `KafkaReplayEvidence` is the durable harness receipt that AskLake backend/report flows can read after the replay job.
+Kafka UI는 broker 쪽 message count, consumer lag, live throughput을 보는 화면이다. `KafkaReplayEvidence`는 replay job 뒤에 AskLake backend/report 흐름이 읽을 수 있는 지속 증거다. Kafka가 batch를 받기 전에 replay 오류가 나면, 실패한 producer batch row는 설정된 dead-letter JSONL 경로에 저장된다.
+
+M4 Kafka replay 환경변수:
+
+| 환경변수 | 의미 |
+| --- | --- |
+| `KAFKA_REPLAY_EVIDENCE_DIR` | `<run_id>.json`과 `latest.json`을 저장하는 경로 |
+| `KAFKA_REPLAY_DEAD_LETTER_DIR` | 실패 row JSONL을 저장하는 경로 |
+| `KAFKA_REPLAY_EVIDENCE_RETENTION_DAYS` | 로컬 evidence 자동 삭제 기준 일수. `0`이면 자동 삭제 없음 |
+| `KAFKA_LOG_RETENTION_HOURS` | local `docker-compose.yml`에서 쓰는 Kafka broker log 보관 시간 |
 
 Week 2 storage path pattern:
 
@@ -395,7 +409,7 @@ Minimum `AIQueryResult` route and retrieval trace shape:
 
 | Field | Required | Notes |
 | --- | --- | --- |
-| `route` | yes | `sql`, `rag`, `hybrid`, or `unsupported`. Current SQL-first M6 returns `sql` for supported SQL attempts and `unsupported` when no safe route exists. |
+| `route` | yes | `sql`, `rag`, `hybrid`, or `unsupported`. M6 Hybrid Route returns `sql` for metric/ranking questions, `hybrid` when a SQL question also asks for evidence/schema/lineage explanation, `rag` for CatalogMetadata-only explanation, and `unsupported` when no safe route exists. |
 | `retrieval_trace[]` | yes | Ordered explanation of the retrieval/route evidence used by M6. It may be empty only when no catalog/evidence source was available and the response is blocked. |
 | `retrieval_trace[].source_type` | yes | `catalog`, `schema`, `metric`, `lineage`, or `chunk` |
 | `retrieval_trace[].source_id` | yes | dataset id, field name, metric key, lineage id, or chunk id |
@@ -404,6 +418,76 @@ Minimum `AIQueryResult` route and retrieval trace shape:
 | `retrieval_trace[].evidence_index` | no | index into `AIQueryResult.evidence[]` when the trace item directly supports an evidence item |
 
 `route` and `retrieval_trace` are additive fields. Existing M1 consumers may continue reading `status`, `sql`, `query_result`, `rows`, `summary`, and `evidence`, while richer Week 2 displays can show why M6 selected a SQL/RAG/Hybrid/Unsupported path.
+
+Minimum `AIQueryResult.answer_metadata` UX handoff shape:
+
+| Field | Required | Notes |
+| --- | --- | --- |
+| `answer_metadata.source` | yes | `template`, `external`, or `internal`. `internal` is reserved for M6 blocked/guardrail summaries that did not call `LLMAdapter`. |
+| `answer_metadata.provider` | yes | Display provider such as `template`, `openai`, or `m6`. |
+| `answer_metadata.fallback_used` | yes | true only when a provider adapter fell back to deterministic template answer generation. |
+| `answer_metadata.fallback_reason` | no | machine-readable reason such as `provider_error`, `empty_output`, or `no_api_key`. |
+| `answer_metadata.used_evidence_indexes[]` | yes | indexes into `AIQueryResult.evidence[]` that grounded the generated answer. It may be empty for blocked or insufficient-evidence states. |
+| `answer_metadata.grounding_state` | yes | `grounded`, `insufficient_evidence`, or `blocked`. M1 must not display `blocked` or `insufficient_evidence` as a successful grounded answer. |
+
+`answer_metadata` is additive and exists so M1 does not infer answer source, fallback, or grounding state from free-form summary text. M1 may show compact badges for provider/source/fallback/grounding, but M1 must not recompute M6 route or evidence scoring.
+
+Minimum M6 Catalog RAG-lite index boundary:
+
+| Field / Source | Included in M6 index | Notes |
+| --- | --- | --- |
+| dataset identity | yes | `dataset_id`, `name`, `layer` |
+| schema fields | yes | field name, type, nullable, and local semantic aliases |
+| metrics | yes | metric keys and safe scalar metric values such as row count, bytes, quality, semantics |
+| lineage | yes | `pipeline_id`, `run_id`, `source_ids`, `upstream_datasets` |
+| query allowlist | yes | `query.table_name`, `query.allowed_columns`, `default_limit`, timeout metadata |
+| freshness | yes | `updated_at` and freshness interval values |
+| storage/local path | no | `storage.local_fallback_path`, raw file paths, whole source files, secrets, credentials, and API keys must not be indexed |
+
+The M6 Catalog RAG-lite index is a derived cache, not the Catalog source of truth. Its cache signature is based on `dataset_id + lineage.run_id + updated_at`; when any of those values change, the index is stale and must be rebuilt before retrieval. `retrieval_trace[]` may include additional `schema`, `metric`, or `lineage` items from the index.
+
+Minimum M6 Hybrid Route policy:
+
+| Question shape | Route | Execution behavior |
+| --- | --- | --- |
+| metric/ranking/count question | `sql` | Plan, validate, and execute SELECT-only SQL through `SqlEngineAdapter`. |
+| metric/ranking/count question plus evidence/schema/lineage explanation request | `hybrid` | Execute SQL first, then ground the answer with Catalog RAG-lite evidence and retrieval trace. |
+| schema, metric, lineage, catalog, or dataset explanation without a SQL metric request | `rag` | Do not call SQL validate/execute; answer from CatalogMetadata evidence only. |
+| forecast, future revenue, sentiment, or unsupported free-form request | `unsupported` | Do not call SQL/RAG answer path; return blocked guardrail result. |
+
+Minimum M6 LLM answer adapter boundary:
+
+```text
+M6 AI Query
+-> LLMAdapter
+-> TemplateLLMAdapter for MVP
+-> OpenAILLMAdapter when env-gated provider config is complete
+```
+
+| Field / Source | Included in `LLMAnswerContext` | Notes |
+| --- | --- | --- |
+| question | yes | Original user question. |
+| route and intent | yes | M6-owned route decision and SQL planner intent. |
+| SQL result | yes | Validated SQL, `QueryResult`, and returned rows after `SqlEngineAdapter` guardrails pass. |
+| Catalog evidence | yes | `AIQueryResult.evidence[]` only: dataset id, run id, safe URI, freshness, table name, schema fields, metrics, lineage, retrieval terms. |
+| retrieval trace | yes | `AIQueryResult.retrieval_trace[]` with score and matched terms. |
+| guardrail result | yes | Passed/blocked state and failure reason. |
+| SQL engine context | no | `SqlEngineContext.local_fallback_path`, timeout internals, and execution-only path data must not be sent to the LLM adapter. |
+| raw files and secrets | no | Whole source files, local fallback paths, API keys, credentials, and unauthorized columns must not enter prompt/context material. |
+
+The Week 2 default adapter is deterministic `TemplateLLMAdapter`; it performs no external network call and keeps current `AIQueryResult.summary` behavior stable for M1. `OpenAILLMAdapter` is opt-in and may be selected only when `WEEK2_LLM_PROVIDER=openai` and `OPENAI_API_KEY` are configured. If either provider selection or key is missing, M6 must keep using `TemplateLLMAdapter`. Blocked/unsupported answers must not call the LLM adapter.
+
+Minimum M6 external LLM env contract:
+
+| Env / Setting | Default | Notes |
+| --- | --- | --- |
+| `WEEK2_LLM_PROVIDER` / `Settings.week2_llm_provider` | `template` | Allowed values: `template`, `openai`. |
+| `OPENAI_API_KEY` / `Settings.openai_api_key` | none | Secret must come from local environment only; it must not be committed, logged, or included in prompt/context material. |
+| `OPENAI_MODEL` / `Settings.openai_model` | `gpt-4.1-mini` | Overrideable provider model name for local/manual smoke. |
+| `OPENAI_BASE_URL` / `Settings.openai_base_url` | `https://api.openai.com/v1` | Adapter appends `/responses`. |
+| `OPENAI_TIMEOUT_SECONDS` / `Settings.openai_timeout_seconds` | `30` | Provider timeout for a single answer generation call. |
+
+`OpenAILLMAdapter` uses the Responses API request boundary and must fall back to `TemplateLLMAdapter` if the provider response is unavailable, malformed, times out, or returns no usable output text.
 
 Minimum `AIQueryResult.evidence[]` grounding shape:
 

@@ -1,0 +1,86 @@
+{
+  "contract": "CatalogMetadata",
+  "producers": ["M3", "M5"],
+  "consumers": ["M1", "M6"],
+  "tenant_id": "tenant_demo",
+  "dataset_id": "dataset_product_health_gold",
+  "version": "catalog_product_health_gold_v1",
+  "name": "Product Health Gold",
+  "layer": "gold",
+  "table_name": "gold_product_health",
+  "pipeline_id": "pipeline_product_health_e2e",
+  "run_id": "run_product_health_demo_001",
+  "s3_uri": "s3://asklake-demo/product_health/gold/run_id=<run_id>/",
+  "s3_uri_status": "m2_execution_pending",
+  "storage": {
+    "profile": "local_or_minio_by_M2",
+    "bucket": "asklake-demo",
+    "prefix": "product_health/gold/run_id=<run_id>/",
+    "local_fallback_path": "data/week2/product_health/gold/run_id=<run_id>/"
+  },
+  "schema": {
+    "schema_version": "schema_product_health_gold_v1",
+    "fields": [
+      {"name": "product_id", "type": "string", "nullable": false},
+      {"name": "product_name", "type": "string", "nullable": true},
+      {"name": "category_l1", "type": "string", "nullable": true},
+      {"name": "review_count", "type": "integer", "nullable": false},
+      {"name": "average_rating", "type": "number", "nullable": true},
+      {"name": "negative_review_rate", "type": "number", "nullable": true},
+      {"name": "view_count", "type": "integer", "nullable": false},
+      {"name": "purchase_count", "type": "integer", "nullable": false},
+      {"name": "conversion_rate", "type": "number", "nullable": true},
+      {"name": "delivery_count", "type": "integer", "nullable": false},
+      {"name": "late_delivery_rate", "type": "number", "nullable": true},
+      {"name": "risk_score", "type": "number", "nullable": true}
+    ]
+  },
+  "metrics": {
+    "semantics": {
+      "row_count": "output_product_rows",
+      "bytes": "gold_output_bytes",
+      "input_total_bytes": "total_bytes_read_across_reviews_behavior_delivery_product_sources"
+    },
+    "row_count": null,
+    "bytes": null,
+    "input_total_bytes": null,
+    "quality": {
+      "schema_match": "pending",
+      "risk_score_range": "pending",
+      "zero_denominator_policy": "pending"
+    }
+  },
+  "lineage": {
+    "source_ids": ["source_reviews_seed", "source_behavior_events_seed", "source_delivery_trips_seed", "source_product_master_seed"],
+    "pipeline_id": "pipeline_product_health_e2e",
+    "run_id": "run_product_health_demo_001",
+    "upstream_datasets": []
+  },
+  "query": {
+    "table_name": "gold_product_health",
+    "allow_readonly_sql": true,
+    "allowed_columns": [
+      "product_id",
+      "product_name",
+      "category_l1",
+      "review_count",
+      "average_rating",
+      "negative_review_rate",
+      "view_count",
+      "purchase_count",
+      "conversion_rate",
+      "delivery_count",
+      "late_delivery_rate",
+      "risk_score"
+    ],
+    "default_limit": 100,
+    "timeout_seconds": 30,
+    "canonical_demo_query": "SELECT product_id, product_name, category_l1, risk_score, negative_review_rate, conversion_rate, late_delivery_rate FROM gold_product_health ORDER BY risk_score DESC LIMIT 10"
+  },
+  "m3_contract_refs": {
+    "product_health_gold_contract_ref": "contracts/product_health_gold_contract.sample.json",
+    "risk_score_policy_ref": "contracts/product_health_risk_score_policy.sample.json",
+    "transform_spec_ref": "contracts/product_health_transform_spec.sample.json",
+    "schema_definition_ref": "contracts/product_health_schema_definition.sample.json"
+  }
+}

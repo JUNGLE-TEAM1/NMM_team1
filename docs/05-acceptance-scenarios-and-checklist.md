@@ -51,8 +51,15 @@ AskLake의 Target MVP 대표 성공 시나리오는 `Trusted Dataset -> Query/As
 - [ ] Week 2 상품 리스크 대표 경로는 `pipeline_product_health_e2e`가 5GB 이상 reviews/behavior/delivery fact input을 처리해 `dataset_product_health_gold` / `gold_product_health`를 생성하고, source별 row count, bytes, duration, output path, run id를 evidence로 남긴다.
 - [ ] `gold_product_health` output은 M5 Catalog에 등록되고, M6는 Gold output file을 SQL로 조회해 위험 상품군과 근거 지표를 `AIQueryResult`로 반환한다.
 - [ ] M6 `AIQueryResult`는 기존 `sql`, `query_result`, `rows`, `summary`, `evidence`를 유지하면서 `route`와 `retrieval_trace`로 어떤 경로와 CatalogMetadata 근거를 선택했는지 설명한다.
+- [ ] M6 `AIQueryResult.answer_metadata`는 답변 source/provider/fallback/grounding state와 사용 evidence index를 반환해 M1이 summary text를 파싱하지 않고 답변 신뢰 상태를 표시할 수 있게 한다.
+- [ ] M6 Catalog RAG-lite index는 CatalogMetadata의 안전한 metadata chunk만 사용하고, `retrieval_trace`에 schema/metric/lineage 근거를 evidence와 연결해 남긴다.
+- [ ] M6 Hybrid Route는 SQL-only, RAG-only, Hybrid, Unsupported 질문을 구분하고, Hybrid는 SQL rows와 CatalogMetadata evidence를 함께 사용한다.
+- [ ] M6 답변 생성은 `LLMAdapter` 경계를 통과하되 Week 2 기본값은 외부 호출 없는 deterministic template adapter이며, adapter context에는 SQL rows, evidence, retrieval trace 같은 허용된 재료만 포함한다.
+- [ ] M6 `OpenAILLMAdapter`는 `WEEK2_LLM_PROVIDER=openai`와 `OPENAI_API_KEY`가 모두 있을 때만 선택되고, key 부재/provider 오류/timeout/malformed response에서는 template fallback으로 기존 M1 응답 계약을 유지한다.
 - [ ] Week 2 M5 Airflow smoke는 실제 DAG 실행 결과 artifact를 backend가 읽고, `executor=airflow` run이 fallback 없이 Catalog lineage와 metrics를 갱신한다.
 - [ ] M2 Taxi local batch supporting evidence는 TLC Taxi Parquet 입력을 `gold_taxi_daily_metrics` Parquet output으로 만들고 row count, bytes, duration, output path를 기록한다. 이는 `gold_product_health` 대표 경로를 대체하지 않는다.
+- [ ] M4 Kafka replay는 성공/실패 실행 증거를 `KAFKA_REPLAY_EVIDENCE_DIR`에 남기고, 실패 producer batch row를 `KAFKA_REPLAY_DEAD_LETTER_DIR`의 JSONL로 남긴다.
+- [ ] M4 Kafka replay local evidence는 `KAFKA_REPLAY_EVIDENCE_RETENTION_DAYS`로 자동 삭제 기준을 조정할 수 있다.
 
 ### Trusted Dataset
 
@@ -72,7 +79,12 @@ AskLake의 Target MVP 대표 성공 시나리오는 `Trusted Dataset -> Query/As
 - [ ] 권한 없는 컬럼이나 dataset은 실행, retrieval, prompt 단계 전에 제거되거나 차단된다.
 - [ ] Ask는 SQL, RAG, Hybrid, Unsupported 중 하나로 route된다.
 - [ ] Ask route와 retrieval trace는 응답에 남아 UI나 report가 M6 scoring을 재계산하지 않아도 선택 근거를 표시할 수 있다.
+- [ ] Ask 화면은 route, provider/source, fallback, grounding state, evidence trace를 compact하게 표시하고 blocked/insufficient-evidence 답변을 성공처럼 꾸미지 않는다.
+- [ ] Catalog RAG-lite index는 source of truth가 아니라 derived cache이며, CatalogMetadata `dataset_id + run_id + updated_at` 변경 시 stale로 보고 재생성된다.
+- [ ] RAG-only Ask는 SQL engine validate/execute를 호출하지 않고 CatalogMetadata evidence로만 답한다.
+- [ ] Blocked/Unsupported Ask는 외부 LLM 또는 LLM adapter를 호출하지 않고 보류 사유를 반환한다.
 - [ ] 근거가 부족한 답변은 성공처럼 표시되지 않고 보류 또는 `Insufficient Evidence`로 표시된다.
+- [ ] 외부 LLM prompt/request body에는 API key, credential, local fallback path, 원본 파일 전체, 허용되지 않은 컬럼이 포함되지 않는다.
 - [ ] Query/Ask 결과는 evidence와 연결된다.
 
 ### Evidence
@@ -98,6 +110,7 @@ AskLake의 Target MVP 대표 성공 시나리오는 `Trusted Dataset -> Query/As
 - [ ] `docs/05` acceptance가 `docs/06` regression guard와 연결된다.
 - [ ] `docs/07` manual verification이 현재 workflow와 Target MVP를 구분한다.
 - [ ] `docs/08` 다음 Phase queue가 `docs/01` milestone과 일치한다.
+- [ ] 협업 질문/명령 처리 규칙은 일반론, 저장소 규칙, 비교 답변, 실행 승인, 정책 결정을 구분하고 필요한 경우 전제를 명시한다.
 
 ## 5) 배포와 운영 기준
 

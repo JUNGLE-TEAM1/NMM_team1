@@ -1,0 +1,260 @@
+{
+  "contract": "TransformSpec",
+  "producer": "M3",
+  "consumers": ["M2", "M5"],
+  "tenant_id": "tenant_demo",
+  "source_id": "source_product_health_composite",
+  "pipeline_id": "pipeline_product_health_e2e",
+  "schema_version": "schema_product_health_gold_v1",
+  "version": "transform_product_health_gold_v1",
+  "target_dataset": "dataset_product_health_gold",
+  "target_table": "gold_product_health",
+  "semantic_contract_ref": "contracts/product_health_gold_contract.sample.json",
+  "risk_score_policy_ref": "contracts/product_health_risk_score_policy.sample.json",
+  "operations": [
+    {
+      "id": "read_reviews",
+      "type": "source",
+      "source_id": "source_reviews_seed",
+      "output": "artifact_reviews_bronze",
+      "required_columns": ["product_id", "rating"],
+      "optional_columns": ["review_id", "review_text", "review_time", "sentiment"]
+    },
+    {
+      "id": "read_behavior_events",
+      "type": "source",
+      "source_id": "source_behavior_events_seed",
+      "output": "artifact_behavior_bronze",
+      "required_columns": ["product_id", "event_type"],
+      "optional_columns": ["event_time", "session_id", "user_id"]
+    },
+    {
+      "id": "read_delivery_trips",
+      "type": "source",
+      "source_id": "source_delivery_trips_seed",
+      "output": "artifact_delivery_bronze",
+      "required_columns": ["product_id"],
+      "optional_columns": ["delivery_id", "promised_at", "delivered_at", "late_flag"]
+    },
+    {
+      "id": "read_product_master",
+      "type": "source",
+      "source_id": "source_product_master_seed",
+      "output": "artifact_product_master_bronze",
+      "required_columns": ["product_id"],
+      "optional_columns": ["product_name", "category_l1"],
+      "required_for_row_universe": false,
+      "description": "Product master enriches dimensions when present. Unknown sources may still form the product_id universe from review, behavior, or delivery facts."
+    },
+    {
+      "id": "normalize_reviews",
+      "type": "normalize",
+      "input": "artifact_reviews_bronze",
+      "output": "artifact_reviews_silver",
+      "casts": [
+        {"field": "product_id", "target_type": "string"},
+        {"field": "rating", "target_type": "number"},
+        {"field": "review_time", "target_type": "timestamp"}
+      ],
+      "null_policy": {"rating": "keep_null", "product_id": "quarantine_if_null"}
+    },
+    {
+      "id": "normalize_behavior_events",
+      "type": "normalize",
+      "input": "artifact_behavior_bronze",
+      "output": "artifact_behavior_silver",
+      "casts": [
+        {"field": "product_id", "target_type": "string"},
+        {"field": "event_type", "target_type": "string"},
+        {"field": "event_time", "target_type": "timestamp"}
+      ],
+      "null_policy": {"product_id": "quarantine_if_null", "event_type": "quarantine_if_null"}
+    },
+    {
+      "id": "normalize_delivery_trips",
+      "type": "normalize",
+      "input": "artifact_delivery_bronze",
+      "output": "artifact_delivery_silver",
+      "casts": [
+        {"field": "product_id", "target_type": "string"},
+        {"field": "promised_at", "target_type": "timestamp"},
+        {"field": "delivered_at", "target_type": "timestamp"},
+        {"field": "late_flag", "target_type": "boolean"}
+      ],
+      "null_policy": {"product_id": "quarantine_if_null"}
+    },
+    {
+      "id": "normalize_product_master",
+      "type": "normalize",
+      "input": "artifact_product_master_bronze",
+      "output": "artifact_product_master_silver",
+      "casts": [
+        {"field": "product_id", "target_type": "string"},
+        {"field": "product_name", "target_type": "string"},
+        {"field": "category_l1", "target_type": "string"}
+      ],
+      "null_policy": {"product_id": "quarantine_if_null"}
+    },
+    {
+      "id": "aggregate_review_health",
+      "type": "aggregate",
+      "input": "artifact_reviews_silver",
+      "output": "artifact_review_health",
+      "group_by": ["product_id"],
+      "metrics": [
+        {"name": "review_count", "operation": "count"},
+        {"name": "average_rating", "operation": "avg", "field": "rating"},
+        {"name": "negative_review_count", "operation": "count_if", "condition": "rating <= 2 OR sentiment IN ('negative', 'very_negative')"},
+        {"name": "negative_review_rate", "operation": "ratio", "numerator": "negative_review_count", "denominator": "review_count", "zero_denominator": "null"}
+      ]
+    },
+    {
+      "id": "aggregate_behavior_health",
+      "type": "aggregate",
+      "input": "artifact_behavior_silver",
+      "output": "artifact_behavior_health",
+      "group_by": ["product_id"],
+      "metrics": [
+        {"name": "view_count", "operation": "count_if", "condition": "event_type IN ('view', 'impression', 'product_view')"},
+        {"name": "purchase_count", "operation": "count_if", "condition": "event_type IN ('purchase', 'order', 'checkout_complete')"},
+        {"name": "conversion_rate", "operation": "ratio", "numerator": "purchase_count", "denominator": "view_count", "zero_denominator": "null"}
+      ]
+    },
+    {
+      "id": "aggregate_delivery_health",
+      "type": "aggregate",
+      "input": "artifact_delivery_silver",
+      "output": "artifact_delivery_health",
+      "group_by": ["product_id"],
+      "metrics": [
+        {"name": "delivery_count", "operation": "count"},
+        {"name": "late_delivery_count", "operation": "count_if", "condition": "late_flag = true OR delivered_at > promised_at"},
+        {"name": "late_delivery_rate", "operation": "ratio", "numerator": "late_delivery_count", "denominator": "delivery_count", "zero_denominator": "null"}
+      ]
+    },
+    {
+      "id": "join_product_health_inputs",
+      "type": "join",
+      "join_type": "full_outer",
+      "join_strategy": "full_outer_product_id_union_with_product_master_preferred_dimensions",
+      "base": "coalesced_product_id_universe",
+      "inputs": ["artifact_review_health", "artifact_behavior_health", "artifact_delivery_health"],
+      "keys": ["product_id"],
+      "dimension_inputs": ["artifact_product_master_silver"],
+      "dimension_priority": ["product_master", "review_source_hints", "behavior_source_hints", "delivery_source_hints"],
+      "output": "artifact_product_health_joined"
+    },
+    {
+      "id": "calculate_product_health_metrics",
+      "type": "derive",
+      "input": "artifact_product_health_joined",
+      "output": "artifact_product_health_gold",
+      "expressions": [
+        {"name": "review_count", "expression": "coalesce(review_count, 0)"},
+        {"name": "view_count", "expression": "coalesce(view_count, 0)"},
+        {"name": "purchase_count", "expression": "coalesce(purchase_count, 0)"},
+        {"name": "delivery_count", "expression": "coalesce(delivery_count, 0)"},
+        {
+          "name": "risk_score",
+          "operation": "apply_risk_score_policy",
+          "risk_score_policy_ref": "contracts/product_health_risk_score_policy.sample.json",
+          "approved_policy_required": true,
+          "operation_contract_ref": "contracts/product_health_risk_score_policy.sample.json#/operation_contract",
+          "missing_component_handling": "exclude_from_weight_and_record_in_risk_score_coverage",
+          "output_range": {"min": 0, "max": 100}
+        },
+        {
+          "name": "risk_score_coverage",
+          "operation": "emit_risk_score_coverage",
+          "risk_score_policy_ref": "contracts/product_health_risk_score_policy.sample.json",
+          "public_query_default": "hidden"
+        }
+      ],
+      "select_columns": [
+        "product_id",
+        "product_name",
+        "category_l1",
+        "review_count",
+        "average_rating",
+        "negative_review_rate",
+        "view_count",
+        "purchase_count",
+        "conversion_rate",
+        "delivery_count",
+        "late_delivery_rate",
+        "risk_score"
+      ]
+    },
+    {
+      "id": "load_product_health_gold",
+      "type": "load",
+      "input": "artifact_product_health_gold",
+      "target_dataset": "dataset_product_health_gold",
+      "layer": "gold",
+      "query_table": "gold_product_health",
+      "path_pattern": "s3://asklake-demo/product_health/gold/run_id=<run_id>/"
+    }
+  ],
+  "quality_rules": [
+    {"id": "schema_match", "type": "schema_match", "severity": "blocking"},
+    {"id": "row_count_nonzero", "type": "row_count_min", "min": 1, "severity": "blocking"},
+    {"id": "risk_score_range", "type": "range", "field": "risk_score", "min": 0, "max": 100, "severity": "blocking"},
+    {"id": "zero_denominator_policy", "type": "semantic_rule", "fields": ["negative_review_rate", "conversion_rate", "late_delivery_rate"], "severity": "blocking"}
+  ],
+  "catalog_facts": {
+    "layer": "gold",
+    "dataset_id": "dataset_product_health_gold",
+    "query_table": "gold_product_health",
+    "source_lineage": ["source_reviews_seed", "source_behavior_events_seed", "source_delivery_trips_seed", "source_product_master_seed"],
+    "output_columns": [
+      "product_id",
+      "product_name",
+      "category_l1",
+      "review_count",
+      "average_rating",
+      "negative_review_rate",
+      "view_count",
+      "purchase_count",
+      "conversion_rate",
+      "delivery_count",
+      "late_delivery_rate",
+      "risk_score"
+    ]
+  },
+  "runtime_evidence_requirements": {
+    "input_total_bytes_minimum_for_presentation": 5368709120,
+    "must_record_source_level_evidence": true,
+    "source_level_fields": ["source_id", "row_count", "bytes", "duration_ms", "input_path"],
+    "small_smoke_and_5gb_run_must_share_transform_version": true,
+    "presentation_live_execution_required": false
+  },
+  "reference_runner": {
+    "path": "tools/product_health_reference_transform.py",
+    "purpose": "Local M3 contract validation only. It proves fixed output columns, zero-denominator behavior, source-adaptive risk-score semantics, and unknown-source partial-output behavior before M2 implements the distributed Spark job.",
+    "m2_runtime_claim": false,
+    "same_transform_version_required_for_small_and_5gb": true,
+    "supported_input_formats": ["jsonl", "json", "csv"],
+    "emits_source_level_evidence": true,
+    "source_level_evidence_fields": ["input_path", "input_bytes", "rows_scanned", "product_id_present_rows", "product_id_missing_rows", "unique_product_ids", "scan_limit"],
+    "output_limit_default": "no_cap",
+    "debug_output_cap_fields": ["full_product_universe_count", "output_row_limit", "output_truncated", "truncated_product_count"],
+    "catalog_ready_claim": false,
+    "cross_source_identity_guard": "Do not present a multi-source product_health output as approved Gold unless source identity mapping is approved by L9 or an equivalent owner decision.",
+    "gold_reduction_guard": "Gold output may be much smaller than raw input only when source_level_evidence, full_product_universe_count, output_truncated=false, and metric coverage show aggregation, not silent product_id loss."
+  },
+  "spark_minio_validation_harness": {
+    "path": "tools/product_health_spark_validation.py",
+    "purpose": "Local Spark/MinIO boundary validation only. It verifies that M2-style Spark can execute the M3 source-aggregate-join-derive semantics against bounded L0-L2 source windows.",
+    "m3_core_runtime_claim": false,
+    "input_policy": "Use bounded source windows/profile snapshots for recommendation validation; full raw materialization belongs to M2 production execution.",
+    "validated_buckets": ["m3-raw", "m3-gold"],
+    "write_mode": "validation_only"
+  },
+  "ownership_constraints": {
+    "m3_does_not_create_spark_session": true,
+    "m3_does_not_write_catalog": true,
+    "m2_owns_runtime_execution": true,
+    "m5_owns_runner_selection_and_catalog_persistence": true
+  },
+  "updated_at": "2026-06-28T00:00:00+09:00"
+}

@@ -18,6 +18,7 @@ if str(BACKEND_ROOT) not in sys.path:
 from app.domain.runtime_config import StorageConfig  # noqa: E402
 from app.services.week2_taxi_batch_runner import GOLD_DATASET_ID, GOLD_TABLE_NAME  # noqa: E402
 from app.services.week2_taxi_spark_runner import TaxiSparkConfig, Week2TaxiSparkRunner  # noqa: E402
+from app.services.week2_storage_adapter import Week2StorageAdapter  # noqa: E402
 
 
 def run_evidence(args: argparse.Namespace) -> dict[str, Any]:
@@ -41,6 +42,13 @@ def run_evidence(args: argparse.Namespace) -> dict[str, Any]:
             parquet_vectorized_reader=not args.disable_vectorized_reader,
             storage=storage,
             upload_to_object_storage=args.minio_upload,
+            direct_s3a_output_uri=args.direct_s3a_output_uri,
+            s3a_endpoint=args.s3a_endpoint or args.endpoint or os.environ.get("ASKLAKE_DEMO_MINIO_ENDPOINT"),
+            s3a_region=args.region,
+            s3a_access_key_env=args.access_key_env,
+            s3a_secret_key_env=args.secret_key_env,
+            s3a_path_style_access=args.s3a_path_style_access,
+            s3a_ssl_enabled=args.s3a_ssl_enabled,
         )
     )
 
@@ -77,10 +85,23 @@ def run_evidence(args: argparse.Namespace) -> dict[str, Any]:
         "task_results": result.task_results,
         "logs": result.logs,
     }
+    if args.direct_s3a_output_uri:
+        evidence["output"]["write_mode"] = "spark_direct_s3a"
+        evidence["output"]["s3a_uri"] = result.output_path
+        evidence["output"]["endpoint_configured"] = bool(args.s3a_endpoint or args.endpoint or os.environ.get("ASKLAKE_DEMO_MINIO_ENDPOINT"))
     if storage is not None:
+        location = Week2StorageAdapter().build_location(
+            storage,
+            run_id=args.run_id,
+            file_name=f"{GOLD_TABLE_NAME}.parquet",
+            local_root=str(output_root),
+            default_prefix="taxi/gold/daily_metrics/run_id=<run_id>/",
+        )
         evidence["output"]["storage_profile"] = storage.profile
         evidence["output"]["bucket"] = storage.bucket
-        evidence["output"]["prefix"] = storage.prefix
+        evidence["output"]["prefix"] = location.prefix
+        evidence["output"]["s3_uri"] = location.uri
+        evidence["output"]["object_uri"] = location.object_uri
         evidence["output"]["endpoint_configured"] = storage.endpoint is not None
     if result.status != "succeeded":
         evidence["error"] = result.task_results[0].get("error") if result.task_results else "unknown error"
@@ -163,6 +184,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--access-key-env", default="ASKLAKE_DEMO_MINIO_ACCESS_KEY")
     parser.add_argument("--secret-key-env", default="ASKLAKE_DEMO_MINIO_SECRET_KEY")
     parser.add_argument("--auto-create-bucket", action="store_true")
+    parser.add_argument("--direct-s3a-output-uri", default=None)
+    parser.add_argument("--s3a-endpoint", default=None)
+    parser.add_argument("--s3a-path-style-access", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument("--s3a-ssl-enabled", action=argparse.BooleanOptionalAction, default=None)
     return parser.parse_args()
 
 

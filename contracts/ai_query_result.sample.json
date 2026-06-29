@@ -3,7 +3,7 @@
   "producer": "M6",
   "consumer": "M1",
   "tenant_id": "tenant_demo",
-  "question": "TODO: confirm one of the three Day 4 validation questions",
+  "question": "리뷰가 가장 많은 상품과 근거를 설명해줘",
   "selected_datasets": [
     {
       "dataset_id": "dataset_reviews_gold",
@@ -41,16 +41,23 @@
         "run_id": "run_reviews_demo_001",
         "upstream_datasets": ["dataset_reviews_silver"]
       },
-      "retrieval_terms": ["review_count", "average_rating"]
+      "retrieval_terms": ["review_count", "average_rating", "근거", "설명"]
     }
   ],
-  "route": "sql",
+  "route": "hybrid",
   "retrieval_trace": [
     {
       "source_type": "catalog",
       "source_id": "dataset_reviews_gold",
       "score": 6,
       "matched_terms": ["review_count", "product_id"],
+      "evidence_index": 0
+    },
+    {
+      "source_type": "schema",
+      "source_id": "dataset_reviews_gold.schema.review_count",
+      "score": 0.42,
+      "matched_terms": ["리뷰"],
       "evidence_index": 0
     }
   ],
@@ -82,7 +89,15 @@
       "average_rating": null
     }
   ],
-  "summary": "B001 상품이 리뷰 42개로 가장 많습니다. 근거: dataset=dataset_reviews_gold; run_id=run_reviews_demo_001; row_count=3; schema=product_id, review_count, average_rating.",
+  "summary": "B001 상품이 리뷰 42개로 가장 많습니다. 근거: dataset=dataset_reviews_gold; run_id=run_reviews_demo_001; row_count=3; schema=product_id, review_count, average_rating. SQL 결과와 CatalogMetadata 근거를 함께 사용했습니다.",
+  "answer_metadata": {
+    "source": "template",
+    "provider": "template",
+    "fallback_used": false,
+    "fallback_reason": null,
+    "used_evidence_indexes": [0],
+    "grounding_state": "grounded"
+  },
   "chart_spec": {
     "type": "bar",
     "x": "product_id",

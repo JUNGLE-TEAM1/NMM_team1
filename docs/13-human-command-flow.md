@@ -2,6 +2,44 @@
 
 This document shows how a human can drive the harness with short commands while AI handles workspace updates, validation, and confirmation gates.
 
+## 0) Check Context Assumptions
+
+Human says:
+
+```text
+PR을 왜 나눠야 해?
+```
+
+AI does:
+
+- Classifies whether the question asks for general engineering practice, this repository's Phase/PR rules, or both.
+- States the applied lens before answering when the answer differs by lens.
+- Answers without unnecessary back-and-forth when separating assumptions is enough.
+
+Human says:
+
+```text
+그럼 바로 합쳐도 되겠네?
+```
+
+AI does:
+
+- Checks whether the message is a concept follow-up, a policy decision, or an execution request.
+- If it could authorize branch, remote, PR, merge, finalize, cleanup, verification skip, or scope change behavior, asks for the matching confirmation gate before acting.
+- If it is only a concept question, explains the conditions and clearly separates "possible in general" from "approved for this repository now".
+
+Human says:
+
+```text
+방금 축 적용됐어?
+```
+
+AI does:
+
+- Reports which assumption or decision axis was applied.
+- If no explicit assumption check was made, says so and corrects the answer with the assumptions separated.
+- Records only material harness or Phase impacts in workspace files; ordinary clarification does not require document churn.
+
 ## 1) Start A New Feature
 
 Human says:
