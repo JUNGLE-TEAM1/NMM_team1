@@ -184,6 +184,15 @@ PYTHONPATH=backend .venv/bin/python scripts/week2_m2_product_health_l6_evidence.
 11. M1에서 run -> catalog -> ask -> evidence 흐름이 끊기지 않고, 위험 상품군과 `risk_score`, `negative_review_rate`, `conversion_rate`, `late_delivery_rate`가 표시되는지 확인한다.
 12. 발표 문구나 UI가 "Gold 파일이 5GB"라고 설명하지 않고, 5GB를 input 처리 evidence로 표시하는지 확인한다.
 
+### M6 OpenAI LLM Adapter 점검
+
+이 점검은 실제 key 없이도 provider gate와 fallback이 안전한지 확인한다. live OpenAI 호출은 사용자가 로컬 `OPENAI_API_KEY`를 채운 뒤 별도 smoke로만 실행한다.
+
+1. 기본 환경에서 `AppContainer`가 `TemplateLLMAdapter`를 선택하고 `external_calls_enabled=false`인지 확인한다.
+2. `WEEK2_LLM_PROVIDER=openai`만 설정하고 `OPENAI_API_KEY`를 비운 상태에서 외부 호출 없이 template adapter로 fallback되는지 확인한다.
+3. fake HTTP client 기반 test로 OpenAI `/responses` request body에 SQL rows, evidence, retrieval trace만 포함되고 API key, local fallback path, 원본 파일 내용이 포함되지 않는지 확인한다.
+4. provider timeout/error/malformed response가 발생해도 M6 응답이 template summary로 fallback되는지 확인한다.
+
 ### Trust Gate 점검
 
 1. source를 등록하고 schema discovery 결과를 확인한다.

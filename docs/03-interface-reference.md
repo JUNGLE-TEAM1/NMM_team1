@@ -448,7 +448,7 @@ Minimum M6 LLM answer adapter boundary:
 M6 AI Query
 -> LLMAdapter
 -> TemplateLLMAdapter for MVP
--> future env-gated provider adapter
+-> OpenAILLMAdapter when env-gated provider config is complete
 ```
 
 | Field / Source | Included in `LLMAnswerContext` | Notes |
@@ -462,7 +462,19 @@ M6 AI Query
 | SQL engine context | no | `SqlEngineContext.local_fallback_path`, timeout internals, and execution-only path data must not be sent to the LLM adapter. |
 | raw files and secrets | no | Whole source files, local fallback paths, API keys, credentials, and unauthorized columns must not enter prompt/context material. |
 
-The Week 2 default adapter is deterministic `TemplateLLMAdapter`; it performs no external network call and keeps current `AIQueryResult.summary` behavior stable for M1. A real provider adapter must be opt-in/env-gated in a later Phase, and blocked/unsupported answers must not call the LLM adapter.
+The Week 2 default adapter is deterministic `TemplateLLMAdapter`; it performs no external network call and keeps current `AIQueryResult.summary` behavior stable for M1. `OpenAILLMAdapter` is opt-in and may be selected only when `WEEK2_LLM_PROVIDER=openai` and `OPENAI_API_KEY` are configured. If either provider selection or key is missing, M6 must keep using `TemplateLLMAdapter`. Blocked/unsupported answers must not call the LLM adapter.
+
+Minimum M6 external LLM env contract:
+
+| Env / Setting | Default | Notes |
+| --- | --- | --- |
+| `WEEK2_LLM_PROVIDER` / `Settings.week2_llm_provider` | `template` | Allowed values: `template`, `openai`. |
+| `OPENAI_API_KEY` / `Settings.openai_api_key` | none | Secret must come from local environment only; it must not be committed, logged, or included in prompt/context material. |
+| `OPENAI_MODEL` / `Settings.openai_model` | `gpt-4.1-mini` | Overrideable provider model name for local/manual smoke. |
+| `OPENAI_BASE_URL` / `Settings.openai_base_url` | `https://api.openai.com/v1` | Adapter appends `/responses`. |
+| `OPENAI_TIMEOUT_SECONDS` / `Settings.openai_timeout_seconds` | `30` | Provider timeout for a single answer generation call. |
+
+`OpenAILLMAdapter` uses the Responses API request boundary and must fall back to `TemplateLLMAdapter` if the provider response is unavailable, malformed, times out, or returns no usable output text.
 
 Minimum `AIQueryResult.evidence[]` grounding shape:
 
