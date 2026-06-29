@@ -32,6 +32,6 @@
 - issue project result: skipped by `--no-issue` at workspace creation
 - PR closing keyword:
 - pushed branch: `feature/source-dataset-persistence`
-- PR link:
-- merge status:
-- issue close status:
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/291
+- merge status: open
+- issue close status: not applicable
