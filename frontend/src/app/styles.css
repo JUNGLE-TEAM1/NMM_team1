@@ -957,6 +957,12 @@ code {
   color: #b45309;
 }
 
+.wizard-placeholder.compact.success {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #15803d;
+}
+
 .wizard-placeholder strong {
   color: #334155;
   font-size: 15px;

@@ -131,6 +131,20 @@ Target MVP 기능이 구현될 때 아래 경로를 단계별로 실제 manual v
 9. `데이터셋 생성 -> Target Dataset -> Source 선택`에서 저장된 Source Dataset이 후보로 표시되는지 확인한다.
 10. 화면 어디에서도 ingest job, raw table creation, ETL 실행 완료처럼 보이지 않는지 확인한다.
 
+### Dataset Module Target Dataset C-3 점검
+
+1. backend와 frontend를 실행한다.
+2. `/sources` 데이터셋 화면에서 `데이터셋 생성`을 누른다.
+3. `Target Dataset`을 선택한다.
+4. 1단계 Overview에서 target dataset 이름과 목적을 확인 또는 수정한다.
+5. 2단계 Source 선택에서 저장된 Source Dataset을 고른다.
+6. 3단계 Process에서 Select Fields 규칙과 target schema preview를 확인한다.
+7. 4단계 Scheduling에서 manual 또는 placeholder schedule note를 확인한다.
+8. 5단계 Review에서 `Target draft 저장`을 누른다.
+9. 성공 알림과 저장된 draft id가 표시되는지 확인한다.
+10. `GET /api/target-datasets` 응답에 `source_dataset_id`, `process_rule`, `selected_fields`, `schedule`, `job_definition`, `status=draft`가 있는지 확인한다.
+11. 화면과 API 어디에서도 pipeline run, M5 orchestration, CatalogMetadata 등록이 완료된 것처럼 보이지 않는지 확인한다.
+
 ### Modular Contract Baseline 점검
 
 1. `docs/03-interface-reference.md`에 `Dataset`, `TrustGateResult`, `PolicyDecision`, `EvidenceItem`, `AuditEvent` 같은 shared contract가 있는지 확인한다.

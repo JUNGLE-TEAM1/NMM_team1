@@ -1,0 +1,66 @@
+{
+  "id": "target_dataset_01JZ0C3TARGET",
+  "name": "dataset_product_health_gold",
+  "description": "제품 상태 분석용 gold dataset draft",
+  "source_dataset_id": "source_dataset_01JZ0C2SOURCE",
+  "source_dataset_name": "source_product_health_reviews",
+  "source_type": "csv",
+  "selected_fields": ["review_id", "product_id", "rating"],
+  "process_rule": {
+    "type": "select_fields",
+    "selected_fields": ["review_id", "product_id", "rating"]
+  },
+  "schedule": {
+    "mode": "manual",
+    "note": "데모에서는 수동 실행으로만 준비합니다."
+  },
+  "output_schema": [
+    {
+      "name": "review_id",
+      "type": "string"
+    },
+    {
+      "name": "product_id",
+      "type": "string"
+    },
+    {
+      "name": "rating",
+      "type": "number"
+    }
+  ],
+  "job_definition": {
+    "job_type": "target_dataset_etl_draft",
+    "target_dataset_id": "target_dataset_01JZ0C3TARGET",
+    "target_dataset_name": "dataset_product_health_gold",
+    "source_dataset_id": "source_dataset_01JZ0C2SOURCE",
+    "source_dataset_name": "source_product_health_reviews",
+    "source_type": "csv",
+    "process_rule": {
+      "type": "select_fields",
+      "selected_fields": ["review_id", "product_id", "rating"]
+    },
+    "selected_fields": ["review_id", "product_id", "rating"],
+    "schedule": {
+      "mode": "manual",
+      "note": "데모에서는 수동 실행으로만 준비합니다."
+    },
+    "output_schema": [
+      {
+        "name": "review_id",
+        "type": "string"
+      },
+      {
+        "name": "product_id",
+        "type": "string"
+      },
+      {
+        "name": "rating",
+        "type": "number"
+      }
+    ],
+    "status": "draft"
+  },
+  "status": "draft",
+  "created_at": "2026-06-29T00:00:00Z",
+  "updated_at": "2026-06-29T00:00:00Z"
+}

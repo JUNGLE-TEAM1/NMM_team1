@@ -10,6 +10,8 @@ from app.domain.schemas import (
     SourceDatasetRecord,
     SourceRecord,
     SourceRegistration,
+    TargetDatasetCreate,
+    TargetDatasetRecord,
     TrustGateEvaluationRequest,
 )
 from app.domain.target_contracts import TrustGateResult
@@ -62,6 +64,27 @@ def create_source_catalog_router(
         dataset = metadata_store.get_source_dataset(dataset_id)
         if dataset is None:
             raise HTTPException(status_code=404, detail="Source dataset not found")
+        return dataset
+
+    @router.post("/target-datasets", response_model=TargetDatasetRecord, status_code=status.HTTP_201_CREATED)
+    def create_target_dataset(dataset: TargetDatasetCreate) -> TargetDatasetRecord:
+        source_dataset = metadata_store.get_source_dataset(dataset.source_dataset_id)
+        if source_dataset is None:
+            raise HTTPException(status_code=404, detail="Source dataset not found")
+        try:
+            return metadata_store.create_target_dataset(dataset)
+        except sqlite3.IntegrityError as error:
+            raise HTTPException(status_code=409, detail=f"Target dataset name already exists: {dataset.name}") from error
+
+    @router.get("/target-datasets", response_model=list[TargetDatasetRecord])
+    def list_target_datasets() -> list[TargetDatasetRecord]:
+        return metadata_store.list_target_datasets()
+
+    @router.get("/target-datasets/{dataset_id}", response_model=TargetDatasetRecord)
+    def get_target_dataset(dataset_id: str) -> TargetDatasetRecord:
+        dataset = metadata_store.get_target_dataset(dataset_id)
+        if dataset is None:
+            raise HTTPException(status_code=404, detail="Target dataset not found")
         return dataset
 
     @router.get("/catalog/datasets", response_model=list[CatalogDataset])

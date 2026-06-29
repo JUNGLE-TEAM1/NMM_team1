@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -70,6 +70,35 @@ class SourceDatasetRecord(BaseModel):
     schema_preview: list[ColumnSchema]
     layer: Literal["source"] = "source"
     status: str
+    created_at: str
+    updated_at: str
+
+
+class TargetDatasetCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+    description: str = Field(default="", max_length=500)
+    source_dataset_id: str = Field(min_length=1, max_length=120)
+    source_dataset_name: str = Field(min_length=1, max_length=120)
+    source_type: str = Field(min_length=1, max_length=80)
+    selected_fields: list[str] = Field(min_length=1)
+    process_rule: dict[str, Any]
+    schedule: dict[str, Any]
+    output_schema: list[ColumnSchema] = Field(min_length=1)
+
+
+class TargetDatasetRecord(BaseModel):
+    id: str
+    name: str
+    description: str
+    source_dataset_id: str
+    source_dataset_name: str
+    source_type: str
+    selected_fields: list[str]
+    process_rule: dict[str, Any]
+    schedule: dict[str, Any]
+    output_schema: list[ColumnSchema]
+    job_definition: dict[str, Any]
+    status: Literal["draft"] = "draft"
     created_at: str
     updated_at: str
 

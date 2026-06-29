@@ -4,13 +4,11 @@
 
 - Type: Feature Phase
 - Date: 2026-06-29
-- Changed: Target Dataset draft create/list/read API, SQLite 저장소, frontend Review 저장 버튼, contract/sample/docs를 추가했다.
+- Changed: Target Dataset draft 저장 API, SQLite metadata 저장소, frontend Review 저장 버튼, contract/sample/docs를 추가했다.
 - Verified: backend focused tests 10 passed, frontend build passed, browser smoke passed, harness strict/regression passed.
 - Remaining: PR 생성 후 remote CI 확인, merge는 사람 확인 필요.
 - Next context: C-4는 저장된 `TargetDataset.job_definition`을 M5 workflow/run 생성으로 넘긴다.
 - Risk: Target Dataset draft는 실행 결과나 CatalogMetadata가 아니므로 demo에서 실행 완료처럼 설명하면 안 된다.
-
----
 
 ## Phase / Hotfix
 
@@ -33,13 +31,6 @@
 
 - Target Dataset wizard Review 결과를 Target Dataset metadata와 ETL job definition draft로 저장한다.
 - 실행, M5 run 생성, CatalogMetadata 등록은 후속 Phase로 남긴다.
-
-## Changed Files / 변경 파일
-
-- Backend: `backend/app/domain/schemas.py`, `backend/app/adapters/sqlite_metadata_store.py`, `backend/app/ports/metadata_store.py`, `backend/app/api/source_catalog.py`
-- Frontend: `frontend/src/api/targetDatasetApi.js`, `frontend/src/app/App.jsx`, `frontend/src/app/styles.css`
-- Tests/contracts: `backend/tests/test_target_dataset_job_draft.py`, `contracts/target_dataset_job_draft.sample.json`
-- Docs/workspace: `docs/03`, `docs/05`, `docs/06`, `docs/07`, `docs/workflows/feature/target-dataset-job-draft/*`
 
 ## Implementation Summary / 구현 요약
 
@@ -85,19 +76,11 @@ scripts/test-harness.sh
 - Protected behavior: Review 저장은 metadata/job definition draft만 만들고 run을 생성하지 않는다.
 - Result: passed by API split, UI copy, tests, browser smoke
 
-## Failure Scenario / 실패 시나리오
-
-- Reviewed failure: missing source dataset, duplicate target dataset name
-- Expected behavior: missing source는 404, duplicate name은 409
-- Verification: `backend/tests/test_target_dataset_job_draft.py`
-- Result: passed
-
 ## Manual Verification / 수동 검증
 
 - Document executed: `docs/07` Dataset Module Target Dataset C-3 점검
 - Environment: backend `127.0.0.1:8000`, frontend `127.0.0.1:13002`
 - Result: Source Dataset 선택, Process, Scheduling, Review 저장, draft id 표시 확인
-- Failure/limitation: remote CI는 PR 생성 후 확인 필요
 - Evidence: `/api/target-datasets` 응답에 `job_definition.status=draft`와 source/process/schedule/schema 확인
 
 ## docs/05 Acceptance Link / 수용 기준 연결

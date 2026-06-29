@@ -98,6 +98,16 @@
 | Verification method | `backend/tests/test_source_dataset_persistence.py`, 데이터셋 화면 Source Dataset wizard Review 저장, Target Dataset source picker 확인 |
 | Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07`, C-2 `feature/source-dataset-persistence` |
 
+### Target Dataset draft 저장이 실행처럼 보이는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | Target Dataset Review 저장은 Target Dataset metadata와 ETL job definition draft를 저장하는 단계다. |
+| Failure condition | Review 저장이 pipeline run, M5 orchestration, CatalogMetadata 등록을 수행하거나 실행 완료처럼 표시한다. |
+| Expected behavior | `/api/target-datasets`는 `source_dataset_id`, `process_rule`, `selected_fields`, `schedule`, `job_definition`, `status=draft`를 저장하고 실행은 후속 handoff Phase로 남긴다. |
+| Verification method | `backend/tests/test_target_dataset_job_draft.py`, 데이터셋 화면 Target Dataset wizard Review 저장, 저장된 draft id 확인 |
+| Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07`, C-3 `feature/target-dataset-job-draft` |
+
 ### Week 2 Airflow 실패가 local fallback 성공으로 가려지는 경우
 
 | 항목 | 내용 |

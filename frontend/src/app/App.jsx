@@ -55,6 +55,7 @@ import {
   triggerWeek2Run,
 } from "../api/asklakeClient";
 import { createSourceDataset, listSourceDatasets } from "../api/sourceDatasetApi";
+import { createTargetDataset } from "../api/targetDatasetApi";
 import asklakeLogo from "../assets/asklake-logo.png";
 import { StatusPill } from "../components/StatusPill";
 import {
@@ -710,6 +711,9 @@ function SourcesPage({ navigate, setNotice }) {
   const [targetDescription, setTargetDescription] = useState("제품 상태 분석용 gold dataset draft");
   const [targetScheduleMode, setTargetScheduleMode] = useState("manual");
   const [targetScheduleNote, setTargetScheduleNote] = useState("데모에서는 수동 실행으로만 준비합니다.");
+  const [isSavingTargetDraft, setIsSavingTargetDraft] = useState(false);
+  const [targetDraftError, setTargetDraftError] = useState("");
+  const [lastCreatedTargetDraft, setLastCreatedTargetDraft] = useState(null);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const normalizedTargetName = targetName.trim();
   const normalizedTargetDescription = targetDescription.trim();
@@ -805,6 +809,9 @@ function SourcesPage({ navigate, setNotice }) {
     (currentSourceStep.id === "raw-config" && Boolean(sourceDatasetName.trim() && sourceRawScope.trim()));
   const canCreateSourceDataset =
     Boolean(sourceDraft && sourceDatasetName.trim() && sourceRawScope.trim()) && !isSavingSourceDataset;
+  const canCreateTargetDraft =
+    Boolean(normalizedTargetName && selectedSource && selectedFields.length > 0 && selectedOutputSchema.length > 0) &&
+    !isSavingTargetDraft;
   const canGoNextConnection =
     (currentConnectionStep.id === "connector-type" && Boolean(selectedConnectionType)) ||
     (currentConnectionStep.id === "configure" && Boolean(connectionName.trim() && connectionResource.trim()));
@@ -836,6 +843,8 @@ function SourcesPage({ navigate, setNotice }) {
   function handleSourceSelect(source) {
     setSelectedSource(source);
     setSelectedFields(source.columns);
+    setLastCreatedTargetDraft(null);
+    setTargetDraftError("");
     setNotice(`${source.name} source를 선택했습니다.`);
     setIsSourceModalOpen(false);
   }
@@ -877,7 +886,45 @@ function SourcesPage({ navigate, setNotice }) {
     }
   }
 
+  async function saveTargetDatasetDraft() {
+    if (!canCreateTargetDraft) return;
+    setIsSavingTargetDraft(true);
+    setTargetDraftError("");
+
+    const schedule = {
+      mode: targetScheduleMode,
+      note: targetScheduleNote.trim(),
+    };
+    const processRule = {
+      type: "select_fields",
+      selected_fields: selectedFields,
+    };
+
+    try {
+      const record = await createTargetDataset({
+        name: normalizedTargetName,
+        description: normalizedTargetDescription,
+        source_dataset_id: selectedSource.id,
+        source_dataset_name: selectedSource.name,
+        source_type: selectedSource.sourceType,
+        selected_fields: selectedFields,
+        process_rule: processRule,
+        schedule,
+        output_schema: selectedOutputSchema.map(({ name, type }) => ({ name, type })),
+      });
+      setLastCreatedTargetDraft(record);
+      setNotice(`${record.name} Target Dataset draft를 저장했습니다.`);
+    } catch (error) {
+      setTargetDraftError(error.message);
+      setNotice(`Target Dataset draft 저장 실패: ${error.message}`);
+    } finally {
+      setIsSavingTargetDraft(false);
+    }
+  }
+
   function toggleField(column) {
+    setLastCreatedTargetDraft(null);
+    setTargetDraftError("");
     setSelectedFields((currentFields) =>
       currentFields.includes(column)
         ? currentFields.filter((field) => field !== column)
@@ -888,11 +935,15 @@ function SourcesPage({ navigate, setNotice }) {
   function selectAllFields() {
     if (selectedSource) {
       setSelectedFields(selectedSource.columns);
+      setLastCreatedTargetDraft(null);
+      setTargetDraftError("");
     }
   }
 
   function clearFields() {
     setSelectedFields([]);
+    setLastCreatedTargetDraft(null);
+    setTargetDraftError("");
   }
 
   function goNext() {
@@ -1447,9 +1498,9 @@ function SourcesPage({ navigate, setNotice }) {
                   <ArrowRight size={16} />
                 </button>
               ) : (
-                <button type="button" className="primary-action" disabled>
-                  Target dataset draft 준비
-                  <CheckCircle2 size={16} />
+                <button type="button" className="primary-action" onClick={saveTargetDatasetDraft} disabled={!canCreateTargetDraft}>
+                  {isSavingTargetDraft ? "저장 중..." : lastCreatedTargetDraft ? "Target draft 저장됨" : "Target draft 저장"}
+                  {isSavingTargetDraft ? <Loader2 size={16} className="spin" /> : <CheckCircle2 size={16} />}
                 </button>
               )}
             </footer>
@@ -1483,7 +1534,11 @@ function SourcesPage({ navigate, setNotice }) {
               <input
                 type="text"
                 value={targetName}
-                onChange={(event) => setTargetName(event.target.value)}
+                onChange={(event) => {
+                  setTargetName(event.target.value);
+                  setLastCreatedTargetDraft(null);
+                  setTargetDraftError("");
+                }}
                 placeholder="dataset_product_health_gold"
               />
             </label>
@@ -1492,7 +1547,11 @@ function SourcesPage({ navigate, setNotice }) {
               <input
                 type="text"
                 value={targetDescription}
-                onChange={(event) => setTargetDescription(event.target.value)}
+                onChange={(event) => {
+                  setTargetDescription(event.target.value);
+                  setLastCreatedTargetDraft(null);
+                  setTargetDraftError("");
+                }}
                 placeholder="제품 상태 분석용 gold dataset draft"
               />
             </label>
@@ -1688,7 +1747,11 @@ function SourcesPage({ navigate, setNotice }) {
                   name="target-schedule"
                   value="manual"
                   checked={targetScheduleMode === "manual"}
-                  onChange={() => setTargetScheduleMode("manual")}
+                  onChange={() => {
+                    setTargetScheduleMode("manual");
+                    setLastCreatedTargetDraft(null);
+                    setTargetDraftError("");
+                  }}
                 />
                 <span>
                   <strong>Manual</strong>
@@ -1701,7 +1764,11 @@ function SourcesPage({ navigate, setNotice }) {
                   name="target-schedule"
                   value="placeholder"
                   checked={targetScheduleMode === "placeholder"}
-                  onChange={() => setTargetScheduleMode("placeholder")}
+                  onChange={() => {
+                    setTargetScheduleMode("placeholder");
+                    setLastCreatedTargetDraft(null);
+                    setTargetDraftError("");
+                  }}
                 />
                 <span>
                   <strong>Schedule placeholder</strong>
@@ -1714,7 +1781,11 @@ function SourcesPage({ navigate, setNotice }) {
               <input
                 type="text"
                 value={targetScheduleNote}
-                onChange={(event) => setTargetScheduleNote(event.target.value)}
+                onChange={(event) => {
+                  setTargetScheduleNote(event.target.value);
+                  setLastCreatedTargetDraft(null);
+                  setTargetDraftError("");
+                }}
                 placeholder="데모에서는 수동 실행으로만 준비합니다."
               />
             </label>
@@ -1767,8 +1838,20 @@ function SourcesPage({ navigate, setNotice }) {
           </div>
           <div className="wizard-placeholder compact">
             <CheckCircle2 size={22} />
-            <strong>Target dataset과 ETL job definition 준비 완료. 실제 저장과 실행은 아직 호출하지 않습니다.</strong>
+            <strong>저장 시 Target Dataset metadata와 ETL job definition draft만 생성하며 실행은 호출하지 않습니다.</strong>
           </div>
+          {lastCreatedTargetDraft ? (
+            <div className="wizard-placeholder compact success">
+              <Save size={22} />
+              <strong>저장된 draft id: {lastCreatedTargetDraft.id}</strong>
+            </div>
+          ) : null}
+          {targetDraftError ? (
+            <div className="wizard-placeholder compact warning">
+              <AlertCircle size={22} />
+              <strong>{targetDraftError}</strong>
+            </div>
+          ) : null}
         </section>
       );
     }

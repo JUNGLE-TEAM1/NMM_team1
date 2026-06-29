@@ -10,6 +10,8 @@ from app.domain.schemas import (
     SourceDatasetCreate,
     SourceDatasetRecord,
     SourceRecord,
+    TargetDatasetCreate,
+    TargetDatasetRecord,
 )
 
 
@@ -33,6 +35,12 @@ class MetadataStore(Protocol):
     def list_source_datasets(self) -> list[SourceDatasetRecord]: ...
 
     def get_source_dataset(self, dataset_id: str) -> SourceDatasetRecord | None: ...
+
+    def create_target_dataset(self, dataset: TargetDatasetCreate) -> TargetDatasetRecord: ...
+
+    def list_target_datasets(self) -> list[TargetDatasetRecord]: ...
+
+    def get_target_dataset(self, dataset_id: str) -> TargetDatasetRecord | None: ...
 
     def list_catalog_datasets(self) -> list[CatalogDataset]: ...
 
