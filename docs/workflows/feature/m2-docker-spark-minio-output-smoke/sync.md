@@ -45,7 +45,13 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 - issue creation result: created
 - issue project result: added to JUNGLE-TEAM1 project 3; status set to In Progress
 - PR closing keyword: Closes #263
-- pushed branch:
-- PR link:
-- merge status:
+- pushed branch: `feature/m2-docker-spark-minio-output-smoke`
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/267
+- merge status: open, GitHub reports `BEHIND` after creation
 - issue close status:
+
+## Remote Operations / 원격 작업 기록
+
+- 2026-06-29: `git push -u origin feature/m2-docker-spark-minio-output-smoke` succeeded.
+- 2026-06-29: PR #267 created.
+- 2026-06-29: initial PR body command used shell double quotes and Markdown backticks were interpreted by the shell. This accidentally executed some smoke/check commands already recorded as passing and produced a malformed PR body. The PR body was corrected with `gh pr edit 267` using shell-safe quoting. Docker containers were stopped afterward and `docker compose ... ps` showed no running containers.
