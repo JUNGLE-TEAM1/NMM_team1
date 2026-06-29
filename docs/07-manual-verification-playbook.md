@@ -92,6 +92,19 @@ PYTHONPATH=backend ./.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
 10. `GET /api/week2/catalog/dataset_reviews_gold`에서 같은 `run_id`, row count, bytes, local path가 확인되는지 확인한다.
 11. 확인 뒤 필요한 경우 `docker compose -f docker-compose.airflow.yml down`을 실행한다.
 
+### M2 SparkRunner handoff artifact 사전 점검
+
+Airflow DAG가 M2 runner를 호출하는 task를 붙이기 전에는 아래 명령으로 M2가 M5용 result artifact를 만들 수 있는지 먼저 확인한다.
+
+```bash
+PYTHONPATH=backend .venv/bin/python scripts/week2_m2_airflow_sparkrunner_handoff.py \
+  --runtime-profile airflow_sparkrunner_handoff \
+  --run-id run_airflow_spark_001 \
+  --result-path data/week2/_airflow_results/run_airflow_spark_001.json
+```
+
+기대 결과는 `data/week2/_airflow_results/run_airflow_spark_001.json` 안에 `week2_result.status=succeeded`, `output_path`, `row_count`, `bytes`, `duration_ms`, `output_row_count`, `output_bytes`, `task_results[]`가 남는 것이다. 이 파일은 M5 `Week2AirflowAdapter`가 읽는 shared result artifact와 같은 모양이다.
+
 ## Target MVP 수동 점검 후보
 
 Target MVP 기능이 구현될 때 아래 경로를 단계별로 실제 manual verification 문서로 승격한다.

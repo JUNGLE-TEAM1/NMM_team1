@@ -17,6 +17,25 @@
     "output_root": "data/week2",
     "result_fields": ["status", "row_count", "bytes", "duration_ms", "output_path"]
   },
+  "airflow_sparkrunner_handoff": {
+    "runner": "spark_runner",
+    "input_format": "jsonl",
+    "input_path": "backend/samples/amazon_reviews_demo.jsonl",
+    "output_format": "parquet",
+    "output_root": "data/week2",
+    "options": {
+      "output_file_name": "dataset_reviews_gold.parquet"
+    },
+    "result_artifact": {
+      "producer": "M2",
+      "script": "scripts/week2_m2_airflow_sparkrunner_handoff.py",
+      "default_path": "data/week2/_airflow_results/<run_id>.json",
+      "wrapper_key": "week2_result",
+      "consumer": "M5 Week2AirflowAdapter"
+    },
+    "result_fields": ["status", "task_results", "logs", "row_count", "bytes", "duration_ms", "output_path", "output_row_count", "output_bytes"],
+    "scope_note": "M2-owned handoff artifact for Airflow DAG tasks. Airflow service/DAG ownership remains M5."
+  },
   "product_health_runtime_smoke": {
     "runner": "spark_runner",
     "source_inputs": [
