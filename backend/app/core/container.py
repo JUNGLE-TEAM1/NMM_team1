@@ -14,6 +14,8 @@ from app.ports.result_store import ResultStore
 from app.ports.sql_engine import SqlEngineAdapter
 from app.ports.source_connector import SourceConnector
 from app.services.ai_query import Week2AIQueryService
+from app.services.catalog_rag_index import CatalogRetrievalIndex
+from app.services.catalog_retriever import CatalogRetriever
 from app.services.catalog_trust import CatalogTrustService
 from app.services.pipeline import PipelineService
 from app.services.source_catalog import SourceCatalogService
@@ -31,6 +33,7 @@ class AppContainer:
         self.week2_catalog_store = self.create_week2_catalog_store()
         self.week2_kafka_replay_evidence_service = self.create_week2_kafka_replay_evidence_service()
         self.catalog_source = self.create_catalog_source()
+        self.catalog_retriever = self.create_catalog_retriever()
         self.sql_engine = self.create_sql_engine()
         self.catalog_trust_service = self.create_catalog_trust_service()
         self.source_catalog_service = self.create_source_catalog_service()
@@ -64,6 +67,13 @@ class AppContainer:
             return DuckDBSqlEngine()
         return FakeSqlEngine()
 
+    def create_catalog_retriever(self) -> CatalogRetriever:
+        return CatalogRetriever(
+            retrieval_index=CatalogRetrievalIndex(
+                persist_path=self.week2_output_root() / "_metadata" / "m6_catalog_rag_index.json",
+            )
+        )
+
     def create_catalog_trust_service(self) -> CatalogTrustService:
         return CatalogTrustService()
 
@@ -80,7 +90,11 @@ class AppContainer:
         )
 
     def create_ai_query_service(self) -> Week2AIQueryService:
-        return Week2AIQueryService(self.sql_engine, catalog_source=self.catalog_source)
+        return Week2AIQueryService(
+            self.sql_engine,
+            catalog_source=self.catalog_source,
+            catalog_retriever=self.catalog_retriever,
+        )
 
     def week2_output_root(self) -> Path:
         return Path(self.settings.result_store_path) / "week2"

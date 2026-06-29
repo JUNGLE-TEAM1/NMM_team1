@@ -266,7 +266,7 @@ Locked Week 2 contract decisions:
 - Week 2 product risk MVP uses `pipeline_product_health_e2e`, `dataset_product_health_gold`, and `gold_product_health` as the representative E2E identifiers. Amazon Reviews remains the reviews fact input, not the whole final analysis path.
 - 5GB processing evidence is measured on main pipeline input, not Gold output size. `ExecutionResult.bytes` records primary or total input bytes for the run; multi-source product health runs should also expose source-level rows/bytes/duration in `task_results[]` or metrics. `CatalogMetadata.metrics.bytes` remains Gold output bytes.
 - M5 Airflow local smoke uses a shared result artifact. `Week2AirflowAdapter` triggers DAG `asklake_week2_reviews` with `conf.airflow_result_file=<run_id>.json`; the DAG writes `data/week2/_airflow_results/<run_id>.json`; the artifact contains `week2_result` with the `Week2RunnerResult`-compatible fields `status`, `task_results`, `logs`, `row_count`, `bytes`, `duration_ms`, `output_path`, `output_row_count`, and `output_bytes`.
-- M2 Taxi local batch evidence uses `pipeline_taxi_daily_metrics`, `dataset_taxi_daily_metrics_gold`, and `gold_taxi_daily_metrics`. It is supporting Parquet execution evidence only, not the product risk representative path. PySpark local mode and Docker Spark standalone mode can read a single Parquet file or a Parquet directory and record input rows, input bytes, duration, output path, output rows, and output bytes. Docker Spark standalone evidence uses a public Spark image, one master, two workers, and a driver container; durable MinIO/S3 write, PostgreSQL loader, and Airflow DAG-internal invocation are later phases.
+- M2 Taxi local batch evidence uses `pipeline_taxi_daily_metrics`, `dataset_taxi_daily_metrics_gold`, and `gold_taxi_daily_metrics`. It is supporting Parquet execution evidence only, not the product risk representative path. PySpark local mode and Docker Spark standalone mode can read a single Parquet file or a Parquet directory and record input rows, input bytes, duration, output path, output rows, and output bytes. Docker Spark standalone evidence uses a public Spark image, one master, two workers, and a driver container. Docker Spark can also run an opt-in local MinIO smoke that writes the Spark result to the local fallback path and uploads the same output file to an S3-compatible object path through `Week2StorageAdapter`. Direct Spark `s3a://` write, PostgreSQL loader, and Airflow DAG-internal invocation remain later phases.
 - The hardcoded Taxi daily Gold schema, aggregation, and valid-row mask are provisional evidence scaffolding, not durable M2-owned transform semantics. Final Gold metric definitions, quality rules, quarantine behavior, and period rules remain M3-owned `TransformSpec` / `QualityRule` responsibilities. M2's durable responsibility is runner/runtime/storage execution plus row_count, bytes, duration, output path, and related evidence. When the M3 spec execution path is available, this hardcoded Taxi Gold builder must be removed or demoted to a demo/test fixture.
 
 Provisional M2 Taxi daily metric evidence fields:
@@ -404,6 +404,20 @@ Minimum `AIQueryResult` route and retrieval trace shape:
 | `retrieval_trace[].evidence_index` | no | index into `AIQueryResult.evidence[]` when the trace item directly supports an evidence item |
 
 `route` and `retrieval_trace` are additive fields. Existing M1 consumers may continue reading `status`, `sql`, `query_result`, `rows`, `summary`, and `evidence`, while richer Week 2 displays can show why M6 selected a SQL/RAG/Hybrid/Unsupported path.
+
+Minimum M6 Catalog RAG-lite index boundary:
+
+| Field / Source | Included in M6 index | Notes |
+| --- | --- | --- |
+| dataset identity | yes | `dataset_id`, `name`, `layer` |
+| schema fields | yes | field name, type, nullable, and local semantic aliases |
+| metrics | yes | metric keys and safe scalar metric values such as row count, bytes, quality, semantics |
+| lineage | yes | `pipeline_id`, `run_id`, `source_ids`, `upstream_datasets` |
+| query allowlist | yes | `query.table_name`, `query.allowed_columns`, `default_limit`, timeout metadata |
+| freshness | yes | `updated_at` and freshness interval values |
+| storage/local path | no | `storage.local_fallback_path`, raw file paths, whole source files, secrets, credentials, and API keys must not be indexed |
+
+The M6 Catalog RAG-lite index is a derived cache, not the Catalog source of truth. Its cache signature is based on `dataset_id + lineage.run_id + updated_at`; when any of those values change, the index is stale and must be rebuilt before retrieval. The current Week 2 route remains SQL-first, but `retrieval_trace[]` may include additional `schema`, `metric`, or `lineage` items from the index.
 
 Minimum `AIQueryResult.evidence[]` grounding shape:
 

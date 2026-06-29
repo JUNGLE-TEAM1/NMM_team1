@@ -1,0 +1,69 @@
+{
+  "contract": "WorkflowDefinition",
+  "producer": "M1/M5",
+  "consumers": ["M5"],
+  "tenant_id": "tenant_demo",
+  "pipeline_id": "pipeline_product_health_e2e",
+  "name": "Product Health Gold E2E",
+  "transform_spec_ref": "contracts/product_health_transform_spec.sample.json",
+  "nodes": [
+    {"id": "node_source_reviews", "type": "Source", "source_id": "source_reviews_seed", "outputs": ["artifact_reviews_bronze"]},
+    {"id": "node_source_behavior", "type": "Source", "source_id": "source_behavior_events_seed", "outputs": ["artifact_behavior_bronze"]},
+    {"id": "node_source_delivery", "type": "Source", "source_id": "source_delivery_trips_seed", "outputs": ["artifact_delivery_bronze"]},
+    {"id": "node_source_product_master", "type": "Source", "source_id": "source_product_master_seed", "outputs": ["artifact_product_master_bronze"]},
+    {
+      "id": "node_normalize",
+      "type": "Cast/Normalize",
+      "schema_version": "schema_product_health_gold_v1",
+      "inputs": ["artifact_reviews_bronze", "artifact_behavior_bronze", "artifact_delivery_bronze", "artifact_product_master_bronze"],
+      "outputs": ["artifact_reviews_silver", "artifact_behavior_silver", "artifact_delivery_silver", "artifact_product_master_silver"]
+    },
+    {
+      "id": "node_aggregate_sources",
+      "type": "Aggregate",
+      "config": {
+        "group_by": ["product_id"],
+        "metrics": ["review_count", "average_rating", "negative_review_rate", "view_count", "purchase_count", "conversion_rate", "delivery_count", "late_delivery_rate"]
+      },
+      "inputs": ["artifact_reviews_silver", "artifact_behavior_silver", "artifact_delivery_silver"],
+      "outputs": ["artifact_review_health", "artifact_behavior_health", "artifact_delivery_health"]
+    },
+    {
+      "id": "node_join_and_score",
+      "type": "Join/Derive",
+      "config": {
+        "keys": ["product_id"],
+        "join_strategy": "full_outer_product_id_union_with_product_master_preferred_dimensions",
+        "dimension_priority": ["product_master", "review_source_hints", "behavior_source_hints", "delivery_source_hints"],
+        "derive": ["risk_score"]
+      },
+      "inputs": ["artifact_product_master_silver", "artifact_review_health", "artifact_behavior_health", "artifact_delivery_health"],
+      "outputs": ["artifact_product_health_gold"]
+    },
+    {
+      "id": "node_load_product_health",
+      "type": "Load",
+      "target_dataset": "dataset_product_health_gold",
+      "query_table": "gold_product_health",
+      "inputs": ["artifact_product_health_gold"],
+      "outputs": ["dataset_product_health_gold"]
+    }
+  ],
+  "edges": [
+    ["node_source_reviews", "node_normalize"],
+    ["node_source_behavior", "node_normalize"],
+    ["node_source_delivery", "node_normalize"],
+    ["node_source_product_master", "node_normalize"],
+    ["node_normalize", "node_aggregate_sources"],
+    ["node_aggregate_sources", "node_join_and_score"],
+    ["node_join_and_score", "node_load_product_health"]
+  ],
+  "target_dataset": "dataset_product_health_gold",
+  "schedule": null,
+  "status_model": ["queued", "running", "succeeded", "failed", "fallback_succeeded", "fallback_failed"],
+  "runner": {
+    "primary": "spark_runner",
+    "fallback": "local_runner",
+    "fallback_condition": "Use local_runner only for small smoke; 5GB+ presentation evidence must come from the M2 Spark runner boundary."
+  }
+}

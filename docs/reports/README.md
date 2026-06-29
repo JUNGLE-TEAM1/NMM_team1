@@ -68,6 +68,7 @@ report가 늘어나면 영역별 최신 report index를 작게 유지한다. 이
 | Week2 responsibility ver2 | [`week2-responsibility-ver2.md`](week2-responsibility-ver2.md) | 초기 회의안 이후 M1~M6 책임 분리를 ver2 기준으로 재정리하고 Spark/Parquet/Catalog 중복 책임을 제거 |
 | Week2 main E2E path | [`week2-main-e2e-path.md`](week2-main-e2e-path.md) | 과거 Amazon Reviews 대표 경로 결정 evidence. 현재 대표 경로는 Source of Truth 전파 report와 ver2 Source of Truth를 우선 확인 |
 | Week2 existing implementation anchor | [`week2-existing-implementation-anchor.md`](week2-existing-implementation-anchor.md) | 기존 M1 shell, M4 Kafka demo, M5 workflow/catalog, M6 skeleton을 ver2 후속 구현의 보존 anchor로 확인 |
+| M4 Kafka contract smoke fixture | [`m4-kafka-contract-smoke.md`](m4-kafka-contract-smoke.md) | M4 Kafka replay contract fixture의 미확정 replay rate/source file TODO를 실제 smoke evidence 값으로 확정 |
 | Week2 M3 JSON main path decision | [`week2-m3-json-main-path-decision.md`](week2-m3-json-main-path-decision.md) | 과거 M3 JSON path decision evidence. 현재 M3 기준은 `gold_product_health` TransformSpec과 PR #105 selective recovery를 함께 확인 |
 | Week2 runner boundary decision | [`week2-runner-boundary-decision.md`](week2-runner-boundary-decision.md) | M2 SparkRunner, M3 TransformSpec/job logic, M5 runner selection이 공유할 input/output boundary 확인 |
 | M2 Product Health runtime smoke | [`m2-product-health-runtime-smoke.md`](m2-product-health-runtime-smoke.md) | M2가 reviews/behavior/delivery/product raw input을 multi-source pass-through Parquet/evidence로 처리하는 additive RuntimeConfig 경계 확인 |
@@ -75,6 +76,7 @@ report가 늘어나면 영역별 최신 report index를 작게 유지한다. 이
 | M2 Product Health L6 evidence | [`m2-product-health-l6-evidence.md`](m2-product-health-l6-evidence.md) | 작은 Product Health source evidence, L6 Gold preview Parquet, DuckDB SQL read smoke 확인 |
 | M2 Taxi 5GB local Spark evidence | [`m2-taxi-5gb-local-spark-evidence.md`](m2-taxi-5gb-local-spark-evidence.md) | PySpark local mode가 4.87GB Taxi Parquet directory를 읽고 `gold_taxi_daily_metrics` Parquet과 Week2RunnerResult 호환 summary를 남기는지 확인 |
 | M2 Taxi Docker Spark evidence | [`m2-taxi-docker-spark-evidence.md`](m2-taxi-docker-spark-evidence.md) | 공개 Spark image 기반 Docker Spark master/worker/driver가 작은 Taxi 파일과 4.87GB Taxi directory를 처리해 `gold_taxi_daily_metrics` Parquet과 Week2RunnerResult 호환 summary를 남기는지 확인 |
+| M2 Docker Spark MinIO output smoke | [`m2-docker-spark-minio-output-smoke.md`](m2-docker-spark-minio-output-smoke.md) | Docker Spark가 만든 Taxi Gold Parquet을 local fallback path에 쓰고 같은 파일을 MinIO/S3-compatible object URI로 업로드하는지 확인 |
 | M2 source input 계약 확장 | [`m2-source-input-contract.md`](m2-source-input-contract.md) | `RuntimeConfig.source_inputs[]`가 legacy `input_format`/`input_path`와 새 `source_type`/`format`/`path`를 함께 받는 호환 계약 확인 |
 | Week2 team handoff summary | [`week2-team-handoff-summary.md`](week2-team-handoff-summary.md) | Phase 1~6 이후 팀원이 읽을 현재 분업/진행상황/다음 병렬 구현 순서 확인 |
 | Week2 상품 리스크 Source of Truth 전파 | [`week2-product-risk-source-of-truth-propagation.md`](week2-product-risk-source-of-truth-propagation.md) | Week2 대표 경로가 5GB raw/bronze input 기반 `gold_product_health`로 갱신된 Source of Truth 전파 범위와 남은 구현 gap 확인 |
@@ -86,6 +88,7 @@ report가 늘어나면 영역별 최신 report index를 작게 유지한다. 이
 | M6 DuckDB runtime integration | [`m6-duckdb-runtime-integration.md`](m6-duckdb-runtime-integration.md) | M6 Step 3에서 기본 runtime을 DuckDB로 연결하고 실제 Week2 output file을 SQL로 읽는지 확인 |
 | M6 SQL planner intent rules | [`m6-sql-planner-intents.md`](m6-sql-planner-intents.md) | M6 Step 4에서 deterministic SQL planner intent, product health 지표, unsupported guardrail을 확인 |
 | M6 response contract route trace | [`m6-response-contract-trace.md`](m6-response-contract-trace.md) | M6 Step 5에서 `AIQueryResult.route`와 `retrieval_trace` additive response contract를 확인 |
+| M6 Catalog RAG Index | [`m6-catalog-rag-index.md`](m6-catalog-rag-index.md) | M6 Step 6에서 CatalogMetadata 기반 RAG-lite index, safe chunk, stale cache, richer retrieval trace를 확인 |
 | M1 live UI Phase plan | [`m1-live-ui-phase-plan.md`](m1-live-ui-phase-plan.md) | M1 shell 이후 Week2 M5/M6 API 연결과 발표 클릭 흐름을 5개 작은 Phase로 나눈 기준 확인 |
 | M1 Week2 API Client 연결 | [`m1-week2-api-client.md`](m1-week2-api-client.md) | M1 live UI Phase 1에서 Week2 M5/M6 API client와 frontend export를 추가한 결과 확인 |
 | M1 Run Status Live UI | [`m1-run-status-live-ui.md`](m1-run-status-live-ui.md) | M1 live UI Phase 2에서 `/runs` 화면이 M5 workflow 실행/refresh와 ExecutionResult 표시를 소비하는지 확인 |

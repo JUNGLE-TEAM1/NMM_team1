@@ -18,6 +18,7 @@ if str(BACKEND_ROOT) not in sys.path:
 from app.domain.runtime_config import StorageConfig  # noqa: E402
 from app.services.week2_taxi_batch_runner import GOLD_DATASET_ID, GOLD_TABLE_NAME  # noqa: E402
 from app.services.week2_taxi_spark_runner import TaxiSparkConfig, Week2TaxiSparkRunner  # noqa: E402
+from app.services.week2_storage_adapter import Week2StorageAdapter  # noqa: E402
 
 
 def run_evidence(args: argparse.Namespace) -> dict[str, Any]:
@@ -78,9 +79,18 @@ def run_evidence(args: argparse.Namespace) -> dict[str, Any]:
         "logs": result.logs,
     }
     if storage is not None:
+        location = Week2StorageAdapter().build_location(
+            storage,
+            run_id=args.run_id,
+            file_name=f"{GOLD_TABLE_NAME}.parquet",
+            local_root=str(output_root),
+            default_prefix="taxi/gold/daily_metrics/run_id=<run_id>/",
+        )
         evidence["output"]["storage_profile"] = storage.profile
         evidence["output"]["bucket"] = storage.bucket
-        evidence["output"]["prefix"] = storage.prefix
+        evidence["output"]["prefix"] = location.prefix
+        evidence["output"]["s3_uri"] = location.uri
+        evidence["output"]["object_uri"] = location.object_uri
         evidence["output"]["endpoint_configured"] = storage.endpoint is not None
     if result.status != "succeeded":
         evidence["error"] = result.task_results[0].get("error") if result.task_results else "unknown error"

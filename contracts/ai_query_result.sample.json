@@ -52,6 +52,13 @@
       "score": 6,
       "matched_terms": ["review_count", "product_id"],
       "evidence_index": 0
+    },
+    {
+      "source_type": "schema",
+      "source_id": "dataset_reviews_gold.schema.review_count",
+      "score": 0.42,
+      "matched_terms": ["리뷰"],
+      "evidence_index": 0
     }
   ],
   "status": "succeeded",

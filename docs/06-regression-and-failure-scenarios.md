@@ -128,6 +128,16 @@
 | Verification method | `backend/tests/test_week2_ai_query.py` route/retrieval_trace regression과 `contracts/ai_query_result.sample.json`을 확인한다. |
 | Related docs/interface/Phase | `docs/03`, `docs/05`, `contracts/ai_query_result.sample.json`, M6 response contract |
 
+### M6 Catalog RAG-lite index가 안전하지 않은 데이터를 인덱싱하는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | M6 index는 CatalogMetadata의 안전한 metadata chunk만 사용하고, 원본 파일 전체, secret, credential, local fallback path를 인덱싱하지 않는다. |
+| Failure condition | `storage.local_fallback_path`, 실제 파일 내용, API key, credential, 허용되지 않은 컬럼이 index chunk text나 retrieval trace에 들어간다. 또는 `dataset_id + run_id + updated_at`이 바뀌었는데 stale cache를 계속 사용한다. |
+| Expected behavior | index 대상은 dataset name, schema fields, metrics, lineage, query allowlist, freshness로 제한된다. Catalog signature가 바뀌면 persisted cache를 재생성한다. |
+| Verification method | `backend/tests/test_catalog_retrieval_index.py`, `backend/tests/test_week2_ai_query.py`의 RAG-lite trace regression을 확인한다. |
+| Related docs/interface/Phase | `docs/03`, `docs/05`, `contracts/ai_query_result.sample.json`, M6 Catalog RAG Index |
+
 ### Mock/Fake Boundary를 넘어 실제 접근으로 진행되는 경우
 
 | 항목 | 내용 |

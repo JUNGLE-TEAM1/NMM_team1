@@ -139,6 +139,13 @@ ASKLAKE_TAXI_HOST_DIR='<LOCAL_TAXI_PARENT_DIR>' scripts/week2_m2_taxi_spark_dock
 scripts/week2_m2_taxi_spark_docker_evidence.sh down
 ```
 
+14. M2 Taxi Docker Spark MinIO output smoke를 확인할 때는 같은 Docker Spark cluster compose에 포함된 `m2-minio`를 함께 띄운다. 성공 기준은 summary JSON에 `status=succeeded`, `spark_upload_taxi_daily_metrics` task success, local output path, `s3://asklake-demo/...` object URI, input/output row와 bytes가 남는 것이다. 이 검증은 Spark가 직접 `s3a://`로 쓰는 경로가 아니라, Spark local fallback write 뒤 `Week2StorageAdapter`가 같은 output file을 S3-compatible object로 업로드하는 경로다.
+
+```bash
+ASKLAKE_TAXI_HOST_DIR='<LOCAL_TAXI_PARENT_DIR>' scripts/week2_m2_taxi_spark_docker_evidence.sh minio-small
+scripts/week2_m2_taxi_spark_docker_evidence.sh down
+```
+
 ### Week 2 상품 리스크 대표 경로 점검
 
 이 경로는 Week2 발표 대표 path가 5GB 이상 fact input을 처리해 `gold_product_health`를 만들고, Catalog/SQL/UI까지 이어지는지 확인한다.
@@ -158,7 +165,7 @@ PYTHONPATH=backend .venv/bin/python scripts/week2_m2_product_health_l6_evidence.
 5. bronze output path, silver output path, gold output path가 같은 `run_id`와 연결되는지 확인한다.
 6. `GET /api/week2/catalog/dataset_product_health_gold` 또는 대응 Catalog 화면에서 `gold_product_health` output path, Gold row count, Gold bytes, lineage를 확인한다.
 7. M6 AI Query에서 "리뷰가 나쁘고 구매 전환도 낮고 배송 지연까지 겹친 문제 상품군을 찾아줘."를 실행한다.
-8. `AIQueryResult.route=sql`, `AIQueryResult.query_result.engine=duckdb`, SELECT-only SQL, returned rows, evidence `dataset_id=dataset_product_health_gold`, `retrieval_trace[].source_id=dataset_product_health_gold`가 확인되는지 본다.
+8. `AIQueryResult.route=sql`, `AIQueryResult.query_result.engine=duckdb`, SELECT-only SQL, returned rows, evidence `dataset_id=dataset_product_health_gold`, `retrieval_trace[].source_id=dataset_product_health_gold`, `retrieval_trace[]`의 `schema`/`metric`/`lineage` 근거가 확인되는지 본다.
 9. M1에서 run -> catalog -> ask -> evidence 흐름이 끊기지 않고, 위험 상품군과 `risk_score`, `negative_review_rate`, `conversion_rate`, `late_delivery_rate`가 표시되는지 확인한다.
 10. 발표 문구나 UI가 "Gold 파일이 5GB"라고 설명하지 않고, 5GB를 input 처리 evidence로 표시하는지 확인한다.
 
