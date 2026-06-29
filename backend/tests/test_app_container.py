@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from app.adapters.duckdb_sql_engine import DuckDBSqlEngine
+from app.adapters.openai_llm_adapter import OpenAILLMAdapter
 from app.adapters.sqlite_metadata_store import SQLiteMetadataStore
 from app.adapters.template_llm_adapter import TemplateLLMAdapter
 from app.core.container import AppContainer
@@ -41,4 +42,31 @@ def test_app_container_uses_template_llm_adapter_by_default(tmp_path: Path) -> N
 
     assert isinstance(container.llm_adapter, TemplateLLMAdapter)
     assert container.llm_adapter.health_check().external_calls_enabled is False
+    assert container.ai_query_service.llm_adapter is container.llm_adapter
+
+
+def test_app_container_keeps_template_llm_adapter_when_openai_key_is_missing(tmp_path: Path) -> None:
+    settings = _settings(tmp_path, week2_llm_provider="openai", openai_api_key=None)
+
+    container = AppContainer(settings, metadata_store=SQLiteMetadataStore(settings.metadata_url))
+
+    assert isinstance(container.llm_adapter, TemplateLLMAdapter)
+    assert container.llm_adapter.health_check().external_calls_enabled is False
+
+
+def test_app_container_uses_openai_llm_adapter_when_key_is_configured(tmp_path: Path) -> None:
+    settings = _settings(
+        tmp_path,
+        week2_llm_provider="openai",
+        openai_api_key="unit-test-key",
+        openai_model="unit-test-model",
+    )
+
+    container = AppContainer(settings, metadata_store=SQLiteMetadataStore(settings.metadata_url))
+
+    assert isinstance(container.llm_adapter, OpenAILLMAdapter)
+    health = container.llm_adapter.health_check()
+    assert health.provider == "openai"
+    assert health.status == "ok"
+    assert health.external_calls_enabled is True
     assert container.ai_query_service.llm_adapter is container.llm_adapter

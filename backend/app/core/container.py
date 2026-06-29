@@ -4,6 +4,7 @@ from app.adapters.csv_source import CsvSourceConnector
 from app.adapters.duckdb_sql_engine import DuckDBSqlEngine
 from app.adapters.fixture_catalog_source import FixtureCatalogSource
 from app.adapters.local_result_store import LocalResultStore
+from app.adapters.openai_llm_adapter import OpenAILLMAdapter
 from app.adapters.sqlite_metadata_store import SQLiteMetadataStore
 from app.adapters.template_llm_adapter import TemplateLLMAdapter
 from app.adapters.week2_catalog_store_source import Week2CatalogStoreSource
@@ -71,6 +72,13 @@ class AppContainer:
         return FakeSqlEngine()
 
     def create_llm_adapter(self) -> LLMAdapter:
+        if self.settings.week2_llm_provider == "openai" and self.settings.openai_api_key:
+            return OpenAILLMAdapter(
+                api_key=self.settings.openai_api_key,
+                model=self.settings.openai_model,
+                base_url=self.settings.openai_base_url,
+                timeout_seconds=self.settings.openai_timeout_seconds,
+            )
         return TemplateLLMAdapter()
 
     def create_catalog_retriever(self) -> CatalogRetriever:
