@@ -28,7 +28,7 @@
 ## CI/CD Gate
 
 - CI required: yes before merge
-- CI result: pending PR creation
+- CI result: PR #277 checks pending after push
 - Deploy/publish required: no
 - Deployment confirmation: not applicable
 - Rollback/smoke notes: revert the dead-letter/retention commit if local replay console evidence handling regresses

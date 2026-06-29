@@ -31,7 +31,7 @@
 - issue creation result: created
 - issue project result: not moved by this task
 - PR closing keyword: `Closes #274`
-- pushed branch: pending
-- PR link: pending
-- merge status: n/a
+- pushed branch: `codex/m4-kafka-replay-config-hardening`
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/277
+- merge status: open
 - issue close status: open

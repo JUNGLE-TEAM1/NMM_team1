@@ -37,4 +37,4 @@
 - [x] `node --check kafka-replay-console/server.mjs`가 통과한다.
 - [x] M4 Kafka replay evidence backend test가 통과한다.
 - [x] GitHub issue `#274`가 생성된다.
-- [ ] PR 추적이 연결된다.
+- [x] PR #277 추적이 연결된다.
