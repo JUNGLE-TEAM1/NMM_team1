@@ -130,6 +130,13 @@ ASKLAKE_TAXI_HOST_DIR='<LOCAL_TAXI_PARENT_DIR>' scripts/week2_m2_taxi_spark_dock
 scripts/week2_m2_taxi_spark_docker_evidence.sh down
 ```
 
+14. M2 Taxi Docker Spark MinIO output smoke를 확인할 때는 같은 Docker Spark cluster compose에 포함된 `m2-minio`를 함께 띄운다. 성공 기준은 summary JSON에 `status=succeeded`, `spark_upload_taxi_daily_metrics` task success, local output path, `s3://asklake-demo/...` object URI, input/output row와 bytes가 남는 것이다. 이 검증은 Spark가 직접 `s3a://`로 쓰는 경로가 아니라, Spark local fallback write 뒤 `Week2StorageAdapter`가 같은 output file을 S3-compatible object로 업로드하는 경로다.
+
+```bash
+ASKLAKE_TAXI_HOST_DIR='<LOCAL_TAXI_PARENT_DIR>' scripts/week2_m2_taxi_spark_docker_evidence.sh minio-small
+scripts/week2_m2_taxi_spark_docker_evidence.sh down
+```
+
 ### Week 2 상품 리스크 대표 경로 점검
 
 이 경로는 Week2 발표 대표 path가 5GB 이상 fact input을 처리해 `gold_product_health`를 만들고, Catalog/SQL/UI까지 이어지는지 확인한다.
