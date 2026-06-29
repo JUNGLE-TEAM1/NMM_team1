@@ -5,7 +5,7 @@
 - Type: feature
 - Branch/work location: `feature/data-integration-review-run-step`, `docs/workflows/feature/data-integration-review-run-step`
 - Date: 2026-06-29
-- Workspace state: superseded
+- Workspace state: archived
 - Context Budget mode: Lite Read
 - Primary context read: `AGENTS.md`, `docs/08-development-workflow.md`, workspace templates
 - Escalated context read: 없음

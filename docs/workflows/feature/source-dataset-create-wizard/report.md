@@ -5,7 +5,7 @@
 - Type: feature
 - Branch/work location: `feature/source-dataset-create-wizard`, `docs/workflows/feature/source-dataset-create-wizard`
 - Date: 2026-06-29
-- Workspace state: implemented
+- Workspace state: archived
 - Context Budget mode: Lite Read
 - Primary context read: `AGENTS.md`, `docs/08-development-workflow.md`, workspace templates
 - Escalated context read: 없음

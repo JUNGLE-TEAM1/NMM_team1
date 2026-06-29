@@ -1,10 +1,13 @@
 import { createServer } from "node:http";
 import {
+  appendFileSync,
   createReadStream,
   createWriteStream,
   existsSync,
   mkdirSync,
+  readdirSync,
   statSync,
+  unlinkSync,
   writeFileSync,
 } from "node:fs";
 import { readdir, stat } from "node:fs/promises";
@@ -17,14 +20,17 @@ import { CompressionTypes, Kafka } from "kafkajs";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const workspaceRoot = path.resolve(__dirname, "..");
 const port = Number(process.env.KAFKA_REPLAY_PORT || 5189);
+const defaultEvidenceDir = path.join(workspaceRoot, "data", "results", "week2", "_metadata", "kafka_replay");
+const configuredRetentionDays = Number.parseInt(process.env.KAFKA_REPLAY_EVIDENCE_RETENTION_DAYS || "0", 10);
 const jobs = new Map();
 const config = {
   bootstrap: process.env.KAFKA_BOOTSTRAP_SERVERS || "localhost:29092",
   kafkaUiUrl: process.env.KAFKA_UI_URL || "http://localhost:8084",
   fullCountLimit: Number(process.env.KAFKA_REPLAY_FULL_COUNT_MAX_BYTES || 64 * 1024 * 1024),
-  evidenceDir:
-    process.env.KAFKA_REPLAY_EVIDENCE_DIR ||
-    path.join(workspaceRoot, "data", "results", "week2", "_metadata", "kafka_replay"),
+  evidenceDir: process.env.KAFKA_REPLAY_EVIDENCE_DIR || defaultEvidenceDir,
+  deadLetterDir: process.env.KAFKA_REPLAY_DEAD_LETTER_DIR || path.join(defaultEvidenceDir, "dead-letter"),
+  evidenceRetentionDays:
+    Number.isFinite(configuredRetentionDays) && configuredRetentionDays > 0 ? configuredRetentionDays : 0,
 };
 const kafka = new Kafka({
   clientId: "kafka-replay-console",
@@ -129,6 +135,25 @@ function evidenceHealth(status, error) {
   return { status: "ok", message: "Kafka replay evidence recorded" };
 }
 
+function cleanupOldEvidence() {
+  if (!config.evidenceRetentionDays) return;
+  const cutoffMs = Date.now() - config.evidenceRetentionDays * 24 * 60 * 60 * 1000;
+  const cleanupTargets = [
+    { dir: config.evidenceDir, extensions: [".json"], keepNames: new Set(["latest.json"]) },
+    { dir: config.deadLetterDir, extensions: [".jsonl"], keepNames: new Set() },
+  ];
+
+  for (const target of cleanupTargets) {
+    if (!existsSync(target.dir)) continue;
+    for (const entry of readdirSync(target.dir, { withFileTypes: true })) {
+      if (!entry.isFile() || target.keepNames.has(entry.name)) continue;
+      if (!target.extensions.some((extension) => entry.name.endsWith(extension))) continue;
+      const filePath = path.join(target.dir, entry.name);
+      if (statSync(filePath).mtimeMs < cutoffMs) unlinkSync(filePath);
+    }
+  }
+}
+
 function durationSeconds(job) {
   if (!job.startedAt) return 0;
   const end = job.finishedAt || new Date().toISOString();
@@ -175,6 +200,11 @@ function publicEvidence(job) {
       throughput_per_second: throughputPerSecond,
       duration_ms: Math.round(elapsedSeconds * 1000),
     },
+    dead_letter_path: job.deadLetterPath || null,
+    retention: {
+      evidence_retention_days: config.evidenceRetentionDays,
+      dead_letter_dir: config.deadLetterDir,
+    },
     lineage: {
       source_file: job.filePath,
       kafka_topic: kafkaTopic,
@@ -189,12 +219,38 @@ function publicEvidence(job) {
 
 function persistEvidence(job) {
   mkdirSync(config.evidenceDir, { recursive: true });
+  cleanupOldEvidence();
   const evidence = publicEvidence(job);
   const evidencePath = path.join(config.evidenceDir, `${job.runId}.json`);
   writeFileSync(evidencePath, `${JSON.stringify(evidence, null, 2)}\n`, "utf8");
   writeFileSync(path.join(config.evidenceDir, "latest.json"), `${JSON.stringify(evidence, null, 2)}\n`, "utf8");
   job.evidencePath = evidencePath;
   return evidence;
+}
+
+function persistDeadLetter(job, messages, error) {
+  if (!messages.length) return null;
+  mkdirSync(config.deadLetterDir, { recursive: true });
+  const deadLetterPath = path.join(config.deadLetterDir, `${job.runId}.jsonl`);
+  const failedAt = new Date().toISOString();
+  const lines = messages
+    .map((message, index) =>
+      JSON.stringify({
+        contract: "KafkaReplayDeadLetter",
+        run_id: job.runId,
+        job_id: job.id,
+        topic: job.topic,
+        failed_at: failedAt,
+        batch_index: index,
+        key: message.key || null,
+        raw_value: message.value,
+        error: error.message,
+      }),
+    )
+    .join("\n");
+  appendFileSync(deadLetterPath, `${lines}\n`, "utf8");
+  job.deadLetterPath = deadLetterPath;
+  return deadLetterPath;
 }
 
 function publicJob(job) {
@@ -221,6 +277,7 @@ function publicJob(job) {
     finishedAt: job.finishedAt,
     error: job.error,
     evidencePath: job.evidencePath,
+    deadLetterPath: job.deadLetterPath,
     lastMessage: job.lastMessage,
   };
 }
@@ -405,6 +462,7 @@ async function runJob(job) {
     job.status = job.stopRequested ? "stopped" : "finished";
   } catch (error) {
     job.status = "error";
+    persistDeadLetter(job, batch, error);
     job.failed += batch.length;
     job.error = error.message;
   } finally {
@@ -449,6 +507,7 @@ async function startReplay(body) {
     finishedAt: null,
     error: null,
     evidencePath: null,
+    deadLetterPath: null,
     lastMessage: null,
   };
   jobs.set(job.id, job);
@@ -509,6 +568,8 @@ async function handleApi(request, response, pathname) {
         bootstrapServer: config.bootstrap,
         largeInspectBytes: config.fullCountLimit,
         evidenceDir: config.evidenceDir,
+        deadLetterDir: config.deadLetterDir,
+        evidenceRetentionDays: config.evidenceRetentionDays,
       });
     } else if (request.method === "GET" && pathname === "/api/files") {
       sendJson(response, 200, { files: await discoverCsvFiles() });

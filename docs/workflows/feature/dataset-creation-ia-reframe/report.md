@@ -5,7 +5,7 @@
 - Type: feature
 - Branch/work location: `feature/dataset-creation-ia-reframe`, `docs/workflows/feature/dataset-creation-ia-reframe`
 - Date: 2026-06-29
-- Workspace state: implemented
+- Workspace state: archived
 - Context Budget mode: Lite Read
 - Primary context read: `AGENTS.md`, `docs/00-layer-map.md`, `docs/workflows/feature/dataset-creation-ia-reframe/plan.md`, 관련 `docs/08-development-workflow.md` 섹션
 - Escalated context read: browser skill instruction for local UI smoke

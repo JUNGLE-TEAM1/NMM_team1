@@ -68,6 +68,7 @@ report가 늘어나면 영역별 최신 report index를 작게 유지한다. 이
 | Week2 responsibility ver2 | [`week2-responsibility-ver2.md`](week2-responsibility-ver2.md) | 초기 회의안 이후 M1~M6 책임 분리를 ver2 기준으로 재정리하고 Spark/Parquet/Catalog 중복 책임을 제거 |
 | Week2 main E2E path | [`week2-main-e2e-path.md`](week2-main-e2e-path.md) | 과거 Amazon Reviews 대표 경로 결정 evidence. 현재 대표 경로는 Source of Truth 전파 report와 ver2 Source of Truth를 우선 확인 |
 | Week2 existing implementation anchor | [`week2-existing-implementation-anchor.md`](week2-existing-implementation-anchor.md) | 기존 M1 shell, M4 Kafka demo, M5 workflow/catalog, M6 skeleton을 ver2 후속 구현의 보존 anchor로 확인 |
+| M4 Kafka contract smoke fixture | [`m4-kafka-contract-smoke.md`](m4-kafka-contract-smoke.md) | M4 Kafka replay contract fixture의 미확정 replay rate/source file TODO를 실제 smoke evidence 값으로 확정 |
 | Week2 M3 JSON main path decision | [`week2-m3-json-main-path-decision.md`](week2-m3-json-main-path-decision.md) | 과거 M3 JSON path decision evidence. 현재 M3 기준은 `gold_product_health` TransformSpec과 PR #105 selective recovery를 함께 확인 |
 | Week2 runner boundary decision | [`week2-runner-boundary-decision.md`](week2-runner-boundary-decision.md) | M2 SparkRunner, M3 TransformSpec/job logic, M5 runner selection이 공유할 input/output boundary 확인 |
 | M2 Product Health runtime smoke | [`m2-product-health-runtime-smoke.md`](m2-product-health-runtime-smoke.md) | M2가 reviews/behavior/delivery/product raw input을 multi-source pass-through Parquet/evidence로 처리하는 additive RuntimeConfig 경계 확인 |
@@ -75,6 +76,9 @@ report가 늘어나면 영역별 최신 report index를 작게 유지한다. 이
 | M2 Product Health L6 evidence | [`m2-product-health-l6-evidence.md`](m2-product-health-l6-evidence.md) | 작은 Product Health source evidence, L6 Gold preview Parquet, DuckDB SQL read smoke 확인 |
 | M2 Taxi 5GB local Spark evidence | [`m2-taxi-5gb-local-spark-evidence.md`](m2-taxi-5gb-local-spark-evidence.md) | PySpark local mode가 4.87GB Taxi Parquet directory를 읽고 `gold_taxi_daily_metrics` Parquet과 Week2RunnerResult 호환 summary를 남기는지 확인 |
 | M2 Taxi Docker Spark evidence | [`m2-taxi-docker-spark-evidence.md`](m2-taxi-docker-spark-evidence.md) | 공개 Spark image 기반 Docker Spark master/worker/driver가 작은 Taxi 파일과 4.87GB Taxi directory를 처리해 `gold_taxi_daily_metrics` Parquet과 Week2RunnerResult 호환 summary를 남기는지 확인 |
+| M2 Docker Spark MinIO output smoke | [`m2-docker-spark-minio-output-smoke.md`](m2-docker-spark-minio-output-smoke.md) | Docker Spark가 만든 Taxi Gold Parquet을 local fallback path에 쓰고 같은 파일을 MinIO/S3-compatible object URI로 업로드하는지 확인 |
+| M2 Airflow SparkRunner handoff | [`m2-airflow-sparkrunner-handoff.md`](m2-airflow-sparkrunner-handoff.md) | M5 Airflow DAG task가 호출할 수 있는 M2 SparkRunner CLI와 `week2_result` artifact handoff를 확인 |
+| M2 Spark direct S3A write smoke | [`m2-spark-direct-s3a-write-smoke.md`](m2-spark-direct-s3a-write-smoke.md) | Docker Spark가 Taxi Gold Parquet directory를 local fallback 없이 MinIO `s3a://` output prefix에 직접 쓰는지 확인 |
 | M2 source input 계약 확장 | [`m2-source-input-contract.md`](m2-source-input-contract.md) | `RuntimeConfig.source_inputs[]`가 legacy `input_format`/`input_path`와 새 `source_type`/`format`/`path`를 함께 받는 호환 계약 확인 |
 | Week2 team handoff summary | [`week2-team-handoff-summary.md`](week2-team-handoff-summary.md) | Phase 1~6 이후 팀원이 읽을 현재 분업/진행상황/다음 병렬 구현 순서 확인 |
 | Week2 상품 리스크 Source of Truth 전파 | [`week2-product-risk-source-of-truth-propagation.md`](week2-product-risk-source-of-truth-propagation.md) | Week2 대표 경로가 5GB raw/bronze input 기반 `gold_product_health`로 갱신된 Source of Truth 전파 범위와 남은 구현 gap 확인 |
@@ -86,6 +90,12 @@ report가 늘어나면 영역별 최신 report index를 작게 유지한다. 이
 | M6 DuckDB runtime integration | [`m6-duckdb-runtime-integration.md`](m6-duckdb-runtime-integration.md) | M6 Step 3에서 기본 runtime을 DuckDB로 연결하고 실제 Week2 output file을 SQL로 읽는지 확인 |
 | M6 SQL planner intent rules | [`m6-sql-planner-intents.md`](m6-sql-planner-intents.md) | M6 Step 4에서 deterministic SQL planner intent, product health 지표, unsupported guardrail을 확인 |
 | M6 response contract route trace | [`m6-response-contract-trace.md`](m6-response-contract-trace.md) | M6 Step 5에서 `AIQueryResult.route`와 `retrieval_trace` additive response contract를 확인 |
+| M6 Catalog RAG Index | [`m6-catalog-rag-index.md`](m6-catalog-rag-index.md) | M6 Step 6에서 CatalogMetadata 기반 RAG-lite index, safe chunk, stale cache, richer retrieval trace를 확인 |
+| M6 Hybrid Route | [`m6-hybrid-route.md`](m6-hybrid-route.md) | M6 Step 7에서 SQL/RAG/Hybrid/Unsupported route 분기와 RAG-only no-SQL behavior를 확인 |
+| M6 LLM Answer Adapter | [`m6-llm-answer-adapter.md`](m6-llm-answer-adapter.md) | M6 Step 8에서 safe `LLMAnswerContext`, deterministic template adapter, blocked/unsupported no-adapter-call behavior를 확인 |
+| M6 OpenAI LLM Adapter | [`m6-openai-llm-adapter.md`](m6-openai-llm-adapter.md) | M6 Step 9에서 env-gated OpenAI provider adapter, secret-safe request body, provider fallback behavior를 확인 |
+| M6 Answer UX Metadata | [`m6-answer-ux-metadata.md`](m6-answer-ux-metadata.md) | M6 Step 10에서 `answer_metadata`와 M1 `/query` answer generation panel로 provider/fallback/grounding state 표시를 확인 |
+| M6 Week2 함수 흐름 공부 노트 | [`m6-week2-function-flow-study.md`](m6-week2-function-flow-study.md) | M6 1~10단계가 최종 `Week2AIQueryService.answer()` 함수 흐름 안에서 어떻게 연결되는지 학습용으로 확인 |
 | M1 live UI Phase plan | [`m1-live-ui-phase-plan.md`](m1-live-ui-phase-plan.md) | M1 shell 이후 Week2 M5/M6 API 연결과 발표 클릭 흐름을 5개 작은 Phase로 나눈 기준 확인 |
 | M1 Week2 API Client 연결 | [`m1-week2-api-client.md`](m1-week2-api-client.md) | M1 live UI Phase 1에서 Week2 M5/M6 API client와 frontend export를 추가한 결과 확인 |
 | M1 Run Status Live UI | [`m1-run-status-live-ui.md`](m1-run-status-live-ui.md) | M1 live UI Phase 2에서 `/runs` 화면이 M5 workflow 실행/refresh와 ExecutionResult 표시를 소비하는지 확인 |
@@ -102,6 +112,7 @@ report가 늘어나면 영역별 최신 report index를 작게 유지한다. 이
 | 협업 하네스 팀 사용 가이드 | [`collaboration-harness-team-usage-guide.md`](collaboration-harness-team-usage-guide.md) | 팀원이 Phase 시작, 확인 gate 응답, PR/merge 경계, 문서 기록 방식을 실제 요청 예시로 익히는 온보딩 guide 확인 |
 | 협업 하네스 팀 사용 가이드 보고서 | [`collaboration-harness-team-guide-report.md`](collaboration-harness-team-guide-report.md) | 팀원용 사용 guide 작성 범위, 검증, 남은 위험, PR handoff 문맥 확인 |
 | 하네스 판단 질문 중립성 | [`harness-neutral-decision-guidance.md`](harness-neutral-decision-guidance.md) | AI가 질문자의 원하는 결론에 끌려가지 않고 반대 관점, 리스크, 보완책, 추천도, 제안자 책임을 함께 제시하는 기준 확인 |
+| 하네스 전제 확인 규칙 | [`context-assumption-check.md`](context-assumption-check.md) | 일반론/저장소 규칙/비교 답변/실행 승인/정책 결정 렌즈를 구분하고 고영향 행동 전 확인 gate로 연결하는 기준 확인 |
 | AWS 비용 추정 | [`aws-cost-estimate.md`](aws-cost-estimate.md) | EKS-ready 구성의 기본 비용과 데이터셋/로그/전송량 증가 시 추가 비용 파악 |
 | Infra / MVP / 장기 Roadmap | [`phase-1-mvp-roadmap.md`](phase-1-mvp-roadmap.md) | 인프라 선행 원칙, XFlow 참고 MVP 범위, M0~M5 MVP milestone, M6~M15 장기 milestone, 다음 구현 Phase |
 | Infrastructure Foundation | [`phase-2-infrastructure-foundation.md`](phase-2-infrastructure-foundation.md) | CI/CD, Docker, Kubernetes, AWS approval gate foundation |

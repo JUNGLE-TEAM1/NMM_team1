@@ -5,7 +5,7 @@
 - Type: feature
 - Branch/work location: `feature/data-integration-wizard-flow`, `docs/workflows/feature/data-integration-wizard-flow`
 - Date: 2026-06-29
-- Workspace state: implemented and locally verified
+- Workspace state: archived
 - Context Budget mode: Lite Read
 - Primary context read: `docs/08-development-workflow.md`, `docs/workflows/feature/data-integration-wizard-flow/plan.md`, `frontend/src/app/App.jsx`, `frontend/src/app/styles.css`, XFlow `CreateDatasetModal.jsx`
 - Escalated context read: browser verification path

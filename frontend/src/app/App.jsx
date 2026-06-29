@@ -35,6 +35,7 @@ import {
   Search,
   ServerCog,
   ShieldCheck,
+  ShieldQuestion,
   Sparkles,
   Table2,
   Terminal,
@@ -3175,6 +3176,7 @@ function AiQueryPage({ navigate, setNotice }) {
   const retrievalTrace = Array.isArray(queryState.result?.retrieval_trace)
     ? queryState.result.retrieval_trace
     : [];
+  const answerMetadata = queryState.result?.answer_metadata || fallbackAnswerMetadata(queryState.result);
   const routeIsExecutableSql = route === "sql" && queryState.result?.status === "succeeded";
   const displaySql = queryState.result
     ? queryDisplaySql(queryResult?.sql ?? queryState.result.sql)
@@ -3272,6 +3274,7 @@ function AiQueryPage({ navigate, setNotice }) {
             ) : null}
           </div>
           <p>{queryState.result?.summary || "아직 실행된 질문이 없습니다."}</p>
+          <AnswerMetadataPanel metadata={answerMetadata} result={queryState.result} />
           {queryState.result?.guardrail?.failure_message ? (
             <p className="form-error">{queryState.result.guardrail.failure_message}</p>
           ) : null}
@@ -3328,6 +3331,11 @@ function AiQueryPage({ navigate, setNotice }) {
               title="Route"
               value={route || "pending"}
               detail={routeDetail(queryState.result)}
+            />
+            <InfoCard
+              title="Answer"
+              value={answerProviderLabel(answerMetadata)}
+              detail={answerMetadataDetail(answerMetadata)}
             />
             <InfoCard
               title="Rows"
@@ -3403,6 +3411,84 @@ function queryRouteBadgeClass(route) {
   if (route === "unsupported") return "orange";
   if (route === "rag" || route === "hybrid") return "blue";
   return "gray";
+}
+
+function answerSourceBadgeClass(metadata) {
+  if (!metadata) return "gray";
+  if (metadata.grounding_state === "blocked") return "orange";
+  if (metadata.fallback_used) return "orange";
+  if (metadata.source === "external") return "green";
+  if (metadata.source === "template") return "blue";
+  return "gray";
+}
+
+function fallbackAnswerMetadata(result) {
+  if (!result) return m1AiQueryPlaceholder.answer_metadata;
+  const blocked = result.status === "blocked" || result.guardrail?.validation_status === "blocked";
+  return {
+    source: "internal",
+    provider: "m6",
+    fallback_used: false,
+    fallback_reason: null,
+    used_evidence_indexes: [],
+    grounding_state: blocked ? "blocked" : "insufficient_evidence",
+  };
+}
+
+function groundingBadgeClass(state) {
+  if (state === "grounded") return "green";
+  if (state === "blocked") return "orange";
+  if (state === "insufficient_evidence") return "red";
+  return "gray";
+}
+
+function answerProviderLabel(metadata) {
+  if (!metadata) return "answer pending";
+  const provider = formatMetric(metadata.provider, "m6");
+  const source = formatMetric(metadata.source, "internal");
+  return `${provider} / ${source}`;
+}
+
+function answerMetadataDetail(metadata) {
+  if (!metadata) return "질문 실행 후 표시";
+  if (metadata.fallback_used) {
+    return `fallback: ${formatMetric(metadata.fallback_reason)}`;
+  }
+  if (metadata.grounding_state === "blocked") return "M6 내부 보류 응답";
+  return `evidence indexes: ${formatEvidenceIndexes(metadata.used_evidence_indexes)}`;
+}
+
+function formatEvidenceIndexes(indexes) {
+  return Array.isArray(indexes) && indexes.length ? indexes.join(", ") : "-";
+}
+
+function AnswerMetadataPanel({ metadata, result }) {
+  const hasResult = Boolean(result);
+  const nextMetadata = metadata || {};
+  return (
+    <section className="answer-metadata-strip" aria-label="Answer generation metadata">
+      <div className="answer-metadata-heading">
+        <ShieldQuestion size={16} />
+        <span>Answer generation</span>
+      </div>
+      <div className="answer-metadata-badges">
+        <span className={`badge ${answerSourceBadgeClass(nextMetadata)}`}>
+          {hasResult ? answerProviderLabel(nextMetadata) : "pending"}
+        </span>
+        <span className={`badge ${groundingBadgeClass(nextMetadata.grounding_state)}`}>
+          {hasResult ? formatMetric(nextMetadata.grounding_state, "pending") : "pending"}
+        </span>
+        {nextMetadata.fallback_used ? (
+          <span className="badge orange">fallback</span>
+        ) : null}
+      </div>
+      <p>
+        {hasResult
+          ? answerMetadataDetail(nextMetadata)
+          : "질문을 실행하면 provider, fallback, evidence 사용 상태가 표시됩니다."}
+      </p>
+    </section>
+  );
 }
 
 function routeDetail(result) {

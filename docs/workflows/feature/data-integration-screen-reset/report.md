@@ -5,7 +5,7 @@
 - Type: feature
 - Branch/work location: `feature/data-integration-screen-reset`, `docs/workflows/feature/data-integration-screen-reset`
 - Date: 2026-06-29
-- Workspace state: complete
+- Workspace state: archived
 - Context Budget mode: Lite Read
 - Primary context read: `AGENTS.md`, `docs/00-layer-map.md`, `docs/08-development-workflow.md`, workspace status, `frontend/src/app/App.jsx`, `frontend/src/app/m1StaticShellData.js`
 - Escalated context read: XFlow reference snippets from previous discussion; browser verification skill for local UI check
