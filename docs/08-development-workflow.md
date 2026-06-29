@@ -215,6 +215,56 @@ Integration Spine:
 - Query / Policy mock은 실제 권한 엔진, 실제 데이터 접근, Trino, 외부 LLM 호출을 포함하지 않는다. 이 경계를 넘으면 `docs/14-decision-option-brief.md`와 workstream `decisions.md`가 필요하다.
 - 제외 후보: 실제 고급 PII 탐지, Trino, 외부 LLM, production cloud resource.
 
+## Data Integration UX Rebuild Queue
+
+상태: Superseded.
+
+회의 피드백에 따라 데이터 통합 화면은 AskLake 데모의 주 무대로 다룬다.
+먼저 화면을 비우고, XFlow의 기본 생성 흐름을 read-only reference로 삼아 `Source -> Transform -> Target -> Run`을 작은 확인 단위로 다시 쌓는다.
+각 Phase는 독립 확인 가능해야 하며, 이전 Phase를 사람이 확인한 뒤 다음 Phase를 시작한다.
+
+2026-06-29 논의 결과, 이 큐는 generic pipeline/job 생성 흐름으로 보이는 문제가 있어 `Dataset Creation UX Reframe Queue`로 대체한다.
+이미 생성/구현된 `data-integration-*` workspace는 삭제하지 않고 prototype evidence로 보존한다.
+아직 구현 전이던 `feature/data-integration-review-run-step`은 보류하고, target dataset 생성의 Review/Scheduling Phase로 재구성한다.
+
+| 순서 | Branch / workspace | 목표 | 선행 조건 | 완료 기준 |
+| --- | --- | --- | --- | --- |
+| A | `feature/data-integration-screen-reset` | 데이터 통합 화면의 보조 컨테이너와 내부 placeholder를 걷어내고 최소 진입점만 남긴다 | 사람의 데이터 통합 UX 재구성 결정 | 화면 목적이 "파이프라인을 만드는 곳"으로 보이고 다른 nav/API/schema 변경이 없음 |
+| B-1 | `feature/data-integration-flow-skeleton` | `Source -> Transform -> Target -> Run` 4단계 skeleton을 카드/stepper로 표시한다 | A 완료 또는 사람 확인 | 4단계 순서와 상태 label이 보이고 실제 동작은 아직 약속하지 않음 |
+| B-2 | `feature/data-integration-source-step` | Source step에서 source를 선택하고 Source 카드 상태에 반영한다 | B-1 완료 또는 사람 확인 | source 선택/empty state/schema preview 자리가 확인됨 |
+| B-3 | `feature/data-integration-transform-step` | Transform step에 `Select Fields` 컬럼 선택 UX를 추가한다 | B-2 완료 또는 사람 확인 | 선택 컬럼이 Transform 카드에 요약되고 추가 transform은 제외됨 |
+| B-3.5 | `feature/data-integration-wizard-flow` | 데이터 통합 화면을 AWS 설정 wizard처럼 한 번에 한 단계만 보이는 흐름으로 보완한다 | B-3 완료 또는 사람 확인 | Source 선택 -> Transform 설정 -> 뒤로가기/다음 흐름이 확인되고 기존 Source/Transform 기능이 유지됨 |
+| B-4 | `feature/data-integration-target-step` | Target step에 `target_name` 입력을 추가한다 | B-3.5 완료 또는 사람 확인 | 결과 dataset 이름이 Target 카드와 Review 준비 상태에 반영됨 |
+| B-5 | `feature/data-integration-review-run-step` | Review & Run에서 기존 pipeline create/run API를 호출하고 최소 실행 결과를 표시한다 | B-4 완료 또는 사람 확인 | validation, create/run, status/row count/result location 또는 error 표시가 확인됨 |
+
+범위 원칙:
+
+- XFlow는 UX 구조 참고용이며 코드를 복사하지 않는다.
+- full visual canvas, schedule, permission, lineage, CDC, streaming은 이 큐의 초기 범위가 아니다.
+- 상세 evidence panel, Catalog deep integration, Week2 workflow 연결은 B-5 이후 별도 Phase로 판단한다.
+- 각 Phase는 `docs/workflows/feature/data-integration-*/plan.md`를 기준으로 실행하고 report와 quality evidence를 남긴다.
+
+## Dataset Creation UX Reframe Queue
+
+데모의 주 화면은 "데이터 통합"이 아니라 "데이터셋" 관리와 생성으로 재정의한다.
+`데이터셋 생성`을 누르면 먼저 Source Dataset과 Target Dataset 중 하나를 고르고, 이후 각 dataset type에 맞는 짧은 wizard로 이동한다.
+Target Dataset 생성은 XFlow처럼 source를 선택하고 process/schedule/review를 거쳐 output dataset과 ETL job definition을 함께 준비하는 흐름으로 표현한다.
+
+| 순서 | Branch / workspace | 목표 | 선행 조건 | 완료 기준 |
+| --- | --- | --- | --- | --- |
+| D-1 | `feature/dataset-section-reframe` | nav/page title/empty copy를 `데이터셋` 중심으로 바꾸고 pipeline wording을 줄인다 | 기존 transform output preview 확인 | 화면 목적이 dataset 관리와 생성으로 읽히고 기존 source/transform demo state가 깨지지 않음 |
+| D-2 | `feature/dataset-create-type-choice` | `데이터셋 생성` 버튼에서 Source Dataset / Target Dataset 선택 modal을 연다 | D-1 완료 또는 사람 확인 | 두 선택지가 보이고 선택 후 각 wizard mode로 진입할 수 있음 |
+| D-3 | `feature/source-dataset-create-wizard` | Source Dataset 생성 3단계 wizard를 추가한다: 데이터 소스 선택, Configure, Review | D-2 완료 또는 사람 확인 | CSV/Kafka/PostgreSQL/MongoDB/API/S3 같은 source type 선택과 configure/review 흐름이 확인됨 |
+| D-4 | `feature/target-dataset-create-wizard-reframe` | 기존 generic flow를 Target Dataset 생성으로 재구성한다: Overview, Source 선택, Process | D-2 완료 또는 사람 확인 | target dataset 이름/설명, source 선택, field/process preview가 한 흐름으로 보임 |
+| D-5 | `feature/target-dataset-scheduling-review` | Target Dataset 생성에 Scheduling과 Review를 추가한다 | D-4 완료 또는 사람 확인 | schedule 기본값과 최종 review summary가 보이며 실제 backend 실행은 약속하지 않음 |
+
+범위 원칙:
+
+- 기존 `data-integration-*` 구현은 재사용 가능한 UI 재료로만 취급한다.
+- Source Dataset 생성은 connector 등록/metadata draft 시나리오이며 실제 credential 저장, 연결 테스트, backend schema 변경은 제외한다.
+- Target Dataset 생성은 output dataset과 ETL job definition을 준비하는 demo 시나리오이며 즉시 실행, run history, lineage, permission은 제외한다.
+- 각 Phase는 작게 구현하고, 사람이 화면을 확인한 뒤 다음 Phase로 진행한다.
+
 ## Local Environment Follow-up Queue
 
 로컬 환경 요구사항은 `docs/04-development-guide.md`를 Source of Truth로 둔다.

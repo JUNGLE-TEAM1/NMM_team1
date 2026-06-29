@@ -59,12 +59,7 @@ import { StatusPill } from "../components/StatusPill";
 import {
   m1AiQueryPlaceholder,
   m1CatalogPlaceholder,
-  m1ConnectionPlaceholders,
   m1IntegrationRows,
-  m1PipelinePlaceholders,
-  m1SchemaPreviewPlaceholder,
-  m1SourceConfigPlaceholder,
-  m1StartSteps,
   m1WorkflowPlaceholder,
 } from "./m1StaticShellData";
 import "./styles.css";
@@ -74,8 +69,8 @@ const WEEK2_DEFAULT_CATALOG_DETAIL_URL = `/catalog/${WEEK2_DEFAULT_DATASET_ID}`;
 const navItems = [
   {
     path: "/sources",
-    label: "데이터 통합",
-    description: "소스 연결",
+    label: "데이터셋",
+    description: "Source / Target",
     icon: GitMerge,
   },
   {
@@ -112,11 +107,188 @@ const navItems = [
 
 const PRODUCT_HEALTH_DATASET_ID = "dataset_product_health_gold";
 
-const stepIcons = {
-  source: Database,
-  schema: FileJson,
-  workflow: GitBranch,
-};
+const integrationFlowSteps = [
+  {
+    id: "source",
+    title: "Source",
+    description: "연결할 원본 데이터를 고릅니다.",
+    status: "선택 대기",
+    icon: Database,
+  },
+  {
+    id: "transform",
+    title: "Transform",
+    description: "처음에는 Select Fields만 다룹니다.",
+    status: "설정 대기",
+    icon: GitBranch,
+  },
+  {
+    id: "target",
+    title: "Target",
+    description: "결과 dataset 이름을 정합니다.",
+    status: "설정 대기",
+    icon: Table2,
+  },
+  {
+    id: "run",
+    title: "Review",
+    description: "생성 전 설정을 확인합니다.",
+    status: "검토 대기",
+    icon: Play,
+  },
+];
+
+const demoSourceDatasets = [
+  {
+    id: "source_product_health_reviews",
+    name: "Product Health Reviews",
+    sourceType: "csv",
+    typeLabel: "CSV / Local File",
+    status: "Demo source",
+    description: "리뷰 원문과 평점이 포함된 제품 상태 분석용 원천 파일입니다.",
+    resource: "product_health_reviews.jsonl",
+    updatedLabel: "오늘 10:15",
+    updatedRank: 7,
+    columns: ["review_id", "product_id", "rating", "review_text", "review_time"],
+    schema: [
+      { name: "review_id", type: "string", sample: "rv_10291" },
+      { name: "product_id", type: "string", sample: "sku_8842" },
+      { name: "rating", type: "number", sample: "4" },
+      { name: "review_text", type: "text", sample: "배송은 빨랐지만 포장이 아쉬웠어요" },
+      { name: "review_time", type: "datetime", sample: "2026-06-28 09:42" },
+    ],
+  },
+  {
+    id: "source_orders_csv",
+    name: "Sample Orders CSV",
+    sourceType: "csv",
+    typeLabel: "CSV",
+    status: "Baseline source",
+    description: "주문 데모에 쓰는 정적 CSV dataset입니다.",
+    resource: "sample_orders.csv",
+    updatedLabel: "어제 18:20",
+    updatedRank: 6,
+    columns: ["order_id", "customer", "amount", "status"],
+    schema: [
+      { name: "order_id", type: "string", sample: "ord_32018" },
+      { name: "customer", type: "string", sample: "J. Kim" },
+      { name: "amount", type: "decimal", sample: "129000" },
+      { name: "status", type: "string", sample: "paid" },
+    ],
+  },
+  {
+    id: "source_order_events_kafka",
+    name: "Order Events Topic",
+    sourceType: "kafka",
+    typeLabel: "Kafka",
+    status: "Streaming sample",
+    description: "주문 생성, 결제, 취소 이벤트를 흘려보내는 topic 예시입니다.",
+    resource: "commerce.order.events",
+    updatedLabel: "오늘 09:40",
+    updatedRank: 8,
+    columns: ["event_id", "order_id", "event_type", "payload", "event_time"],
+    schema: [
+      { name: "event_id", type: "string", sample: "evt_98213" },
+      { name: "order_id", type: "string", sample: "ord_32018" },
+      { name: "event_type", type: "string", sample: "payment_confirmed" },
+      { name: "payload", type: "json", sample: "{\"amount\":129000}" },
+      { name: "event_time", type: "datetime", sample: "2026-06-29 09:40" },
+    ],
+  },
+  {
+    id: "source_commerce_orders_postgres",
+    name: "Commerce Orders PostgreSQL",
+    sourceType: "postgres",
+    typeLabel: "PostgreSQL",
+    status: "Warehouse ready",
+    description: "운영 주문 테이블을 batch source로 연결하는 예시입니다.",
+    resource: "commerce.orders",
+    updatedLabel: "월요일 08:30",
+    updatedRank: 5,
+    columns: ["order_id", "user_id", "total_amount", "payment_status", "created_at", "updated_at"],
+    schema: [
+      { name: "order_id", type: "varchar", sample: "ord_32018" },
+      { name: "user_id", type: "varchar", sample: "usr_2048" },
+      { name: "total_amount", type: "numeric", sample: "129000" },
+      { name: "payment_status", type: "varchar", sample: "paid" },
+      { name: "created_at", type: "timestamp", sample: "2026-06-28 14:12" },
+      { name: "updated_at", type: "timestamp", sample: "2026-06-28 14:18" },
+    ],
+  },
+  {
+    id: "source_customer_profiles_mongo",
+    name: "Customer Profiles MongoDB",
+    sourceType: "mongodb",
+    typeLabel: "MongoDB",
+    status: "Profile sample",
+    description: "고객 속성 document를 통합하는 NoSQL source 예시입니다.",
+    resource: "customer.profiles",
+    updatedLabel: "지난주 금요일",
+    updatedRank: 3,
+    columns: ["_id", "segment", "preferences", "last_seen_at"],
+    schema: [
+      { name: "_id", type: "objectId", sample: "667f3c..." },
+      { name: "segment", type: "string", sample: "loyal" },
+      { name: "preferences", type: "document", sample: "{ channels: [\"email\"] }" },
+      { name: "last_seen_at", type: "datetime", sample: "2026-06-21 22:10" },
+    ],
+  },
+  {
+    id: "source_partner_catalog_api",
+    name: "Partner Catalog API",
+    sourceType: "api",
+    typeLabel: "API",
+    status: "External sample",
+    description: "파트너 상품 카탈로그를 API 응답 형태로 가져오는 예시입니다.",
+    resource: "GET /partner/catalog",
+    updatedLabel: "오늘 11:05",
+    updatedRank: 9,
+    columns: ["sku", "partner_id", "title", "category", "price", "synced_at"],
+    schema: [
+      { name: "sku", type: "string", sample: "PT-8842" },
+      { name: "partner_id", type: "string", sample: "partner_17" },
+      { name: "title", type: "string", sample: "Air Flow Desk Fan" },
+      { name: "category", type: "string", sample: "home_appliance" },
+      { name: "price", type: "decimal", sample: "48900" },
+      { name: "synced_at", type: "datetime", sample: "2026-06-29 11:05" },
+    ],
+  },
+  {
+    id: "source_raw_events_s3",
+    name: "AskLake Raw S3",
+    sourceType: "s3",
+    typeLabel: "S3",
+    status: "Object storage",
+    description: "S3 prefix 아래 적재된 raw event 파일 묶음입니다.",
+    resource: "s3://asklake-demo/raw/events/",
+    updatedLabel: "지난주 수요일",
+    updatedRank: 2,
+    columns: ["object_key", "event_date", "source_app", "record_count"],
+    schema: [
+      { name: "object_key", type: "string", sample: "raw/events/2026/06/29/part-0001.json" },
+      { name: "event_date", type: "date", sample: "2026-06-29" },
+      { name: "source_app", type: "string", sample: "checkout" },
+      { name: "record_count", type: "integer", sample: "18542" },
+    ],
+  },
+];
+
+const sourceTypeOptions = [
+  { id: "all", label: "전체", description: "모든 source dataset" },
+  { id: "csv", label: "CSV", description: "파일 기반 source" },
+  { id: "kafka", label: "Kafka", description: "stream topic" },
+  { id: "postgres", label: "PostgreSQL", description: "RDB table" },
+  { id: "mongodb", label: "MongoDB", description: "document source" },
+  { id: "api", label: "API", description: "external endpoint" },
+  { id: "s3", label: "S3", description: "object storage" },
+];
+
+const sourceSortOptions = [
+  { id: "recent", label: "최근 수정순" },
+  { id: "name", label: "이름순" },
+  { id: "status", label: "상태순" },
+  { id: "columns", label: "컬럼 수 많은 순" },
+];
 
 const demoQuestionGroups = [
   {
@@ -161,6 +333,7 @@ export function App() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isCopilotOpen, setIsCopilotOpen] = useState(false);
   const [notice, setNotice] = useState("");
+  const [isNoticeLeaving, setIsNoticeLeaving] = useState(false);
 
   useEffect(() => {
     refreshHealth();
@@ -171,6 +344,22 @@ export function App() {
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
+
+  useEffect(() => {
+    if (!notice) return undefined;
+
+    setIsNoticeLeaving(false);
+    const fadeTimer = window.setTimeout(() => setIsNoticeLeaving(true), 2400);
+    const clearTimer = window.setTimeout(() => {
+      setNotice("");
+      setIsNoticeLeaving(false);
+    }, 2850);
+
+    return () => {
+      window.clearTimeout(fadeTimer);
+      window.clearTimeout(clearTimer);
+    };
+  }, [notice]);
 
   async function refreshHealth() {
     setHealth({ state: "loading", message: "확인 중" });
@@ -248,7 +437,7 @@ export function App() {
         <header className="topbar">
           <div className="topbar-search">
             <Search size={18} />
-            <span>데이터셋, source, pipeline 검색...</span>
+            <span>데이터셋, source, schema 검색...</span>
             <kbd>/</kbd>
           </div>
           <div className="topbar-actions">
@@ -277,7 +466,16 @@ export function App() {
         </header>
 
         <section className="page-surface">
-          {notice ? <ToastNotice message={notice} onClose={() => setNotice("")} /> : null}
+          {notice ? (
+            <ToastNotice
+              message={notice}
+              isLeaving={isNoticeLeaving}
+              onClose={() => {
+                setNotice("");
+                setIsNoticeLeaving(false);
+              }}
+            />
+          ) : null}
           {activePath === "/sources" ? <SourcesPage navigate={navigate} setNotice={setNotice} /> : null}
           {activePath === "/etl-visual" ? <VisualEditorPage navigate={navigate} setNotice={setNotice} /> : null}
           {activePath === "/runs" ? <RunStatusPage navigate={navigate} /> : null}
@@ -318,100 +516,813 @@ function PageIntro({ icon: Icon, title, body, status }) {
 }
 
 function SourcesPage({ navigate, setNotice }) {
-  const [isStartOpen, setIsStartOpen] = useState(false);
-  const [isManagingConnections, setIsManagingConnections] = useState(() =>
-    new URLSearchParams(window.location.search).get("manage") === "connections",
-  );
+  const [isDatasetTypeModalOpen, setIsDatasetTypeModalOpen] = useState(false);
+  const [datasetCreationMode, setDatasetCreationMode] = useState(null);
+  const [isSourceModalOpen, setIsSourceModalOpen] = useState(false);
+  const [sourceModalPurpose, setSourceModalPurpose] = useState("target");
+  const [sourceWizardStepIndex, setSourceWizardStepIndex] = useState(0);
+  const [sourceDraft, setSourceDraft] = useState(null);
+  const [sourceDatasetName, setSourceDatasetName] = useState("source_product_health_reviews");
+  const [selectedSource, setSelectedSource] = useState(null);
+  const [selectedFields, setSelectedFields] = useState([]);
+  const [targetName, setTargetName] = useState("dataset_product_health_gold");
+  const [targetDescription, setTargetDescription] = useState("제품 상태 분석용 gold dataset draft");
+  const [targetScheduleMode, setTargetScheduleMode] = useState("manual");
+  const [targetScheduleNote, setTargetScheduleNote] = useState("데모에서는 수동 실행으로만 준비합니다.");
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const normalizedTargetName = targetName.trim();
+  const normalizedTargetDescription = targetDescription.trim();
+  const selectedFieldSummary =
+    selectedFields.length > 0 ? selectedFields.slice(0, 3).join(", ") : "선택된 필드가 없습니다.";
+  const selectedOutputSchema = selectedSource
+    ? selectedSource.schema.filter((field) => selectedFields.includes(field.name))
+    : [];
+  const wizardSteps = [
+    {
+      id: "overview",
+      title: "Overview",
+      summary: normalizedTargetName || "target dataset 이름을 입력합니다.",
+      isComplete: Boolean(normalizedTargetName),
+    },
+    {
+      id: "source",
+      title: "Source 선택",
+      summary: selectedSource ? selectedSource.name : "source dataset을 선택합니다.",
+      isComplete: currentStepIndex > 1 && Boolean(selectedSource),
+    },
+    {
+      id: "process",
+      title: "Process",
+      summary: selectedFields.length > 0 ? `${selectedFields.length} fields` : "Select Fields를 설정합니다.",
+      isComplete: currentStepIndex > 3 && selectedFields.length > 0,
+    },
+    {
+      id: "scheduling",
+      title: "Scheduling",
+      summary: targetScheduleMode === "manual" ? "Manual" : "Schedule placeholder",
+      isComplete: currentStepIndex > 4,
+    },
+    {
+      id: "review",
+      title: "Review",
+      summary: "생성 준비 확인",
+      isComplete: false,
+    },
+  ];
+  const sourceWizardSteps = [
+    {
+      id: "source-type",
+      title: "데이터 소스 선택",
+      isComplete: Boolean(sourceDraft),
+    },
+    {
+      id: "configure",
+      title: "Configure",
+      isComplete: sourceWizardStepIndex > 1 && Boolean(sourceDatasetName.trim()),
+    },
+    {
+      id: "review",
+      title: "Review",
+      isComplete: false,
+    },
+  ];
+  const currentStep = wizardSteps[currentStepIndex];
+  const currentSourceStep = sourceWizardSteps[sourceWizardStepIndex];
+  const canGoNext =
+    (currentStep.id === "overview" && Boolean(normalizedTargetName)) ||
+    (currentStep.id === "source" && Boolean(selectedSource)) ||
+    (currentStep.id === "process" && selectedFields.length > 0) ||
+    currentStep.id === "scheduling";
+  const canGoNextSource =
+    (currentSourceStep.id === "source-type" && Boolean(sourceDraft)) ||
+    (currentSourceStep.id === "configure" && Boolean(sourceDatasetName.trim()));
 
-  function openConnectionManager() {
-    window.history.pushState({}, "", "/dataset?manage=connections");
-    setIsManagingConnections(true);
+  function handleSourceSelect(source) {
+    if (sourceModalPurpose === "source") {
+      setSourceDraft(source);
+      setSourceDatasetName(`source_${source.name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "")}`);
+      setNotice(`${source.name} source dataset draft를 선택했습니다.`);
+    } else {
+      setSelectedSource(source);
+      setSelectedFields(source.columns);
+      setNotice(`${source.name} source를 선택했습니다.`);
+    }
+    setIsSourceModalOpen(false);
   }
 
-  function closeConnectionManager() {
-    window.history.pushState({}, "", "/dataset");
-    setIsManagingConnections(false);
+  function toggleField(column) {
+    setSelectedFields((currentFields) =>
+      currentFields.includes(column)
+        ? currentFields.filter((field) => field !== column)
+        : [...currentFields, column],
+    );
+  }
+
+  function selectAllFields() {
+    if (selectedSource) {
+      setSelectedFields(selectedSource.columns);
+    }
+  }
+
+  function clearFields() {
+    setSelectedFields([]);
+  }
+
+  function goNext() {
+    if (canGoNext && currentStepIndex < wizardSteps.length - 1) {
+      setCurrentStepIndex((index) => index + 1);
+    }
+  }
+
+  function goBack() {
+    if (currentStepIndex > 0) {
+      setCurrentStepIndex((index) => index - 1);
+    }
+  }
+
+  function startDatasetCreation(mode) {
+    setDatasetCreationMode(mode);
+    setIsDatasetTypeModalOpen(false);
+    setCurrentStepIndex(0);
+    if (mode === "source") {
+      setSourceWizardStepIndex(0);
+    }
+  }
+
+  function openSourcePicker(purpose) {
+    setSourceModalPurpose(purpose);
+    setIsSourceModalOpen(true);
+  }
+
+  function goNextSource() {
+    if (canGoNextSource && sourceWizardStepIndex < sourceWizardSteps.length - 1) {
+      setSourceWizardStepIndex((index) => index + 1);
+    }
+  }
+
+  function goBackSource() {
+    if (sourceWizardStepIndex > 0) {
+      setSourceWizardStepIndex((index) => index - 1);
+    }
+  }
+
+  function renderSourceDatasetShell() {
+    return (
+      <section className="pipeline-table-card data-wizard-card source-dataset-wizard">
+        <div className="table-card-header">
+          <div className="table-title-line">
+            <Database size={20} />
+            <div>
+              <strong>Create Source Dataset</strong>
+              <p>외부 원천 데이터를 AskLake dataset으로 등록하는 흐름입니다.</p>
+            </div>
+          </div>
+          <div className="table-card-actions">
+            <button type="button" className="ghost-action" onClick={() => setIsDatasetTypeModalOpen(true)}>
+              유형 변경
+            </button>
+            <span className="badge slate">{sourceWizardStepIndex + 1}/3 단계</span>
+          </div>
+        </div>
+        <div className="data-wizard-layout">
+          <aside className="wizard-progress source-wizard-progress" aria-label="Source dataset creation wizard progress">
+            {sourceWizardSteps.map((step, index) => {
+              const isCurrent = index === sourceWizardStepIndex;
+              const status = isCurrent ? "진행 중" : step.isComplete ? "완료" : "대기";
+
+              return (
+                <article className={`wizard-progress-step ${isCurrent ? "current" : ""} ${step.isComplete ? "complete" : ""}`} key={step.id}>
+                  <span>{index + 1}</span>
+                  <div>
+                    <strong>{step.title}</strong>
+                    <p>{status}</p>
+                  </div>
+                </article>
+              );
+            })}
+          </aside>
+          <main className="wizard-stage">
+            {renderSourceWizardStep()}
+            <footer className="wizard-navigation">
+              {sourceWizardStepIndex > 0 ? (
+                <button type="button" className="ghost-action" onClick={goBackSource}>
+                  <ArrowLeft size={16} />
+                  뒤로가기
+                </button>
+              ) : (
+                <span />
+              )}
+              {sourceWizardStepIndex < sourceWizardSteps.length - 1 ? (
+                <button type="button" className="primary-action" onClick={goNextSource} disabled={!canGoNextSource}>
+                  다음
+                  <ArrowRight size={16} />
+                </button>
+              ) : (
+                <button type="button" className="primary-action" disabled>
+                  Source dataset draft 준비
+                  <CheckCircle2 size={16} />
+                </button>
+              )}
+            </footer>
+          </main>
+        </div>
+      </section>
+    );
+  }
+
+  function renderSourceWizardStep() {
+    if (currentSourceStep.id === "source-type") {
+      return (
+        <section className="wizard-step-body">
+          <div className="wizard-step-heading">
+            <span>1단계</span>
+            <div>
+              <h3>데이터 소스 선택</h3>
+              <p>CSV, Kafka, PostgreSQL, MongoDB, API, S3 중 demo source dataset을 고릅니다.</p>
+            </div>
+          </div>
+          <div className="wizard-source-layout">
+            <div className="wizard-primary-choice">
+              <span className="flow-step-icon">
+                <Database size={18} aria-hidden="true" />
+              </span>
+              <div>
+                <strong>{sourceDraft ? sourceDraft.name : "등록할 source dataset을 선택하세요"}</strong>
+                <p>
+                  {sourceDraft
+                    ? `${sourceDraft.typeLabel} · ${sourceDraft.columns.length} columns · ${sourceDraft.resource}`
+                    : "source type 필터와 card 목록에서 등록할 원천 데이터를 고릅니다."}
+                </p>
+              </div>
+              <button type="button" className="primary-action" onClick={() => openSourcePicker("source")}>
+                {sourceDraft ? "Source 변경" : "데이터 소스 선택"}
+                <ArrowRight size={16} />
+              </button>
+            </div>
+            <section className="wizard-inline-panel">
+              <div className="table-title-line">
+                <FileJson size={18} />
+                <div>
+                  <strong>Sample metadata</strong>
+                  <p>{sourceDraft ? "Configure 단계에서 dataset draft 값으로 사용됩니다." : "source 선택 후 metadata preview가 표시됩니다."}</p>
+                </div>
+              </div>
+              {sourceDraft ? (
+                <div className="source-config-summary">
+                  <InfoCard title="Source type" value={sourceDraft.typeLabel} detail={sourceDraft.status} />
+                  <InfoCard title="Resource" value={sourceDraft.resource} detail={`수정 ${sourceDraft.updatedLabel}`} />
+                  <InfoCard title="Schema" value={`${sourceDraft.columns.length} columns`} detail={sourceDraft.columns.slice(0, 3).join(", ")} />
+                </div>
+              ) : (
+                <EmptyState
+                  icon={Database}
+                  title="선택된 source dataset이 없습니다"
+                  body="데이터 소스 선택을 눌러 source type과 dataset card를 고릅니다."
+                />
+              )}
+            </section>
+          </div>
+        </section>
+      );
+    }
+
+    if (currentSourceStep.id === "configure") {
+      return (
+        <section className="wizard-step-body">
+          <div className="wizard-step-heading">
+            <span>2단계</span>
+            <div>
+              <h3>Configure</h3>
+              <p>실제 credential 없이 demo metadata와 dataset draft 이름만 확인합니다.</p>
+            </div>
+          </div>
+          <div className="source-config-grid">
+            <section className="wizard-inline-panel">
+              <div className="table-title-line">
+                <ServerCog size={18} />
+                <div>
+                  <strong>Dataset draft</strong>
+                  <p>AskLake에 등록될 source dataset 표시 이름입니다.</p>
+                </div>
+              </div>
+              <label className="target-name-field">
+                <span>dataset_name</span>
+                <input
+                  type="text"
+                  value={sourceDatasetName}
+                  onChange={(event) => setSourceDatasetName(event.target.value)}
+                  placeholder="source_product_health_reviews"
+                />
+              </label>
+              <div className="target-summary-strip">
+                <span>Connection profile</span>
+                <strong>{sourceDraft?.typeLabel || "source 필요"}</strong>
+                <p>{sourceDraft?.resource || "credential과 연결 테스트는 이번 Phase에서 제외합니다."}</p>
+              </div>
+            </section>
+            <section className="wizard-inline-panel">
+              <div className="table-title-line">
+                <FileJson size={18} />
+                <div>
+                  <strong>Schema preview</strong>
+                  <p>선택한 source의 sample schema를 등록 전 확인합니다.</p>
+                </div>
+              </div>
+              {sourceDraft ? (
+                <div className="schema-preview-table" aria-label="Source dataset configure schema preview">
+                  <div className="schema-preview-head">
+                    <span>Field</span>
+                    <span>Type</span>
+                    <span>Sample</span>
+                  </div>
+                  {sourceDraft.schema.map((field) => (
+                    <div className="schema-preview-row" key={field.name}>
+                      <strong>{field.name}</strong>
+                      <span>{field.type}</span>
+                      <code>{field.sample}</code>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <EmptyState icon={FileJson} title="Schema preview 대기" body="데이터 소스를 먼저 선택합니다." />
+              )}
+            </section>
+          </div>
+        </section>
+      );
+    }
+
+    return (
+      <section className="wizard-step-body">
+        <div className="wizard-step-heading">
+          <span>3단계</span>
+          <div>
+            <h3>Review</h3>
+            <p>Source Dataset draft로 만들 내용을 마지막으로 확인합니다.</p>
+          </div>
+        </div>
+        <div className="review-summary-grid">
+          <article>
+            <span>Source type</span>
+            <strong>{sourceDraft?.typeLabel || "선택 전"}</strong>
+            <p>{sourceDraft?.status || "1단계에서 source dataset을 선택합니다."}</p>
+          </article>
+          <article>
+            <span>Dataset name</span>
+            <strong>{sourceDatasetName.trim() || "dataset_name 필요"}</strong>
+            <p>demo metadata draft 이름입니다.</p>
+          </article>
+          <article>
+            <span>Resource</span>
+            <strong>{sourceDraft?.resource || "resource 필요"}</strong>
+            <p>{sourceDraft ? `${sourceDraft.columns.length} columns · ${sourceDraft.updatedLabel}` : "sample metadata 대기"}</p>
+          </article>
+        </div>
+        <div className="wizard-placeholder compact">
+          <CheckCircle2 size={22} />
+          <strong>실제 connector 저장은 후속 backend Phase에서 다룹니다</strong>
+        </div>
+      </section>
+    );
+  }
+
+  function renderTargetDatasetWizard() {
+    return (
+      <section className="pipeline-table-card data-wizard-card">
+        <div className="table-card-header">
+          <div className="table-title-line">
+            <Workflow size={20} />
+            <div>
+              <strong>Create Target Dataset</strong>
+              <p>Source dataset을 골라 결과 dataset 초안을 준비합니다.</p>
+            </div>
+          </div>
+          <div className="table-card-actions">
+            <button type="button" className="ghost-action" onClick={() => setIsDatasetTypeModalOpen(true)}>
+              유형 변경
+            </button>
+            <span className="badge slate">{currentStepIndex + 1}/5 단계</span>
+          </div>
+        </div>
+        <div className="data-wizard-layout">
+          <aside className="wizard-progress target-wizard-progress" aria-label="Target dataset creation wizard progress">
+            {wizardSteps.map((step, index) => {
+              const isCurrent = index === currentStepIndex;
+              const status = isCurrent ? "진행 중" : step.isComplete ? "완료" : "대기";
+
+              return (
+                <article className={`wizard-progress-step ${isCurrent ? "current" : ""} ${step.isComplete ? "complete" : ""}`} key={step.id}>
+                  <span>{index + 1}</span>
+                  <div>
+                    <strong>{step.title}</strong>
+                    <p>{status}</p>
+                  </div>
+                </article>
+              );
+            })}
+          </aside>
+          <main className="wizard-stage">
+            {renderWizardStep()}
+            <footer className="wizard-navigation">
+              {currentStepIndex > 0 ? (
+                <button type="button" className="ghost-action" onClick={goBack}>
+                  <ArrowLeft size={16} />
+                  뒤로가기
+                </button>
+              ) : (
+                <span />
+              )}
+              {currentStepIndex < wizardSteps.length - 1 ? (
+                <button type="button" className="primary-action" onClick={goNext} disabled={!canGoNext}>
+                  다음
+                  <ArrowRight size={16} />
+                </button>
+              ) : (
+                <button type="button" className="primary-action" disabled>
+                  Target dataset draft 준비
+                  <CheckCircle2 size={16} />
+                </button>
+              )}
+            </footer>
+          </main>
+        </div>
+      </section>
+    );
+  }
+
+  function renderWizardStep() {
+    if (currentStep.id === "overview") {
+      return (
+        <section className="wizard-step-body">
+          <div className="wizard-step-heading">
+            <span>1단계</span>
+            <div>
+              <h3>Overview</h3>
+              <p>생성할 target dataset의 이름과 목적을 먼저 정합니다.</p>
+            </div>
+          </div>
+          <section className="wizard-inline-panel target-setup-panel">
+            <div className="table-title-line">
+              <Table2 size={18} />
+              <div>
+                <strong>Target dataset draft</strong>
+                <p>source 선택과 process 설정이 붙을 output dataset 초안입니다.</p>
+              </div>
+            </div>
+            <label className="target-name-field">
+              <span>target_dataset_name</span>
+              <input
+                type="text"
+                value={targetName}
+                onChange={(event) => setTargetName(event.target.value)}
+                placeholder="dataset_product_health_gold"
+              />
+            </label>
+            <label className="target-name-field">
+              <span>purpose</span>
+              <input
+                type="text"
+                value={targetDescription}
+                onChange={(event) => setTargetDescription(event.target.value)}
+                placeholder="제품 상태 분석용 gold dataset draft"
+              />
+            </label>
+            <div className="target-summary-strip">
+              <span>Output draft</span>
+              <strong>{normalizedTargetName || "target_dataset_name 필요"}</strong>
+              <p>{normalizedTargetDescription || "dataset 목적을 짧게 적어둡니다."}</p>
+            </div>
+          </section>
+        </section>
+      );
+    }
+
+    if (currentStep.id === "source") {
+      return (
+        <section className="wizard-step-body">
+          <div className="wizard-step-heading">
+            <span>2단계</span>
+            <div>
+              <h3>Source 선택</h3>
+              <p>Target dataset의 입력으로 사용할 source dataset을 고릅니다.</p>
+            </div>
+          </div>
+          <div className="wizard-source-layout">
+            <div className="wizard-primary-choice">
+              <span className="flow-step-icon">
+                <Database size={18} aria-hidden="true" />
+              </span>
+              <div>
+                <strong>{selectedSource ? selectedSource.name : "Source dataset을 선택하세요"}</strong>
+                <p>
+                  {selectedSource
+                    ? `${selectedSource.typeLabel} · ${selectedSource.columns.length} columns · ${selectedSource.resource}`
+                    : "기존 dataset card selector를 열어 source type과 dataset을 고릅니다."}
+                </p>
+              </div>
+              <button type="button" className="primary-action" onClick={() => openSourcePicker("target")}>
+                {selectedSource ? "Source 변경" : "Source 선택"}
+                <ArrowRight size={16} />
+              </button>
+            </div>
+            <section className="wizard-inline-panel">
+              <div className="table-title-line">
+                <FileJson size={18} />
+                <div>
+                  <strong>Schema preview</strong>
+                  <p>{selectedSource ? "다음 단계의 Select Fields 입력으로 사용됩니다." : "source 선택 후 컬럼 미리보기가 표시됩니다."}</p>
+                </div>
+              </div>
+              {selectedSource ? (
+                <div className="schema-preview-table" aria-label="Selected source schema preview">
+                  <div className="schema-preview-head">
+                    <span>Field</span>
+                    <span>Type</span>
+                    <span>Sample</span>
+                  </div>
+                  {selectedSource.schema.map((field) => (
+                    <div className="schema-preview-row" key={field.name}>
+                      <strong>{field.name}</strong>
+                      <span>{field.type}</span>
+                      <code>{field.sample}</code>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <EmptyState
+                  icon={Database}
+                  title="아직 선택된 source가 없습니다"
+                  body="Source 선택을 눌러 dataset을 고릅니다."
+                />
+              )}
+            </section>
+          </div>
+        </section>
+      );
+    }
+
+    if (currentStep.id === "process") {
+      return (
+        <section className="wizard-step-body">
+          <div className="wizard-step-heading">
+            <span>3단계</span>
+            <div>
+              <h3>Process</h3>
+              <p>{selectedSource ? `${selectedSource.name}에서 target dataset에 남길 컬럼을 고릅니다.` : "Source를 먼저 선택합니다."}</p>
+            </div>
+          </div>
+          <section className={`transform-panel wizard-inline-panel ${selectedSource ? "" : "disabled"}`}>
+            <div className="table-title-line">
+              <GitBranch size={18} />
+              <div>
+                <strong>Select Fields</strong>
+                <p>이번 단계에서는 필드 선택만 다룹니다.</p>
+              </div>
+            </div>
+            {selectedSource ? (
+              <>
+                <div className="transform-toolbar">
+                  <span>
+                    Select Fields · {selectedFields.length}/{selectedSource.columns.length}
+                  </span>
+                  <div>
+                    <button type="button" className="ghost-action" onClick={selectAllFields}>
+                      전체 선택
+                    </button>
+                    <button type="button" className="ghost-action" onClick={clearFields}>
+                      선택 해제
+                    </button>
+                  </div>
+                </div>
+                <div className="field-choice-grid" aria-label="Select Fields columns">
+                  {selectedSource.columns.map((column) => (
+                    <label className="field-choice" key={column}>
+                      <input
+                        type="checkbox"
+                        checked={selectedFields.includes(column)}
+                        onChange={() => toggleField(column)}
+                      />
+                      <span>{column}</span>
+                    </label>
+                  ))}
+                </div>
+                <div className="transform-output-preview">
+                  <div className="table-title-line">
+                    <Table2 size={18} />
+                    <div>
+                      <strong>Output schema preview</strong>
+                      <p>선택한 필드만 target dataset schema로 남습니다.</p>
+                    </div>
+                  </div>
+                  {selectedOutputSchema.length > 0 ? (
+                    <div className="schema-preview-table" aria-label="Transform output schema preview">
+                      <div className="schema-preview-head">
+                        <span>Field</span>
+                        <span>Type</span>
+                        <span>Sample</span>
+                      </div>
+                      {selectedOutputSchema.map((field) => (
+                        <div className="schema-preview-row" key={field.name}>
+                          <strong>{field.name}</strong>
+                          <span>{field.type}</span>
+                          <code>{field.sample}</code>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <EmptyState
+                      icon={Table2}
+                      title="Output schema가 비어 있습니다"
+                      body="target dataset에 남길 필드를 하나 이상 선택합니다."
+                    />
+                  )}
+                </div>
+              </>
+            ) : (
+              <EmptyState
+                icon={GitBranch}
+                title="Process 설정 대기"
+                body="뒤로가기로 돌아가 source dataset을 먼저 선택합니다."
+              />
+            )}
+          </section>
+          <div className="wizard-placeholder compact">
+            <CheckCircle2 size={22} />
+            <strong>다음 단계에서 schedule 기본값을 확인합니다</strong>
+          </div>
+        </section>
+      );
+    }
+
+    if (currentStep.id === "scheduling") {
+      return (
+        <section className="wizard-step-body">
+          <div className="wizard-step-heading">
+            <span>4단계</span>
+            <div>
+              <h3>Scheduling</h3>
+              <p>데모에서는 target dataset draft를 수동 실행 준비 상태로만 둡니다.</p>
+            </div>
+          </div>
+          <section className="wizard-inline-panel target-schedule-panel">
+            <div className="table-title-line">
+              <Clock3 size={18} />
+              <div>
+                <strong>Schedule mode</strong>
+                <p>실제 cron 저장과 timezone persistence는 후속 backend Phase에서 다룹니다.</p>
+              </div>
+            </div>
+            <div className="schedule-choice-grid" aria-label="Target dataset schedule mode">
+              <label className={targetScheduleMode === "manual" ? "selected" : ""}>
+                <input
+                  type="radio"
+                  name="target-schedule"
+                  value="manual"
+                  checked={targetScheduleMode === "manual"}
+                  onChange={() => setTargetScheduleMode("manual")}
+                />
+                <span>
+                  <strong>Manual</strong>
+                  <small>데모 기본값. draft 생성 이후 수동 실행 대상으로 표시합니다.</small>
+                </span>
+              </label>
+              <label className={targetScheduleMode === "placeholder" ? "selected" : ""}>
+                <input
+                  type="radio"
+                  name="target-schedule"
+                  value="placeholder"
+                  checked={targetScheduleMode === "placeholder"}
+                  onChange={() => setTargetScheduleMode("placeholder")}
+                />
+                <span>
+                  <strong>Schedule placeholder</strong>
+                  <small>cron UI 자리만 확인합니다. 저장은 하지 않습니다.</small>
+                </span>
+              </label>
+            </div>
+            <label className="target-name-field">
+              <span>schedule_note</span>
+              <input
+                type="text"
+                value={targetScheduleNote}
+                onChange={(event) => setTargetScheduleNote(event.target.value)}
+                placeholder="데모에서는 수동 실행으로만 준비합니다."
+              />
+            </label>
+            <div className="target-summary-strip">
+              <span>Schedule summary</span>
+              <strong>{targetScheduleMode === "manual" ? "Manual" : "Placeholder"}</strong>
+              <p>{targetScheduleNote.trim() || "schedule note 없음"}</p>
+            </div>
+          </section>
+        </section>
+      );
+    }
+
+    if (currentStep.id === "review") {
+      return (
+        <section className="wizard-step-body">
+          <div className="wizard-step-heading">
+            <span>5단계</span>
+            <div>
+              <h3>Review</h3>
+              <p>Target Dataset draft로 준비할 내용을 최종 확인합니다.</p>
+            </div>
+          </div>
+          <div className="review-summary-grid target-review-grid">
+            <article>
+              <span>Target dataset</span>
+              <strong>{normalizedTargetName || "target_dataset_name 필요"}</strong>
+              <p>{normalizedTargetDescription || "purpose 없음"}</p>
+            </article>
+            <article>
+              <span>Source</span>
+              <strong>{selectedSource ? selectedSource.name : "선택 전"}</strong>
+              <p>{selectedSource ? `${selectedSource.typeLabel} · ${selectedSource.resource}` : "Source 선택 단계에서 고릅니다."}</p>
+            </article>
+            <article>
+              <span>Process</span>
+              <strong>Select Fields · {selectedFields.length} fields</strong>
+              <p>{selectedFieldSummary}{selectedFields.length > 3 ? "..." : ""}</p>
+            </article>
+            <article>
+              <span>Output schema</span>
+              <strong>{selectedOutputSchema.length} fields</strong>
+              <p>{selectedOutputSchema.map((field) => field.name).slice(0, 4).join(", ") || "schema 없음"}</p>
+            </article>
+            <article>
+              <span>Schedule</span>
+              <strong>{targetScheduleMode === "manual" ? "Manual" : "Placeholder"}</strong>
+              <p>{targetScheduleNote.trim() || "schedule note 없음"}</p>
+            </article>
+          </div>
+          <div className="wizard-placeholder compact">
+            <CheckCircle2 size={22} />
+            <strong>생성 준비 완료. 실제 저장과 실행은 아직 호출하지 않습니다.</strong>
+          </div>
+        </section>
+      );
+    }
+
+    return (
+      <section className="wizard-step-body">
+        <EmptyState icon={AlertCircle} title="알 수 없는 단계입니다" body="wizard step 설정을 확인합니다." />
+      </section>
+    );
   }
 
   return (
     <div className="page-stack">
       <PageHeader
-        title="데이터 통합"
-        body="파이프라인을 만들고, 필요한 경우 연결을 보조 관리합니다."
-        actionLabel={isManagingConnections ? "파이프라인 목록" : "연결 관리"}
-        onAction={isManagingConnections ? closeConnectionManager : openConnectionManager}
+        title="데이터셋"
+        body="Source dataset과 target dataset을 만들기 위한 데모 진입점입니다."
+        actionLabel="데이터셋 생성"
+        onAction={() => setIsDatasetTypeModalOpen(true)}
       />
-      {isManagingConnections ? (
-        <ConnectionManagerShell onBack={closeConnectionManager} setNotice={setNotice} />
-      ) : (
-        <>
-      <section className="start-panel">
-        <div className="start-panel-copy">
-          <span className="section-icon">
-            <Plus size={16} />
-          </span>
-          <div>
-            <h3>새 파이프라인 시작</h3>
-            <p>M2~M5 구현이 붙으면 이 흐름에서 source 선택, schema preview, workflow 실행으로 이어집니다.</p>
+      {datasetCreationMode ? (
+        <div className="dataset-mode-strip" aria-label="Current dataset creation mode">
+          <span>현재 생성 유형</span>
+          <strong>{datasetCreationMode === "source" ? "Source Dataset" : "Target Dataset"}</strong>
+          <p>
+            {datasetCreationMode === "source"
+              ? "외부 원천 데이터를 등록하는 흐름입니다."
+              : "기존 source에서 가공 결과 dataset을 준비하는 흐름입니다."}
+          </p>
+        </div>
+      ) : null}
+      {datasetCreationMode === "source" ? renderSourceDatasetShell() : null}
+      {datasetCreationMode === "target" ? renderTargetDatasetWizard() : null}
+      {!datasetCreationMode ? (
+        <section className="pipeline-table-card dataset-start-card">
+          <div className="dataset-placeholder-body">
+            <div className="dataset-placeholder-icon">
+              <Database size={28} />
+            </div>
+            <div>
+              <h3>먼저 만들 데이터셋 유형을 선택하세요</h3>
+              <p>Source Dataset은 원천 데이터 등록, Target Dataset은 가공 결과 데이터셋 draft 준비 흐름입니다.</p>
+            </div>
+            <button type="button" className="primary-action" onClick={() => setIsDatasetTypeModalOpen(true)}>
+              데이터셋 생성
+              <ArrowRight size={16} />
+            </button>
           </div>
-        </div>
-        <div className="start-steps">
-          {m1StartSteps.map(([title, description, iconKey], index) => {
-            const Icon = stepIcons[iconKey];
-            return (
-            <article className="start-step" key={title}>
-              <span>{index + 1}</span>
-              <div>
-                <strong>
-                  <Icon size={15} />
-                  {title}
-                </strong>
-                <p>{description}</p>
-              </div>
-            </article>
-            );
-          })}
-        </div>
-        <div className="start-actions">
-          <button type="button" className="primary-action" onClick={() => setIsStartOpen(true)}>
-            소스 선택하고 시작
-            <ArrowRight size={16} />
-          </button>
-          <button type="button" className="ghost-action" onClick={openConnectionManager} aria-label="새 파이프라인 영역에서 연결 관리 열기">
-            <Database size={16} />
-            연결 관리
-          </button>
-          <button type="button" className="ghost-action" onClick={() => navigate("/runs")}>
-            <Play size={16} />
-            Workflow 실행으로 이동
-          </button>
-        </div>
-      </section>
-      <PipelineTable navigate={navigate} setNotice={setNotice} />
-      <SchemaPreviewSection />
-      <div className="grid two">
-        <InfoCard title="Contract" value={m1SourceConfigPlaceholder.contract} detail="Producer: M1 / Consumers: M2, M3, M4, M5" />
-        <InfoCard title="Tenant" value={m1SourceConfigPlaceholder.tenant_id} detail="실제 로그인/RBAC 없이 tenant_id 구조만 유지" />
-        <InfoCard title="Source ID" value={m1SourceConfigPlaceholder.source_id} detail={m1SourceConfigPlaceholder.source_type} />
-        <InfoCard title="Connection" value={m1SourceConfigPlaceholder.connection_ref.kind} detail={m1SourceConfigPlaceholder.connection_ref.path_status} />
-      </div>
-      <EmptyState
-        icon={Boxes}
-        title="아직 등록된 실제 source가 없습니다"
-        body="M3 JSON sample reader 또는 M2/M4 connector가 붙으면 이 영역이 source 목록과 connection test 결과로 바뀝니다."
-      />
-        </>
-      )}
-      {isStartOpen ? (
+        </section>
+      ) : null}
+      {isDatasetTypeModalOpen ? (
+        <DatasetTypeChoiceModal
+          onClose={() => setIsDatasetTypeModalOpen(false)}
+          onSelect={startDatasetCreation}
+        />
+      ) : null}
+      {isSourceModalOpen ? (
         <SourceStartModal
-          onClose={() => setIsStartOpen(false)}
-          onManageConnections={() => {
-            setIsStartOpen(false);
-            openConnectionManager();
-          }}
-          onProceed={() => {
-            setIsStartOpen(false);
-            navigate("/etl-visual");
+          sources={demoSourceDatasets}
+          onClose={() => setIsSourceModalOpen(false)}
+          onSelect={handleSourceSelect}
+          onCreateNew={() => {
+            setIsSourceModalOpen(false);
+            setNotice("새 source dataset 생성 화면은 다음 Phase에서 연결합니다.");
           }}
         />
       ) : null}
@@ -419,150 +1330,171 @@ function SourcesPage({ navigate, setNotice }) {
   );
 }
 
-function PipelineTable({ navigate, setNotice }) {
-  const [query, setQuery] = useState("");
-  const [page, setPage] = useState(1);
-  const filteredRows = m1PipelinePlaceholders.filter((row) =>
-    `${row.name} ${row.owner} ${row.purpose}`.toLowerCase().includes(query.toLowerCase()),
-  );
-
-  return (
-    <section className="pipeline-table-card">
-      <div className="table-card-header">
-        <div>
-          <h2>데이터셋/파이프라인</h2>
-          <div className="table-title-line">
-            <ListChecks size={20} />
-            <div>
-              <strong>구축 중인 파이프라인</strong>
-              <p>소스, 변환, 결과 데이터셋이 연결된 작업을 확인합니다.</p>
-            </div>
-          </div>
-        </div>
-        <label className="table-search">
-          <Search size={16} />
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="파이프라인 검색..." />
-        </label>
-      </div>
-      <div className="wide-table-wrap">
-        <table className="shell-table">
-          <thead>
-            <tr>
-              <th>파이프라인 이름</th>
-              <th>담당자</th>
-              <th>결과 유형</th>
-              <th>구축 상태</th>
-              <th>실행 방식</th>
-              <th>목적</th>
-              <th>최근 수정일</th>
-              <th>작업</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredRows.map((row) => (
-              <tr key={row.name}>
-                <td className="table-link" onClick={() => navigate("/catalog-detail")}>{row.name}</td>
-                <td>{row.owner}</td>
-                <td>
-                  <span className={`badge ${row.type === "결과 데이터셋" ? "orange" : "gray"}`}>{row.type}</span>
-                </td>
-                <td>
-                  <span className="badge slate">{row.status}</span>
-                </td>
-                <td>
-                  <span className="badge blue">{row.mode}</span>
-                </td>
-                <td className="purpose-cell">{row.purpose}</td>
-                <td>{row.updated}</td>
-                <td>
-                  <button
-                    type="button"
-                    className="icon-danger"
-                    aria-label="삭제 비활성"
-                    onClick={() => setNotice("M1에서는 삭제 API를 호출하지 않습니다. M5 연결 후 실제 권한/삭제 정책을 붙입니다.")}
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <footer className="table-footer">
-        <span>전체 {filteredRows.length}개 중 {filteredRows.length ? "1-" + filteredRows.length : "0"} 표시</span>
-        <div>
-          <button type="button" onClick={() => setPage(1)}>이전</button>
-          <button type="button" className="active-page">1</button>
-          <button type="button" onClick={() => setPage(page + 1)}>다음</button>
-        </div>
-      </footer>
-    </section>
-  );
-}
-
-function ConnectionManagerShell({ onBack, setNotice }) {
-  return (
-    <section className="management-shell">
-      <div className="management-header">
-        <button type="button" className="ghost-action" onClick={onBack} aria-label="연결 관리에서 파이프라인 목록으로 돌아가기">
-          <ArrowLeft size={16} />
-          파이프라인 목록
-        </button>
-        <button
-          type="button"
-          className="primary-action"
-          onClick={() => setNotice("새 연결 생성은 M2/M3/M4 connector 구현 후 연결됩니다.")}
-        >
-          <Plus size={16} />
-          새 연결
-        </button>
-      </div>
-      <DataTable
-        columns={["connection", "resource", "status", "owner module"]}
-        rows={m1ConnectionPlaceholders}
-      />
-    </section>
-  );
-}
-
-function SourceStartModal({ onClose, onManageConnections, onProceed }) {
-  const [selected, setSelected] = useState(m1ConnectionPlaceholders[0][0]);
-
+function DatasetTypeChoiceModal({ onClose, onSelect }) {
   return (
     <div className="modal-backdrop" role="presentation">
-      <section className="source-modal" role="dialog" aria-modal="true" aria-labelledby="source-modal-title">
+      <section className="source-modal dataset-type-modal" role="dialog" aria-modal="true" aria-labelledby="dataset-type-title">
         <header>
           <div>
-            <h2 id="source-modal-title">소스 선택하고 시작</h2>
-            <p>실제 connection test 없이 M1에서는 선택 flow만 확인합니다.</p>
+            <h2 id="dataset-type-title">어떤 데이터셋을 만들까요?</h2>
+            <p>Source Dataset은 원천 데이터 등록, Target Dataset은 가공 결과 데이터셋 생성입니다.</p>
           </div>
           <button type="button" onClick={onClose} aria-label="닫기">
             <X size={18} />
           </button>
         </header>
-        <div className="source-options">
-          {m1ConnectionPlaceholders.map(([name, resource, status]) => (
-            <button
-              key={name}
-              type="button"
-              className={selected === name ? "selected" : ""}
-              onClick={() => setSelected(name)}
-            >
-              <Database size={18} />
-              <span>
-                <strong>{name}</strong>
-                <small>{resource} · {status}</small>
-              </span>
-            </button>
-          ))}
+        <div className="dataset-type-options">
+          <button type="button" onClick={() => onSelect("source")}>
+            <span className="dataset-type-icon">
+              <Database size={22} />
+            </span>
+            <strong>Source Dataset</strong>
+            <p>CSV, Kafka, PostgreSQL 같은 외부 원천 데이터를 AskLake에 등록합니다.</p>
+            <small>{"다음 단계: 데이터 소스 선택 -> Configure -> Review"}</small>
+          </button>
+          <button type="button" onClick={() => onSelect("target")}>
+            <span className="dataset-type-icon">
+              <Table2 size={22} />
+            </span>
+            <strong>Target Dataset</strong>
+            <p>선택한 source를 가공해 결과 dataset 초안과 process 설정을 준비합니다.</p>
+            <small>{"Overview -> Source -> Process -> Scheduling -> Review"}</small>
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function SourceStartModal({ sources, onClose, onSelect, onCreateNew }) {
+  const [selectedType, setSelectedType] = useState("all");
+  const [query, setQuery] = useState("");
+  const [sortBy, setSortBy] = useState("recent");
+
+  const visibleSources = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    const filteredSources = sources.filter((source) => {
+      const matchesType = selectedType === "all" || source.sourceType === selectedType;
+      const matchesQuery =
+        !normalizedQuery ||
+        [source.name, source.typeLabel, source.status, source.description, source.resource]
+          .join(" ")
+          .toLowerCase()
+          .includes(normalizedQuery);
+
+      return matchesType && matchesQuery;
+    });
+
+    return [...filteredSources].sort((a, b) => {
+      if (sortBy === "name") {
+        return a.name.localeCompare(b.name);
+      }
+
+      if (sortBy === "status") {
+        return a.status.localeCompare(b.status);
+      }
+
+      if (sortBy === "columns") {
+        return b.columns.length - a.columns.length || a.name.localeCompare(b.name);
+      }
+
+      return b.updatedRank - a.updatedRank;
+    });
+  }, [query, selectedType, sortBy, sources]);
+
+  return (
+    <div className="modal-backdrop" role="presentation">
+      <section className="source-modal source-modal-wide" role="dialog" aria-modal="true" aria-labelledby="source-modal-title">
+        <header>
+          <div>
+            <h2 id="source-modal-title">데이터 소스 종류 선택</h2>
+            <p>CSV, Kafka, PostgreSQL 같은 source 종류를 고른 뒤 dataset 카드를 선택합니다.</p>
+          </div>
+          <button type="button" onClick={onClose} aria-label="닫기">
+            <X size={18} />
+          </button>
+        </header>
+        <div className="source-picker-body">
+          <div className="source-type-grid" aria-label="Source type filter">
+            {sourceTypeOptions.map((type) => (
+              <button
+                key={type.id}
+                type="button"
+                className={selectedType === type.id ? "active" : ""}
+                onClick={() => setSelectedType(type.id)}
+              >
+                <strong>{type.label}</strong>
+                <small>{type.description}</small>
+              </button>
+            ))}
+          </div>
+          <div className="source-picker-toolbar">
+            <label className="source-search">
+              <Search size={16} aria-hidden="true" />
+              <input
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="dataset 검색"
+                aria-label="dataset 검색"
+              />
+            </label>
+            <label>
+              <span>종류</span>
+              <select value={selectedType} onChange={(event) => setSelectedType(event.target.value)}>
+                {sourceTypeOptions.map((type) => (
+                  <option key={type.id} value={type.id}>
+                    {type.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>정렬</span>
+              <select value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
+                {sourceSortOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          {visibleSources.length > 0 ? (
+            <div className="source-card-grid">
+              {visibleSources.map((source) => (
+                <button key={source.id} type="button" className="source-card" onClick={() => onSelect(source)}>
+                  <div className="source-card-head">
+                    <span className="source-card-icon">
+                      <Database size={18} aria-hidden="true" />
+                    </span>
+                    <span className="source-card-badge">{source.typeLabel}</span>
+                  </div>
+                  <strong>{source.name}</strong>
+                  <p>{source.description}</p>
+                  <div className="source-card-meta">
+                    <span>{source.status}</span>
+                    <span>{source.columns.length} columns</span>
+                  </div>
+                  <small>{source.resource}</small>
+                  <small>수정 {source.updatedLabel}</small>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              icon={Database}
+              title="조건에 맞는 dataset이 없습니다"
+              body="전체 보기로 바꾸거나 검색어를 줄여서 다시 확인합니다."
+            />
+          )}
         </div>
         <footer>
-          <button type="button" className="ghost-action" onClick={onManageConnections}>
-            연결 관리
+          <button type="button" className="ghost-action" onClick={onClose}>
+            취소
           </button>
-          <button type="button" className="primary-action" onClick={onProceed}>
-            파이프라인 캔버스 열기
+          <button type="button" className="primary-action" onClick={onCreateNew}>
+            새 source 연결
             <ArrowRight size={16} />
           </button>
         </footer>
@@ -570,33 +1502,6 @@ function SourceStartModal({ onClose, onManageConnections, onProceed }) {
     </div>
   );
 }
-
-function SchemaPreviewSection() {
-  return (
-    <section className="schema-preview-block">
-      <div className="table-card-header">
-        <div className="table-title-line">
-          <FileJson size={20} />
-          <div>
-            <strong>스키마 미리보기 / 보정</strong>
-            <p>M3 JSON sample reader가 붙으면 source 선택 다음 단계에서 실제 추론 결과를 표시합니다.</p>
-          </div>
-        </div>
-        <span className="badge slate">M3 연결 예정</span>
-      </div>
-      <DataTable
-        columns={["field path", "type", "nullable", "override"]}
-        rows={m1SchemaPreviewPlaceholder.fields}
-      />
-      <EmptyState
-        icon={AlertCircle}
-        title="sample size와 실제 파일 경로는 아직 확정 전입니다"
-        body="계약 fixture의 TODO 값을 실제 M3 구현 결과로 교체해야 합니다."
-      />
-    </section>
-  );
-}
-
 function VisualEditorPage({ navigate, setNotice }) {
   const [selectedNode, setSelectedNode] = useState("Source");
   const canvasNodes = [
@@ -612,7 +1517,7 @@ function VisualEditorPage({ navigate, setNotice }) {
       <header className="visual-toolbar">
         <button type="button" className="ghost-action" onClick={() => navigate("/sources")}>
           <ArrowLeft size={16} />
-          데이터 통합
+          데이터셋
         </button>
         <div>
           <h2>파이프라인 시각 편집</h2>
@@ -2354,16 +3259,18 @@ function PageHeader({ title, body, actionLabel, onAction }) {
         <h2>{title}</h2>
         <p>{body}</p>
       </div>
-      <button type="button" className="ghost-action" onClick={onAction}>
-        {actionLabel}
-      </button>
+      {actionLabel ? (
+        <button type="button" className="ghost-action" onClick={onAction}>
+          {actionLabel}
+        </button>
+      ) : null}
     </header>
   );
 }
 
-function ToastNotice({ message, onClose }) {
+function ToastNotice({ message, isLeaving, onClose }) {
   return (
-    <div className="toast-notice" role="status">
+    <div className={`toast-notice ${isLeaving ? "leaving" : ""}`} role="status">
       <span>{message}</span>
       <button type="button" onClick={onClose} aria-label="알림 닫기">
         <X size={16} />
