@@ -78,6 +78,7 @@ report가 늘어나면 영역별 최신 report index를 작게 유지한다. 이
 | M2 Taxi Docker Spark evidence | [`m2-taxi-docker-spark-evidence.md`](m2-taxi-docker-spark-evidence.md) | 공개 Spark image 기반 Docker Spark master/worker/driver가 작은 Taxi 파일과 4.87GB Taxi directory를 처리해 `gold_taxi_daily_metrics` Parquet과 Week2RunnerResult 호환 summary를 남기는지 확인 |
 | M2 Docker Spark MinIO output smoke | [`m2-docker-spark-minio-output-smoke.md`](m2-docker-spark-minio-output-smoke.md) | Docker Spark가 만든 Taxi Gold Parquet을 local fallback path에 쓰고 같은 파일을 MinIO/S3-compatible object URI로 업로드하는지 확인 |
 | M2 Airflow SparkRunner handoff | [`m2-airflow-sparkrunner-handoff.md`](m2-airflow-sparkrunner-handoff.md) | M5 Airflow DAG task가 호출할 수 있는 M2 SparkRunner CLI와 `week2_result` artifact handoff를 확인 |
+| M2 Spark direct S3A write smoke | [`m2-spark-direct-s3a-write-smoke.md`](m2-spark-direct-s3a-write-smoke.md) | Docker Spark가 Taxi Gold Parquet directory를 local fallback 없이 MinIO `s3a://` output prefix에 직접 쓰는지 확인 |
 | M2 source input 계약 확장 | [`m2-source-input-contract.md`](m2-source-input-contract.md) | `RuntimeConfig.source_inputs[]`가 legacy `input_format`/`input_path`와 새 `source_type`/`format`/`path`를 함께 받는 호환 계약 확인 |
 | Week2 team handoff summary | [`week2-team-handoff-summary.md`](week2-team-handoff-summary.md) | Phase 1~6 이후 팀원이 읽을 현재 분업/진행상황/다음 병렬 구현 순서 확인 |
 | Week2 상품 리스크 Source of Truth 전파 | [`week2-product-risk-source-of-truth-propagation.md`](week2-product-risk-source-of-truth-propagation.md) | Week2 대표 경로가 5GB raw/bronze input 기반 `gold_product_health`로 갱신된 Source of Truth 전파 범위와 남은 구현 gap 확인 |

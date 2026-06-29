@@ -32,6 +32,13 @@ class TaxiSparkConfig:
     parquet_vectorized_reader: bool = True
     storage: StorageConfig | dict[str, Any] | None = None
     upload_to_object_storage: bool = False
+    direct_s3a_output_uri: str | None = None
+    s3a_endpoint: str | None = None
+    s3a_region: str = "us-east-1"
+    s3a_access_key_env: str = "ASKLAKE_DEMO_MINIO_ACCESS_KEY"
+    s3a_secret_key_env: str = "ASKLAKE_DEMO_MINIO_SECRET_KEY"
+    s3a_path_style_access: bool = True
+    s3a_ssl_enabled: bool | None = None
 
 
 class Week2TaxiSparkRunner:
@@ -56,9 +63,9 @@ class Week2TaxiSparkRunner:
             input_path = resolve_path(taxi_config.input_path)
             if not input_path.exists():
                 raise Week2TaxiSparkRunnerError(f"Input path not found: {input_path}")
+            validate_output_mode(taxi_config)
 
             storage_adapter = Week2StorageAdapter()
-            output_location = output_location_for_config(taxi_config, storage_adapter)
             spark = build_spark_session(taxi_config)
             logs.append({"level": "info", "message": f"spark local session started: {spark.version}"})
 
@@ -68,16 +75,29 @@ class Week2TaxiSparkRunner:
 
             input_row_count = scoped_df.count()
             output_row_count = gold_df.count()
-            write_single_parquet(gold_df, output_location.local_path, taxi_config.compression)
             input_bytes = input_path_size(input_path)
-            output_bytes = path_size(output_location.local_path)
+            if taxi_config.direct_s3a_output_uri:
+                output_path = normalized_s3a_output_uri(taxi_config.direct_s3a_output_uri)
+                write_parquet_directory(gold_df, output_path, taxi_config.compression)
+                output_bytes = spark_path_size(spark, output_path)
+            else:
+                output_location = output_location_for_config(taxi_config, storage_adapter)
+                write_single_parquet(gold_df, output_location.local_path, taxi_config.compression)
+                output_path = str(output_location.local_path)
+                output_bytes = path_size(output_location.local_path)
 
             task_results = [
                 succeeded_task_result("spark_read_taxi", row_count=input_row_count, bytes=input_bytes),
                 succeeded_task_result("spark_aggregate_taxi_daily", row_count=output_row_count, bytes=None),
-                succeeded_task_result("spark_write_taxi_daily_metrics", row_count=output_row_count, bytes=output_bytes),
             ]
+            if taxi_config.direct_s3a_output_uri:
+                task_results.append(
+                    succeeded_task_result("spark_direct_s3a_write_taxi_daily_metrics", row_count=output_row_count, bytes=output_bytes)
+                )
+            else:
+                task_results.append(succeeded_task_result("spark_write_taxi_daily_metrics", row_count=output_row_count, bytes=output_bytes))
             if taxi_config.upload_to_object_storage:
+                output_location = output_location_for_config(taxi_config, storage_adapter)
                 upload_result = storage_adapter.upload_file(storage_config_required(taxi_config), output_location)
                 task_results.append(
                     succeeded_task_result("spark_upload_taxi_daily_metrics", row_count=output_row_count, bytes=upload_result.bytes)
@@ -107,7 +127,7 @@ class Week2TaxiSparkRunner:
             row_count=input_row_count,
             bytes=input_bytes,
             duration_ms=elapsed_ms(started),
-            output_path=str(output_location.local_path),
+            output_path=output_path,
             output_row_count=output_row_count,
             output_bytes=output_bytes,
         )
@@ -131,7 +151,42 @@ def build_spark_session(config: TaxiSparkConfig) -> Any:
     )
     if config.driver_memory:
         builder = builder.config("spark.driver.memory", config.driver_memory)
+    if config.direct_s3a_output_uri:
+        builder = configure_s3a(builder, config)
     return builder.getOrCreate()
+
+
+def configure_s3a(builder: Any, config: TaxiSparkConfig) -> Any:
+    """Spark가 `s3a://` URI를 직접 읽고 쓸 수 있게 Hadoop S3A 설정을 주입한다."""
+
+    access_key = env_credential(config.s3a_access_key_env)
+    secret_key = env_credential(config.s3a_secret_key_env)
+    builder = (
+        builder.config("spark.hadoop.fs.s3a.access.key", access_key)
+        .config("spark.hadoop.fs.s3a.secret.key", secret_key)
+        .config("spark.hadoop.fs.s3a.path.style.access", str(config.s3a_path_style_access).lower())
+        .config("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem")
+        .config("spark.hadoop.fs.s3a.aws.credentials.provider", "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider")
+    )
+    if config.s3a_endpoint:
+        ssl_enabled = config.s3a_ssl_enabled
+        if ssl_enabled is None:
+            ssl_enabled = config.s3a_endpoint.startswith("https://")
+        builder = (
+            builder.config("spark.hadoop.fs.s3a.endpoint", config.s3a_endpoint)
+            .config("spark.hadoop.fs.s3a.endpoint.region", config.s3a_region)
+            .config("spark.hadoop.fs.s3a.connection.ssl.enabled", str(ssl_enabled).lower())
+        )
+    return builder
+
+
+def env_credential(env_name: str) -> str:
+    """credential 값은 코드/문서에 넣지 않고 지정된 환경 변수에서만 읽는다."""
+
+    value = os.environ.get(env_name)
+    if not value:
+        raise Week2TaxiSparkRunnerError(f"Missing S3A credential env: {env_name}")
+    return value
 
 
 def configure_spark_network_environment(master: str) -> None:
@@ -292,6 +347,36 @@ def write_single_parquet(frame: Any, output_path: Path, compression: str) -> Non
     shutil.rmtree(temp_dir)
 
 
+def write_parquet_directory(frame: Any, output_uri: str, compression: str) -> None:
+    """Spark writer가 `s3a://bucket/prefix/` 위치에 Parquet directory를 직접 쓰게 한다."""
+
+    frame.coalesce(1).write.mode("overwrite").option("compression", compression).parquet(output_uri)
+
+
+def spark_path_size(spark: Any, output_uri: str) -> int:
+    """Spark Hadoop filesystem API로 local/S3A directory 아래의 실제 output bytes를 합산한다."""
+
+    jvm = spark._jvm
+    hadoop_conf = spark._jsc.hadoopConfiguration()
+    root = jvm.org.apache.hadoop.fs.Path(output_uri)
+    fs = root.getFileSystem(hadoop_conf)
+    if not fs.exists(root):
+        raise Week2TaxiSparkRunnerError(f"Spark output path not found: {output_uri}")
+    return int(hadoop_status_size(fs, root))
+
+
+def hadoop_status_size(fs: Any, path: Any) -> int:
+    """Hadoop FileStatus를 재귀적으로 따라가며 file 길이를 합산한다."""
+
+    status = fs.getFileStatus(path)
+    if status.isFile():
+        return int(status.getLen())
+    total = 0
+    for child in fs.listStatus(path):
+        total += hadoop_status_size(fs, child.getPath())
+    return total
+
+
 def output_location_for_config(config: TaxiSparkConfig, storage_adapter: Week2StorageAdapter | None = None) -> StorageLocation:
     """Taxi Spark output을 local path와 S3-compatible object 위치로 해석한다."""
 
@@ -331,6 +416,21 @@ def output_location_for_config(config: TaxiSparkConfig, storage_adapter: Week2St
         / f"run_id={config.run_id}"
         / f"{GOLD_TABLE_NAME}.parquet",
     )
+
+
+def validate_output_mode(config: TaxiSparkConfig) -> None:
+    """local fallback, adapter upload, direct S3A write가 서로 섞여 evidence를 흐리지 않게 막는다."""
+
+    if config.direct_s3a_output_uri and config.upload_to_object_storage:
+        raise Week2TaxiSparkRunnerError("direct_s3a_output_uri cannot be combined with upload_to_object_storage")
+    if config.direct_s3a_output_uri and not config.direct_s3a_output_uri.startswith("s3a://"):
+        raise Week2TaxiSparkRunnerError("direct_s3a_output_uri must start with s3a://")
+
+
+def normalized_s3a_output_uri(output_uri: str) -> str:
+    """Spark directory write가 prefix를 directory로 다루도록 마지막 slash를 보장한다."""
+
+    return output_uri if output_uri.endswith("/") else f"{output_uri}/"
 
 
 def storage_config_required(config: TaxiSparkConfig) -> StorageConfig:

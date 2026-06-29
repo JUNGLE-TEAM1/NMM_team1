@@ -159,6 +159,13 @@ ASKLAKE_TAXI_HOST_DIR='<LOCAL_TAXI_PARENT_DIR>' scripts/week2_m2_taxi_spark_dock
 scripts/week2_m2_taxi_spark_docker_evidence.sh down
 ```
 
+15. M2 Taxi Docker Spark direct S3A smoke를 확인할 때는 같은 Docker Spark cluster와 `m2-minio`를 띄우고, Spark submit에 Hadoop AWS package를 붙여 `s3a://asklake-demo/...` output prefix에 직접 Parquet directory를 쓴다. 성공 기준은 summary JSON에 `status=succeeded`, `spark_direct_s3a_write_taxi_daily_metrics` task success, `write_mode=spark_direct_s3a`, `s3a_uri`, input/output row와 bytes가 남는 것이다. 첫 실행은 Maven package download 때문에 느릴 수 있고, 이 검증은 local MinIO 대상 smoke이며 real AWS S3/IAM 검증은 아니다.
+
+```bash
+ASKLAKE_TAXI_HOST_DIR='<LOCAL_TAXI_PARENT_DIR>' scripts/week2_m2_taxi_spark_docker_evidence.sh direct-s3a-small
+scripts/week2_m2_taxi_spark_docker_evidence.sh down
+```
+
 ### Week 2 상품 리스크 대표 경로 점검
 
 이 경로는 Week2 발표 대표 path가 5GB 이상 fact input을 처리해 `gold_product_health`를 만들고, Catalog/SQL/UI까지 이어지는지 확인한다.
