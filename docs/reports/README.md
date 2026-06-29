@@ -68,6 +68,7 @@ report가 늘어나면 영역별 최신 report index를 작게 유지한다. 이
 | Week2 responsibility ver2 | [`week2-responsibility-ver2.md`](week2-responsibility-ver2.md) | 초기 회의안 이후 M1~M6 책임 분리를 ver2 기준으로 재정리하고 Spark/Parquet/Catalog 중복 책임을 제거 |
 | Week2 main E2E path | [`week2-main-e2e-path.md`](week2-main-e2e-path.md) | 과거 Amazon Reviews 대표 경로 결정 evidence. 현재 대표 경로는 Source of Truth 전파 report와 ver2 Source of Truth를 우선 확인 |
 | Week2 existing implementation anchor | [`week2-existing-implementation-anchor.md`](week2-existing-implementation-anchor.md) | 기존 M1 shell, M4 Kafka demo, M5 workflow/catalog, M6 skeleton을 ver2 후속 구현의 보존 anchor로 확인 |
+| M4 Kafka contract smoke fixture | [`m4-kafka-contract-smoke.md`](m4-kafka-contract-smoke.md) | M4 Kafka replay contract fixture의 미확정 replay rate/source file TODO를 실제 smoke evidence 값으로 확정 |
 | Week2 M3 JSON main path decision | [`week2-m3-json-main-path-decision.md`](week2-m3-json-main-path-decision.md) | 과거 M3 JSON path decision evidence. 현재 M3 기준은 `gold_product_health` TransformSpec과 PR #105 selective recovery를 함께 확인 |
 | Week2 runner boundary decision | [`week2-runner-boundary-decision.md`](week2-runner-boundary-decision.md) | M2 SparkRunner, M3 TransformSpec/job logic, M5 runner selection이 공유할 input/output boundary 확인 |
 | M2 Product Health runtime smoke | [`m2-product-health-runtime-smoke.md`](m2-product-health-runtime-smoke.md) | M2가 reviews/behavior/delivery/product raw input을 multi-source pass-through Parquet/evidence로 처리하는 additive RuntimeConfig 경계 확인 |
