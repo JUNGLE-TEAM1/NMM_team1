@@ -17,6 +17,7 @@ from app.domain.schemas import (
     SourceRecord,
     TargetDatasetCreate,
     TargetDatasetRecord,
+    TargetDatasetRunRecord,
 )
 
 
@@ -101,6 +102,21 @@ class SQLiteMetadataStore:
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL,
                     FOREIGN KEY(source_dataset_id) REFERENCES source_datasets(id)
+                );
+
+                CREATE TABLE IF NOT EXISTS target_dataset_runs (
+                    id TEXT PRIMARY KEY,
+                    target_dataset_id TEXT NOT NULL,
+                    target_dataset_name TEXT NOT NULL,
+                    week2_run_id TEXT NOT NULL,
+                    pipeline_id TEXT NOT NULL,
+                    executor TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    job_definition_json TEXT NOT NULL,
+                    execution_result_json TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    FOREIGN KEY(target_dataset_id) REFERENCES target_datasets(id)
                 );
 
                 CREATE TABLE IF NOT EXISTS pipeline_runs (
@@ -288,6 +304,57 @@ class SQLiteMetadataStore:
         with self.connect() as connection:
             row = connection.execute("SELECT * FROM target_datasets WHERE id = ?", (dataset_id,)).fetchone()
         return target_dataset_from_row(row) if row else None
+
+    def create_target_dataset_run(
+        self,
+        target_dataset: TargetDatasetRecord,
+        execution_result: dict[str, object],
+    ) -> TargetDatasetRunRecord:
+        run_record_id = str(uuid.uuid4())
+        created_at = now_iso()
+        week2_run_id = str(execution_result["run_id"])
+        pipeline_id = str(execution_result["pipeline_id"])
+        executor = str(execution_result["executor"])
+        status = str(execution_result["status"])
+
+        with self.connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO target_dataset_runs (
+                    id, target_dataset_id, target_dataset_name, week2_run_id, pipeline_id,
+                    executor, status, job_definition_json, execution_result_json, created_at, updated_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    run_record_id,
+                    target_dataset.id,
+                    target_dataset.name,
+                    week2_run_id,
+                    pipeline_id,
+                    executor,
+                    status,
+                    json.dumps(target_dataset.job_definition, ensure_ascii=False),
+                    json.dumps(execution_result, ensure_ascii=False),
+                    created_at,
+                    created_at,
+                ),
+            )
+
+        return self.get_target_dataset_run(run_record_id)  # type: ignore[return-value]
+
+    def list_target_dataset_runs(self, target_dataset_id: str) -> list[TargetDatasetRunRecord]:
+        with self.connect() as connection:
+            rows = connection.execute(
+                "SELECT * FROM target_dataset_runs WHERE target_dataset_id = ? ORDER BY created_at DESC",
+                (target_dataset_id,),
+            ).fetchall()
+        return [target_dataset_run_from_row(row) for row in rows]
+
+    def get_target_dataset_run(self, run_record_id: str) -> TargetDatasetRunRecord | None:
+        with self.connect() as connection:
+            row = connection.execute("SELECT * FROM target_dataset_runs WHERE id = ?", (run_record_id,)).fetchone()
+        return target_dataset_run_from_row(row) if row else None
 
     def list_catalog_datasets(self) -> list[CatalogDataset]:
         with self.connect() as connection:
@@ -555,6 +622,22 @@ def target_dataset_from_row(row: sqlite3.Row) -> TargetDatasetRecord:
         output_schema=[ColumnSchema(**item) for item in json.loads(row["output_schema_json"])],
         job_definition=json.loads(row["job_definition_json"]),
         status=row["status"],
+        created_at=row["created_at"],
+        updated_at=row["updated_at"],
+    )
+
+
+def target_dataset_run_from_row(row: sqlite3.Row) -> TargetDatasetRunRecord:
+    return TargetDatasetRunRecord(
+        id=row["id"],
+        target_dataset_id=row["target_dataset_id"],
+        target_dataset_name=row["target_dataset_name"],
+        week2_run_id=row["week2_run_id"],
+        pipeline_id=row["pipeline_id"],
+        executor=row["executor"],
+        status=row["status"],
+        job_definition=json.loads(row["job_definition_json"]),
+        execution_result=json.loads(row["execution_result_json"]),
         created_at=row["created_at"],
         updated_at=row["updated_at"],
     )

@@ -108,6 +108,16 @@
 | Verification method | `backend/tests/test_target_dataset_job_draft.py`, 데이터셋 화면 Target Dataset wizard Review 저장, 저장된 draft id 확인 |
 | Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07`, C-3 `feature/target-dataset-job-draft` |
 
+### Target Dataset run handoff가 M5 데모 화면으로 되돌아가는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | Target Dataset run 생성은 데이터셋 화면의 `Job Runs` 흐름으로 표시한다. |
+| Failure condition | 독립 `M5 데모` 메뉴나 학습 화면을 다시 주 경로로 노출하거나, 저장 전 draft를 실행할 수 있게 한다. |
+| Expected behavior | `/api/target-datasets/{dataset_id}/runs`는 저장된 Target Dataset draft만 실행 handoff 대상으로 받고, 화면은 `Job Runs`에서 run id/status를 표시한다. |
+| Verification method | `backend/tests/test_target_dataset_run_handoff.py`, 데이터셋 화면 Target Dataset Review 저장 후 `Job Run 시작` smoke |
+| Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07`, C-4 `feature/target-dataset-run-handoff` |
+
 ### Week 2 Airflow 실패가 local fallback 성공으로 가려지는 경우
 
 | 항목 | 내용 |

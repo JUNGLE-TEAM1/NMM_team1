@@ -69,6 +69,8 @@ AskLake의 Target MVP 대표 성공 시나리오는 `Trusted Dataset -> Query/As
 - [ ] Target Dataset Review 저장은 `source_dataset_id`, `process_rule`, `selected_fields`, `schedule`, `job_definition`, `status=draft`를 가진 draft metadata를 만든다.
 - [ ] Target Dataset Review 저장 후 화면에서 저장된 draft id를 확인할 수 있다.
 - [ ] Target Dataset draft 저장은 pipeline run, M5 orchestration, CatalogMetadata 등록을 실행하지 않는다.
+- [ ] 저장된 Target Dataset에서 Job Run을 생성하고 `week2_run_id`, executor, status를 확인할 수 있다.
+- [ ] Target Dataset Job Run은 `ExecutionResult`와 `target_dataset_handoff`를 함께 보존한다.
 - [ ] 입력 source 또는 dataset은 schema inference, user override, 또는 schema 확인을 거친다.
 - [ ] transform/normalize/load 결과가 output dataset으로 남는다.
 - [ ] row count, bytes, duration, output path 같은 처리 증거가 기록된다.

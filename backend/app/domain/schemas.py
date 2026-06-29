@@ -103,6 +103,25 @@ class TargetDatasetRecord(BaseModel):
     updated_at: str
 
 
+class TargetDatasetRunCreate(BaseModel):
+    executor: Literal["airflow", "local_runner", "spark_runner"] = "local_runner"
+    triggered_by: str = Field(default="demo_user", min_length=1, max_length=80)
+
+
+class TargetDatasetRunRecord(BaseModel):
+    id: str
+    target_dataset_id: str
+    target_dataset_name: str
+    week2_run_id: str
+    pipeline_id: str
+    executor: str
+    status: str
+    job_definition: dict[str, Any]
+    execution_result: dict[str, Any]
+    created_at: str
+    updated_at: str
+
+
 class TrustGateEvaluationRequest(BaseModel):
     owner: str | None = Field(default=None, min_length=1, max_length=80)
     passed_gates: list[str] = []

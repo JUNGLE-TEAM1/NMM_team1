@@ -10,29 +10,12 @@
 - Next context: C-5는 `TargetDatasetRun.execution_result`에 M2/M4 runtime evidence를 정렬한다.
 - Risk: C-4 run은 Week2 local runner handoff이며 Spark/Kafka runtime evidence 보강이나 CatalogMetadata final integration은 아직 아니다.
 
----
-
 ## Phase / Hotfix
 
 - Type: Feature Phase
 - Branch/work location: `feature/target-dataset-run-handoff` / `/tmp/asklake-c4-target-dataset-run-handoff`
 - Date: 2026-06-29
 - Workspace state: complete
-
-## Reference Docs / 참고 문서
-
-- `AGENTS.md`
-- `docs/00-layer-map.md`
-- `docs/03-interface-reference.md`
-- `docs/05-acceptance-scenarios-and-checklist.md`
-- `docs/06-regression-and-failure-scenarios.md`
-- `docs/07-manual-verification-playbook.md`
-- `docs/08-development-workflow.md`
-
-## Goal / 목표
-
-- 저장된 Target Dataset `job_definition` draft를 Week2/M5 workflow run 생성으로 handoff한다.
-- 화면에서는 독립 `M5 데모`가 아니라 Target Dataset Review의 `Job Runs`로 run id/status를 표시한다.
 
 ## Implementation Summary / 구현 요약
 
@@ -70,20 +53,9 @@ cd frontend && npm ci && npm run build
 - Skipped checks: full Week2 spark runner local test failed in this environment and is outside C-4 local_runner handoff scope
 - CD/deploy gate: not required
 
-## Regression Guard / 회귀 보호
-
-- Checked feature: Target Dataset run handoff가 M5 데모 화면으로 되돌아가는 경우
-- Protected behavior: run 생성은 Target Dataset `Job Runs` 패널에서만 노출한다.
-- Result: passed by UI copy, route placement, browser smoke
-
 ## Manual Verification / 수동 검증
 
 - Document executed: `docs/07` Dataset Module Target Dataset C-4 점검
 - Environment: backend `127.0.0.1:8000`, frontend `127.0.0.1:13003`
 - Result: Source Dataset 선택, Target draft 저장, `Job Run 시작`, `run_reviews_demo_001`, `fallback succeeded` 표시 확인
 - Evidence: `/api/target-datasets/{dataset_id}/runs` 응답에 `execution_result.target_dataset_handoff` 확인
-
-## docs/05 Acceptance Link / 수용 기준 연결
-
-- Related item: Trusted Dataset acceptance의 Target Dataset Job Run 생성/status 기준
-- Result: C-4 범위 기준 충족

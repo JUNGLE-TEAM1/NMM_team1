@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.health import router as health_router
 from app.api.pipelines import create_pipeline_router
 from app.api.source_catalog import create_source_catalog_router
+from app.api.target_dataset_runs import create_target_dataset_run_router
 from app.api.week2_ai_query import create_week2_ai_query_router
 from app.api.week2_kafka_replay import create_week2_kafka_replay_router
 from app.api.week2_workflow import create_week2_workflow_router
@@ -38,6 +39,12 @@ def create_app(store: MetadataStore | None = None, settings: Settings | None = N
         create_pipeline_router(
             container.metadata_store,
             container.pipeline_service,
+        )
+    )
+    app.include_router(
+        create_target_dataset_run_router(
+            container.metadata_store,
+            container.week2_workflow_service,
         )
     )
     app.include_router(create_week2_workflow_router(container.week2_workflow_service))

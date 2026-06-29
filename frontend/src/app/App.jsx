@@ -55,7 +55,7 @@ import {
   triggerWeek2Run,
 } from "../api/asklakeClient";
 import { createSourceDataset, listSourceDatasets } from "../api/sourceDatasetApi";
-import { createTargetDataset } from "../api/targetDatasetApi";
+import { createTargetDataset, triggerTargetDatasetRun } from "../api/targetDatasetApi";
 import asklakeLogo from "../assets/asklake-logo.png";
 import { StatusPill } from "../components/StatusPill";
 import {
@@ -310,6 +310,19 @@ function mapSourceDatasetRecord(record, rankOffset = 100) {
     columns: schema.map((field) => field.name),
     schema,
   };
+}
+
+function targetRunTone(status) {
+  if (["succeeded", "fallback_succeeded", "success"].includes(status)) return "success";
+  if (["failed", "fallback_failed"].includes(status)) return "danger";
+  if (["queued", "running"].includes(status)) return "pending";
+  return "neutral";
+}
+
+function formatRunStatusLabel(status) {
+  if (status === "fallback_succeeded") return "fallback succeeded";
+  if (status === "fallback_failed") return "fallback failed";
+  return status || "unknown";
 }
 
 const externalConnectionTypes = [
@@ -714,6 +727,9 @@ function SourcesPage({ navigate, setNotice }) {
   const [isSavingTargetDraft, setIsSavingTargetDraft] = useState(false);
   const [targetDraftError, setTargetDraftError] = useState("");
   const [lastCreatedTargetDraft, setLastCreatedTargetDraft] = useState(null);
+  const [isStartingTargetRun, setIsStartingTargetRun] = useState(false);
+  const [targetRunError, setTargetRunError] = useState("");
+  const [targetRuns, setTargetRuns] = useState([]);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const normalizedTargetName = targetName.trim();
   const normalizedTargetDescription = targetDescription.trim();
@@ -812,6 +828,7 @@ function SourcesPage({ navigate, setNotice }) {
   const canCreateTargetDraft =
     Boolean(normalizedTargetName && selectedSource && selectedFields.length > 0 && selectedOutputSchema.length > 0) &&
     !isSavingTargetDraft;
+  const canStartTargetRun = Boolean(lastCreatedTargetDraft) && !isStartingTargetRun;
   const canGoNextConnection =
     (currentConnectionStep.id === "connector-type" && Boolean(selectedConnectionType)) ||
     (currentConnectionStep.id === "configure" && Boolean(connectionName.trim() && connectionResource.trim()));
@@ -845,6 +862,8 @@ function SourcesPage({ navigate, setNotice }) {
     setSelectedFields(source.columns);
     setLastCreatedTargetDraft(null);
     setTargetDraftError("");
+    setTargetRuns([]);
+    setTargetRunError("");
     setNotice(`${source.name} source를 선택했습니다.`);
     setIsSourceModalOpen(false);
   }
@@ -913,6 +932,8 @@ function SourcesPage({ navigate, setNotice }) {
         output_schema: selectedOutputSchema.map(({ name, type }) => ({ name, type })),
       });
       setLastCreatedTargetDraft(record);
+      setTargetRuns([]);
+      setTargetRunError("");
       setNotice(`${record.name} Target Dataset draft를 저장했습니다.`);
     } catch (error) {
       setTargetDraftError(error.message);
@@ -922,9 +943,31 @@ function SourcesPage({ navigate, setNotice }) {
     }
   }
 
+  async function startTargetDatasetRun() {
+    if (!canStartTargetRun) return;
+    setIsStartingTargetRun(true);
+    setTargetRunError("");
+
+    try {
+      const runRecord = await triggerTargetDatasetRun(lastCreatedTargetDraft.id, {
+        executor: "local_runner",
+        triggeredBy: "demo_user",
+      });
+      setTargetRuns((runs) => [runRecord, ...runs.filter((run) => run.id !== runRecord.id)]);
+      setNotice(`${runRecord.target_dataset_name} Job Run을 시작했습니다.`);
+    } catch (error) {
+      setTargetRunError(error.message);
+      setNotice(`Job Run 시작 실패: ${error.message}`);
+    } finally {
+      setIsStartingTargetRun(false);
+    }
+  }
+
   function toggleField(column) {
     setLastCreatedTargetDraft(null);
     setTargetDraftError("");
+    setTargetRuns([]);
+    setTargetRunError("");
     setSelectedFields((currentFields) =>
       currentFields.includes(column)
         ? currentFields.filter((field) => field !== column)
@@ -937,6 +980,8 @@ function SourcesPage({ navigate, setNotice }) {
       setSelectedFields(selectedSource.columns);
       setLastCreatedTargetDraft(null);
       setTargetDraftError("");
+      setTargetRuns([]);
+      setTargetRunError("");
     }
   }
 
@@ -944,6 +989,8 @@ function SourcesPage({ navigate, setNotice }) {
     setSelectedFields([]);
     setLastCreatedTargetDraft(null);
     setTargetDraftError("");
+    setTargetRuns([]);
+    setTargetRunError("");
   }
 
   function goNext() {
@@ -1538,6 +1585,8 @@ function SourcesPage({ navigate, setNotice }) {
                   setTargetName(event.target.value);
                   setLastCreatedTargetDraft(null);
                   setTargetDraftError("");
+                  setTargetRuns([]);
+                  setTargetRunError("");
                 }}
                 placeholder="dataset_product_health_gold"
               />
@@ -1551,6 +1600,8 @@ function SourcesPage({ navigate, setNotice }) {
                   setTargetDescription(event.target.value);
                   setLastCreatedTargetDraft(null);
                   setTargetDraftError("");
+                  setTargetRuns([]);
+                  setTargetRunError("");
                 }}
                 placeholder="제품 상태 분석용 gold dataset draft"
               />
@@ -1751,6 +1802,8 @@ function SourcesPage({ navigate, setNotice }) {
                     setTargetScheduleMode("manual");
                     setLastCreatedTargetDraft(null);
                     setTargetDraftError("");
+                    setTargetRuns([]);
+                    setTargetRunError("");
                   }}
                 />
                 <span>
@@ -1768,6 +1821,8 @@ function SourcesPage({ navigate, setNotice }) {
                     setTargetScheduleMode("placeholder");
                     setLastCreatedTargetDraft(null);
                     setTargetDraftError("");
+                    setTargetRuns([]);
+                    setTargetRunError("");
                   }}
                 />
                 <span>
@@ -1785,6 +1840,8 @@ function SourcesPage({ navigate, setNotice }) {
                   setTargetScheduleNote(event.target.value);
                   setLastCreatedTargetDraft(null);
                   setTargetDraftError("");
+                  setTargetRuns([]);
+                  setTargetRunError("");
                 }}
                 placeholder="데모에서는 수동 실행으로만 준비합니다."
               />
@@ -1845,6 +1902,56 @@ function SourcesPage({ navigate, setNotice }) {
               <Save size={22} />
               <strong>저장된 draft id: {lastCreatedTargetDraft.id}</strong>
             </div>
+          ) : null}
+          {lastCreatedTargetDraft ? (
+            <section className="wizard-inline-panel target-run-panel">
+              <div className="table-title-line">
+                <Play size={18} />
+                <div>
+                  <strong>Job Runs</strong>
+                  <p>저장된 ETL job definition draft를 실행 기록으로 넘겨 상태를 확인합니다.</p>
+                </div>
+              </div>
+              <div className="target-run-actions">
+                <div>
+                  <span>executor</span>
+                  <strong>local_runner</strong>
+                  <p>이번 Phase는 M5 workflow/run API handoff만 확인합니다.</p>
+                </div>
+                <button type="button" className="primary-action" onClick={startTargetDatasetRun} disabled={!canStartTargetRun}>
+                  {isStartingTargetRun ? "Run 생성 중..." : "Job Run 시작"}
+                  {isStartingTargetRun ? <Loader2 size={16} className="spin" /> : <Play size={16} />}
+                </button>
+              </div>
+              {targetRuns.length > 0 ? (
+                <div className="target-run-list" aria-label="Target dataset job runs">
+                  {targetRuns.map((run) => (
+                    <article className="target-run-row" key={run.id}>
+                      <div>
+                        <span>run_id</span>
+                        <strong>{run.week2_run_id}</strong>
+                        <p>{run.pipeline_id} · {run.executor}</p>
+                      </div>
+                      <span className={`target-run-status ${targetRunTone(run.status)}`}>
+                        {formatRunStatusLabel(run.status)}
+                      </span>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <EmptyState
+                  icon={Clock3}
+                  title="아직 생성된 Job Run이 없습니다"
+                  body="Job Run 시작을 누르면 저장된 draft와 Week2 ExecutionResult가 연결됩니다."
+                />
+              )}
+              {targetRunError ? (
+                <div className="wizard-placeholder compact warning">
+                  <AlertCircle size={22} />
+                  <strong>{targetRunError}</strong>
+                </div>
+              ) : null}
+            </section>
           ) : null}
           {targetDraftError ? (
             <div className="wizard-placeholder compact warning">

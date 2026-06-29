@@ -145,6 +145,17 @@ Target MVP 기능이 구현될 때 아래 경로를 단계별로 실제 manual v
 10. `GET /api/target-datasets` 응답에 `source_dataset_id`, `process_rule`, `selected_fields`, `schedule`, `job_definition`, `status=draft`가 있는지 확인한다.
 11. 화면과 API 어디에서도 pipeline run, M5 orchestration, CatalogMetadata 등록이 완료된 것처럼 보이지 않는지 확인한다.
 
+### Dataset Module Target Dataset C-4 점검
+
+1. backend와 frontend를 실행한다.
+2. `/sources` 데이터셋 화면에서 Target Dataset C-3 흐름을 따라 draft를 저장한다.
+3. Review 화면의 `Job Runs` 패널이 저장된 draft 이후에만 보이는지 확인한다.
+4. `Job Run 시작`을 누른다.
+5. 성공 알림이 표시되고 `run_id`, executor, status가 `Job Runs` 목록에 표시되는지 확인한다.
+6. `GET /api/target-datasets/{dataset_id}/runs` 응답에 `week2_run_id`, `pipeline_id`, `status`, `execution_result.target_dataset_handoff`가 있는지 확인한다.
+7. `GET /api/week2/runs/{week2_run_id}`로 M5 `ExecutionResult`가 조회되는지 확인한다.
+8. 독립 `M5 데모` 메뉴를 되살리지 않았고, runtime evidence/CatalogMetadata 보강은 후속 Phase로 남아 있는지 확인한다.
+
 ### Modular Contract Baseline 점검
 
 1. `docs/03-interface-reference.md`에 `Dataset`, `TrustGateResult`, `PolicyDecision`, `EvidenceItem`, `AuditEvent` 같은 shared contract가 있는지 확인한다.
