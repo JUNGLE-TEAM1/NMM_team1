@@ -15,6 +15,8 @@ from app.domain.schemas import (
     SourceDatasetCreate,
     SourceDatasetRecord,
     SourceRecord,
+    TargetDatasetCreate,
+    TargetDatasetRecord,
 )
 
 
@@ -81,6 +83,24 @@ class SQLiteMetadataStore:
                     target_name TEXT NOT NULL,
                     created_at TEXT NOT NULL,
                     FOREIGN KEY(source_dataset_id) REFERENCES catalog_datasets(id)
+                );
+
+                CREATE TABLE IF NOT EXISTS target_datasets (
+                    id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL UNIQUE,
+                    description TEXT NOT NULL,
+                    source_dataset_id TEXT NOT NULL,
+                    source_dataset_name TEXT NOT NULL,
+                    source_type TEXT NOT NULL,
+                    selected_fields_json TEXT NOT NULL,
+                    process_rule_json TEXT NOT NULL,
+                    schedule_json TEXT NOT NULL,
+                    output_schema_json TEXT NOT NULL,
+                    job_definition_json TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    FOREIGN KEY(source_dataset_id) REFERENCES source_datasets(id)
                 );
 
                 CREATE TABLE IF NOT EXISTS pipeline_runs (
@@ -204,6 +224,70 @@ class SQLiteMetadataStore:
         with self.connect() as connection:
             row = connection.execute("SELECT * FROM source_datasets WHERE id = ?", (dataset_id,)).fetchone()
         return source_dataset_from_row(row) if row else None
+
+    def create_target_dataset(self, dataset: TargetDatasetCreate) -> TargetDatasetRecord:
+        dataset_id = str(uuid.uuid4())
+        created_at = now_iso()
+        selected_fields = list(dict.fromkeys(dataset.selected_fields))
+        output_schema = [column.model_dump() for column in dataset.output_schema]
+        process_rule = {
+            **dataset.process_rule,
+            "selected_fields": selected_fields,
+        }
+        schedule = dataset.schedule
+        job_definition = {
+            "job_type": "target_dataset_etl_draft",
+            "target_dataset_id": dataset_id,
+            "target_dataset_name": dataset.name,
+            "source_dataset_id": dataset.source_dataset_id,
+            "source_dataset_name": dataset.source_dataset_name,
+            "source_type": dataset.source_type,
+            "process_rule": process_rule,
+            "selected_fields": selected_fields,
+            "schedule": schedule,
+            "output_schema": output_schema,
+            "status": "draft",
+        }
+
+        with self.connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO target_datasets (
+                    id, name, description, source_dataset_id, source_dataset_name, source_type,
+                    selected_fields_json, process_rule_json, schedule_json, output_schema_json,
+                    job_definition_json, status, created_at, updated_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    dataset_id,
+                    dataset.name,
+                    dataset.description,
+                    dataset.source_dataset_id,
+                    dataset.source_dataset_name,
+                    dataset.source_type,
+                    json.dumps(selected_fields, ensure_ascii=False),
+                    json.dumps(process_rule, ensure_ascii=False),
+                    json.dumps(schedule, ensure_ascii=False),
+                    json.dumps(output_schema, ensure_ascii=False),
+                    json.dumps(job_definition, ensure_ascii=False),
+                    "draft",
+                    created_at,
+                    created_at,
+                ),
+            )
+
+        return self.get_target_dataset(dataset_id)  # type: ignore[return-value]
+
+    def list_target_datasets(self) -> list[TargetDatasetRecord]:
+        with self.connect() as connection:
+            rows = connection.execute("SELECT * FROM target_datasets ORDER BY created_at DESC").fetchall()
+        return [target_dataset_from_row(row) for row in rows]
+
+    def get_target_dataset(self, dataset_id: str) -> TargetDatasetRecord | None:
+        with self.connect() as connection:
+            row = connection.execute("SELECT * FROM target_datasets WHERE id = ?", (dataset_id,)).fetchone()
+        return target_dataset_from_row(row) if row else None
 
     def list_catalog_datasets(self) -> list[CatalogDataset]:
         with self.connect() as connection:
@@ -451,6 +535,25 @@ def source_dataset_from_row(row: sqlite3.Row) -> SourceDatasetRecord:
         resource_label=row["resource_label"],
         schema_preview=[ColumnSchema(**item) for item in json.loads(row["schema_preview_json"])],
         layer=row["layer"],
+        status=row["status"],
+        created_at=row["created_at"],
+        updated_at=row["updated_at"],
+    )
+
+
+def target_dataset_from_row(row: sqlite3.Row) -> TargetDatasetRecord:
+    return TargetDatasetRecord(
+        id=row["id"],
+        name=row["name"],
+        description=row["description"],
+        source_dataset_id=row["source_dataset_id"],
+        source_dataset_name=row["source_dataset_name"],
+        source_type=row["source_type"],
+        selected_fields=json.loads(row["selected_fields_json"]),
+        process_rule=json.loads(row["process_rule_json"]),
+        schedule=json.loads(row["schedule_json"]),
+        output_schema=[ColumnSchema(**item) for item in json.loads(row["output_schema_json"])],
+        job_definition=json.loads(row["job_definition_json"]),
         status=row["status"],
         created_at=row["created_at"],
         updated_at=row["updated_at"],

@@ -220,6 +220,21 @@ C-2 `Source Dataset persistence`는 등록된 External Connection을 `SourceConn
 `SourceDataset.schema_preview[]`는 `ColumnSchema`와 같은 `{name, type}` shape를 사용한다.
 샘플 fixture는 `contracts/source_dataset.sample.json`에 둔다.
 
+### Target Dataset Job Draft API
+
+C-3 `Target Dataset job draft`는 Target Dataset wizard Review 결과를 저장한다.
+이 단계는 Target Dataset metadata와 ETL job definition draft만 만들며, pipeline run, M5 orchestration, CatalogMetadata 등록은 실행하지 않는다.
+
+| Method | Path | Request / Response | Notes |
+| --- | --- | --- | --- |
+| `POST` | `/api/target-datasets` | `TargetDatasetCreate -> TargetDataset` | `source_dataset_id`, `selected_fields`, `process_rule`, `schedule`, `output_schema[]` 필요 |
+| `GET` | `/api/target-datasets` | `TargetDataset[]` | 후속 Run handoff와 데모 summary 후보로 사용 |
+| `GET` | `/api/target-datasets/{dataset_id}` | `TargetDataset` | 저장된 ETL job definition draft 조회 |
+
+`TargetDataset.status`는 C-3에서 항상 `draft`다.
+`TargetDataset.job_definition`은 `job_type=target_dataset_etl_draft`, `source_dataset_id`, `process_rule`, `selected_fields`, `schedule`, `output_schema`, `status=draft`를 포함한다.
+샘플 fixture는 `contracts/target_dataset_job_draft.sample.json`에 둔다.
+
 | Contract | Owner Workstream | 최소 필드/상태 | Mock/Fake Boundary |
 | --- | --- | --- | --- |
 | `Dataset` | Catalog / Trust | `id`, `name`, `source_ref`, `schema_version`, `status`, `owner`, `freshness`, `trust_gate_result_id` | Source/Job workstream은 fixture dataset으로 대체 가능 |
@@ -227,6 +242,7 @@ C-2 `Source Dataset persistence`는 등록된 External Connection을 `SourceConn
 | `TrustGateResult` | Catalog / Trust | `dataset_id`, `status`, `required_gates`, `passed_gates`, `failed_gates`, `reasons`, `evaluated_at` | quality/PII/policy engine은 placeholder result 허용 |
 | `SourceConnection` | Source Connector | `id`, `type`, `display_name`, `secret_ref`, `connection_status`, `last_checked_at` | 실제 RDB/API 대신 local fixture connector 허용 |
 | `SourceDataset` | Source Connector / Dataset UX | `id`, `connection_id`, `name`, `raw_scope`, `schema_preview`, `layer=source`, `status`, `created_at`, `updated_at` | C-2는 metadata draft만 저장하고 ingest/run은 실행하지 않음 |
+| `TargetDataset` | Dataset UX / Job | `id`, `name`, `source_dataset_id`, `selected_fields`, `process_rule`, `schedule`, `job_definition`, `status=draft` | C-3는 job definition draft만 저장하고 실행/run/Catalog 등록은 하지 않음 |
 | `SchemaSnapshot` | Source Connector | `source_id`, `dataset_id`, `columns`, `sample_ref`, `row_count`, `captured_at` | sample rows는 bounded preview fixture 허용 |
 | `JobRun` | Job / Orchestrator | `id`, `job_type`, `status`, `dataset_id`, `idempotency_key`, `started_at`, `finished_at` | synchronous in-memory runner 허용 |
 | `TaskRun` | Job / Orchestrator | `id`, `job_run_id`, `task_type`, `status`, `attempt`, `error_summary` | single-task fixture 허용 |

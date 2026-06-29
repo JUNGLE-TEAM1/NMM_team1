@@ -66,6 +66,9 @@ AskLake의 Target MVP 대표 성공 시나리오는 `Trusted Dataset -> Query/As
 - [ ] 등록된 External Connection에서 Source Dataset metadata를 생성하고 다시 조회할 수 있다.
 - [ ] Source Dataset metadata는 `connection_id`, `raw_scope`, `schema_preview`, `layer=source`를 포함하며 ingest/run 실행을 암시하지 않는다.
 - [ ] Target Dataset 생성 흐름의 Source 선택 후보는 저장된 Source Dataset metadata를 사용할 수 있다.
+- [ ] Target Dataset Review 저장은 `source_dataset_id`, `process_rule`, `selected_fields`, `schedule`, `job_definition`, `status=draft`를 가진 draft metadata를 만든다.
+- [ ] Target Dataset Review 저장 후 화면에서 저장된 draft id를 확인할 수 있다.
+- [ ] Target Dataset draft 저장은 pipeline run, M5 orchestration, CatalogMetadata 등록을 실행하지 않는다.
 - [ ] 입력 source 또는 dataset은 schema inference, user override, 또는 schema 확인을 거친다.
 - [ ] transform/normalize/load 결과가 output dataset으로 남는다.
 - [ ] row count, bytes, duration, output path 같은 처리 증거가 기록된다.

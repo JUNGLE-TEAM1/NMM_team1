@@ -38,8 +38,8 @@ Target Dataset wizard Review 결과를 target dataset metadata와 ETL job defini
 
 ## 완료 기준
 
-- [ ] Target Dataset draft를 저장할 수 있다.
-- [ ] ETL job definition draft가 source/process/schedule 정보를 가진다.
-- [ ] 저장 후 review/summary에서 draft id를 확인할 수 있다.
-- [ ] 실행 또는 run 생성은 발생하지 않는다.
-- [ ] report와 quality evidence를 남긴다.
+- [x] Target Dataset draft를 저장할 수 있다.
+- [x] ETL job definition draft가 source/process/schedule 정보를 가진다.
+- [x] 저장 후 review/summary에서 draft id를 확인할 수 있다.
+- [x] 실행 또는 run 생성은 발생하지 않는다.
+- [x] report와 quality evidence를 남긴다.
