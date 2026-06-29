@@ -45,7 +45,15 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 - issue creation result: created
 - issue project result: added to JUNGLE-TEAM1 project 3; status set to In Progress
 - PR closing keyword: Closes #281
-- pushed branch:
-- PR link:
-- merge status:
-- issue close status:
+- pushed branch: feature/m2-spark-direct-s3a-write
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/282
+- merge status: open
+- issue close status: open
+
+## Remote Operations Reconciliation
+
+- checked at: 2026-06-29
+- PR creation: PR #282 created from `feature/m2-spark-direct-s3a-write` to `main`
+- issue lifecycle correction: Issue #281 was observed as closed before PR merge; reopened with lifecycle comment because open PR requires linked issue to remain open until merge/finalize
+- project status correction: Issue #281 Project status changed from Done to Review
+- remaining remote risk: CI rerun required after PR body impact fields were updated
