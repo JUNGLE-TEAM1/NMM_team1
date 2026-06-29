@@ -100,6 +100,7 @@ AskLake의 Target MVP 대표 성공 시나리오는 `Trusted Dataset -> Query/As
 - [ ] `docs/05` acceptance가 `docs/06` regression guard와 연결된다.
 - [ ] `docs/07` manual verification이 현재 workflow와 Target MVP를 구분한다.
 - [ ] `docs/08` 다음 Phase queue가 `docs/01` milestone과 일치한다.
+- [ ] 협업 질문/명령 처리 규칙은 일반론, 저장소 규칙, 비교 답변, 실행 승인, 정책 결정을 구분하고 필요한 경우 전제를 명시한다.
 
 ## 5) 배포와 운영 기준
 

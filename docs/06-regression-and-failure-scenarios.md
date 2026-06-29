@@ -148,6 +148,16 @@
 | Verification method | `.milestones/target-mvp/manifest.yaml`, workstream `handoff.md`, branch `decisions.md`, secret/config diff를 확인한다. |
 | Related docs/interface/Phase | `docs/03`, `docs/08`, `docs/14`, `docs/17`, `.milestones/target-mvp/manifest.yaml` |
 
+### 질문 전제를 확인하지 않고 답변 또는 실행하는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | AI는 질문/명령이 일반론, 저장소 규칙, 비교 답변, 실행 요청, 정책 결정, 고영향 행동 중 무엇인지 먼저 판별한다. |
+| Failure condition | 일반론과 저장소 규칙이 다른데 전제를 밝히지 않거나, 개념 질문을 실행 승인처럼 처리하거나, PR/merge/finalize/cleanup/검증 생략 같은 고영향 행동을 확인 없이 진행한다. |
+| Expected behavior | 답이 전제에 따라 달라지면 `일반론 기준 / 이 저장소 기준`처럼 렌즈를 분리하고, 상태 변경 또는 고영향 행동이면 matching confirmation gate를 먼저 통과한다. |
+| Verification method | `docs/08`, `docs/09`, `docs/10`, `docs/13`, `docs/15`에서 Context Assumption Check 흐름을 확인한다. |
+| Related docs/interface/Phase | `docs/08`, `docs/09`, `docs/10`, `docs/13`, `docs/15` |
+
 ### 권한 없는 데이터가 SQL/RAG/Prompt에 들어가는 경우
 
 | 항목 | 내용 |
