@@ -20,9 +20,19 @@
   },
   "evidence": {
     "contract": "KafkaReplayEvidence",
-    "metrics": ["sent_rows", "throughput_per_second", "error_count", "progress_percent", "duration_ms"],
+    "metrics": [
+      "sent_rows",
+      "failed_rows",
+      "skipped_rows",
+      "throughput_per_second",
+      "error_count",
+      "progress_percent",
+      "duration_ms"
+    ],
     "output_path": "data/results/week2/_metadata/kafka_replay/<run_id>.json",
     "latest_path": "data/results/week2/_metadata/kafka_replay/latest.json",
+    "dead_letter_path": "data/results/week2/_metadata/kafka_replay/dead-letter/<run_id>.jsonl",
+    "retention_days_env": "KAFKA_REPLAY_EVIDENCE_RETENTION_DAYS",
     "backend_routes": [
       "GET /api/week2/kafka-replay/health",
       "GET /api/week2/kafka-replay/runs",
