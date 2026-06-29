@@ -17,7 +17,7 @@
 - `Week2AIQueryService`가 성공한 SQL/RAG/Hybrid 응답 summary를 adapter로 생성하게 한다.
 - blocked/unsupported 응답은 LLM adapter를 호출하지 않고 기존 guardrail summary를 유지한다.
 - adapter context에 `SqlEngineContext.local_fallback_path`, raw file, secret, unauthorized column이 들어가지 않도록 regression test를 추가한다.
-- `docs/03`, `docs/05`, `docs/06`, `docs/07`에 M6 LLM answer adapter 경계를 반영한다.
+- `docs/03`, `docs/05`, `docs/06`에 M6 LLM answer adapter 경계를 반영하고, `docs/07` manual verification은 기존 M6 route 체크로 커버되는지 확인한다.
 
 ## 범위 제외
 

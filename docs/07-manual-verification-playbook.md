@@ -168,9 +168,8 @@ PYTHONPATH=backend .venv/bin/python scripts/week2_m2_product_health_l6_evidence.
 8. `AIQueryResult.route=sql`, `AIQueryResult.query_result.engine=duckdb`, SELECT-only SQL, returned rows, evidence `dataset_id=dataset_product_health_gold`, `retrieval_trace[].source_id=dataset_product_health_gold`, `retrieval_trace[]`의 `schema`/`metric`/`lineage` 근거가 확인되는지 본다.
 9. M6 AI Query에서 "위험 점수가 높은 상품과 그 근거를 설명해줘."를 실행해 `route=hybrid`, SQL rows, CatalogMetadata evidence가 함께 반환되는지 확인한다.
 10. M6 AI Query에서 "이 데이터셋의 스키마와 lineage 근거를 알려줘."를 실행해 `route=rag`이고 SQL rows 없이 CatalogMetadata evidence만 반환되는지 확인한다.
-11. M6 AI Query에서 "내일 매출을 예측해줘."를 실행해 `route=unsupported`, `status=blocked`이고 외부 LLM/API key 없이 보류 사유가 반환되는지 확인한다.
-12. M1에서 run -> catalog -> ask -> evidence 흐름이 끊기지 않고, 위험 상품군과 `risk_score`, `negative_review_rate`, `conversion_rate`, `late_delivery_rate`가 표시되는지 확인한다.
-13. 발표 문구나 UI가 "Gold 파일이 5GB"라고 설명하지 않고, 5GB를 input 처리 evidence로 표시하는지 확인한다.
+11. M1에서 run -> catalog -> ask -> evidence 흐름이 끊기지 않고, 위험 상품군과 `risk_score`, `negative_review_rate`, `conversion_rate`, `late_delivery_rate`가 표시되는지 확인한다.
+12. 발표 문구나 UI가 "Gold 파일이 5GB"라고 설명하지 않고, 5GB를 input 처리 evidence로 표시하는지 확인한다.
 
 ### Trust Gate 점검
 

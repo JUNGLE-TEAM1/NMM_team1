@@ -25,7 +25,6 @@
 - `docs/03-interface-reference.md`
 - `docs/05-acceptance-scenarios-and-checklist.md`
 - `docs/06-regression-and-failure-scenarios.md`
-- `docs/07-manual-verification-playbook.md`
 - `docs/reports/m6-hybrid-route.md`
 
 ## Goal / 목표
@@ -44,7 +43,6 @@
 - `docs/03-interface-reference.md`
 - `docs/05-acceptance-scenarios-and-checklist.md`
 - `docs/06-regression-and-failure-scenarios.md`
-- `docs/07-manual-verification-playbook.md`
 - `docs/workflows/feature/m6-llm-answer-adapter/*`
 
 ## Implementation Summary / 구현 요약
@@ -99,7 +97,7 @@ scripts/validate-harness.sh --strict
 
 ## Manual Verification / 수동 검증
 
-- Document executed: `docs/07` M6 AI Query manual checklist was updated with unsupported/no external provider check.
+- Document executed: `docs/07` M6 AI Query manual checklist reviewed; no source change kept in final PR because backend regression and `docs/06` cover unsupported/no external provider behavior.
 - Environment: local backend tests, no external provider/API key.
 - Result: backend response path remains deterministic and provider-free.
 - Failure/limitation: live browser smoke not executed in this Phase.
@@ -113,7 +111,7 @@ scripts/validate-harness.sh --strict
 
 ## Document Updates / 문서 업데이트
 
-- Updated: `docs/03`, `docs/05`, `docs/06`, `docs/07`, branch workspace docs, report index.
+- Updated: `docs/03`, `docs/05`, `docs/06`, branch workspace docs, report index.
 - Not updated and why: `docs/02` architecture is unchanged because this is inside the existing M6 Ask/Evidence boundary. `README.md` remains external summary.
 
 ## Secret / Migration / Env Check

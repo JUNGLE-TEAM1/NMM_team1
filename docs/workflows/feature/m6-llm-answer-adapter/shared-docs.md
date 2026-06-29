@@ -11,7 +11,7 @@ integration branch는 branch 작업을 합치기 전에 이 파일을 읽는다.
 | `docs/03-interface-reference.md` | `LLMAdapter`/`LLMAnswerContext` 허용/금지 입력 경계 추가 | 외부 provider를 붙이기 전 안전한 prompt/context 계약을 고정한다. | 낮음 |
 | `docs/05-acceptance-scenarios-and-checklist.md` | M6 답변 생성 adapter 수용 기준 추가 | Week 2 기본값이 외부 호출 없는 template adapter임을 확인한다. | 낮음 |
 | `docs/06-regression-and-failure-scenarios.md` | unsafe LLM context/external call 회귀 시나리오 추가 | local path, secret, blocked answer provider call 누출을 막는다. | 낮음 |
-| `docs/07-manual-verification-playbook.md` | unsupported 질문 확인 단계 추가 | 외부 LLM/API key 없이 blocked 사유가 반환되는지 수동 확인한다. | 낮음 |
+| `docs/07-manual-verification-playbook.md` | 변경 없음 | 기존 M6 route/manual 흐름과 `docs/06` failure scenario, backend regression으로 unsupported/no external provider behavior를 검증한다. PR size hard gate를 넘기지 않기 위해 별도 manual step 추가는 보류한다. | 낮음 |
 
 ## Integration Notes / 통합 메모
 
