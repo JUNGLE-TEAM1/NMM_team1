@@ -47,6 +47,15 @@
 6. `docs/05`, `docs/06`, `docs/07`, `docs/08`이 같은 milestone/phase 이름을 사용하는지 확인한다.
 7. 과거 M0~M5 report가 historical evidence로만 남고 새 기준에 맞춰 소급 수정되지 않았는지 확인한다.
 
+## 협업 전제 확인 수동 점검
+
+1. `docs/09-collaboration-agreement.md`에 Context Assumption Check 합의가 있는지 확인한다.
+2. `docs/13-human-command-flow.md`가 개념 질문, 저장소 규칙 질문, 실행 요청, 정책 결정을 구분하는 예시를 포함하는지 확인한다.
+3. `docs/08-development-workflow.md`의 Phase 시작 gate가 Context Assumption Check를 Context Loading/Context Budget 전에 적용하는지 확인한다.
+4. `docs/15-context-budget-rule.md`가 문맥 읽기 범위와 답변 전제 판별을 다른 책임으로 구분하는지 확인한다.
+5. `docs/10-next-action-menu.md`에 전제가 불명확할 때 사용할 메뉴가 있는지 확인한다.
+6. 단순 개념 질문은 불필요하게 막지 않고, 답이 달라지는 경우 `일반론 기준 / 이 저장소 기준`으로 나누어 답하도록 되어 있는지 확인한다.
+
 ## Current Baseline 수동 점검
 
 0. Docker가 필요한 경우 `command -v docker`, `docker --version`, `docker compose version`, `docker info`를 확인한다. macOS에서 `/Applications/Docker.app`이 설치되어 있고 꺼져 있으면 macOS 전용 safe start로 `open -a Docker`를 시도한 뒤 readiness loop를 돈다. Windows는 WSL2 + Docker Desktop integration shell에서 검증하는 것을 기본 경로로 두고, native PowerShell/CMD 동일 실행은 별도 evidence 없이는 미검증으로 기록한다. host `node`/`npm`은 Docker Compose Tier 1 경로에는 필수가 아니며, host frontend direct run을 검증할 때만 추가로 확인한다.
@@ -169,9 +178,11 @@ PYTHONPATH=backend .venv/bin/python scripts/week2_m2_product_health_l6_evidence.
 5. bronze output path, silver output path, gold output path가 같은 `run_id`와 연결되는지 확인한다.
 6. `GET /api/week2/catalog/dataset_product_health_gold` 또는 대응 Catalog 화면에서 `gold_product_health` output path, Gold row count, Gold bytes, lineage를 확인한다.
 7. M6 AI Query에서 "리뷰가 나쁘고 구매 전환도 낮고 배송 지연까지 겹친 문제 상품군을 찾아줘."를 실행한다.
-8. `AIQueryResult.route=sql`, `AIQueryResult.query_result.engine=duckdb`, SELECT-only SQL, returned rows, evidence `dataset_id=dataset_product_health_gold`, `retrieval_trace[].source_id=dataset_product_health_gold`가 확인되는지 본다.
-9. M1에서 run -> catalog -> ask -> evidence 흐름이 끊기지 않고, 위험 상품군과 `risk_score`, `negative_review_rate`, `conversion_rate`, `late_delivery_rate`가 표시되는지 확인한다.
-10. 발표 문구나 UI가 "Gold 파일이 5GB"라고 설명하지 않고, 5GB를 input 처리 evidence로 표시하는지 확인한다.
+8. `AIQueryResult.route=sql`, `AIQueryResult.query_result.engine=duckdb`, SELECT-only SQL, returned rows, evidence `dataset_id=dataset_product_health_gold`, `retrieval_trace[].source_id=dataset_product_health_gold`, `retrieval_trace[]`의 `schema`/`metric`/`lineage` 근거가 확인되는지 본다.
+9. M6 AI Query에서 "위험 점수가 높은 상품과 그 근거를 설명해줘."를 실행해 `route=hybrid`, SQL rows, CatalogMetadata evidence가 함께 반환되는지 확인한다.
+10. M6 AI Query에서 "이 데이터셋의 스키마와 lineage 근거를 알려줘."를 실행해 `route=rag`이고 SQL rows 없이 CatalogMetadata evidence만 반환되는지 확인한다.
+11. M1에서 run -> catalog -> ask -> evidence 흐름이 끊기지 않고, 위험 상품군과 `risk_score`, `negative_review_rate`, `conversion_rate`, `late_delivery_rate`가 표시되는지 확인한다.
+12. 발표 문구나 UI가 "Gold 파일이 5GB"라고 설명하지 않고, 5GB를 input 처리 evidence로 표시하는지 확인한다.
 
 ### Trust Gate 점검
 

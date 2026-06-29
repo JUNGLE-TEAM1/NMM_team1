@@ -1,0 +1,172 @@
+{
+  "contract": "ProductHealthGoldContract",
+  "producer": "M3",
+  "consumers": ["M1", "M2", "M5", "M6"],
+  "tenant_id": "tenant_demo",
+  "pipeline_id": "pipeline_product_health_e2e",
+  "dataset_id": "dataset_product_health_gold",
+  "table_name": "gold_product_health",
+  "schema_version": "schema_product_health_gold_v1",
+  "version": "product_health_gold_contract_v1",
+  "contract_status": "frozen_for_week2_demo",
+  "grain": ["product_id"],
+  "gold_build_strategy": {
+    "layering": "bronze_preserve -> silver_normalize_each_source -> source_level_aggregate -> product_join -> metric_derivation -> gold_product_health",
+    "steps": [
+      {
+        "step": "bronze_preserve",
+        "owner": "M2 runtime using M3 intent",
+        "description": "Read each source as DataFrame-scale input and preserve source-level row_count, bytes, duration, and input_path evidence."
+      },
+      {
+        "step": "silver_normalize_each_source",
+        "owner": "M2 runtime using M3 schema rules",
+        "description": "Cast product_id, rating, event_type, timestamps, and late_flag; quarantine rows missing product_id or required event fields."
+      },
+      {
+        "step": "source_level_aggregate",
+        "owner": "M2 runtime using M3 metric formulas",
+        "description": "Aggregate reviews, behavior events, and delivery facts separately by product_id before joining to avoid row multiplication."
+      },
+      {
+        "step": "product_join",
+        "owner": "M2 runtime using M3 join keys",
+        "description": "Build a product_id universe from all available source-level aggregates, then enrich product_name and category_l1 from product master first and source hints second."
+      },
+      {
+        "step": "metric_derivation",
+        "owner": "M2 runtime using M3 semantic rules",
+        "description": "Apply zero-denominator policy and compute risk_score from the L9-approved risk score policy."
+      },
+      {
+        "step": "gold_output",
+        "owner": "M2/M5 runtime and catalog handoff",
+        "description": "Write the frozen output schema to dataset_product_health_gold and register table gold_product_health through M5."
+      }
+    ],
+    "anti_patterns": [
+      "joining raw facts before aggregation and multiplying counts",
+      "deriving conversion_rate without behavior denominator evidence",
+      "deriving late_delivery_rate from review text alone",
+      "dropping review/behavior/delivery products only because product master is missing",
+      "using vector similarity as metric value evidence",
+      "using the 100GB benchmark corpus as the presentation dataset"
+    ]
+  },
+  "source_requirements": [
+    {
+      "source_id": "source_reviews_seed",
+      "role": "reviews_fact",
+      "required_fields": ["product_id", "rating"],
+      "optional_fields": ["review_id", "review_text", "review_time", "sentiment"],
+      "produces_metrics": ["review_count", "average_rating", "negative_review_rate"]
+    },
+    {
+      "source_id": "source_behavior_events_seed",
+      "role": "behavior_events_fact",
+      "required_fields": ["product_id", "event_type"],
+      "optional_fields": ["event_time", "session_id", "user_id"],
+      "produces_metrics": ["view_count", "purchase_count", "conversion_rate"]
+    },
+    {
+      "source_id": "source_delivery_trips_seed",
+      "role": "delivery_fact",
+      "required_fields": ["product_id"],
+      "optional_fields": ["delivery_id", "promised_at", "delivered_at", "late_flag"],
+      "produces_metrics": ["delivery_count", "late_delivery_rate"]
+    },
+    {
+      "source_id": "source_product_master_seed",
+      "role": "product_dimension",
+      "required_fields": ["product_id"],
+      "optional_fields": ["product_name", "category_l1"],
+      "produces_metrics": []
+    }
+  ],
+  "output_schema": [
+    {"name": "product_id", "type": "string", "nullable": false, "semantic_role": "grain"},
+    {"name": "product_name", "type": "string", "nullable": true, "semantic_role": "dimension"},
+    {"name": "category_l1", "type": "string", "nullable": true, "semantic_role": "dimension"},
+    {"name": "review_count", "type": "integer", "nullable": false, "semantic_role": "supporting_metric"},
+    {"name": "average_rating", "type": "number", "nullable": true, "semantic_role": "supporting_metric"},
+    {"name": "negative_review_rate", "type": "number", "nullable": true, "semantic_role": "risk_component"},
+    {"name": "view_count", "type": "integer", "nullable": false, "semantic_role": "supporting_metric"},
+    {"name": "purchase_count", "type": "integer", "nullable": false, "semantic_role": "supporting_metric"},
+    {"name": "conversion_rate", "type": "number", "nullable": true, "semantic_role": "risk_component"},
+    {"name": "delivery_count", "type": "integer", "nullable": false, "semantic_role": "supporting_metric"},
+    {"name": "late_delivery_rate", "type": "number", "nullable": true, "semantic_role": "risk_component"},
+    {"name": "risk_score", "type": "number", "nullable": true, "semantic_role": "composite_metric"}
+  ],
+  "metric_definitions": [
+    {
+      "metric_id": "review_count",
+      "formula": "count_reviews_by_product",
+      "zero_denominator_policy": "not_applicable"
+    },
+    {
+      "metric_id": "average_rating",
+      "formula": "avg(rating)",
+      "zero_denominator_policy": "null_when_review_count_is_zero"
+    },
+    {
+      "metric_id": "negative_review_rate",
+      "formula": "negative_review_count / review_count",
+      "negative_review_rule": "rating <= 2 OR approved_negative_sentiment = true",
+      "zero_denominator_policy": "null_when_review_count_is_zero"
+    },
+    {
+      "metric_id": "view_count",
+      "formula": "count_if(event_type IN ('view', 'impression', 'product_view'))",
+      "zero_denominator_policy": "not_applicable"
+    },
+    {
+      "metric_id": "purchase_count",
+      "formula": "count_if(event_type IN ('purchase', 'order', 'checkout_complete'))",
+      "zero_denominator_policy": "not_applicable"
+    },
+    {
+      "metric_id": "conversion_rate",
+      "formula": "purchase_count / view_count",
+      "zero_denominator_policy": "null_when_view_count_is_zero"
+    },
+    {
+      "metric_id": "delivery_count",
+      "formula": "count_deliveries_by_product",
+      "zero_denominator_policy": "not_applicable"
+    },
+    {
+      "metric_id": "late_delivery_rate",
+      "formula": "late_delivery_count / delivery_count",
+      "late_delivery_rule": "late_flag = true OR delivered_at > promised_at",
+      "zero_denominator_policy": "null_when_delivery_count_is_zero"
+    },
+    {
+      "metric_id": "risk_score",
+      "formula": "selected_risk_score_policy(risk_score_policy_ref)",
+      "risk_score_policy_ref": "contracts/product_health_risk_score_policy.sample.json",
+      "selection_rule": "M3 recommends a policy from available evidence; L9 approval freezes formula, weights, components, and missing-component handling for deterministic M2 execution.",
+      "zero_denominator_policy": "null_when_no_component_is_available",
+      "range": {"min": 0, "max": 100}
+    }
+  ],
+  "internal_metric_metadata": [
+    {
+      "name": "risk_score_coverage",
+      "type": "object",
+      "description": "Records which risk_score components were available for each product so review-only scores are distinguishable from review+behavior+delivery scores.",
+      "public_query_default": "hidden",
+      "example_keys": ["negative_review_rate", "low_rating_score", "low_conversion_score", "late_delivery_rate"]
+    }
+  ],
+  "quality_rules": [
+    {"id": "schema_match", "type": "schema_match", "severity": "blocking"},
+    {"id": "row_count_nonzero", "type": "row_count_min", "min": 1, "severity": "blocking"},
+    {"id": "risk_score_range", "type": "range", "field": "risk_score", "min": 0, "max": 100, "severity": "blocking"},
+    {"id": "zero_denominator_policy", "type": "semantic_rule", "severity": "blocking"}
+  ],
+  "claim_boundary": {
+    "m3_owns": "schema, metric semantics, deterministic transform intent, and downstream handoff contract",
+    "m3_does_not_own": "Spark session/runtime, 5GB execution evidence, M5 catalog persistence, M6 SQL execution, M1 UI rendering",
+    "presentation_warning": "Do not claim semantic Gold is fully implemented until M2 executes this contract, M5 catalogs it, M6 queries it, and M1 displays the evidence."
+  }
+}

@@ -341,13 +341,26 @@ Each replay run produces `<run_id>.json` plus `latest.json`. The minimum `KafkaR
 | `batch_size` | yes | Producer batch size setting |
 | `key_column` | no | Kafka key source column, or `null` when Kafka chooses partitions |
 | `metrics.sent_rows` | yes | Rows successfully produced to Kafka |
+| `metrics.failed_rows` | yes | Kafka 재생 오류가 날 때 현재 producer batch에서 실패로 잡힌 row 수 |
+| `metrics.skipped_rows` | yes | 시작 row 또는 replay limit 때문에 건너뛴 row 수 |
 | `metrics.error_count` | yes | Replay job error count |
 | `metrics.throughput_per_second` | yes | Job-level rows/sec based on sent rows and elapsed runtime |
+| `dead_letter_path` | no | 실패 batch row JSONL 경로. 보통 `data/results/week2/_metadata/kafka_replay/dead-letter/<run_id>.jsonl` |
+| `retention.evidence_retention_days` | yes | `KAFKA_REPLAY_EVIDENCE_RETENTION_DAYS`에서 읽은 로컬 evidence 보관 일수. `0`이면 자동 삭제 없음 |
 | `lineage.source_file` | yes | Source file node |
 | `lineage.kafka_topic` | yes | Kafka target node |
 | `health.status` | yes | `running`, `ok`, or `error` for status center display |
 
-Kafka UI remains the live view for broker-side message count, consumer lag, and live throughput. `KafkaReplayEvidence` is the durable harness receipt that AskLake backend/report flows can read after the replay job.
+Kafka UI는 broker 쪽 message count, consumer lag, live throughput을 보는 화면이다. `KafkaReplayEvidence`는 replay job 뒤에 AskLake backend/report 흐름이 읽을 수 있는 지속 증거다. Kafka가 batch를 받기 전에 replay 오류가 나면, 실패한 producer batch row는 설정된 dead-letter JSONL 경로에 저장된다.
+
+M4 Kafka replay 환경변수:
+
+| 환경변수 | 의미 |
+| --- | --- |
+| `KAFKA_REPLAY_EVIDENCE_DIR` | `<run_id>.json`과 `latest.json`을 저장하는 경로 |
+| `KAFKA_REPLAY_DEAD_LETTER_DIR` | 실패 row JSONL을 저장하는 경로 |
+| `KAFKA_REPLAY_EVIDENCE_RETENTION_DAYS` | 로컬 evidence 자동 삭제 기준 일수. `0`이면 자동 삭제 없음 |
+| `KAFKA_LOG_RETENTION_HOURS` | local `docker-compose.yml`에서 쓰는 Kafka broker log 보관 시간 |
 
 Week 2 storage path pattern:
 
@@ -396,7 +409,7 @@ Minimum `AIQueryResult` route and retrieval trace shape:
 
 | Field | Required | Notes |
 | --- | --- | --- |
-| `route` | yes | `sql`, `rag`, `hybrid`, or `unsupported`. Current SQL-first M6 returns `sql` for supported SQL attempts and `unsupported` when no safe route exists. |
+| `route` | yes | `sql`, `rag`, `hybrid`, or `unsupported`. M6 Hybrid Route returns `sql` for metric/ranking questions, `hybrid` when a SQL question also asks for evidence/schema/lineage explanation, `rag` for CatalogMetadata-only explanation, and `unsupported` when no safe route exists. |
 | `retrieval_trace[]` | yes | Ordered explanation of the retrieval/route evidence used by M6. It may be empty only when no catalog/evidence source was available and the response is blocked. |
 | `retrieval_trace[].source_type` | yes | `catalog`, `schema`, `metric`, `lineage`, or `chunk` |
 | `retrieval_trace[].source_id` | yes | dataset id, field name, metric key, lineage id, or chunk id |
@@ -405,6 +418,29 @@ Minimum `AIQueryResult` route and retrieval trace shape:
 | `retrieval_trace[].evidence_index` | no | index into `AIQueryResult.evidence[]` when the trace item directly supports an evidence item |
 
 `route` and `retrieval_trace` are additive fields. Existing M1 consumers may continue reading `status`, `sql`, `query_result`, `rows`, `summary`, and `evidence`, while richer Week 2 displays can show why M6 selected a SQL/RAG/Hybrid/Unsupported path.
+
+Minimum M6 Catalog RAG-lite index boundary:
+
+| Field / Source | Included in M6 index | Notes |
+| --- | --- | --- |
+| dataset identity | yes | `dataset_id`, `name`, `layer` |
+| schema fields | yes | field name, type, nullable, and local semantic aliases |
+| metrics | yes | metric keys and safe scalar metric values such as row count, bytes, quality, semantics |
+| lineage | yes | `pipeline_id`, `run_id`, `source_ids`, `upstream_datasets` |
+| query allowlist | yes | `query.table_name`, `query.allowed_columns`, `default_limit`, timeout metadata |
+| freshness | yes | `updated_at` and freshness interval values |
+| storage/local path | no | `storage.local_fallback_path`, raw file paths, whole source files, secrets, credentials, and API keys must not be indexed |
+
+The M6 Catalog RAG-lite index is a derived cache, not the Catalog source of truth. Its cache signature is based on `dataset_id + lineage.run_id + updated_at`; when any of those values change, the index is stale and must be rebuilt before retrieval. `retrieval_trace[]` may include additional `schema`, `metric`, or `lineage` items from the index.
+
+Minimum M6 Hybrid Route policy:
+
+| Question shape | Route | Execution behavior |
+| --- | --- | --- |
+| metric/ranking/count question | `sql` | Plan, validate, and execute SELECT-only SQL through `SqlEngineAdapter`. |
+| metric/ranking/count question plus evidence/schema/lineage explanation request | `hybrid` | Execute SQL first, then ground the answer with Catalog RAG-lite evidence and retrieval trace. |
+| schema, metric, lineage, catalog, or dataset explanation without a SQL metric request | `rag` | Do not call SQL validate/execute; answer from CatalogMetadata evidence only. |
+| forecast, future revenue, sentiment, or unsupported free-form request | `unsupported` | Do not call SQL/RAG answer path; return blocked guardrail result. |
 
 Minimum `AIQueryResult.evidence[]` grounding shape:
 

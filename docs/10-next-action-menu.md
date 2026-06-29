@@ -25,6 +25,18 @@ Waiting on you:
 
 ## State Menus
 
+### Context Assumption Needed
+
+- Current state: the user's question or command could mean general advice, this repository's harness rule, a comparison between both, or approval to act.
+- Recommended next action: identify the assumption before answering or acting.
+- Options:
+  1. Answer as general software/development practice.
+  2. Answer using this repository's Phase/PR/verification rules.
+  3. Compare general practice with this repository's rules.
+  4. Treat it as an execution or policy decision and route to the matching confirmation gate.
+- Next AI action: state the chosen lens in the answer, or ask for confirmation if the action could change scope, repository state, branch/remote state, PR/merge/finalize/cleanup, verification, contract, deployment, data, secret, or team responsibility.
+- Ask: "이건 일반론 기준으로 답할까요, 이 저장소 규칙 기준으로 답할까요, 아니면 둘을 비교할까요?"
+
 ### Milestone Classification Required
 
 - Current state: a new request may be a user-value feature, parallel milestone, dependent milestone, or lightweight Phase.

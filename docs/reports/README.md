@@ -89,6 +89,8 @@ report가 늘어나면 영역별 최신 report index를 작게 유지한다. 이
 | M6 DuckDB runtime integration | [`m6-duckdb-runtime-integration.md`](m6-duckdb-runtime-integration.md) | M6 Step 3에서 기본 runtime을 DuckDB로 연결하고 실제 Week2 output file을 SQL로 읽는지 확인 |
 | M6 SQL planner intent rules | [`m6-sql-planner-intents.md`](m6-sql-planner-intents.md) | M6 Step 4에서 deterministic SQL planner intent, product health 지표, unsupported guardrail을 확인 |
 | M6 response contract route trace | [`m6-response-contract-trace.md`](m6-response-contract-trace.md) | M6 Step 5에서 `AIQueryResult.route`와 `retrieval_trace` additive response contract를 확인 |
+| M6 Catalog RAG Index | [`m6-catalog-rag-index.md`](m6-catalog-rag-index.md) | M6 Step 6에서 CatalogMetadata 기반 RAG-lite index, safe chunk, stale cache, richer retrieval trace를 확인 |
+| M6 Hybrid Route | [`m6-hybrid-route.md`](m6-hybrid-route.md) | M6 Step 7에서 SQL/RAG/Hybrid/Unsupported route 분기와 RAG-only no-SQL behavior를 확인 |
 | M1 live UI Phase plan | [`m1-live-ui-phase-plan.md`](m1-live-ui-phase-plan.md) | M1 shell 이후 Week2 M5/M6 API 연결과 발표 클릭 흐름을 5개 작은 Phase로 나눈 기준 확인 |
 | M1 Week2 API Client 연결 | [`m1-week2-api-client.md`](m1-week2-api-client.md) | M1 live UI Phase 1에서 Week2 M5/M6 API client와 frontend export를 추가한 결과 확인 |
 | M1 Run Status Live UI | [`m1-run-status-live-ui.md`](m1-run-status-live-ui.md) | M1 live UI Phase 2에서 `/runs` 화면이 M5 workflow 실행/refresh와 ExecutionResult 표시를 소비하는지 확인 |
@@ -105,6 +107,7 @@ report가 늘어나면 영역별 최신 report index를 작게 유지한다. 이
 | 협업 하네스 팀 사용 가이드 | [`collaboration-harness-team-usage-guide.md`](collaboration-harness-team-usage-guide.md) | 팀원이 Phase 시작, 확인 gate 응답, PR/merge 경계, 문서 기록 방식을 실제 요청 예시로 익히는 온보딩 guide 확인 |
 | 협업 하네스 팀 사용 가이드 보고서 | [`collaboration-harness-team-guide-report.md`](collaboration-harness-team-guide-report.md) | 팀원용 사용 guide 작성 범위, 검증, 남은 위험, PR handoff 문맥 확인 |
 | 하네스 판단 질문 중립성 | [`harness-neutral-decision-guidance.md`](harness-neutral-decision-guidance.md) | AI가 질문자의 원하는 결론에 끌려가지 않고 반대 관점, 리스크, 보완책, 추천도, 제안자 책임을 함께 제시하는 기준 확인 |
+| 하네스 전제 확인 규칙 | [`context-assumption-check.md`](context-assumption-check.md) | 일반론/저장소 규칙/비교 답변/실행 승인/정책 결정 렌즈를 구분하고 고영향 행동 전 확인 gate로 연결하는 기준 확인 |
 | AWS 비용 추정 | [`aws-cost-estimate.md`](aws-cost-estimate.md) | EKS-ready 구성의 기본 비용과 데이터셋/로그/전송량 증가 시 추가 비용 파악 |
 | Infra / MVP / 장기 Roadmap | [`phase-1-mvp-roadmap.md`](phase-1-mvp-roadmap.md) | 인프라 선행 원칙, XFlow 참고 MVP 범위, M0~M5 MVP milestone, M6~M15 장기 milestone, 다음 구현 Phase |
 | Infrastructure Foundation | [`phase-2-infrastructure-foundation.md`](phase-2-infrastructure-foundation.md) | CI/CD, Docker, Kubernetes, AWS approval gate foundation |
