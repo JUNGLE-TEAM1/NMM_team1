@@ -5,7 +5,7 @@
 - Type: feature
 - Branch/work location: `feature/data-integration-source-type-picker`, `docs/workflows/feature/data-integration-source-type-picker`
 - Date: 2026-06-29
-- Workspace state: implemented and locally verified
+- Workspace state: archived
 - Context Budget mode: Lite Read
 - Primary context read: `AGENTS.md`, `docs/workflows/feature/data-integration-source-type-picker/plan.md`, `frontend/src/app/App.jsx`, `frontend/src/app/styles.css`
 - Escalated context read: browser skill instructions for local web verification

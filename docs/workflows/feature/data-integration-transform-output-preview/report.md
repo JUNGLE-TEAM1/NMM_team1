@@ -5,7 +5,7 @@
 - Type: feature
 - Branch/work location: `feature/data-integration-transform-output-preview`, `docs/workflows/feature/data-integration-transform-output-preview`
 - Date: 2026-06-29
-- Workspace state: implemented and locally verified
+- Workspace state: archived
 - Context Budget mode: Lite Read
 - Primary context read: `docs/workflows/feature/data-integration-transform-output-preview/plan.md`, `frontend/src/app/App.jsx`, `frontend/src/app/styles.css`
 - Escalated context read: browser verification path

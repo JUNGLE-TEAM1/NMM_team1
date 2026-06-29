@@ -5,7 +5,7 @@
 - Type: feature
 - Branch/work location: `feature/target-dataset-job-alignment`, `docs/workflows/feature/target-dataset-job-alignment`
 - Date: 2026-06-29
-- Workspace state: implemented
+- Workspace state: archived
 - Context Budget mode: Lite Read
 - Primary context read: `AGENTS.md`, `docs/00-layer-map.md`, `docs/workflows/feature/target-dataset-job-alignment/plan.md`, 관련 `frontend/src/app/App.jsx`
 - Escalated context read: browser skill instruction for local UI smoke

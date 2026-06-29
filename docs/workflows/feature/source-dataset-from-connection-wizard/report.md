@@ -5,7 +5,7 @@
 - Type: feature
 - Branch/work location: `feature/source-dataset-from-connection-wizard`, `docs/workflows/feature/source-dataset-from-connection-wizard`
 - Date: 2026-06-29
-- Workspace state: implemented
+- Workspace state: archived
 - Context Budget mode: Lite Read
 - Primary context read: `AGENTS.md`, `docs/00-layer-map.md`, `docs/workflows/feature/source-dataset-from-connection-wizard/plan.md`, 관련 `frontend/src/app/App.jsx`/`styles.css`
 - Escalated context read: browser skill instruction for local UI smoke

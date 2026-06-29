@@ -2,7 +2,7 @@
 
 이 파일은 이 branch의 TDD, check, CI/CD 증거를 기록한다.
 
-- Quality gate status: pass
+- Quality gate status: passed
 
 ## TDD Plan / TDD 계획
 

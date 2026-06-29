@@ -5,7 +5,7 @@
 - Type: feature
 - Branch/work location: `feature/data-integration-source-step`, `docs/workflows/feature/data-integration-source-step`
 - Date: 2026-06-29
-- Workspace state: complete
+- Workspace state: archived
 - Context Budget mode: Lite Read
 - Primary context read: `AGENTS.md`, `docs/00-layer-map.md`, `docs/08-development-workflow.md`, workspace status, `docs/workflows/feature/data-integration-source-step/plan.md`, `frontend/src/app/App.jsx`, `frontend/src/app/styles.css`
 - Escalated context read: browser verification skill for local UI check

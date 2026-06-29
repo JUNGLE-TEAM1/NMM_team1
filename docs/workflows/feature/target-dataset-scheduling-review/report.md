@@ -5,7 +5,7 @@
 - Type: feature
 - Branch/work location: `feature/target-dataset-scheduling-review`, `docs/workflows/feature/target-dataset-scheduling-review`
 - Date: 2026-06-29
-- Workspace state: implemented
+- Workspace state: archived
 - Context Budget mode: Lite Read
 - Primary context read: `AGENTS.md`, `docs/08-development-workflow.md`, workspace templates
 - Escalated context read: 없음
