@@ -172,10 +172,10 @@
 
 | 항목 | 내용 |
 | --- | --- |
-| Must not break | Week 2 기본 답변 생성은 외부 호출 없는 deterministic `TemplateLLMAdapter`를 사용하고, LLM context에는 허용된 SQL rows, evidence, retrieval trace만 들어간다. |
-| Failure condition | `SqlEngineContext.local_fallback_path`, 실제 파일 내용, API key, credential, secret, 허용되지 않은 컬럼이 LLM context/prompt에 들어간다. 또는 blocked/unsupported 응답에서 LLM adapter를 호출한다. |
-| Expected behavior | 성공한 SQL/RAG/Hybrid 응답만 `LLMAdapter.generate_summary()`를 호출한다. blocked/unsupported는 M6 내부 보류 summary를 반환한다. 기본 adapter의 `external_calls_enabled`는 false다. |
-| Verification method | `backend/tests/test_week2_ai_query.py`의 LLM adapter context regression과 `backend/tests/test_app_container.py`의 default adapter test를 확인한다. |
+| Must not break | Week 2 기본 답변 생성은 외부 호출 없는 deterministic `TemplateLLMAdapter`를 사용하고, LLM context에는 허용된 SQL rows, evidence, retrieval trace만 들어간다. OpenAI provider는 `WEEK2_LLM_PROVIDER=openai`와 `OPENAI_API_KEY`가 모두 있을 때만 선택된다. |
+| Failure condition | `SqlEngineContext.local_fallback_path`, 실제 파일 내용, API key, credential, secret, 허용되지 않은 컬럼이 LLM context/prompt/request body에 들어간다. 또는 key 부재, provider 오류, timeout, malformed response가 M6 응답 전체를 실패시킨다. 또는 blocked/unsupported 응답에서 LLM adapter를 호출한다. |
+| Expected behavior | 성공한 SQL/RAG/Hybrid 응답만 `LLMAdapter.generate_summary()`를 호출한다. blocked/unsupported는 M6 내부 보류 summary를 반환한다. 기본 adapter의 `external_calls_enabled`는 false다. OpenAI adapter 오류는 template fallback으로 처리한다. |
+| Verification method | `backend/tests/test_openai_llm_adapter.py`의 safe request/fallback regression, `backend/tests/test_week2_ai_query.py`의 LLM adapter context regression, `backend/tests/test_app_container.py`의 default/provider selection test를 확인한다. |
 | Related docs/interface/Phase | `docs/03`, `docs/05`, M6 LLM Answer Adapter |
 
 ### Mock/Fake Boundary를 넘어 실제 접근으로 진행되는 경우
