@@ -290,6 +290,156 @@ const sourceSortOptions = [
   { id: "columns", label: "컬럼 수 많은 순" },
 ];
 
+const externalConnectionTypes = [
+  {
+    id: "csv",
+    label: "CSV",
+    description: "로컬 업로드 또는 shared file path",
+    placeholder: "/data/incoming/product_health_reviews.csv",
+    resourceLabel: "file_path",
+    authMode: "No credential",
+  },
+  {
+    id: "kafka",
+    label: "Kafka",
+    description: "broker와 topic 기반 streaming source",
+    placeholder: "commerce.order.events",
+    resourceLabel: "topic",
+    authMode: "SASL placeholder",
+  },
+  {
+    id: "postgres",
+    label: "PostgreSQL",
+    description: "RDB connection과 schema.table",
+    placeholder: "commerce.orders",
+    resourceLabel: "schema_table",
+    authMode: "Secret reference disabled",
+  },
+  {
+    id: "mongodb",
+    label: "MongoDB",
+    description: "database와 collection 기반 document source",
+    placeholder: "customer.profiles",
+    resourceLabel: "collection",
+    authMode: "Secret reference disabled",
+  },
+  {
+    id: "api",
+    label: "REST API",
+    description: "external endpoint response source",
+    placeholder: "GET /partner/catalog",
+    resourceLabel: "endpoint",
+    authMode: "API key disabled",
+  },
+  {
+    id: "s3",
+    label: "S3",
+    description: "bucket prefix 기반 object storage source",
+    placeholder: "s3://asklake-demo/raw/events/",
+    resourceLabel: "bucket_prefix",
+    authMode: "IAM role placeholder",
+  },
+];
+
+const demoExternalConnections = [
+  {
+    id: "conn_product_health_csv",
+    name: "Product Health CSV Connection",
+    connectorId: "csv",
+    typeLabel: "CSV",
+    status: "Connection draft",
+    description: "제품 리뷰 raw 파일을 AskLake raw zone으로 가져오기 위한 CSV 연결입니다.",
+    resourceLabel: "file_path",
+    resource: "/data/incoming/product_health_reviews.csv",
+    updatedLabel: "오늘 10:15",
+    columns: ["review_id", "product_id", "rating", "review_text", "review_time"],
+    schema: [
+      { name: "review_id", type: "string", sample: "rv_10291" },
+      { name: "product_id", type: "string", sample: "sku_8842" },
+      { name: "rating", type: "number", sample: "4" },
+      { name: "review_text", type: "text", sample: "배송은 빨랐지만 포장이 아쉬웠어요" },
+      { name: "review_time", type: "datetime", sample: "2026-06-28 09:42" },
+    ],
+  },
+  {
+    id: "conn_order_events_kafka",
+    name: "Order Events Kafka Connection",
+    connectorId: "kafka",
+    typeLabel: "Kafka",
+    status: "Streaming connection",
+    description: "주문 이벤트 topic을 raw/source dataset으로 받기 위한 Kafka 연결입니다.",
+    resourceLabel: "topic",
+    resource: "commerce.order.events",
+    updatedLabel: "오늘 09:40",
+    columns: ["event_id", "order_id", "event_type", "payload", "event_time"],
+    schema: [
+      { name: "event_id", type: "string", sample: "evt_98213" },
+      { name: "order_id", type: "string", sample: "ord_32018" },
+      { name: "event_type", type: "string", sample: "payment_confirmed" },
+      { name: "payload", type: "json", sample: "{\"amount\":129000}" },
+      { name: "event_time", type: "datetime", sample: "2026-06-29 09:40" },
+    ],
+  },
+  {
+    id: "conn_commerce_postgres",
+    name: "Commerce PostgreSQL Connection",
+    connectorId: "postgres",
+    typeLabel: "PostgreSQL",
+    status: "Warehouse connection",
+    description: "운영 주문 테이블을 raw/source dataset으로 가져오기 위한 DB 연결입니다.",
+    resourceLabel: "schema_table",
+    resource: "commerce.orders",
+    updatedLabel: "월요일 08:30",
+    columns: ["order_id", "user_id", "total_amount", "payment_status", "created_at", "updated_at"],
+    schema: [
+      { name: "order_id", type: "varchar", sample: "ord_32018" },
+      { name: "user_id", type: "varchar", sample: "usr_2048" },
+      { name: "total_amount", type: "numeric", sample: "129000" },
+      { name: "payment_status", type: "varchar", sample: "paid" },
+      { name: "created_at", type: "timestamp", sample: "2026-06-28 14:12" },
+      { name: "updated_at", type: "timestamp", sample: "2026-06-28 14:18" },
+    ],
+  },
+  {
+    id: "conn_partner_api",
+    name: "Partner Catalog API Connection",
+    connectorId: "api",
+    typeLabel: "REST API",
+    status: "API connection",
+    description: "파트너 상품 카탈로그 endpoint를 raw/source dataset으로 받기 위한 API 연결입니다.",
+    resourceLabel: "endpoint",
+    resource: "GET /partner/catalog",
+    updatedLabel: "오늘 11:05",
+    columns: ["sku", "partner_id", "title", "category", "price", "synced_at"],
+    schema: [
+      { name: "sku", type: "string", sample: "PT-8842" },
+      { name: "partner_id", type: "string", sample: "partner_17" },
+      { name: "title", type: "string", sample: "Air Flow Desk Fan" },
+      { name: "category", type: "string", sample: "home_appliance" },
+      { name: "price", type: "decimal", sample: "48900" },
+      { name: "synced_at", type: "datetime", sample: "2026-06-29 11:05" },
+    ],
+  },
+  {
+    id: "conn_raw_events_s3",
+    name: "Raw Events S3 Connection",
+    connectorId: "s3",
+    typeLabel: "S3",
+    status: "Object storage connection",
+    description: "S3 prefix 아래 raw event 파일 묶음을 Source Dataset으로 정의하기 위한 연결입니다.",
+    resourceLabel: "bucket_prefix",
+    resource: "s3://asklake-demo/raw/events/",
+    updatedLabel: "지난주 수요일",
+    columns: ["object_key", "event_date", "source_app", "record_count"],
+    schema: [
+      { name: "object_key", type: "string", sample: "raw/events/2026/06/29/part-0001.json" },
+      { name: "event_date", type: "date", sample: "2026-06-29" },
+      { name: "source_app", type: "string", sample: "checkout" },
+      { name: "record_count", type: "integer", sample: "18542" },
+    ],
+  },
+];
+
 const demoQuestionGroups = [
   {
     title: "Product Health SQL intents",
@@ -520,9 +670,14 @@ function SourcesPage({ navigate, setNotice }) {
   const [datasetCreationMode, setDatasetCreationMode] = useState(null);
   const [isSourceModalOpen, setIsSourceModalOpen] = useState(false);
   const [sourceModalPurpose, setSourceModalPurpose] = useState("target");
+  const [connectionWizardStepIndex, setConnectionWizardStepIndex] = useState(0);
+  const [selectedConnectionType, setSelectedConnectionType] = useState(externalConnectionTypes[0]);
+  const [connectionName, setConnectionName] = useState("conn_product_health_csv");
+  const [connectionResource, setConnectionResource] = useState(externalConnectionTypes[0].placeholder);
   const [sourceWizardStepIndex, setSourceWizardStepIndex] = useState(0);
   const [sourceDraft, setSourceDraft] = useState(null);
   const [sourceDatasetName, setSourceDatasetName] = useState("source_product_health_reviews");
+  const [sourceRawScope, setSourceRawScope] = useState("");
   const [selectedSource, setSelectedSource] = useState(null);
   const [selectedFields, setSelectedFields] = useState([]);
   const [targetName, setTargetName] = useState("dataset_product_health_gold");
@@ -547,19 +702,19 @@ function SourcesPage({ navigate, setNotice }) {
     {
       id: "source",
       title: "Source 선택",
-      summary: selectedSource ? selectedSource.name : "source dataset을 선택합니다.",
+      summary: selectedSource ? selectedSource.name : "등록된 Source Dataset을 선택합니다.",
       isComplete: currentStepIndex > 1 && Boolean(selectedSource),
     },
     {
       id: "process",
       title: "Process",
-      summary: selectedFields.length > 0 ? `${selectedFields.length} fields` : "Select Fields를 설정합니다.",
+      summary: selectedFields.length > 0 ? `ETL rule · ${selectedFields.length} fields` : "target 갱신 처리 규칙을 설정합니다.",
       isComplete: currentStepIndex > 3 && selectedFields.length > 0,
     },
     {
       id: "scheduling",
       title: "Scheduling",
-      summary: targetScheduleMode === "manual" ? "Manual" : "Schedule placeholder",
+      summary: targetScheduleMode === "manual" ? "Job manual trigger" : "Job schedule placeholder",
       isComplete: currentStepIndex > 4,
     },
     {
@@ -571,14 +726,14 @@ function SourcesPage({ navigate, setNotice }) {
   ];
   const sourceWizardSteps = [
     {
-      id: "source-type",
-      title: "데이터 소스 선택",
+      id: "connection",
+      title: "Connection 선택",
       isComplete: Boolean(sourceDraft),
     },
     {
-      id: "configure",
-      title: "Configure",
-      isComplete: sourceWizardStepIndex > 1 && Boolean(sourceDatasetName.trim()),
+      id: "raw-config",
+      title: "Raw Dataset 설정",
+      isComplete: sourceWizardStepIndex > 1 && Boolean(sourceDatasetName.trim() && sourceRawScope.trim()),
     },
     {
       id: "review",
@@ -586,28 +741,53 @@ function SourcesPage({ navigate, setNotice }) {
       isComplete: false,
     },
   ];
+  const connectionWizardSteps = [
+    {
+      id: "connector-type",
+      title: "Connector Type",
+      summary: selectedConnectionType ? selectedConnectionType.label : "connector를 선택합니다.",
+      isComplete: Boolean(selectedConnectionType),
+    },
+    {
+      id: "configure",
+      title: "Configure",
+      summary: connectionName.trim() || "connection 이름을 입력합니다.",
+      isComplete: connectionWizardStepIndex > 1 && Boolean(connectionName.trim() && connectionResource.trim()),
+    },
+    {
+      id: "review",
+      title: "Review",
+      summary: "연결 draft 확인",
+      isComplete: false,
+    },
+  ];
   const currentStep = wizardSteps[currentStepIndex];
   const currentSourceStep = sourceWizardSteps[sourceWizardStepIndex];
+  const currentConnectionStep = connectionWizardSteps[connectionWizardStepIndex];
   const canGoNext =
     (currentStep.id === "overview" && Boolean(normalizedTargetName)) ||
     (currentStep.id === "source" && Boolean(selectedSource)) ||
     (currentStep.id === "process" && selectedFields.length > 0) ||
     currentStep.id === "scheduling";
   const canGoNextSource =
-    (currentSourceStep.id === "source-type" && Boolean(sourceDraft)) ||
-    (currentSourceStep.id === "configure" && Boolean(sourceDatasetName.trim()));
+    (currentSourceStep.id === "connection" && Boolean(sourceDraft)) ||
+    (currentSourceStep.id === "raw-config" && Boolean(sourceDatasetName.trim() && sourceRawScope.trim()));
+  const canGoNextConnection =
+    (currentConnectionStep.id === "connector-type" && Boolean(selectedConnectionType)) ||
+    (currentConnectionStep.id === "configure" && Boolean(connectionName.trim() && connectionResource.trim()));
 
   function handleSourceSelect(source) {
-    if (sourceModalPurpose === "source") {
-      setSourceDraft(source);
-      setSourceDatasetName(`source_${source.name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "")}`);
-      setNotice(`${source.name} source dataset draft를 선택했습니다.`);
-    } else {
-      setSelectedSource(source);
-      setSelectedFields(source.columns);
-      setNotice(`${source.name} source를 선택했습니다.`);
-    }
+    setSelectedSource(source);
+    setSelectedFields(source.columns);
+    setNotice(`${source.name} source를 선택했습니다.`);
     setIsSourceModalOpen(false);
+  }
+
+  function selectSourceConnection(connection) {
+    setSourceDraft(connection);
+    setSourceDatasetName(`source_${connection.name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "")}`);
+    setSourceRawScope(connection.resource);
+    setNotice(`${connection.name} external connection을 선택했습니다.`);
   }
 
   function toggleField(column) {
@@ -644,8 +824,33 @@ function SourcesPage({ navigate, setNotice }) {
     setDatasetCreationMode(mode);
     setIsDatasetTypeModalOpen(false);
     setCurrentStepIndex(0);
+    if (mode === "connection") {
+      setConnectionWizardStepIndex(0);
+    }
     if (mode === "source") {
       setSourceWizardStepIndex(0);
+      if (!sourceDraft) {
+        setSourceRawScope("");
+      }
+    }
+  }
+
+  function selectConnectionType(connectionType) {
+    setSelectedConnectionType(connectionType);
+    setConnectionName(`conn_${connectionType.id}_demo`);
+    setConnectionResource(connectionType.placeholder);
+    setNotice(`${connectionType.label} external connection type을 선택했습니다.`);
+  }
+
+  function goNextConnection() {
+    if (canGoNextConnection && connectionWizardStepIndex < connectionWizardSteps.length - 1) {
+      setConnectionWizardStepIndex((index) => index + 1);
+    }
+  }
+
+  function goBackConnection() {
+    if (connectionWizardStepIndex > 0) {
+      setConnectionWizardStepIndex((index) => index - 1);
     }
   }
 
@@ -666,17 +871,213 @@ function SourcesPage({ navigate, setNotice }) {
     }
   }
 
+  function renderExternalConnectionWizard() {
+    return (
+      <section className="pipeline-table-card data-wizard-card external-connection-wizard">
+        <div className="table-card-header">
+          <div className="table-title-line">
+            <ServerCog size={20} />
+            <div>
+              <strong>Create External Connection</strong>
+              <p>외부 원천에 접속하기 위한 demo connection draft를 준비합니다.</p>
+            </div>
+          </div>
+          <div className="table-card-actions">
+            <button type="button" className="ghost-action" onClick={() => setIsDatasetTypeModalOpen(true)}>
+              유형 변경
+            </button>
+            <span className="badge slate">{connectionWizardStepIndex + 1}/3 단계</span>
+          </div>
+        </div>
+        <div className="data-wizard-layout">
+          <aside className="wizard-progress connection-wizard-progress" aria-label="External connection creation wizard progress">
+            {connectionWizardSteps.map((step, index) => {
+              const isCurrent = index === connectionWizardStepIndex;
+              const status = isCurrent ? "진행 중" : step.isComplete ? "완료" : "대기";
+
+              return (
+                <article className={`wizard-progress-step ${isCurrent ? "current" : ""} ${step.isComplete ? "complete" : ""}`} key={step.id}>
+                  <span>{index + 1}</span>
+                  <div>
+                    <strong>{step.title}</strong>
+                    <p>{status}</p>
+                  </div>
+                </article>
+              );
+            })}
+          </aside>
+          <main className="wizard-stage">
+            {renderConnectionWizardStep()}
+            <footer className="wizard-navigation">
+              {connectionWizardStepIndex > 0 ? (
+                <button type="button" className="ghost-action" onClick={goBackConnection}>
+                  <ArrowLeft size={16} />
+                  뒤로가기
+                </button>
+              ) : (
+                <span />
+              )}
+              {connectionWizardStepIndex < connectionWizardSteps.length - 1 ? (
+                <button type="button" className="primary-action" onClick={goNextConnection} disabled={!canGoNextConnection}>
+                  다음
+                  <ArrowRight size={16} />
+                </button>
+              ) : (
+                <button type="button" className="primary-action" disabled>
+                  Connection draft 준비
+                  <CheckCircle2 size={16} />
+                </button>
+              )}
+            </footer>
+          </main>
+        </div>
+      </section>
+    );
+  }
+
+  function renderConnectionWizardStep() {
+    if (currentConnectionStep.id === "connector-type") {
+      return (
+        <section className="wizard-step-body">
+          <div className="wizard-step-heading">
+            <span>1단계</span>
+            <div>
+              <h3>Connector Type</h3>
+              <p>외부 데이터 원천에 맞는 연결 유형을 선택합니다.</p>
+            </div>
+          </div>
+          <div className="connection-type-grid" aria-label="External connector type choices">
+            {externalConnectionTypes.map((connectionType) => (
+              <button
+                key={connectionType.id}
+                type="button"
+                className={selectedConnectionType?.id === connectionType.id ? "selected" : ""}
+                onClick={() => selectConnectionType(connectionType)}
+              >
+                <span className="connection-card-icon">
+                  <ServerCog size={18} />
+                </span>
+                <strong>{connectionType.label}</strong>
+                <p>{connectionType.description}</p>
+                <small>{connectionType.resourceLabel}</small>
+              </button>
+            ))}
+          </div>
+          <div className="wizard-placeholder compact">
+            <CheckCircle2 size={22} />
+            <strong>{selectedConnectionType.label} connector draft가 선택되었습니다</strong>
+          </div>
+        </section>
+      );
+    }
+
+    if (currentConnectionStep.id === "configure") {
+      return (
+        <section className="wizard-step-body">
+          <div className="wizard-step-heading">
+            <span>2단계</span>
+            <div>
+              <h3>Configure</h3>
+              <p>실제 credential 없이 demo-safe connection profile만 설정합니다.</p>
+            </div>
+          </div>
+          <div className="source-config-grid">
+            <section className="wizard-inline-panel">
+              <div className="table-title-line">
+                <ServerCog size={18} />
+                <div>
+                  <strong>Connection profile</strong>
+                  <p>Source Dataset이 나중에 참조할 외부 연결 draft입니다.</p>
+                </div>
+              </div>
+              <label className="target-name-field">
+                <span>connection_name</span>
+                <input
+                  type="text"
+                  value={connectionName}
+                  onChange={(event) => setConnectionName(event.target.value)}
+                  placeholder="conn_product_health_csv"
+                />
+              </label>
+              <label className="target-name-field">
+                <span>{selectedConnectionType.resourceLabel}</span>
+                <input
+                  type="text"
+                  value={connectionResource}
+                  onChange={(event) => setConnectionResource(event.target.value)}
+                  placeholder={selectedConnectionType.placeholder}
+                />
+              </label>
+              <div className="target-summary-strip">
+                <span>Auth mode</span>
+                <strong>{selectedConnectionType.authMode}</strong>
+                <p>Secret 입력과 연결 테스트는 이번 Phase에서 제외합니다.</p>
+              </div>
+            </section>
+            <section className="wizard-inline-panel">
+              <div className="table-title-line">
+                <ShieldCheck size={18} />
+                <div>
+                  <strong>Demo safety</strong>
+                  <p>실제 외부 시스템에 접속하거나 credential을 저장하지 않습니다.</p>
+                </div>
+              </div>
+              <div className="source-config-summary connection-config-summary">
+                <InfoCard title="Connector" value={selectedConnectionType.label} detail={selectedConnectionType.description} />
+                <InfoCard title="Resource" value={connectionResource || selectedConnectionType.placeholder} detail={selectedConnectionType.resourceLabel} />
+                <InfoCard title="Scope" value="AskLake demo" detail="owner: study" />
+              </div>
+            </section>
+          </div>
+        </section>
+      );
+    }
+
+    return (
+      <section className="wizard-step-body">
+        <div className="wizard-step-heading">
+          <span>3단계</span>
+          <div>
+            <h3>Review</h3>
+            <p>External Connection draft로 준비할 내용을 최종 확인합니다.</p>
+          </div>
+        </div>
+        <div className="review-summary-grid">
+          <article>
+            <span>Connection</span>
+            <strong>{connectionName.trim() || "connection_name 필요"}</strong>
+            <p>demo external connection draft</p>
+          </article>
+          <article>
+            <span>Connector type</span>
+            <strong>{selectedConnectionType.label}</strong>
+            <p>{selectedConnectionType.description}</p>
+          </article>
+          <article>
+            <span>{selectedConnectionType.resourceLabel}</span>
+            <strong>{connectionResource.trim() || selectedConnectionType.placeholder}</strong>
+            <p>{selectedConnectionType.authMode}</p>
+          </article>
+        </div>
+        <div className="wizard-placeholder compact">
+          <CheckCircle2 size={22} />
+          <strong>Connection draft 준비 완료. 실제 저장과 연결 테스트는 아직 호출하지 않습니다.</strong>
+        </div>
+      </section>
+    );
+  }
+
   function renderSourceDatasetShell() {
     return (
       <section className="pipeline-table-card data-wizard-card source-dataset-wizard">
         <div className="table-card-header">
           <div className="table-title-line">
-            <Database size={20} />
-            <div>
-              <strong>Create Source Dataset</strong>
-              <p>외부 원천 데이터를 AskLake dataset으로 등록하는 흐름입니다.</p>
+              <Database size={20} />
+              <div>
+                <strong>Create Source Dataset</strong>
+              <p>등록된 External Connection에서 raw/source dataset을 정의하는 흐름입니다.</p>
+              </div>
             </div>
-          </div>
           <div className="table-card-actions">
             <button type="button" className="ghost-action" onClick={() => setIsDatasetTypeModalOpen(true)}>
               유형 변경
@@ -731,53 +1132,53 @@ function SourcesPage({ navigate, setNotice }) {
   }
 
   function renderSourceWizardStep() {
-    if (currentSourceStep.id === "source-type") {
+    if (currentSourceStep.id === "connection") {
       return (
         <section className="wizard-step-body">
           <div className="wizard-step-heading">
             <span>1단계</span>
             <div>
-              <h3>데이터 소스 선택</h3>
-              <p>CSV, Kafka, PostgreSQL, MongoDB, API, S3 중 demo source dataset을 고릅니다.</p>
+              <h3>Connection 선택</h3>
+              <p>이미 등록된 External Connection 중 raw/source dataset의 입력으로 사용할 연결을 고릅니다.</p>
             </div>
           </div>
-          <div className="wizard-source-layout">
-            <div className="wizard-primary-choice">
-              <span className="flow-step-icon">
-                <Database size={18} aria-hidden="true" />
-              </span>
-              <div>
-                <strong>{sourceDraft ? sourceDraft.name : "등록할 source dataset을 선택하세요"}</strong>
-                <p>
-                  {sourceDraft
-                    ? `${sourceDraft.typeLabel} · ${sourceDraft.columns.length} columns · ${sourceDraft.resource}`
-                    : "source type 필터와 card 목록에서 등록할 원천 데이터를 고릅니다."}
-                </p>
-              </div>
-              <button type="button" className="primary-action" onClick={() => openSourcePicker("source")}>
-                {sourceDraft ? "Source 변경" : "데이터 소스 선택"}
-                <ArrowRight size={16} />
+          <div className="connection-type-grid source-connection-grid" aria-label="External connection choices for source dataset">
+            {demoExternalConnections.map((connection) => (
+              <button
+                key={connection.id}
+                type="button"
+                className={sourceDraft?.id === connection.id ? "selected" : ""}
+                onClick={() => selectSourceConnection(connection)}
+              >
+                <span className="connection-card-icon">
+                  <ServerCog size={18} />
+                </span>
+                <strong>{connection.name}</strong>
+                <p>{connection.description}</p>
+                <small>{connection.typeLabel} · {connection.resourceLabel}</small>
               </button>
-            </div>
+            ))}
+          </div>
+          <div className="wizard-source-layout">
             <section className="wizard-inline-panel">
               <div className="table-title-line">
                 <FileJson size={18} />
                 <div>
-                  <strong>Sample metadata</strong>
-                  <p>{sourceDraft ? "Configure 단계에서 dataset draft 값으로 사용됩니다." : "source 선택 후 metadata preview가 표시됩니다."}</p>
+                  <strong>Connection preview</strong>
+                  <p>{sourceDraft ? "Raw Dataset 설정 단계에서 source scope와 schema preview로 사용됩니다." : "connection 선택 후 metadata preview가 표시됩니다."}</p>
                 </div>
               </div>
               {sourceDraft ? (
                 <div className="source-config-summary">
-                  <InfoCard title="Source type" value={sourceDraft.typeLabel} detail={sourceDraft.status} />
-                  <InfoCard title="Resource" value={sourceDraft.resource} detail={`수정 ${sourceDraft.updatedLabel}`} />
+                  <InfoCard title="Connection" value={sourceDraft.name} detail={sourceDraft.status} />
+                  <InfoCard title={sourceDraft.resourceLabel} value={sourceDraft.resource} detail={`수정 ${sourceDraft.updatedLabel}`} />
                   <InfoCard title="Schema" value={`${sourceDraft.columns.length} columns`} detail={sourceDraft.columns.slice(0, 3).join(", ")} />
                 </div>
               ) : (
                 <EmptyState
-                  icon={Database}
-                  title="선택된 source dataset이 없습니다"
-                  body="데이터 소스 선택을 눌러 source type과 dataset card를 고릅니다."
+                  icon={ServerCog}
+                  title="선택된 External Connection이 없습니다"
+                  body="등록된 connection card를 선택해 raw/source dataset 설정을 시작합니다."
                 />
               )}
             </section>
@@ -786,14 +1187,14 @@ function SourcesPage({ navigate, setNotice }) {
       );
     }
 
-    if (currentSourceStep.id === "configure") {
+    if (currentSourceStep.id === "raw-config") {
       return (
         <section className="wizard-step-body">
           <div className="wizard-step-heading">
             <span>2단계</span>
             <div>
-              <h3>Configure</h3>
-              <p>실제 credential 없이 demo metadata와 dataset draft 이름만 확인합니다.</p>
+              <h3>Raw Dataset 설정</h3>
+              <p>선택한 External Connection에서 만들 raw/source dataset 이름과 원천 범위를 설정합니다.</p>
             </div>
           </div>
           <div className="source-config-grid">
@@ -801,12 +1202,12 @@ function SourcesPage({ navigate, setNotice }) {
               <div className="table-title-line">
                 <ServerCog size={18} />
                 <div>
-                  <strong>Dataset draft</strong>
-                  <p>AskLake에 등록될 source dataset 표시 이름입니다.</p>
+                  <strong>Source dataset draft</strong>
+                  <p>AskLake raw/source zone에 등록될 dataset draft입니다.</p>
                 </div>
               </div>
               <label className="target-name-field">
-                <span>dataset_name</span>
+                <span>source_dataset_name</span>
                 <input
                   type="text"
                   value={sourceDatasetName}
@@ -814,18 +1215,27 @@ function SourcesPage({ navigate, setNotice }) {
                   placeholder="source_product_health_reviews"
                 />
               </label>
+              <label className="target-name-field">
+                <span>{sourceDraft?.resourceLabel || "source_scope"}</span>
+                <input
+                  type="text"
+                  value={sourceRawScope}
+                  onChange={(event) => setSourceRawScope(event.target.value)}
+                  placeholder={sourceDraft?.resource || "raw/source scope"}
+                />
+              </label>
               <div className="target-summary-strip">
-                <span>Connection profile</span>
-                <strong>{sourceDraft?.typeLabel || "source 필요"}</strong>
-                <p>{sourceDraft?.resource || "credential과 연결 테스트는 이번 Phase에서 제외합니다."}</p>
+                <span>External Connection</span>
+                <strong>{sourceDraft?.name || "connection 필요"}</strong>
+                <p>{sourceDraft ? `${sourceDraft.typeLabel} · credential과 연결 테스트는 제외` : "Connection 선택 단계에서 고릅니다."}</p>
               </div>
             </section>
             <section className="wizard-inline-panel">
               <div className="table-title-line">
                 <FileJson size={18} />
                 <div>
-                  <strong>Schema preview</strong>
-                  <p>선택한 source의 sample schema를 등록 전 확인합니다.</p>
+                  <strong>Raw schema preview</strong>
+                  <p>Source Dataset으로 저장될 raw/source schema 예시입니다.</p>
                 </div>
               </div>
               {sourceDraft ? (
@@ -844,7 +1254,7 @@ function SourcesPage({ navigate, setNotice }) {
                   ))}
                 </div>
               ) : (
-                <EmptyState icon={FileJson} title="Schema preview 대기" body="데이터 소스를 먼저 선택합니다." />
+                <EmptyState icon={FileJson} title="Schema preview 대기" body="External Connection을 먼저 선택합니다." />
               )}
             </section>
           </div>
@@ -858,29 +1268,29 @@ function SourcesPage({ navigate, setNotice }) {
           <span>3단계</span>
           <div>
             <h3>Review</h3>
-            <p>Source Dataset draft로 만들 내용을 마지막으로 확인합니다.</p>
+            <p>External Connection에서 raw/source dataset으로 만들 내용을 마지막으로 확인합니다.</p>
           </div>
         </div>
         <div className="review-summary-grid">
           <article>
-            <span>Source type</span>
-            <strong>{sourceDraft?.typeLabel || "선택 전"}</strong>
-            <p>{sourceDraft?.status || "1단계에서 source dataset을 선택합니다."}</p>
+            <span>External Connection</span>
+            <strong>{sourceDraft?.name || "선택 전"}</strong>
+            <p>{sourceDraft ? `${sourceDraft.typeLabel} · ${sourceDraft.status}` : "1단계에서 connection을 선택합니다."}</p>
           </article>
           <article>
-            <span>Dataset name</span>
+            <span>Source dataset</span>
             <strong>{sourceDatasetName.trim() || "dataset_name 필요"}</strong>
-            <p>demo metadata draft 이름입니다.</p>
+            <p>AskLake raw/source zone dataset draft입니다.</p>
           </article>
           <article>
-            <span>Resource</span>
-            <strong>{sourceDraft?.resource || "resource 필요"}</strong>
-            <p>{sourceDraft ? `${sourceDraft.columns.length} columns · ${sourceDraft.updatedLabel}` : "sample metadata 대기"}</p>
+            <span>{sourceDraft?.resourceLabel || "source scope"}</span>
+            <strong>{sourceRawScope.trim() || "source_scope 필요"}</strong>
+            <p>{sourceDraft ? `${sourceDraft.columns.length} columns · ${sourceDraft.updatedLabel}` : "raw metadata 대기"}</p>
           </article>
         </div>
         <div className="wizard-placeholder compact">
           <CheckCircle2 size={22} />
-          <strong>실제 connector 저장은 후속 backend Phase에서 다룹니다</strong>
+          <strong>실제 ingest job, raw table 생성, backend 저장은 아직 호출하지 않습니다</strong>
         </div>
       </section>
     );
@@ -894,7 +1304,7 @@ function SourcesPage({ navigate, setNotice }) {
             <Workflow size={20} />
             <div>
               <strong>Create Target Dataset</strong>
-              <p>Source dataset을 골라 결과 dataset 초안을 준비합니다.</p>
+              <p>Source Dataset을 가공해 target dataset과 ETL job definition을 준비합니다.</p>
             </div>
           </div>
           <div className="table-card-actions">
@@ -958,7 +1368,7 @@ function SourcesPage({ navigate, setNotice }) {
             <span>1단계</span>
             <div>
               <h3>Overview</h3>
-              <p>생성할 target dataset의 이름과 목적을 먼저 정합니다.</p>
+              <p>ETL job이 갱신할 target dataset의 이름과 목적을 먼저 정합니다.</p>
             </div>
           </div>
           <section className="wizard-inline-panel target-setup-panel">
@@ -966,7 +1376,7 @@ function SourcesPage({ navigate, setNotice }) {
               <Table2 size={18} />
               <div>
                 <strong>Target dataset draft</strong>
-                <p>source 선택과 process 설정이 붙을 output dataset 초안입니다.</p>
+                <p>Source Dataset과 processing rule이 붙을 output dataset 초안입니다.</p>
               </div>
             </div>
             <label className="target-name-field">
@@ -1004,7 +1414,7 @@ function SourcesPage({ navigate, setNotice }) {
             <span>2단계</span>
             <div>
               <h3>Source 선택</h3>
-              <p>Target dataset의 입력으로 사용할 source dataset을 고릅니다.</p>
+              <p>ETL job input으로 사용할 등록된 Source Dataset을 고릅니다.</p>
             </div>
           </div>
           <div className="wizard-source-layout">
@@ -1013,11 +1423,11 @@ function SourcesPage({ navigate, setNotice }) {
                 <Database size={18} aria-hidden="true" />
               </span>
               <div>
-                <strong>{selectedSource ? selectedSource.name : "Source dataset을 선택하세요"}</strong>
+                <strong>{selectedSource ? selectedSource.name : "등록된 Source Dataset을 선택하세요"}</strong>
                 <p>
                   {selectedSource
                     ? `${selectedSource.typeLabel} · ${selectedSource.columns.length} columns · ${selectedSource.resource}`
-                    : "기존 dataset card selector를 열어 source type과 dataset을 고릅니다."}
+                    : "등록된 Source Dataset card 목록에서 target dataset의 입력을 고릅니다."}
                 </p>
               </div>
               <button type="button" className="primary-action" onClick={() => openSourcePicker("target")}>
@@ -1030,7 +1440,7 @@ function SourcesPage({ navigate, setNotice }) {
                 <FileJson size={18} />
                 <div>
                   <strong>Schema preview</strong>
-                  <p>{selectedSource ? "다음 단계의 Select Fields 입력으로 사용됩니다." : "source 선택 후 컬럼 미리보기가 표시됩니다."}</p>
+                  <p>{selectedSource ? "Process 단계의 입력 schema로 사용됩니다." : "Source Dataset 선택 후 컬럼 미리보기가 표시됩니다."}</p>
                 </div>
               </div>
               {selectedSource ? (
@@ -1051,8 +1461,8 @@ function SourcesPage({ navigate, setNotice }) {
               ) : (
                 <EmptyState
                   icon={Database}
-                  title="아직 선택된 source가 없습니다"
-                  body="Source 선택을 눌러 dataset을 고릅니다."
+                  title="아직 선택된 Source Dataset이 없습니다"
+                  body="Source 선택을 눌러 등록된 Source Dataset을 고릅니다."
                 />
               )}
             </section>
@@ -1068,15 +1478,15 @@ function SourcesPage({ navigate, setNotice }) {
             <span>3단계</span>
             <div>
               <h3>Process</h3>
-              <p>{selectedSource ? `${selectedSource.name}에서 target dataset에 남길 컬럼을 고릅니다.` : "Source를 먼저 선택합니다."}</p>
+              <p>{selectedSource ? `${selectedSource.name}에서 target dataset을 만들 처리 규칙을 설정합니다.` : "Source Dataset을 먼저 선택합니다."}</p>
             </div>
           </div>
           <section className={`transform-panel wizard-inline-panel ${selectedSource ? "" : "disabled"}`}>
             <div className="table-title-line">
               <GitBranch size={18} />
               <div>
-                <strong>Select Fields</strong>
-                <p>이번 단계에서는 필드 선택만 다룹니다.</p>
+                <strong>ETL processing rule</strong>
+                <p>이번 demo job definition에서는 Select Fields 규칙만 다룹니다.</p>
               </div>
             </div>
             {selectedSource ? (
@@ -1110,8 +1520,8 @@ function SourcesPage({ navigate, setNotice }) {
                   <div className="table-title-line">
                     <Table2 size={18} />
                     <div>
-                      <strong>Output schema preview</strong>
-                      <p>선택한 필드만 target dataset schema로 남습니다.</p>
+                      <strong>Target schema preview</strong>
+                      <p>ETL job이 target dataset에 남길 output schema입니다.</p>
                     </div>
                   </div>
                   {selectedOutputSchema.length > 0 ? (
@@ -1132,7 +1542,7 @@ function SourcesPage({ navigate, setNotice }) {
                   ) : (
                     <EmptyState
                       icon={Table2}
-                      title="Output schema가 비어 있습니다"
+                      title="Target schema가 비어 있습니다"
                       body="target dataset에 남길 필드를 하나 이상 선택합니다."
                     />
                   )}
@@ -1142,13 +1552,13 @@ function SourcesPage({ navigate, setNotice }) {
               <EmptyState
                 icon={GitBranch}
                 title="Process 설정 대기"
-                body="뒤로가기로 돌아가 source dataset을 먼저 선택합니다."
+                body="뒤로가기로 돌아가 Source Dataset을 먼저 선택합니다."
               />
             )}
           </section>
           <div className="wizard-placeholder compact">
             <CheckCircle2 size={22} />
-            <strong>다음 단계에서 schedule 기본값을 확인합니다</strong>
+            <strong>다음 단계에서 ETL job schedule 기본값을 확인합니다</strong>
           </div>
         </section>
       );
@@ -1161,15 +1571,15 @@ function SourcesPage({ navigate, setNotice }) {
             <span>4단계</span>
             <div>
               <h3>Scheduling</h3>
-              <p>데모에서는 target dataset draft를 수동 실행 준비 상태로만 둡니다.</p>
+              <p>Target Dataset을 갱신할 ETL job의 실행 계획을 정합니다.</p>
             </div>
           </div>
           <section className="wizard-inline-panel target-schedule-panel">
             <div className="table-title-line">
               <Clock3 size={18} />
               <div>
-                <strong>Schedule mode</strong>
-                <p>실제 cron 저장과 timezone persistence는 후속 backend Phase에서 다룹니다.</p>
+                <strong>ETL job schedule</strong>
+                <p>실제 cron 저장, timezone persistence, job API는 후속 backend Phase에서 다룹니다.</p>
               </div>
             </div>
             <div className="schedule-choice-grid" aria-label="Target dataset schedule mode">
@@ -1183,7 +1593,7 @@ function SourcesPage({ navigate, setNotice }) {
                 />
                 <span>
                   <strong>Manual</strong>
-                  <small>데모 기본값. draft 생성 이후 수동 실행 대상으로 표시합니다.</small>
+                  <small>데모 기본값. target dataset 갱신 job을 수동 실행 대상으로 표시합니다.</small>
                 </span>
               </label>
               <label className={targetScheduleMode === "placeholder" ? "selected" : ""}>
@@ -1196,7 +1606,7 @@ function SourcesPage({ navigate, setNotice }) {
                 />
                 <span>
                   <strong>Schedule placeholder</strong>
-                  <small>cron UI 자리만 확인합니다. 저장은 하지 않습니다.</small>
+                  <small>cron UI 자리만 확인합니다. job schedule 저장은 하지 않습니다.</small>
                 </span>
               </label>
             </div>
@@ -1210,7 +1620,7 @@ function SourcesPage({ navigate, setNotice }) {
               />
             </label>
             <div className="target-summary-strip">
-              <span>Schedule summary</span>
+              <span>Job schedule summary</span>
               <strong>{targetScheduleMode === "manual" ? "Manual" : "Placeholder"}</strong>
               <p>{targetScheduleNote.trim() || "schedule note 없음"}</p>
             </div>
@@ -1226,7 +1636,7 @@ function SourcesPage({ navigate, setNotice }) {
             <span>5단계</span>
             <div>
               <h3>Review</h3>
-              <p>Target Dataset draft로 준비할 내용을 최종 확인합니다.</p>
+              <p>Target Dataset draft와 ETL job definition을 최종 확인합니다.</p>
             </div>
           </div>
           <div className="review-summary-grid target-review-grid">
@@ -1236,29 +1646,29 @@ function SourcesPage({ navigate, setNotice }) {
               <p>{normalizedTargetDescription || "purpose 없음"}</p>
             </article>
             <article>
-              <span>Source</span>
+              <span>Job input</span>
               <strong>{selectedSource ? selectedSource.name : "선택 전"}</strong>
-              <p>{selectedSource ? `${selectedSource.typeLabel} · ${selectedSource.resource}` : "Source 선택 단계에서 고릅니다."}</p>
+              <p>{selectedSource ? `Source Dataset · ${selectedSource.typeLabel} · ${selectedSource.resource}` : "Source 선택 단계에서 고릅니다."}</p>
             </article>
             <article>
-              <span>Process</span>
-              <strong>Select Fields · {selectedFields.length} fields</strong>
+              <span>ETL process</span>
+              <strong>Select Fields rule · {selectedFields.length} fields</strong>
               <p>{selectedFieldSummary}{selectedFields.length > 3 ? "..." : ""}</p>
             </article>
             <article>
-              <span>Output schema</span>
+              <span>Target schema</span>
               <strong>{selectedOutputSchema.length} fields</strong>
               <p>{selectedOutputSchema.map((field) => field.name).slice(0, 4).join(", ") || "schema 없음"}</p>
             </article>
             <article>
-              <span>Schedule</span>
-              <strong>{targetScheduleMode === "manual" ? "Manual" : "Placeholder"}</strong>
+              <span>ETL job definition</span>
+              <strong>{targetScheduleMode === "manual" ? "Manual trigger" : "Schedule placeholder"}</strong>
               <p>{targetScheduleNote.trim() || "schedule note 없음"}</p>
             </article>
           </div>
           <div className="wizard-placeholder compact">
             <CheckCircle2 size={22} />
-            <strong>생성 준비 완료. 실제 저장과 실행은 아직 호출하지 않습니다.</strong>
+            <strong>Target dataset과 ETL job definition 준비 완료. 실제 저장과 실행은 아직 호출하지 않습니다.</strong>
           </div>
         </section>
       );
@@ -1275,21 +1685,30 @@ function SourcesPage({ navigate, setNotice }) {
     <div className="page-stack">
       <PageHeader
         title="데이터셋"
-        body="Source dataset과 target dataset을 만들기 위한 데모 진입점입니다."
+        body="External Connection, Source Dataset, Target Dataset을 순서대로 준비하는 데모 진입점입니다."
         actionLabel="데이터셋 생성"
         onAction={() => setIsDatasetTypeModalOpen(true)}
       />
       {datasetCreationMode ? (
         <div className="dataset-mode-strip" aria-label="Current dataset creation mode">
           <span>현재 생성 유형</span>
-          <strong>{datasetCreationMode === "source" ? "Source Dataset" : "Target Dataset"}</strong>
+          <strong>
+            {datasetCreationMode === "connection"
+              ? "External Connection"
+              : datasetCreationMode === "source"
+                ? "Source Dataset"
+                : "Target Dataset"}
+          </strong>
           <p>
-            {datasetCreationMode === "source"
-              ? "외부 원천 데이터를 등록하는 흐름입니다."
-              : "기존 source에서 가공 결과 dataset을 준비하는 흐름입니다."}
+            {datasetCreationMode === "connection"
+              ? "CSV, Kafka, DB, API, S3 같은 외부 원천 연결 설정을 준비하는 흐름입니다."
+              : datasetCreationMode === "source"
+                ? "등록된 External Connection에서 raw/source dataset을 만드는 흐름입니다."
+                : "Source Dataset을 가공해 target dataset과 ETL job definition을 준비하는 흐름입니다."}
           </p>
         </div>
       ) : null}
+      {datasetCreationMode === "connection" ? renderExternalConnectionWizard() : null}
       {datasetCreationMode === "source" ? renderSourceDatasetShell() : null}
       {datasetCreationMode === "target" ? renderTargetDatasetWizard() : null}
       {!datasetCreationMode ? (
@@ -1299,8 +1718,8 @@ function SourcesPage({ navigate, setNotice }) {
               <Database size={28} />
             </div>
             <div>
-              <h3>먼저 만들 데이터셋 유형을 선택하세요</h3>
-              <p>Source Dataset은 원천 데이터 등록, Target Dataset은 가공 결과 데이터셋 draft 준비 흐름입니다.</p>
+              <h3>먼저 만들 항목을 선택하세요</h3>
+              <p>External Connection을 등록한 뒤 Source Dataset을 만들고, Source Dataset에서 Target Dataset과 ETL job draft를 준비합니다.</p>
             </div>
             <button type="button" className="primary-action" onClick={() => setIsDatasetTypeModalOpen(true)}>
               데이터셋 생성
@@ -1336,28 +1755,36 @@ function DatasetTypeChoiceModal({ onClose, onSelect }) {
       <section className="source-modal dataset-type-modal" role="dialog" aria-modal="true" aria-labelledby="dataset-type-title">
         <header>
           <div>
-            <h2 id="dataset-type-title">어떤 데이터셋을 만들까요?</h2>
-            <p>Source Dataset은 원천 데이터 등록, Target Dataset은 가공 결과 데이터셋 생성입니다.</p>
+            <h2 id="dataset-type-title">무엇을 만들까요?</h2>
+            <p>외부 연결, raw/source dataset, 가공 결과 dataset의 역할을 분리해서 준비합니다.</p>
           </div>
           <button type="button" onClick={onClose} aria-label="닫기">
             <X size={18} />
           </button>
         </header>
         <div className="dataset-type-options">
+          <button type="button" onClick={() => onSelect("connection")}>
+            <span className="dataset-type-icon">
+              <ServerCog size={22} />
+            </span>
+            <strong>External Connection</strong>
+            <p>CSV, Kafka, PostgreSQL, API, S3 같은 외부 원천의 연결 설정을 등록합니다.</p>
+            <small>{"Connector Type -> Configure -> Review"}</small>
+          </button>
           <button type="button" onClick={() => onSelect("source")}>
             <span className="dataset-type-icon">
               <Database size={22} />
             </span>
             <strong>Source Dataset</strong>
-            <p>CSV, Kafka, PostgreSQL 같은 외부 원천 데이터를 AskLake에 등록합니다.</p>
-            <small>{"다음 단계: 데이터 소스 선택 -> Configure -> Review"}</small>
+            <p>등록된 External Connection에서 raw/source dataset을 만듭니다.</p>
+            <small>{"Connection 선택 -> Raw Dataset 설정 -> Review"}</small>
           </button>
           <button type="button" onClick={() => onSelect("target")}>
             <span className="dataset-type-icon">
               <Table2 size={22} />
             </span>
             <strong>Target Dataset</strong>
-            <p>선택한 source를 가공해 결과 dataset 초안과 process 설정을 준비합니다.</p>
+            <p>Source Dataset을 가공해 target dataset과 ETL job definition을 준비합니다.</p>
             <small>{"Overview -> Source -> Process -> Scheduling -> Review"}</small>
           </button>
         </div>
@@ -1407,8 +1834,8 @@ function SourceStartModal({ sources, onClose, onSelect, onCreateNew }) {
       <section className="source-modal source-modal-wide" role="dialog" aria-modal="true" aria-labelledby="source-modal-title">
         <header>
           <div>
-            <h2 id="source-modal-title">데이터 소스 종류 선택</h2>
-            <p>CSV, Kafka, PostgreSQL 같은 source 종류를 고른 뒤 dataset 카드를 선택합니다.</p>
+            <h2 id="source-modal-title">등록된 Source Dataset 선택</h2>
+            <p>Target Dataset의 입력으로 사용할 등록된 Source Dataset을 고릅니다.</p>
           </div>
           <button type="button" onClick={onClose} aria-label="닫기">
             <X size={18} />

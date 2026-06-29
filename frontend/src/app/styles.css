@@ -670,6 +670,63 @@ code {
   gap: 12px;
 }
 
+.connection-type-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.connection-type-grid button {
+  display: grid;
+  gap: 8px;
+  min-height: 150px;
+  align-content: start;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 14px;
+  color: #374151;
+  text-align: left;
+}
+
+.connection-type-grid button:hover,
+.connection-type-grid button.selected {
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+
+.connection-card-icon {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 8px;
+  background: #f0fdf4;
+  color: #047857;
+}
+
+.connection-type-grid strong {
+  color: #111827;
+  font-size: 14px;
+}
+
+.connection-type-grid p {
+  color: #4b5563;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.connection-type-grid small {
+  margin-top: auto;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.connection-config-summary {
+  grid-template-columns: 1fr;
+}
+
 .schedule-choice-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3728,7 +3785,7 @@ tbody tr:hover {
 }
 
 .dataset-type-modal {
-  width: min(760px, 100%);
+  width: min(980px, 100%);
 }
 
 .source-modal header,
@@ -3804,7 +3861,7 @@ tbody tr:hover {
 
 .dataset-type-options {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
   padding: 18px;
 }
@@ -4152,6 +4209,7 @@ tbody tr:hover {
   .schedule-choice-grid,
   .source-config-grid,
   .source-config-summary,
+  .connection-type-grid,
   .source-card-grid,
   .source-picker-toolbar,
   .start-steps,
@@ -4274,6 +4332,11 @@ tbody tr:hover {
 
   .source-type-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dataset-type-options {
+    grid-template-columns: 1fr;
+    padding: 14px;
   }
 
   .wizard-step-body {

@@ -246,9 +246,14 @@ Integration Spine:
 
 ## Dataset Creation UX Reframe Queue
 
+상태: Superseded by `Dataset Creation IA Reframe Queue`.
+
 데모의 주 화면은 "데이터 통합"이 아니라 "데이터셋" 관리와 생성으로 재정의한다.
 `데이터셋 생성`을 누르면 먼저 Source Dataset과 Target Dataset 중 하나를 고르고, 이후 각 dataset type에 맞는 짧은 wizard로 이동한다.
 Target Dataset 생성은 XFlow처럼 source를 선택하고 process/schedule/review를 거쳐 output dataset과 ETL job definition을 함께 준비하는 흐름으로 표현한다.
+
+2026-06-29 논의 결과, 이 큐는 외부 데이터 연결 설정 단계가 빠져 Source Dataset 생성이 이미 등록된 데이터셋을 다시 고르는 것처럼 보이는 문제가 있었다.
+기존 `D-*` workspace는 구현 evidence로 보존하되, 후속 작업은 아래 `R-*` 큐를 기준으로 진행한다.
 
 | 순서 | Branch / workspace | 목표 | 선행 조건 | 완료 기준 |
 | --- | --- | --- | --- | --- |
@@ -264,6 +269,26 @@ Target Dataset 생성은 XFlow처럼 source를 선택하고 process/schedule/rev
 - Source Dataset 생성은 connector 등록/metadata draft 시나리오이며 실제 credential 저장, 연결 테스트, backend schema 변경은 제외한다.
 - Target Dataset 생성은 output dataset과 ETL job definition을 준비하는 demo 시나리오이며 즉시 실행, run history, lineage, permission은 제외한다.
 - 각 Phase는 작게 구현하고, 사람이 화면을 확인한 뒤 다음 Phase로 진행한다.
+
+## Dataset Creation IA Reframe Queue
+
+데이터셋 생성 구조는 `External Connection -> Source Dataset -> Target Dataset` 순서로 재정의한다.
+External Connection은 외부 원천에 접속하기 위한 연결 설정이고, Source Dataset은 등록된 연결에서 raw/source table을 만드는 정의이며, Target Dataset은 Source Dataset을 가공해 output dataset과 ETL job definition을 준비하는 흐름이다.
+
+| 순서 | Branch / workspace | 목표 | 선행 조건 | 완료 기준 |
+| --- | --- | --- | --- | --- |
+| R-1 | `feature/dataset-creation-ia-reframe` | `데이터셋 생성` 선택지를 External Connection / Source Dataset / Target Dataset 3개로 재정의하고 화면 문구를 맞춘다 | 현재 PR 화면 또는 사람 확인 | 세 생성 유형의 역할이 구분되고, 기존 Source/Target 플로우는 아직 깊게 재작성하지 않음 |
+| R-2 | `feature/external-connection-create-wizard` | External Connection 생성 wizard를 추가한다: connector type, configure, review | R-1 완료 또는 사람 확인 | CSV/Kafka/PostgreSQL/S3/API 같은 외부 연결 설정 demo flow가 보이며 credential 저장/API 호출은 없음 |
+| R-3 | `feature/source-dataset-from-connection-wizard` | Source Dataset 생성 wizard를 등록된 External Connection 기반으로 보정한다: connection 선택, raw dataset configure, review | R-2 완료 또는 사람 확인 | 이미 등록된 Source Dataset 카드가 아니라 External Connection을 선택해 raw/source dataset을 만드는 구조로 보임 |
+| R-4 | `feature/target-dataset-job-alignment` | Target Dataset 생성 wizard 문구와 review를 ETL job definition 중심으로 정렬한다 | R-3 완료 또는 사람 확인 | Source Dataset 선택 -> process -> scheduling -> target dataset + ETL job 요약이 일관되게 보임 |
+
+범위 원칙:
+
+- External Connection은 연결 설정 demo이며 실제 secret, credential 저장, 연결 테스트는 제외한다.
+- Source Dataset은 데이터 레이크 raw/source 영역에 저장되는 원본 데이터셋 정의로 표현한다.
+- Target Dataset은 Source Dataset 기반의 가공 결과와 ETL job definition을 함께 준비하는 demo 시나리오로 표현한다.
+- 기존 `D-*` 구현은 R-1 이후 재사용 가능한 UI 재료로만 취급하고, 잘못된 개념 문구는 각 R Phase에서 제거한다.
+- 각 Phase는 독립 확인 가능해야 하며, 사람이 화면을 확인한 뒤 다음 Phase로 진행한다.
 
 ## Local Environment Follow-up Queue
 
