@@ -411,6 +411,60 @@ def test_week2_ai_query_selects_product_health_catalog_for_risk_question() -> No
     assert "위험 점수 0.92" in result.summary
 
 
+def test_week2_ai_query_uses_hybrid_route_when_sql_question_asks_for_evidence() -> None:
+    reviews_catalog = _review_catalog(
+        "dataset_reviews_gold",
+        "Amazon Reviews Gold",
+        "run_reviews_001",
+    )
+    product_health_catalog = _product_health_catalog(
+        "dataset_product_health_gold",
+        "Product Health Gold",
+        "run_product_health_001",
+    )
+    service = Week2AIQueryService(
+        sql_engine=FakeSqlEngine(),
+        catalog_source=InMemoryCatalogSource(reviews_catalog, product_health_catalog),
+    )
+
+    result = service.answer("위험 점수가 높은 상품과 그 근거를 설명해줘")
+
+    assert result.status == "succeeded"
+    assert result.route == "hybrid"
+    assert result.sql
+    assert result.rows[0]["risk_score"] == 0.92
+    assert "SQL 결과와 CatalogMetadata 근거" in result.summary
+    assert any(
+        item.source_type == "schema"
+        and item.source_id == "dataset_product_health_gold.schema.risk_score"
+        for item in result.retrieval_trace
+    )
+
+
+def test_week2_ai_query_uses_rag_route_for_metadata_question_without_sql_engine_call() -> None:
+    product_health_catalog = _product_health_catalog(
+        "dataset_product_health_gold",
+        "Product Health Gold",
+        "run_product_health_001",
+    )
+    service = Week2AIQueryService(
+        sql_engine=FailingSqlEngine(),
+        catalog_source=InMemoryCatalogSource(product_health_catalog),
+    )
+
+    result = service.answer("이 데이터셋의 스키마와 lineage 근거를 알려줘")
+
+    assert result.status == "succeeded"
+    assert result.route == "rag"
+    assert result.sql == ""
+    assert result.query_result.sql == ""
+    assert result.query_result.rows == []
+    assert result.guardrail.validation_status == "passed"
+    assert "CatalogMetadata 근거" in result.summary
+    assert "schema=product_id, category, product_name, risk_score" in result.summary
+    assert any(item.source_type == "lineage" for item in result.retrieval_trace)
+
+
 def test_week2_ai_query_retrieval_trace_includes_catalog_rag_index_chunks() -> None:
     reviews_catalog = _review_catalog(
         "dataset_reviews_gold",
