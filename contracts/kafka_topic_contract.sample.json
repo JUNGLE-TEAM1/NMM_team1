@@ -15,8 +15,8 @@
   },
   "replay": {
     "command": "python scripts/kafka_replay_to_parquet_demo.py",
-    "rate_per_second": "TODO: confirm M4 replay rate",
-    "source_file": "TODO: confirm M4 replay source file"
+    "rate_per_second": 1000,
+    "source_file": "demo-output/replay-samples/sample-65536-bytes.csv"
   },
   "evidence": {
     "contract": "KafkaReplayEvidence",
@@ -36,5 +36,5 @@
     "m3_uses_raw_event_contract": true,
     "m5_records_evidence_only_until_gold_path_exists": true
   },
-  "updated_at": "2026-06-26T00:00:00+09:00"
+  "updated_at": "2026-06-28T00:00:00+09:00"
 }

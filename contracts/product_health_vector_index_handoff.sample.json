@@ -1,0 +1,96 @@
+{
+  "contract": "SemanticCatalogVectorIndexHandoff",
+  "producer": "M3",
+  "consumers": ["M6"],
+  "tenant_id": "tenant_demo",
+  "dataset_id": "dataset_product_health_gold",
+  "table_name": "gold_product_health",
+  "pipeline_id": "pipeline_product_health_e2e",
+  "handoff_status": "template_only",
+  "execution_owner": "M6_or_vector_extension",
+  "m3_embedding_execution": false,
+  "vector_db_target": "qdrant_or_pinecone_compatible",
+  "index_name": "asklake_semantic_catalog",
+  "documents": [
+    {
+      "doc_id": "dataset_product_health_gold:dataset_card",
+      "document_type": "dataset_card",
+      "text_for_embedding": "Product Health Gold table gold_product_health ranks product risk by risk_score using an L9-approved risk score policy over available components such as negative_review_rate, conversion_rate, late_delivery_rate, average_rating, and supporting counts.",
+      "payload": {
+        "dataset_id": "dataset_product_health_gold",
+        "table_name": "gold_product_health",
+        "pipeline_id": "pipeline_product_health_e2e",
+        "document_type": "dataset_card",
+        "access_class": "query_context_safe"
+      }
+    },
+    {
+      "doc_id": "dataset_product_health_gold:metric:risk_score",
+      "document_type": "metric_definition",
+      "text_for_embedding": "risk_score is a 0 to 100 composite product health metric whose components and weights are recommended from source evidence and frozen only after L9 approval.",
+      "payload": {
+        "dataset_id": "dataset_product_health_gold",
+        "table_name": "gold_product_health",
+        "metric_id": "risk_score",
+        "document_type": "metric_definition",
+        "access_class": "query_context_safe"
+      }
+    },
+    {
+      "doc_id": "dataset_product_health_gold:metric:negative_review_rate",
+      "document_type": "metric_definition",
+      "text_for_embedding": "negative_review_rate is negative_review_count divided by review_count, using rating <= 2 or approved negative sentiment as the negative review rule.",
+      "payload": {
+        "dataset_id": "dataset_product_health_gold",
+        "table_name": "gold_product_health",
+        "metric_id": "negative_review_rate",
+        "document_type": "metric_definition",
+        "access_class": "query_context_safe"
+      }
+    },
+    {
+      "doc_id": "dataset_product_health_gold:metric:conversion_rate",
+      "document_type": "metric_definition",
+      "text_for_embedding": "conversion_rate is purchase_count divided by view_count and requires behavior event evidence with numerator and denominator events.",
+      "payload": {
+        "dataset_id": "dataset_product_health_gold",
+        "table_name": "gold_product_health",
+        "metric_id": "conversion_rate",
+        "document_type": "metric_definition",
+        "access_class": "query_context_safe"
+      }
+    },
+    {
+      "doc_id": "dataset_product_health_gold:metric:late_delivery_rate",
+      "document_type": "metric_definition",
+      "text_for_embedding": "late_delivery_rate is late_delivery_count divided by delivery_count and requires delivery timestamp or late flag evidence.",
+      "payload": {
+        "dataset_id": "dataset_product_health_gold",
+        "table_name": "gold_product_health",
+        "metric_id": "late_delivery_rate",
+        "document_type": "metric_definition",
+        "access_class": "query_context_safe"
+      }
+    }
+  ],
+  "payload_filter_keys": [
+    "tenant_id",
+    "dataset_id",
+    "table_name",
+    "pipeline_id",
+    "document_type",
+    "metric_id",
+    "access_class"
+  ],
+  "recommended_search_policy": {
+    "first_filter": ["tenant_id", "access_class"],
+    "then_vector_search": true,
+    "must_confirm_with_catalog_metadata": true,
+    "must_confirm_with_sql_guardrail": true
+  },
+  "accuracy_boundary": {
+    "improves": "M6 can choose the correct dataset, table, column, and metric for natural-language questions about product risk.",
+    "does_not_improve": "The numeric correctness of risk_score or other Gold values. Those require deterministic transform execution, quality checks, and SQL validation.",
+    "100gb_test_role": "100GB local data is for speed, accuracy, and generation stress validation only; it is not required for the presentation demo path."
+  }
+}
