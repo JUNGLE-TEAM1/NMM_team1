@@ -14,6 +14,8 @@ MINIO_CONTAINER_ENDPOINT="${ASKLAKE_M2_MINIO_CONTAINER_ENDPOINT:-http://m2-minio
 MINIO_HOST_ENDPOINT="${ASKLAKE_M2_MINIO_HOST_ENDPOINT:-http://localhost:${M2_MINIO_API_PORT:-19000}}"
 MINIO_BUCKET="${ASKLAKE_M2_MINIO_BUCKET:-asklake-demo}"
 MINIO_PREFIX="${ASKLAKE_M2_MINIO_PREFIX:-taxi/gold/daily_metrics/run_id=<run_id>/}"
+DIRECT_S3A_PREFIX="${ASKLAKE_M2_DIRECT_S3A_PREFIX:-taxi/gold/direct_s3a/run_id=<run_id>/}"
+S3A_PACKAGES="${ASKLAKE_M2_SPARK_S3A_PACKAGES:-org.apache.hadoop:hadoop-aws:3.4.1,software.amazon.awssdk:bundle:2.24.6}"
 MODE="${1:-small}"
 
 compose() {
@@ -74,6 +76,44 @@ run_evidence() {
   "
 }
 
+run_direct_s3a_evidence() {
+  # Spark writer가 local fallback 파일을 거치지 않고 s3a:// object storage prefix에 직접 Parquet directory를 쓴다.
+  local input_path="$1"
+  local run_id="$2"
+  local profile="$3"
+  local summary_path="${OUTPUT_ROOT}/${run_id}_summary.json"
+  local resolved_prefix="${DIRECT_S3A_PREFIX//<run_id>/${run_id}}"
+  local output_uri="s3a://${MINIO_BUCKET}/${resolved_prefix}"
+  local packages_args=""
+
+  if [[ -n "${S3A_PACKAGES}" ]]; then
+    packages_args="--packages '${S3A_PACKAGES}'"
+  fi
+
+  start_minio
+  start_cluster
+  compose run --rm m2-spark-driver /bin/bash -lc "
+    set -euo pipefail
+    python3 -m pip install --user --no-cache-dir -q 'pydantic>=2,<3' 'httpx==0.28.1'
+    /opt/spark/bin/spark-submit \
+      --master '${SPARK_MASTER}' \
+      --driver-memory '${DRIVER_MEMORY}' \
+      ${packages_args} \
+      /app/scripts/week2_m2_taxi_spark_local_evidence.py \
+      --input '${input_path}' \
+      --output-root '${OUTPUT_ROOT}' \
+      --profile '${profile}' \
+      --run-id '${run_id}' \
+      --master '${SPARK_MASTER}' \
+      --driver-memory '${DRIVER_MEMORY}' \
+      --disable-vectorized-reader \
+      --direct-s3a-output-uri '${output_uri}' \
+      --s3a-endpoint '${MINIO_CONTAINER_ENDPOINT}' \
+      --bucket '${MINIO_BUCKET}' \
+      --summary-path '${summary_path}'
+  "
+}
+
 case "${MODE}" in
   small)
     run_evidence "${SMALL_INPUT}" "run_taxi_docker_spark_small_001" "demo"
@@ -87,6 +127,12 @@ case "${MODE}" in
   minio-5gb)
     run_evidence "${SCALE_INPUT}" "run_taxi_docker_spark_minio_5gb_001" "local-full-month" "true"
     ;;
+  direct-s3a-small)
+    run_direct_s3a_evidence "${SMALL_INPUT}" "run_taxi_docker_spark_direct_s3a_small_001" "demo"
+    ;;
+  direct-s3a-5gb)
+    run_direct_s3a_evidence "${SCALE_INPUT}" "run_taxi_docker_spark_direct_s3a_5gb_001" "local-full-month"
+    ;;
   up)
     start_cluster
     compose ps
@@ -99,7 +145,7 @@ case "${MODE}" in
     compose down --remove-orphans
     ;;
   *)
-    echo "Usage: $0 [small|5gb|minio-small|minio-5gb|up|minio-up|down]" >&2
+    echo "Usage: $0 [small|5gb|minio-small|minio-5gb|direct-s3a-small|direct-s3a-5gb|up|minio-up|down]" >&2
     exit 2
     ;;
 esac
