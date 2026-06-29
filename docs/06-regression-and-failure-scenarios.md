@@ -98,6 +98,26 @@
 | Verification method | `docs/07` Week 2 M5 Airflow local smoke 점검과 `backend/tests/test_week2_airflow_adapter.py`를 확인한다. |
 | Related docs/interface/Phase | `docs/03`, `docs/07`, `backend/app/services/week2_airflow_adapter.py`, `docker-compose.airflow.yml` |
 
+### M4 Kafka replay 실패 row가 사라지는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | Kafka replay가 producer batch 오류를 만나면 실행 증거 JSON과 dead-letter JSONL에 실패 정보가 남아야 한다. |
+| Failure condition | replay 실패 뒤 `status=failed` 또는 `health.status=error`만 보이고 실패 row 원문을 찾을 경로가 없다. |
+| Expected behavior | `KafkaReplayEvidence.dead_letter_path`가 채워지고, `KAFKA_REPLAY_DEAD_LETTER_DIR/<run_id>.jsonl`에 실패 row의 `raw_value`, `topic`, `error`가 남는다. |
+| Verification method | `kafka-replay-console/server.mjs`의 `persistDeadLetter`와 `contracts/kafka_topic_contract.sample.json`의 `dead_letter_path`를 확인한다. |
+| Related docs/interface/Phase | `docs/03`, `contracts/kafka_topic_contract.sample.json`, `kafka-replay-console/server.mjs` |
+
+### M4 Kafka replay evidence가 무기한 쌓이는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | 로컬 Kafka replay evidence는 보관 기간을 환경변수로 조정할 수 있어야 한다. |
+| Failure condition | `data/results/week2/_metadata/kafka_replay/` 아래 실행 JSON이 계속 쌓이는데 삭제 기준을 설정할 수 없다. |
+| Expected behavior | `KAFKA_REPLAY_EVIDENCE_RETENTION_DAYS`가 1 이상이면 오래된 `<run_id>.json`과 dead-letter JSONL을 정리하고, `0`이면 자동 삭제를 끈다. |
+| Verification method | `.env.example`, `kafka-replay-console/server.mjs`의 `cleanupOldEvidence`를 확인한다. |
+| Related docs/interface/Phase | `.env.example`, `kafka-replay-console/server.mjs`, `docs/03` |
+
 ### Week 2 storage URI와 local fallback path가 다른 prefix를 가리키는 경우
 
 | 항목 | 내용 |

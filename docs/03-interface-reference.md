@@ -340,13 +340,26 @@ Each replay run produces `<run_id>.json` plus `latest.json`. The minimum `KafkaR
 | `batch_size` | yes | Producer batch size setting |
 | `key_column` | no | Kafka key source column, or `null` when Kafka chooses partitions |
 | `metrics.sent_rows` | yes | Rows successfully produced to Kafka |
+| `metrics.failed_rows` | yes | Kafka 재생 오류가 날 때 현재 producer batch에서 실패로 잡힌 row 수 |
+| `metrics.skipped_rows` | yes | 시작 row 또는 replay limit 때문에 건너뛴 row 수 |
 | `metrics.error_count` | yes | Replay job error count |
 | `metrics.throughput_per_second` | yes | Job-level rows/sec based on sent rows and elapsed runtime |
+| `dead_letter_path` | no | 실패 batch row JSONL 경로. 보통 `data/results/week2/_metadata/kafka_replay/dead-letter/<run_id>.jsonl` |
+| `retention.evidence_retention_days` | yes | `KAFKA_REPLAY_EVIDENCE_RETENTION_DAYS`에서 읽은 로컬 evidence 보관 일수. `0`이면 자동 삭제 없음 |
 | `lineage.source_file` | yes | Source file node |
 | `lineage.kafka_topic` | yes | Kafka target node |
 | `health.status` | yes | `running`, `ok`, or `error` for status center display |
 
-Kafka UI remains the live view for broker-side message count, consumer lag, and live throughput. `KafkaReplayEvidence` is the durable harness receipt that AskLake backend/report flows can read after the replay job.
+Kafka UI는 broker 쪽 message count, consumer lag, live throughput을 보는 화면이다. `KafkaReplayEvidence`는 replay job 뒤에 AskLake backend/report 흐름이 읽을 수 있는 지속 증거다. Kafka가 batch를 받기 전에 replay 오류가 나면, 실패한 producer batch row는 설정된 dead-letter JSONL 경로에 저장된다.
+
+M4 Kafka replay 환경변수:
+
+| 환경변수 | 의미 |
+| --- | --- |
+| `KAFKA_REPLAY_EVIDENCE_DIR` | `<run_id>.json`과 `latest.json`을 저장하는 경로 |
+| `KAFKA_REPLAY_DEAD_LETTER_DIR` | 실패 row JSONL을 저장하는 경로 |
+| `KAFKA_REPLAY_EVIDENCE_RETENTION_DAYS` | 로컬 evidence 자동 삭제 기준 일수. `0`이면 자동 삭제 없음 |
+| `KAFKA_LOG_RETENTION_HOURS` | local `docker-compose.yml`에서 쓰는 Kafka broker log 보관 시간 |
 
 Week 2 storage path pattern:
 
