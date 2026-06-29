@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any
 
 from app.adapters.fixture_catalog_source import FixtureCatalogSource
+from app.adapters.template_llm_adapter import TemplateLLMAdapter
 from app.domain.ai_query import (
     AIQueryResult,
     GuardrailResult,
@@ -12,13 +13,15 @@ from app.domain.ai_query import (
     SelectedDataset,
     SqlEngineContext,
 )
+from app.domain.llm_answer import LLMAnswerContext
 from app.domain.retrieval_index import RetrievalIndexHit
 from app.domain.target_contracts import now_iso
 from app.ports.catalog_source import CatalogSource
+from app.ports.llm_adapter import LLMAdapter
 from app.ports.sql_engine import SqlEngineAdapter
 from app.services.catalog_retriever import CatalogRetriever
-from app.services.query_router import QueryRouteDecision, QueryRouter
-from app.services.sql_planner import SqlPlan, SqlPlanner
+from app.services.query_router import QueryRouter
+from app.services.sql_planner import SqlPlanner
 
 
 class Week2AIQueryService:
@@ -29,6 +32,7 @@ class Week2AIQueryService:
         catalog_retriever: CatalogRetriever | None = None,
         sql_planner: SqlPlanner | None = None,
         query_router: QueryRouter | None = None,
+        llm_adapter: LLMAdapter | None = None,
         catalog_path: Path | None = None,
     ) -> None:
         self.sql_engine = sql_engine
@@ -36,6 +40,7 @@ class Week2AIQueryService:
         self.catalog_retriever = catalog_retriever or CatalogRetriever()
         self.sql_planner = sql_planner or SqlPlanner()
         self.query_router = query_router or QueryRouter()
+        self.llm_adapter = llm_adapter or TemplateLLMAdapter()
 
     def answer(self, question: str) -> AIQueryResult:
         retrieval = self.catalog_retriever.retrieve(question, self.catalog_source.list_catalogs())
@@ -93,6 +98,29 @@ class Week2AIQueryService:
             catalog,
             self._merged_terms(retrieval.reason_terms, route_decision.reason_terms),
         )
+        retrieval_trace = self._retrieval_trace_from_catalog(
+            catalog=catalog,
+            reason_terms=retrieval.reason_terms,
+            score=retrieval.score,
+            evidence_index=0,
+            index_hits=retrieval.index_hits,
+        )
+        summary = self._blocked_summary(guardrail)
+        if status == "succeeded" and guardrail.validation_status == "passed":
+            summary = self.llm_adapter.generate_summary(
+                LLMAnswerContext(
+                    question=question,
+                    route=route_decision.route,
+                    intent=plan.intent,
+                    status=status,
+                    sql=query_result.sql,
+                    query_result=query_result,
+                    rows=query_result.rows,
+                    evidence=evidence,
+                    retrieval_trace=retrieval_trace,
+                    guardrail=guardrail,
+                )
+            ).summary
 
         return AIQueryResult(
             tenant_id=catalog["tenant_id"],
@@ -100,18 +128,12 @@ class Week2AIQueryService:
             selected_datasets=[selected_dataset],
             evidence=evidence,
             route=route_decision.route,
-            retrieval_trace=self._retrieval_trace_from_catalog(
-                catalog=catalog,
-                reason_terms=retrieval.reason_terms,
-                score=retrieval.score,
-                evidence_index=0,
-                index_hits=retrieval.index_hits,
-            ),
+            retrieval_trace=retrieval_trace,
             status=status,
             sql=query_result.sql,
             query_result=query_result,
             rows=query_result.rows,
-            summary=self._summary(plan, query_result, guardrail, evidence[0], route_decision),
+            summary=summary,
             chart_spec=plan.chart_spec,
             guardrail=guardrail,
             executed_at=now_iso(),
@@ -201,53 +223,5 @@ class Week2AIQueryService:
             )
         return trace
 
-    def _summary(
-        self,
-        plan: SqlPlan,
-        query_result: QueryResult,
-        guardrail: GuardrailResult,
-        evidence: QueryEvidence,
-        route_decision: QueryRouteDecision,
-    ) -> str:
-        if guardrail.validation_status != "passed":
-            return f"질문을 SQL로 실행하지 못했습니다: {guardrail.failure_message}"
-
-        if route_decision.route == "rag":
-            return self._rag_summary(evidence)
-
-        if not query_result.rows:
-            return "SQL은 통과했지만 반환된 row가 없습니다."
-
-        first_row = query_result.rows[0]
-        product_id = first_row.get("product_id")
-        answer_by_intent = {
-            "top_count": f"{product_id} 상품이 리뷰 {first_row.get('review_count')}개로 가장 많습니다.",
-            "top_rating": f"{product_id} 상품이 평균 평점 {first_row.get('average_rating')}로 가장 높습니다.",
-            "top_risk": f"{product_id} 상품이 위험 점수 {first_row.get('risk_score')}로 가장 높습니다.",
-            "top_negative_review": f"{product_id} 상품이 부정 리뷰율 {first_row.get('negative_review_rate')}로 가장 높습니다.",
-            "low_conversion": f"{product_id} 상품이 전환율 {first_row.get('conversion_rate')}로 가장 낮습니다.",
-            "top_late_delivery": f"{product_id} 상품이 배송 지연율 {first_row.get('late_delivery_rate')}로 가장 높습니다.",
-        }
-        answer = answer_by_intent.get(plan.intent, f"{product_id} 상품이 선택된 지표에서 가장 우선순위가 높습니다.")
-        grounded = self._grounded_summary(answer, evidence)
-        if route_decision.route == "hybrid":
-            return f"{grounded} SQL 결과와 CatalogMetadata 근거를 함께 사용했습니다."
-        return grounded
-
-    def _rag_summary(self, evidence: QueryEvidence) -> str:
-        return self._grounded_summary("CatalogMetadata 근거로 스키마, 메트릭, 라인리지를 확인했습니다.", evidence)
-
-    def _grounded_summary(self, answer: str, evidence: QueryEvidence) -> str:
-        schema_names = [
-            str(field.get("name"))
-            for field in evidence.schema_fields
-            if field.get("name")
-        ]
-        evidence_parts = [f"dataset={evidence.dataset_id}"]
-        if evidence.run_id:
-            evidence_parts.append(f"run_id={evidence.run_id}")
-        if evidence.metrics.get("row_count") is not None:
-            evidence_parts.append(f"row_count={evidence.metrics['row_count']}")
-        if schema_names:
-            evidence_parts.append(f"schema={', '.join(schema_names)}")
-        return f"{answer} 근거: {'; '.join(evidence_parts)}."
+    def _blocked_summary(self, guardrail: GuardrailResult) -> str:
+        return f"질문을 SQL로 실행하지 못했습니다: {guardrail.failure_message}"

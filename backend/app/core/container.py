@@ -5,10 +5,12 @@ from app.adapters.duckdb_sql_engine import DuckDBSqlEngine
 from app.adapters.fixture_catalog_source import FixtureCatalogSource
 from app.adapters.local_result_store import LocalResultStore
 from app.adapters.sqlite_metadata_store import SQLiteMetadataStore
+from app.adapters.template_llm_adapter import TemplateLLMAdapter
 from app.adapters.week2_catalog_store_source import Week2CatalogStoreSource
 from app.core.settings import Settings
 from app.fakes.fake_sql_engine import FakeSqlEngine
 from app.ports.catalog_source import CatalogSource
+from app.ports.llm_adapter import LLMAdapter
 from app.ports.metadata_store import MetadataStore
 from app.ports.result_store import ResultStore
 from app.ports.sql_engine import SqlEngineAdapter
@@ -35,6 +37,7 @@ class AppContainer:
         self.catalog_source = self.create_catalog_source()
         self.catalog_retriever = self.create_catalog_retriever()
         self.sql_engine = self.create_sql_engine()
+        self.llm_adapter = self.create_llm_adapter()
         self.catalog_trust_service = self.create_catalog_trust_service()
         self.source_catalog_service = self.create_source_catalog_service()
         self.pipeline_service = self.create_pipeline_service()
@@ -67,6 +70,9 @@ class AppContainer:
             return DuckDBSqlEngine()
         return FakeSqlEngine()
 
+    def create_llm_adapter(self) -> LLMAdapter:
+        return TemplateLLMAdapter()
+
     def create_catalog_retriever(self) -> CatalogRetriever:
         return CatalogRetriever(
             retrieval_index=CatalogRetrievalIndex(
@@ -94,6 +100,7 @@ class AppContainer:
             self.sql_engine,
             catalog_source=self.catalog_source,
             catalog_retriever=self.catalog_retriever,
+            llm_adapter=self.llm_adapter,
         )
 
     def week2_output_root(self) -> Path:
