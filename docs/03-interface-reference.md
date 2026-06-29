@@ -428,6 +428,28 @@ Minimum M6 Hybrid Route policy:
 | schema, metric, lineage, catalog, or dataset explanation without a SQL metric request | `rag` | Do not call SQL validate/execute; answer from CatalogMetadata evidence only. |
 | forecast, future revenue, sentiment, or unsupported free-form request | `unsupported` | Do not call SQL/RAG answer path; return blocked guardrail result. |
 
+Minimum M6 LLM answer adapter boundary:
+
+```text
+M6 AI Query
+-> LLMAdapter
+-> TemplateLLMAdapter for MVP
+-> future env-gated provider adapter
+```
+
+| Field / Source | Included in `LLMAnswerContext` | Notes |
+| --- | --- | --- |
+| question | yes | Original user question. |
+| route and intent | yes | M6-owned route decision and SQL planner intent. |
+| SQL result | yes | Validated SQL, `QueryResult`, and returned rows after `SqlEngineAdapter` guardrails pass. |
+| Catalog evidence | yes | `AIQueryResult.evidence[]` only: dataset id, run id, safe URI, freshness, table name, schema fields, metrics, lineage, retrieval terms. |
+| retrieval trace | yes | `AIQueryResult.retrieval_trace[]` with score and matched terms. |
+| guardrail result | yes | Passed/blocked state and failure reason. |
+| SQL engine context | no | `SqlEngineContext.local_fallback_path`, timeout internals, and execution-only path data must not be sent to the LLM adapter. |
+| raw files and secrets | no | Whole source files, local fallback paths, API keys, credentials, and unauthorized columns must not enter prompt/context material. |
+
+The Week 2 default adapter is deterministic `TemplateLLMAdapter`; it performs no external network call and keeps current `AIQueryResult.summary` behavior stable for M1. A real provider adapter must be opt-in/env-gated in a later Phase, and blocked/unsupported answers must not call the LLM adapter.
+
 Minimum `AIQueryResult.evidence[]` grounding shape:
 
 | Field | Required | Notes |

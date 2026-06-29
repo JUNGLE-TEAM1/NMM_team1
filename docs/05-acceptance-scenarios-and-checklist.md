@@ -53,6 +53,7 @@ AskLake의 Target MVP 대표 성공 시나리오는 `Trusted Dataset -> Query/As
 - [ ] M6 `AIQueryResult`는 기존 `sql`, `query_result`, `rows`, `summary`, `evidence`를 유지하면서 `route`와 `retrieval_trace`로 어떤 경로와 CatalogMetadata 근거를 선택했는지 설명한다.
 - [ ] M6 Catalog RAG-lite index는 CatalogMetadata의 안전한 metadata chunk만 사용하고, `retrieval_trace`에 schema/metric/lineage 근거를 evidence와 연결해 남긴다.
 - [ ] M6 Hybrid Route는 SQL-only, RAG-only, Hybrid, Unsupported 질문을 구분하고, Hybrid는 SQL rows와 CatalogMetadata evidence를 함께 사용한다.
+- [ ] M6 답변 생성은 `LLMAdapter` 경계를 통과하되 Week 2 기본값은 외부 호출 없는 deterministic template adapter이며, adapter context에는 SQL rows, evidence, retrieval trace 같은 허용된 재료만 포함한다.
 - [ ] Week 2 M5 Airflow smoke는 실제 DAG 실행 결과 artifact를 backend가 읽고, `executor=airflow` run이 fallback 없이 Catalog lineage와 metrics를 갱신한다.
 - [ ] M2 Taxi local batch supporting evidence는 TLC Taxi Parquet 입력을 `gold_taxi_daily_metrics` Parquet output으로 만들고 row count, bytes, duration, output path를 기록한다. 이는 `gold_product_health` 대표 경로를 대체하지 않는다.
 
@@ -76,6 +77,7 @@ AskLake의 Target MVP 대표 성공 시나리오는 `Trusted Dataset -> Query/As
 - [ ] Ask route와 retrieval trace는 응답에 남아 UI나 report가 M6 scoring을 재계산하지 않아도 선택 근거를 표시할 수 있다.
 - [ ] Catalog RAG-lite index는 source of truth가 아니라 derived cache이며, CatalogMetadata `dataset_id + run_id + updated_at` 변경 시 stale로 보고 재생성된다.
 - [ ] RAG-only Ask는 SQL engine validate/execute를 호출하지 않고 CatalogMetadata evidence로만 답한다.
+- [ ] Blocked/Unsupported Ask는 외부 LLM 또는 LLM adapter를 호출하지 않고 보류 사유를 반환한다.
 - [ ] 근거가 부족한 답변은 성공처럼 표시되지 않고 보류 또는 `Insufficient Evidence`로 표시된다.
 - [ ] Query/Ask 결과는 evidence와 연결된다.
 
