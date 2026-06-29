@@ -20,8 +20,8 @@
 - main commit: origin/main `fe45130`
 - conflicts: none
 - validation: focused pytest, JSON fixture validation, `git diff --check`, `scripts/validate-harness.sh --strict`
-- result: local validation passed; 원격 pull/merge/rebase는 실행하지 않음
-- deferral reason: branch push/PR creation pending; merge/finalize/cleanup은 사람 확인 전 실행하지 않음
+- result: local validation passed; branch pushed and PR opened; 원격 pull/merge/rebase는 실행하지 않음
+- deferral reason: merge/finalize/cleanup은 사람 확인 전 실행하지 않음
 
 ## PR Conflict Resolution
 
@@ -41,8 +41,8 @@
 - issue creation result: created
 - issue project result: not checked
 - PR closing keyword: `Closes #287`
-- pushed branch: pending
-- PR link: pending
+- pushed branch: `fix-#287`
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/288
 - merge status: not merged
 - issue close status: open
 

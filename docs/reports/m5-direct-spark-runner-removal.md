@@ -8,7 +8,7 @@
 - Verified: TDD 실패 확인 후 workflow/catalog + M2 spark runner focused test 21 passed, 관련 JSON fixture validation passed, `git diff --check` passed, strict harness validation passed.
 - Remaining: Airflow DAG 내부 Spark 호출은 별도 Phase에서 다룬다.
 - Next context: Issue #287 / branch `fix-#287`. M2 `Week2SparkRunner` 자체는 유지되어 독립 smoke evidence로 남는다.
-- Risk: full backend suite와 remote CI는 PR에서 확인한다.
+- Risk: full backend suite와 remote CI는 PR #288에서 확인한다.
 
 ## Changed Files / 변경 파일
 
