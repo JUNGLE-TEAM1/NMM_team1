@@ -393,7 +393,7 @@ Minimum `AIQueryResult` route and retrieval trace shape:
 
 | Field | Required | Notes |
 | --- | --- | --- |
-| `route` | yes | `sql`, `rag`, `hybrid`, or `unsupported`. Current SQL-first M6 returns `sql` for supported SQL attempts and `unsupported` when no safe route exists. |
+| `route` | yes | `sql`, `rag`, `hybrid`, or `unsupported`. M6 Hybrid Route returns `sql` for metric/ranking questions, `hybrid` when a SQL question also asks for evidence/schema/lineage explanation, `rag` for CatalogMetadata-only explanation, and `unsupported` when no safe route exists. |
 | `retrieval_trace[]` | yes | Ordered explanation of the retrieval/route evidence used by M6. It may be empty only when no catalog/evidence source was available and the response is blocked. |
 | `retrieval_trace[].source_type` | yes | `catalog`, `schema`, `metric`, `lineage`, or `chunk` |
 | `retrieval_trace[].source_id` | yes | dataset id, field name, metric key, lineage id, or chunk id |
@@ -415,7 +415,16 @@ Minimum M6 Catalog RAG-lite index boundary:
 | freshness | yes | `updated_at` and freshness interval values |
 | storage/local path | no | `storage.local_fallback_path`, raw file paths, whole source files, secrets, credentials, and API keys must not be indexed |
 
-The M6 Catalog RAG-lite index is a derived cache, not the Catalog source of truth. Its cache signature is based on `dataset_id + lineage.run_id + updated_at`; when any of those values change, the index is stale and must be rebuilt before retrieval. The current Week 2 route remains SQL-first, but `retrieval_trace[]` may include additional `schema`, `metric`, or `lineage` items from the index.
+The M6 Catalog RAG-lite index is a derived cache, not the Catalog source of truth. Its cache signature is based on `dataset_id + lineage.run_id + updated_at`; when any of those values change, the index is stale and must be rebuilt before retrieval. `retrieval_trace[]` may include additional `schema`, `metric`, or `lineage` items from the index.
+
+Minimum M6 Hybrid Route policy:
+
+| Question shape | Route | Execution behavior |
+| --- | --- | --- |
+| metric/ranking/count question | `sql` | Plan, validate, and execute SELECT-only SQL through `SqlEngineAdapter`. |
+| metric/ranking/count question plus evidence/schema/lineage explanation request | `hybrid` | Execute SQL first, then ground the answer with Catalog RAG-lite evidence and retrieval trace. |
+| schema, metric, lineage, catalog, or dataset explanation without a SQL metric request | `rag` | Do not call SQL validate/execute; answer from CatalogMetadata evidence only. |
+| forecast, future revenue, sentiment, or unsupported free-form request | `unsupported` | Do not call SQL/RAG answer path; return blocked guardrail result. |
 
 Minimum `AIQueryResult.evidence[]` grounding shape:
 

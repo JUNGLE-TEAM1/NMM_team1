@@ -124,9 +124,19 @@
 | --- | --- |
 | Must not break | `AIQueryResult.route`는 실제 실행 경로를 나타내고, `retrieval_trace`는 선택된 evidence와 연결되어야 한다. |
 | Failure condition | SQL 실행 응답인데 route가 `rag`로 표시되거나, unsupported 질문이 `sql`로 표시되거나, trace의 `evidence_index`가 없는 evidence를 가리킨다. |
-| Expected behavior | SQL-first 응답은 `route=sql`, 지원하지 않는 질문은 `route=unsupported`를 반환한다. Catalog 기반 trace는 `source_type=catalog`, `source_id=<dataset_id>`, score, matched_terms, evidence index를 포함한다. |
-| Verification method | `backend/tests/test_week2_ai_query.py` route/retrieval_trace regression과 `contracts/ai_query_result.sample.json`을 확인한다. |
+| Expected behavior | SQL-only 응답은 `route=sql`, SQL+근거 응답은 `route=hybrid`, CatalogMetadata 설명 응답은 `route=rag`, 지원하지 않는 질문은 `route=unsupported`를 반환한다. Catalog 기반 trace는 `source_type=catalog`, `source_id=<dataset_id>`, score, matched_terms, evidence index를 포함한다. |
+| Verification method | `backend/tests/test_query_router.py`, `backend/tests/test_week2_ai_query.py` route/retrieval_trace regression과 `contracts/ai_query_result.sample.json`을 확인한다. |
 | Related docs/interface/Phase | `docs/03`, `docs/05`, `contracts/ai_query_result.sample.json`, M6 response contract |
+
+### M6 RAG-only route가 SQL engine을 호출하는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | schema/metric/lineage/catalog 설명만 필요한 질문은 SQL validate/execute를 호출하지 않는다. |
+| Failure condition | `route=rag` 응답에서 SQL이 생성되거나, SQL engine validate/execute가 호출되거나, SQL guardrail 실패를 RAG 설명 실패처럼 표시한다. |
+| Expected behavior | `route=rag`, `status=succeeded`, empty SQL/query rows, passed guardrail, CatalogMetadata 기반 summary와 retrieval trace를 반환한다. |
+| Verification method | `backend/tests/test_query_router.py`, `backend/tests/test_week2_ai_query.py`의 RAG-only no-SQL regression을 확인한다. |
+| Related docs/interface/Phase | `docs/03`, `docs/05`, M6 Hybrid Route |
 
 ### M6 Catalog RAG-lite index가 안전하지 않은 데이터를 인덱싱하는 경우
 
