@@ -1,0 +1,52 @@
+# M6 LLM Answer Adapter Git Sync
+
+main 동기화와 integration readiness를 기록한다.
+PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행할 수 있다.
+사람 확인 없이 pull, merge, rebase, PR merge, finalize, issue close, branch cleanup action을 실행하지 않는다.
+
+## Start Sync / 시작 sync
+
+- main branch: main
+- current branch: feature/m6-llm-answer-adapter
+- base commit: 8de2436
+- pulled at:
+- command:
+- result: Workspace created from feature/m6-llm-answer-adapter at 8de2436; 자동 pull/merge/rebase는 실행하지 않음.
+
+## Mid-Phase Sync Checks / 진행 중 sync 확인
+
+| Checked At | Upstream Changes | Impacted Source of Truth | Action |
+| --- | --- | --- | --- |
+| 2026-06-29 | `main...origin/main` clean at Phase start | none | pull/merge/rebase 없이 `8de2436`에서 branch 생성 |
+
+## Pre-Merge Sync
+
+- main commit: `31cf417`
+- conflicts: none; `git merge origin/main` completed with ort auto-merge
+- validation: full backend `106 passed, 1 skipped`; `jq -e . contracts/*.sample.json`; `python -m compileall -q backend/app`; `git diff --check`; `scripts/validate-harness.sh --strict`
+- result: latest `origin/main` merged into `feature/m6-llm-answer-adapter`; ready for PR creation and merge flow
+- deferral reason:
+
+## PR Conflict Resolution
+
+- conflict detected at:
+- conflict detection command:
+- conflict type:
+- affected files:
+- resolution path:
+- resolved files:
+- revalidation:
+- remaining risk:
+
+## Push / PR
+
+- linked GitHub issue: #279
+- issue link: https://github.com/JUNGLE-TEAM1/NMM_team1/issues/279
+- issue creation result: created via `gh issue create`
+- issue project result: failed: error: your authentication token is missing required scopes [read:project] To request it, run:  gh auth refresh -s read:project
+- PR closing keyword: Closes #279
+- pushed branch: feature/m6-llm-answer-adapter
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/280
+- merge status: open
+- issue close status: open
+- issue reopen result: already open

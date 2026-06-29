@@ -7,6 +7,7 @@ from app.adapters.sqlite_metadata_store import SQLiteMetadataStore
 from app.core.app_factory import create_app
 from app.core.settings import Settings
 from app.domain.ai_query import SqlEngineContext
+from app.domain.llm_answer import LLMAnswer, LLMAnswerContext
 from app.fakes.fake_sql_engine import FakeSqlEngine
 from app.services.ai_query import Week2AIQueryService
 
@@ -34,6 +35,21 @@ class FailingSqlEngine(FakeSqlEngine):
 
     def execute(self, sql: str, context: SqlEngineContext):
         raise AssertionError("Unsupported questions must not call the SQL engine")
+
+
+class RecordingLLMAdapter:
+    def __init__(self, summary: str = "adapter-generated summary") -> None:
+        self.summary = summary
+        self.contexts: list[LLMAnswerContext] = []
+
+    def generate_summary(self, context: LLMAnswerContext) -> LLMAnswer:
+        self.contexts.append(context)
+        return LLMAnswer(summary=self.summary, source="template", used_evidence_indexes=[0])
+
+
+class FailingLLMAdapter:
+    def generate_summary(self, context: LLMAnswerContext) -> LLMAnswer:
+        raise AssertionError("Blocked answers must not call the LLM adapter")
 
 
 def _review_catalog(dataset_id: str, name: str, run_id: str) -> dict[str, object]:
@@ -301,6 +317,92 @@ def test_week2_ai_query_passes_catalog_local_fallback_path_to_sql_context() -> N
         sql_engine.validated_contexts[0].local_fallback_path
         == "/tmp/dataset_reviews_with_path/run_reviews_with_path_001/reviews_gold.jsonl"
     )
+
+
+def test_week2_ai_query_uses_llm_adapter_for_successful_answer_context() -> None:
+    catalog = _review_catalog(
+        "dataset_reviews_with_path",
+        "Reviews With Path",
+        "run_reviews_with_path_001",
+    )
+    llm_adapter = RecordingLLMAdapter()
+    service = Week2AIQueryService(
+        sql_engine=FakeSqlEngine(),
+        catalog_source=InMemoryCatalogSource(catalog),
+        llm_adapter=llm_adapter,
+    )
+
+    result = service.answer("리뷰가 가장 많은 상품 알려줘")
+
+    assert result.status == "succeeded"
+    assert result.summary == "adapter-generated summary"
+    assert len(llm_adapter.contexts) == 1
+    context = llm_adapter.contexts[0]
+    assert context.question == "리뷰가 가장 많은 상품 알려줘"
+    assert context.route == "sql"
+    assert context.intent == "top_count"
+    assert context.sql == result.sql
+    assert context.rows == result.rows
+    assert context.evidence[0].dataset_id == "dataset_reviews_with_path"
+    assert context.retrieval_trace[0].source_id == "dataset_reviews_with_path"
+
+
+def test_week2_ai_query_does_not_send_local_path_to_llm_adapter_context() -> None:
+    catalog = _review_catalog(
+        "dataset_reviews_with_path",
+        "Reviews With Path",
+        "run_reviews_with_path_001",
+    )
+    llm_adapter = RecordingLLMAdapter()
+    service = Week2AIQueryService(
+        sql_engine=FakeSqlEngine(),
+        catalog_source=InMemoryCatalogSource(catalog),
+        llm_adapter=llm_adapter,
+    )
+
+    service.answer("리뷰가 가장 많은 상품 알려줘")
+
+    context_json = llm_adapter.contexts[0].model_dump_json()
+    assert "local_fallback_path" not in context_json
+    assert "/tmp/dataset_reviews_with_path" not in context_json
+    assert "reviews_gold.jsonl" not in context_json
+
+
+def test_week2_ai_query_skips_llm_adapter_when_sql_route_is_blocked() -> None:
+    catalog = _review_catalog(
+        "dataset_reviews_without_path",
+        "Reviews Without Path",
+        "run_reviews_without_path_001",
+    )
+    catalog["storage"] = {}
+    service = Week2AIQueryService(
+        sql_engine=FakeSqlEngine(),
+        catalog_source=InMemoryCatalogSource(catalog),
+        llm_adapter=FailingLLMAdapter(),
+    )
+
+    result = service.answer("리뷰가 가장 많은 상품 알려줘")
+
+    assert result.status == "blocked"
+    assert result.guardrail.failure_code == "local_path_missing"
+
+
+def test_week2_ai_query_skips_llm_adapter_when_question_is_unsupported() -> None:
+    catalog = _review_catalog(
+        "dataset_reviews_with_path",
+        "Reviews With Path",
+        "run_reviews_with_path_001",
+    )
+    service = Week2AIQueryService(
+        sql_engine=FailingSqlEngine(),
+        catalog_source=InMemoryCatalogSource(catalog),
+        llm_adapter=FailingLLMAdapter(),
+    )
+
+    result = service.answer("내일 매출을 예측해줘")
+
+    assert result.status == "blocked"
+    assert result.route == "unsupported"
 
 
 def test_week2_ai_query_blocks_when_catalog_local_fallback_path_is_missing() -> None:

@@ -168,6 +168,16 @@
 | Verification method | `backend/tests/test_catalog_retrieval_index.py`, `backend/tests/test_week2_ai_query.py`의 RAG-lite trace regression을 확인한다. |
 | Related docs/interface/Phase | `docs/03`, `docs/05`, `contracts/ai_query_result.sample.json`, M6 Catalog RAG Index |
 
+### M6 LLM adapter가 안전하지 않은 context 또는 외부 호출을 사용하는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | Week 2 기본 답변 생성은 외부 호출 없는 deterministic `TemplateLLMAdapter`를 사용하고, LLM context에는 허용된 SQL rows, evidence, retrieval trace만 들어간다. |
+| Failure condition | `SqlEngineContext.local_fallback_path`, 실제 파일 내용, API key, credential, secret, 허용되지 않은 컬럼이 LLM context/prompt에 들어간다. 또는 blocked/unsupported 응답에서 LLM adapter를 호출한다. |
+| Expected behavior | 성공한 SQL/RAG/Hybrid 응답만 `LLMAdapter.generate_summary()`를 호출한다. blocked/unsupported는 M6 내부 보류 summary를 반환한다. 기본 adapter의 `external_calls_enabled`는 false다. |
+| Verification method | `backend/tests/test_week2_ai_query.py`의 LLM adapter context regression과 `backend/tests/test_app_container.py`의 default adapter test를 확인한다. |
+| Related docs/interface/Phase | `docs/03`, `docs/05`, M6 LLM Answer Adapter |
+
 ### Mock/Fake Boundary를 넘어 실제 접근으로 진행되는 경우
 
 | 항목 | 내용 |

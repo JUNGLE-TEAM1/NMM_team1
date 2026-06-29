@@ -91,6 +91,7 @@ report가 늘어나면 영역별 최신 report index를 작게 유지한다. 이
 | M6 response contract route trace | [`m6-response-contract-trace.md`](m6-response-contract-trace.md) | M6 Step 5에서 `AIQueryResult.route`와 `retrieval_trace` additive response contract를 확인 |
 | M6 Catalog RAG Index | [`m6-catalog-rag-index.md`](m6-catalog-rag-index.md) | M6 Step 6에서 CatalogMetadata 기반 RAG-lite index, safe chunk, stale cache, richer retrieval trace를 확인 |
 | M6 Hybrid Route | [`m6-hybrid-route.md`](m6-hybrid-route.md) | M6 Step 7에서 SQL/RAG/Hybrid/Unsupported route 분기와 RAG-only no-SQL behavior를 확인 |
+| M6 LLM Answer Adapter | [`m6-llm-answer-adapter.md`](m6-llm-answer-adapter.md) | M6 Step 8에서 safe `LLMAnswerContext`, deterministic template adapter, blocked/unsupported no-adapter-call behavior를 확인 |
 | M1 live UI Phase plan | [`m1-live-ui-phase-plan.md`](m1-live-ui-phase-plan.md) | M1 shell 이후 Week2 M5/M6 API 연결과 발표 클릭 흐름을 5개 작은 Phase로 나눈 기준 확인 |
 | M1 Week2 API Client 연결 | [`m1-week2-api-client.md`](m1-week2-api-client.md) | M1 live UI Phase 1에서 Week2 M5/M6 API client와 frontend export를 추가한 결과 확인 |
 | M1 Run Status Live UI | [`m1-run-status-live-ui.md`](m1-run-status-live-ui.md) | M1 live UI Phase 2에서 `/runs` 화면이 M5 workflow 실행/refresh와 ExecutionResult 표시를 소비하는지 확인 |
