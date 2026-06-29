@@ -69,6 +69,8 @@ import {
 } from "./m1StaticShellData";
 import "./styles.css";
 
+const WEEK2_DEFAULT_CATALOG_DETAIL_URL = `/catalog/${WEEK2_DEFAULT_DATASET_ID}`;
+
 const navItems = [
   {
     path: "/sources",
@@ -108,16 +110,39 @@ const navItems = [
   },
 ];
 
+const PRODUCT_HEALTH_DATASET_ID = "dataset_product_health_gold";
+
 const stepIcons = {
   source: Database,
   schema: FileJson,
   workflow: GitBranch,
 };
 
-const demoQuestions = [
-  "Amazon reviews에서 평점 높은 상품 알려줘",
-  "리뷰가 가장 많은 상품 알려줘",
-  "Amazon reviews의 product_id별 review_count를 보여줘",
+const demoQuestionGroups = [
+  {
+    title: "Product Health SQL intents",
+    tone: "primary",
+    questions: [
+      ["top_risk", "위험 점수가 높고 부정 리뷰, 낮은 구매 전환, 배송 지연이 겹친 문제 상품군을 찾아줘."],
+      ["top_negative_review", "부정 리뷰율이 가장 높은 상품을 보여줘."],
+      ["low_conversion", "구매 전환율이 가장 낮은 상품을 찾아줘."],
+      ["top_late_delivery", "배송 지연율이 가장 높은 상품을 알려줘."],
+    ],
+  },
+  {
+    title: "Unsupported guardrail",
+    tone: "warning",
+    questions: [["unsupported", "다음 분기 매출을 예측하고 광고 문구까지 생성해줘."]],
+  },
+  {
+    title: "Legacy reviews path",
+    tone: "secondary",
+    questions: [
+      ["legacy_rating", "Amazon reviews에서 평점 높은 상품 알려줘"],
+      ["legacy_count", "리뷰가 가장 많은 상품 알려줘"],
+      ["legacy_table", "Amazon reviews의 product_id별 review_count를 보여줘"],
+    ],
+  },
 ];
 
 function normalizePath(pathname) {
@@ -159,7 +184,7 @@ export function App() {
 
   function navigate(path) {
     const nextPath = normalizePath(path);
-    const displayPath = routeToUrl(nextPath);
+    const displayPath = path.startsWith("/catalog/") ? path : routeToUrl(nextPath);
     window.history.pushState({}, "", displayPath);
     setActivePath(nextPath);
   }
@@ -273,7 +298,7 @@ function routeToUrl(path) {
   if (path === "/etl-visual") return "/etl/visual";
   if (path === "/runs") return "/etl";
   if (path === "/ask") return "/query";
-  if (path === "/catalog-detail") return "/catalog/dataset_reviews_gold";
+  if (path === "/catalog-detail") return WEEK2_DEFAULT_CATALOG_DETAIL_URL;
   return path;
 }
 
@@ -904,7 +929,7 @@ function compactJson(value) {
   return JSON.stringify(value, null, 2);
 }
 
-function useWeek2CatalogState() {
+function useWeek2CatalogState(datasetId = WEEK2_DEFAULT_DATASET_ID) {
   const [catalogState, setCatalogState] = useState({
     catalog: null,
     error: "",
@@ -914,7 +939,7 @@ function useWeek2CatalogState() {
   async function refreshCatalog() {
     setCatalogState((previous) => ({ ...previous, error: "", loading: true }));
     try {
-      const catalog = await getWeek2Catalog();
+      const catalog = await getWeek2Catalog(datasetId);
       setCatalogState({ catalog, error: "", loading: false });
     } catch (error) {
       setCatalogState((previous) => ({
@@ -930,7 +955,7 @@ function useWeek2CatalogState() {
 
     async function loadCatalog() {
       try {
-        const catalog = await getWeek2Catalog();
+        const catalog = await getWeek2Catalog(datasetId);
         if (isMounted) setCatalogState({ catalog, error: "", loading: false });
       } catch (error) {
         if (isMounted) setCatalogState({ catalog: null, error: error.message, loading: false });
@@ -941,9 +966,102 @@ function useWeek2CatalogState() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [datasetId]);
 
   return { catalogState, refreshCatalog };
+}
+
+function productHealthReadiness(catalog, error, loading) {
+  const hasCatalog = Boolean(catalog);
+  const hasLocalPath = Boolean(catalog?.storage?.local_fallback_path);
+  const hasAllowedColumns = Boolean(catalog?.query?.allowed_columns?.length);
+  const allowsReadonlySql = Boolean(catalog?.query?.allow_readonly_sql);
+  const hasLineage = Boolean(catalog?.lineage?.run_id);
+  const ready = hasCatalog && hasLocalPath && hasAllowedColumns && allowsReadonlySql && hasLineage;
+
+  if (loading) {
+    return {
+      status: "checking",
+      title: "Product Health Gold 확인 중",
+      body: `${PRODUCT_HEALTH_DATASET_ID} CatalogMetadata를 조회하고 있습니다.`,
+      checks: [
+        ["CatalogMetadata", "checking", "M5 Catalog 조회 중"],
+        ["Gold local path", "checking", "storage.local_fallback_path 확인 중"],
+        ["Query contract", "checking", "allowlist 확인 중"],
+        ["Lineage", "checking", "run_id 확인 중"],
+      ],
+    };
+  }
+
+  if (!hasCatalog) {
+    const missingBody = `${PRODUCT_HEALTH_DATASET_ID} CatalogMetadata가 없습니다. M2/M3/M5가 gold_product_health output과 Catalog lineage를 먼저 닫아야 합니다.`;
+    return {
+      status: "missing",
+      title: "Product Health Gold가 아직 준비되지 않았습니다",
+      body: error ? `${missingBody} (${error})` : missingBody,
+      checks: [
+        ["CatalogMetadata", "missing", "M5 Catalog 등록 필요"],
+        ["Gold output", "missing", "M3 TransformSpec과 M2 runtime output 필요"],
+        ["Query evidence", "missing", "M6가 읽을 local fallback path 없음"],
+        ["Next owner", "missing", "M2/M3/M5 통합 후 M1 재확인"],
+      ],
+    };
+  }
+
+  return {
+    status: ready ? "ready" : "partial",
+    title: ready ? "Product Health Gold query 준비됨" : "Product Health Gold evidence가 일부 부족합니다",
+    body: ready
+      ? "CatalogMetadata, lineage, local fallback path, readonly SQL allowlist가 모두 보입니다."
+      : "Catalog는 보이지만 local path, allowed columns, lineage 중 일부가 빠져 있어 성공으로 표시하지 않습니다.",
+    checks: [
+      ["CatalogMetadata", "ready", catalog.dataset_id],
+      ["Gold local path", hasLocalPath ? "ready" : "missing", catalog.storage?.local_fallback_path || "storage.local_fallback_path 필요"],
+      ["Query contract", hasAllowedColumns && allowsReadonlySql ? "ready" : "missing", catalog.query?.table_name || "allowed_columns 또는 allow_readonly_sql 필요"],
+      ["Lineage", hasLineage ? "ready" : "missing", catalog.lineage?.run_id || "M5 lineage.run_id 필요"],
+    ],
+  };
+}
+
+function demoReadinessItems(readiness) {
+  const checkState = Object.fromEntries(readiness.checks.map(([label, state, detail]) => [label, { state, detail }]));
+  const catalogReady = checkState.CatalogMetadata?.state === "ready";
+  const goldOutputReady = checkState["Gold output"]?.state === "ready" || checkState["Gold local path"]?.state === "ready";
+  const lineageReady = checkState.Lineage?.state === "ready";
+  const queryReady = readiness.status === "ready";
+
+  return [
+    {
+      module: "M2",
+      label: "Runtime evidence",
+      state: goldOutputReady ? "ready" : readiness.status === "checking" ? "unknown" : "not-ready",
+      detail: goldOutputReady ? "Gold output local path 확인됨" : "source별 runtime output evidence 대기",
+    },
+    {
+      module: "M3",
+      label: "Gold semantics",
+      state: goldOutputReady ? "unknown" : "not-ready",
+      detail: goldOutputReady ? "metric 의미 최종 확인 필요" : "gold_product_health TransformSpec/output 대기",
+    },
+    {
+      module: "M5",
+      label: "Catalog lineage",
+      state: catalogReady && lineageReady ? "ready" : readiness.status === "checking" ? "unknown" : "not-ready",
+      detail: catalogReady && lineageReady ? "CatalogMetadata와 run_id 확인됨" : "dataset_product_health_gold Catalog lineage 대기",
+    },
+    {
+      module: "M6",
+      label: "SQL evidence",
+      state: queryReady ? "ready" : readiness.status === "checking" ? "unknown" : "blocked",
+      detail: queryReady ? "readonly SQL + local fallback 실행 가능" : "Product Health SQL success smoke 대기",
+    },
+    {
+      module: "M1",
+      label: "Browser smoke",
+      state: "ready",
+      detail: "CTA/readiness UI smoke 가능, 실제 SQL success는 upstream 준비 후 재확인",
+    },
+  ];
 }
 
 function catalogQualityRows(catalog) {
@@ -1125,7 +1243,7 @@ function RunStatusPage({ navigate }) {
             <p>{currentRun.run_id} 실행 결과가 만든 dataset metadata를 확인한 뒤 AI Query로 이어갑니다.</p>
           </div>
           <div className="handoff-actions">
-            <button type="button" className="primary-action" onClick={() => navigate("/catalog-detail")}>
+            <button type="button" className="primary-action" onClick={() => navigate(WEEK2_DEFAULT_CATALOG_DETAIL_URL)}>
               Catalog detail
               <ArrowRight size={16} />
             </button>
@@ -1477,9 +1595,18 @@ function RawJsonBlock({ title, value }) {
 function CatalogPage({ navigate }) {
   const [selectedTag, setSelectedTag] = useState("전체");
   const { catalogState, refreshCatalog } = useWeek2CatalogState();
+  const {
+    catalogState: productHealthCatalogState,
+    refreshCatalog: refreshProductHealthCatalog,
+  } = useWeek2CatalogState(PRODUCT_HEALTH_DATASET_ID);
   const tags = ["전체", "bronze", "silver", "gold"];
   const catalog = catalogState.catalog;
   const isVisible = selectedTag === "전체" || selectedTag === (catalog?.layer || m1CatalogPlaceholder.layer);
+  const productHealthStatus = productHealthReadiness(
+    productHealthCatalogState.catalog,
+    productHealthCatalogState.error,
+    productHealthCatalogState.loading,
+  );
 
   return (
     <div className="page-stack">
@@ -1511,6 +1638,12 @@ function CatalogPage({ navigate }) {
       {catalogState.loading ? (
         <EmptyState icon={Loader2} title="CatalogMetadata 조회 중" body={WEEK2_DEFAULT_DATASET_ID} />
       ) : null}
+      <ProductHealthReadinessPanel
+        readiness={productHealthStatus}
+        onRefresh={refreshProductHealthCatalog}
+        loading={productHealthCatalogState.loading}
+        compact={false}
+      />
       {catalog && isVisible ? (
         <>
           <section className="catalog-feature">
@@ -1549,6 +1682,18 @@ function CatalogPage({ navigate }) {
               <code>{catalog.s3_uri}</code>
             </div>
             <p>{catalog.storage?.local_fallback_path}</p>
+          </section>
+          <section className="runtime-readiness-panel">
+            <div>
+              <p className="eyebrow">M6 query readiness</p>
+              <h3>DuckDB Query가 읽을 evidence 확인</h3>
+              <p>AI Query는 CatalogMetadata의 read-only SQL 계약과 local fallback output을 기준으로 실행됩니다.</p>
+            </div>
+            <div className="runtime-check-list">
+              <RuntimeCheck label="local output" ready={Boolean(catalog.storage?.local_fallback_path)} />
+              <RuntimeCheck label="readonly SQL" ready={Boolean(catalog.query?.allow_readonly_sql)} />
+              <RuntimeCheck label="lineage" ready={Boolean(catalog.lineage?.run_id)} />
+            </div>
           </section>
           <DataTable columns={["field", "type", "nullable"]} rows={catalogSchemaRows(catalog)} />
         </>
@@ -1701,6 +1846,21 @@ function AiQueryPage({ navigate, setNotice }) {
     ? queryResult.columns.map((column) => column.name)
     : Object.keys(rows[0] || {});
   const evidence = queryState.result?.evidence || [];
+  const route = queryState.result?.route;
+  const retrievalTrace = Array.isArray(queryState.result?.retrieval_trace)
+    ? queryState.result.retrieval_trace
+    : [];
+  const routeIsExecutableSql = route === "sql" && queryState.result?.status === "succeeded";
+  const displaySql = queryState.result
+    ? queryDisplaySql(queryResult?.sql ?? queryState.result.sql)
+    : m1AiQueryPlaceholder.sql;
+  const { catalogState: productHealthCatalogState, refreshCatalog: refreshProductHealthCatalog } =
+    useWeek2CatalogState(PRODUCT_HEALTH_DATASET_ID);
+  const productHealthStatus = productHealthReadiness(
+    productHealthCatalogState.catalog,
+    productHealthCatalogState.error,
+    productHealthCatalogState.loading,
+  );
 
   async function submitQuery(nextQuestion = queryText) {
     const question = nextQuestion.trim();
@@ -1750,18 +1910,29 @@ function AiQueryPage({ navigate, setNotice }) {
             {queryState.loading ? "실행 중" : "질문 실행"}
           </button>
           {queryState.error ? <p className="form-error">{queryState.error}</p> : null}
-          <div className="demo-question-list" aria-label="Demo question candidates">
-            {demoQuestions.map((question) => (
-              <button
-                key={question}
-                type="button"
-                className="ghost-action"
-                onClick={() => submitQuery(question)}
-                disabled={queryState.loading}
-              >
-                <Sparkles size={14} />
-                {question}
-              </button>
+          <div className="demo-question-groups" aria-label="Product Health demo question candidates">
+            {demoQuestionGroups.map((group) => (
+              <section key={group.title} className={`demo-question-group ${group.tone}`}>
+                <div className="demo-question-heading">
+                  <span>{group.title}</span>
+                  <small>{group.tone === "warning" ? "blocked route" : group.tone === "primary" ? "SQL route" : "supporting path"}</small>
+                </div>
+                <div className="demo-question-list">
+                  {group.questions.map(([intent, question]) => (
+                    <button
+                      key={intent}
+                      type="button"
+                      className={`ghost-action ${group.tone === "warning" ? "warning" : ""}`}
+                      onClick={() => submitQuery(question)}
+                      disabled={queryState.loading}
+                    >
+                      <Sparkles size={14} />
+                      <span>{question}</span>
+                      <small>{intent}</small>
+                    </button>
+                  ))}
+                </div>
+              </section>
             ))}
           </div>
         </div>
@@ -1779,7 +1950,23 @@ function AiQueryPage({ navigate, setNotice }) {
           {queryState.result?.guardrail?.failure_message ? (
             <p className="form-error">{queryState.result.guardrail.failure_message}</p>
           ) : null}
-          <code>{queryResult?.sql || queryState.result?.sql || m1AiQueryPlaceholder.sql}</code>
+          {route && !routeIsExecutableSql ? (
+            <p className="runtime-warning">
+              Query route가 `{route}`로 분기되어 SQL 성공 결과처럼 처리하지 않습니다.
+            </p>
+          ) : null}
+          {isMissingLocalPathError(queryState.error) ? (
+            <p className="runtime-warning">
+              Catalog output file이 아직 없어서 SQL 실행이 차단됐습니다. 먼저 실행/모니터링에서 Week2 workflow를 성공시킨 뒤 다시 질문하세요.
+            </p>
+          ) : null}
+          <code>{displaySql}</code>
+          <div className="runtime-check-list compact">
+            <RuntimeCheck label="DuckDB runtime" ready={isDuckDbEngine(queryResult?.engine)} />
+            <RuntimeCheck label={`route=${route || "pending"}`} ready={routeIsExecutableSql} />
+            <RuntimeCheck label="SQL rows" ready={rows.length > 0} />
+            <RuntimeCheck label="evidence" ready={evidence.length > 0} />
+          </div>
           <div className="segmented-control">
             {["table", "chart"].map((mode) => (
               <button
@@ -1796,6 +1983,13 @@ function AiQueryPage({ navigate, setNotice }) {
           <p>Chart spec: {formatChartSpec(queryState.result?.chart_spec)}</p>
         </div>
       </section>
+      <ProductHealthReadinessPanel
+        readiness={productHealthStatus}
+        onRefresh={refreshProductHealthCatalog}
+        loading={productHealthCatalogState.loading}
+        compact
+      />
+      <DemoReadinessPanel items={demoReadinessItems(productHealthStatus)} />
       {queryState.result ? (
         <section className="ask-result-stack">
           <div className="grid three">
@@ -1804,7 +1998,12 @@ function AiQueryPage({ navigate, setNotice }) {
               value={queryState.result.selected_datasets?.[0]?.dataset_id}
               detail={queryState.result.selected_datasets?.[0]?.reason}
             />
-            <InfoCard title="Engine" value={queryResult?.engine} detail="M6 SqlEngineAdapter" />
+            <InfoCard title="Engine" value={queryRuntimeLabel(queryResult)} detail={queryRuntimeDetail(queryResult)} />
+            <InfoCard
+              title="Route"
+              value={route || "pending"}
+              detail={routeDetail(queryState.result)}
+            />
             <InfoCard
               title="Rows"
               value={formatMetric(queryResult?.row_count ?? rows.length)}
@@ -1848,6 +2047,8 @@ function AiQueryPage({ navigate, setNotice }) {
             </section>
           )}
 
+          <RetrievalTracePanel trace={retrievalTrace} route={route} />
+
           <section className="evidence-grid">
             {evidence.map((item) => (
               <EvidenceCard key={`${item.dataset_id}:${item.run_id || item.s3_uri || item.table_name}`} evidence={item} />
@@ -1872,6 +2073,53 @@ function queryStatusBadgeClass(result) {
   return "blue";
 }
 
+function queryRouteBadgeClass(route) {
+  if (route === "sql") return "green";
+  if (route === "unsupported") return "orange";
+  if (route === "rag" || route === "hybrid") return "blue";
+  return "gray";
+}
+
+function routeDetail(result) {
+  if (!result?.route) return "M6 route 대기";
+  if (result.route === "sql" && result.status === "succeeded") return "SQL runtime으로 실행됨";
+  if (result.route === "unsupported") return "지원하지 않는 질문으로 SQL 실행 차단";
+  return `${formatMetric(result.status)} 상태로 처리`;
+}
+
+function queryDisplaySql(sql) {
+  if (typeof sql === "string" && sql.trim()) return sql;
+  return "SQL not generated: blocked or unsupported route";
+}
+
+function isDuckDbEngine(engine) {
+  return String(engine || "").toLowerCase() === "duckdb";
+}
+
+function queryRuntimeLabel(queryResult) {
+  if (!queryResult?.engine) return "대기";
+  return queryResult.engine;
+}
+
+function queryRuntimeDetail(queryResult) {
+  if (!queryResult?.engine) return "질문 실행 후 runtime 표시";
+  if (isDuckDbEngine(queryResult.engine)) return "M6 DuckDB 실제 SQL runtime";
+  return "fallback 또는 test SqlEngineAdapter";
+}
+
+function isMissingLocalPathError(message) {
+  return String(message || "").includes("local_path_missing");
+}
+
+function RuntimeCheck({ label, ready }) {
+  return (
+    <span className={`runtime-check ${ready ? "ready" : "pending"}`}>
+      {ready ? <ShieldCheck size={13} /> : <AlertCircle size={13} />}
+      {label}
+    </span>
+  );
+}
+
 function formatChartSpec(chartSpec) {
   if (!chartSpec) return m1AiQueryPlaceholder.chart_spec;
   return `${formatMetric(chartSpec.type)} / ${formatMetric(chartSpec.x)} -> ${formatMetric(chartSpec.y)}`;
@@ -1879,6 +2127,114 @@ function formatChartSpec(chartSpec) {
 
 function queryRows(rows, columns) {
   return rows.map((row) => columns.map((column) => formatMetric(row[column])));
+}
+
+function RetrievalTracePanel({ trace, route }) {
+  return (
+    <section className="retrieval-trace-panel">
+      <header>
+        <div>
+          <p className="eyebrow">Retrieval trace</p>
+          <h3>M6가 선택한 evidence 경로</h3>
+        </div>
+        <span className={`badge ${queryRouteBadgeClass(route)}`}>route={route || "pending"}</span>
+      </header>
+      {trace.length ? (
+        <div className="retrieval-trace-list">
+          {trace.map((item, index) => (
+            <article key={`${item.source_type || "source"}:${item.source_id || index}:${item.evidence_index ?? index}`}>
+              <div className="trace-node-icon">
+                <Route size={16} />
+              </div>
+              <div>
+                <div className="trace-title-row">
+                  <strong>{formatMetric(item.source_id, `trace ${index + 1}`)}</strong>
+                  <span className="badge slate">{formatMetric(item.source_type, "source")}</span>
+                </div>
+                <p>
+                  score {formatMetric(item.score)} / evidence index {formatMetric(item.evidence_index)}
+                </p>
+                <small>matched terms: {formatTraceTerms(item.matched_terms)}</small>
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <p className="trace-empty">retrieval_trace가 비어 있습니다. M1은 빈 trace를 성공 근거로 꾸미지 않습니다.</p>
+      )}
+    </section>
+  );
+}
+
+function ProductHealthReadinessPanel({ readiness, onRefresh, loading, compact }) {
+  return (
+    <section className={`product-health-readiness ${readiness.status} ${compact ? "compact" : ""}`}>
+      <header>
+        <div>
+          <p className="eyebrow">Product Health readiness</p>
+          <h3>{readiness.title}</h3>
+          <p>{readiness.body}</p>
+        </div>
+        <div className="product-health-actions">
+          <span className={`badge ${productHealthBadgeClass(readiness.status)}`}>{readiness.status}</span>
+          <button type="button" className="icon-link" onClick={onRefresh} disabled={loading} aria-label="Product Health readiness 새로고침">
+            {loading ? <Loader2 size={16} className="spin" /> : <RefreshCw size={16} />}
+          </button>
+        </div>
+      </header>
+      <div className="product-health-checks">
+        {readiness.checks.map(([label, state, detail]) => (
+          <article key={label}>
+            <RuntimeCheck label={label} ready={state === "ready"} />
+            <span>{detail}</span>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function DemoReadinessPanel({ items }) {
+  return (
+    <section className="demo-readiness-panel" aria-label="M1 demo readiness by module">
+      <header>
+        <div>
+          <p className="eyebrow">Demo readiness</p>
+          <h3>M2/M3/M5/M6/M1 발표 준비 상태</h3>
+          <p>확인되지 않은 항목은 성공으로 표시하지 않고 다음 책임 영역을 그대로 보여줍니다.</p>
+        </div>
+      </header>
+      <div className="demo-readiness-grid">
+        {items.map((item) => (
+          <article key={item.module} className={`demo-readiness-item ${item.state}`}>
+            <div className="demo-readiness-title">
+              <strong>{item.module}</strong>
+              <span className={`badge ${demoReadinessBadgeClass(item.state)}`}>{item.state}</span>
+            </div>
+            <span>{item.label}</span>
+            <p>{item.detail}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function productHealthBadgeClass(status) {
+  if (status === "ready") return "green";
+  if (status === "partial" || status === "checking") return "orange";
+  return "red";
+}
+
+function demoReadinessBadgeClass(state) {
+  if (state === "ready") return "green";
+  if (state === "blocked" || state === "not-ready") return "red";
+  return "orange";
+}
+
+function formatTraceTerms(terms) {
+  if (!Array.isArray(terms) || terms.length === 0) return "-";
+  return terms.map((term) => formatMetric(term)).join(", ");
 }
 
 function EvidenceCard({ evidence }) {

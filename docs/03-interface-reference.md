@@ -256,13 +256,17 @@ Locked Week 2 contract decisions:
 - `SourceConfig` is not owned by M1 alone. M1 owns demo tenant, source id, and UI input shell; M3 owns CSV/JSON/JSONL source-specific options; M4 owns Kafka source-specific options.
 - `TransformSpec` is the M3-owned intent contract. It does not create Spark sessions, choose runner implementation, or write Catalog state directly.
 - `RuntimeConfig` is the M2-owned runtime contract. M5 consumes it for runner selection and M6 consumes its SQL runtime profile, but M2 does not define transform semantics. `RuntimeConfig.storage` is the S3-compatible storage mapping used to calculate both `s3_uri` and the local fallback path during MVP smoke runs.
+- `RuntimeConfig` supports either a single `input_format`/`input_path` pair or a `source_inputs[]` list. `source_inputs[]` is for M2 multi-source pass-through runtime evidence such as reviews/behavior/delivery/product Product Health inputs; it does not define Bronze/Silver/Gold transform semantics.
+- `RuntimeConfig.transform_spec` 또는 `RuntimeConfig.transform_spec_path`가 있으면 M2 `spark_runner`는 M3 L6 preview-only spec을 실행한다. 이번 경계는 M3 L6 allowlist의 `select`, `rename`, `cast`, `parse_timestamp`, `normalize_null`, `flatten_struct`, `explode_array`, `json_string`, `mask`, `hash`, `drop`, `quarantine_if_invalid`, `aggregate`를 preview 범위에서 지원한다. 단, `hash`는 `hash_policy.algorithm=hmac_sha256`과 secret reference가 필요하고, `quarantine_if_invalid`는 validation rule이 필요하며, `explode_array`는 cardinality guard 또는 default output row guard 안에서만 실행한다. 지원하지 않는 operation이나 필수 안전 parameter가 빠진 operation은 성공처럼 처리하지 않고 failed `Week2RunnerResult`로 돌려준다.
+- `RuntimeConfig.source_inputs[]` keeps legacy `input_format` / `input_path` for compatibility and also accepts `source_type` / `format` / `path`. `source_type` means where the input lives or how it is reached, such as `local_file`, `s3`, `postgres`, `mongodb`, or `kafka`. `format` means the payload shape, such as `json`, `jsonl`, or `parquet`. Current M2 runner execution supports `source_type=local_file` only; other source types are accepted as contract shape but must fail clearly until their connector is implemented.
+- `product_health_l6_gold_preview_smoke`는 작은 reviews fact input에 M3 L6 `aggregate` preview spec을 적용해 `gold_product_health.parquet`와 DuckDB SQL read evidence를 만드는 M2 smoke다. 이 smoke는 `negative_review_rate`, `conversion_rate`, `late_delivery_rate`, `risk_score`의 최종 의미를 확정하지 않는다. 해당 의미와 최종 `gold_product_health` schema는 M3가 소유한다.
 - Week 2 workflow run request `executor` accepts `local_runner`, `airflow`, or `spark_runner`. `spark_runner` means M5 calls the M2 `Week2SparkRunner` boundary directly; it does not mean Airflow DAG-internal Spark execution is already implemented.
 - `KafkaTopicContract` is evidence and raw-event handoff for Week 2. Kafka is not a blocker for the 1st-stage `gold_product_health` main E2E path unless a later Phase explicitly changes the main path.
 - `ExecutionResult.duration_ms` is part of the locked execution evidence and comes from `Week2RunnerResult.duration_ms`.
 - Week 2 product risk MVP uses `pipeline_product_health_e2e`, `dataset_product_health_gold`, and `gold_product_health` as the representative E2E identifiers. Amazon Reviews remains the reviews fact input, not the whole final analysis path.
 - 5GB processing evidence is measured on main pipeline input, not Gold output size. `ExecutionResult.bytes` records primary or total input bytes for the run; multi-source product health runs should also expose source-level rows/bytes/duration in `task_results[]` or metrics. `CatalogMetadata.metrics.bytes` remains Gold output bytes.
 - M5 Airflow local smoke uses a shared result artifact. `Week2AirflowAdapter` triggers DAG `asklake_week2_reviews` with `conf.airflow_result_file=<run_id>.json`; the DAG writes `data/week2/_airflow_results/<run_id>.json`; the artifact contains `week2_result` with the `Week2RunnerResult`-compatible fields `status`, `task_results`, `logs`, `row_count`, `bytes`, `duration_ms`, `output_path`, `output_row_count`, and `output_bytes`.
-- M2 Taxi local batch evidence uses `pipeline_taxi_daily_metrics`, `dataset_taxi_daily_metrics_gold`, and `gold_taxi_daily_metrics`. It is supporting local Parquet evidence only, not the product risk representative path; PostgreSQL loader, MinIO/S3 write, PySpark, and Airflow DAG-internal invocation are later phases.
+- M2 Taxi local batch evidence uses `pipeline_taxi_daily_metrics`, `dataset_taxi_daily_metrics_gold`, and `gold_taxi_daily_metrics`. It is supporting Parquet execution evidence only, not the product risk representative path. PySpark local mode and Docker Spark standalone mode can read a single Parquet file or a Parquet directory and record input rows, input bytes, duration, output path, output rows, and output bytes. Docker Spark standalone evidence uses a public Spark image, one master, two workers, and a driver container. Docker Spark can also run an opt-in local MinIO smoke that writes the Spark result to the local fallback path and uploads the same output file to an S3-compatible object path through `Week2StorageAdapter`. Direct Spark `s3a://` write, PostgreSQL loader, and Airflow DAG-internal invocation remain later phases.
 - The hardcoded Taxi daily Gold schema, aggregation, and valid-row mask are provisional evidence scaffolding, not durable M2-owned transform semantics. Final Gold metric definitions, quality rules, quarantine behavior, and period rules remain M3-owned `TransformSpec` / `QualityRule` responsibilities. M2's durable responsibility is runner/runtime/storage execution plus row_count, bytes, duration, output path, and related evidence. When the M3 spec execution path is available, this hardcoded Taxi Gold builder must be removed or demoted to a demo/test fixture.
 
 Provisional M2 Taxi daily metric evidence fields:
@@ -400,6 +404,43 @@ Minimum `QueryResult` shape:
 `AIQueryResult.query_result` is the canonical SQL execution result for Week 2.
 Top-level `AIQueryResult.sql` and `AIQueryResult.rows` may remain as backward-compatible M1 display convenience fields, but they must mirror `query_result.sql` and `query_result.rows`.
 
+Minimum `AIQueryResult` route and retrieval trace shape:
+
+| Field | Required | Notes |
+| --- | --- | --- |
+| `route` | yes | `sql`, `rag`, `hybrid`, or `unsupported`. M6 Hybrid Route returns `sql` for metric/ranking questions, `hybrid` when a SQL question also asks for evidence/schema/lineage explanation, `rag` for CatalogMetadata-only explanation, and `unsupported` when no safe route exists. |
+| `retrieval_trace[]` | yes | Ordered explanation of the retrieval/route evidence used by M6. It may be empty only when no catalog/evidence source was available and the response is blocked. |
+| `retrieval_trace[].source_type` | yes | `catalog`, `schema`, `metric`, `lineage`, or `chunk` |
+| `retrieval_trace[].source_id` | yes | dataset id, field name, metric key, lineage id, or chunk id |
+| `retrieval_trace[].score` | yes | numeric score assigned by M6 retrieval/scoring |
+| `retrieval_trace[].matched_terms` | yes | question terms, aliases, or metadata terms that contributed to the score |
+| `retrieval_trace[].evidence_index` | no | index into `AIQueryResult.evidence[]` when the trace item directly supports an evidence item |
+
+`route` and `retrieval_trace` are additive fields. Existing M1 consumers may continue reading `status`, `sql`, `query_result`, `rows`, `summary`, and `evidence`, while richer Week 2 displays can show why M6 selected a SQL/RAG/Hybrid/Unsupported path.
+
+Minimum M6 Catalog RAG-lite index boundary:
+
+| Field / Source | Included in M6 index | Notes |
+| --- | --- | --- |
+| dataset identity | yes | `dataset_id`, `name`, `layer` |
+| schema fields | yes | field name, type, nullable, and local semantic aliases |
+| metrics | yes | metric keys and safe scalar metric values such as row count, bytes, quality, semantics |
+| lineage | yes | `pipeline_id`, `run_id`, `source_ids`, `upstream_datasets` |
+| query allowlist | yes | `query.table_name`, `query.allowed_columns`, `default_limit`, timeout metadata |
+| freshness | yes | `updated_at` and freshness interval values |
+| storage/local path | no | `storage.local_fallback_path`, raw file paths, whole source files, secrets, credentials, and API keys must not be indexed |
+
+The M6 Catalog RAG-lite index is a derived cache, not the Catalog source of truth. Its cache signature is based on `dataset_id + lineage.run_id + updated_at`; when any of those values change, the index is stale and must be rebuilt before retrieval. `retrieval_trace[]` may include additional `schema`, `metric`, or `lineage` items from the index.
+
+Minimum M6 Hybrid Route policy:
+
+| Question shape | Route | Execution behavior |
+| --- | --- | --- |
+| metric/ranking/count question | `sql` | Plan, validate, and execute SELECT-only SQL through `SqlEngineAdapter`. |
+| metric/ranking/count question plus evidence/schema/lineage explanation request | `hybrid` | Execute SQL first, then ground the answer with Catalog RAG-lite evidence and retrieval trace. |
+| schema, metric, lineage, catalog, or dataset explanation without a SQL metric request | `rag` | Do not call SQL validate/execute; answer from CatalogMetadata evidence only. |
+| forecast, future revenue, sentiment, or unsupported free-form request | `unsupported` | Do not call SQL/RAG answer path; return blocked guardrail result. |
+
 Minimum `AIQueryResult.evidence[]` grounding shape:
 
 | Field | Required | Notes |
@@ -422,7 +463,7 @@ Minimum SQL guardrail failure shape:
 | --- | --- |
 | `status` | `succeeded`, `blocked`, `failed` |
 | `guardrail.validation_status` | `passed`, `blocked`, `failed` |
-| `guardrail.failure_code` | `non_select_sql`, `table_not_allowed`, `column_not_allowed`, `timeout`, `limit_required`, `engine_unavailable`, or `null` |
+| `guardrail.failure_code` | `non_select_sql`, `table_not_allowed`, `column_not_allowed`, `timeout`, `limit_required`, `local_path_missing`, `engine_unavailable`, `unsupported_question`, or `null` |
 | `guardrail.failure_message` | human-readable reason or `null` |
 
 Week 2 workflow/run status values:

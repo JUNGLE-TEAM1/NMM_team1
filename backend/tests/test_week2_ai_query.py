@@ -28,6 +28,14 @@ class RecordingSqlEngine(FakeSqlEngine):
         return super().validate(sql, context)
 
 
+class FailingSqlEngine(FakeSqlEngine):
+    def validate(self, sql: str, context: SqlEngineContext):
+        raise AssertionError("Unsupported questions must not call the SQL engine")
+
+    def execute(self, sql: str, context: SqlEngineContext):
+        raise AssertionError("Unsupported questions must not call the SQL engine")
+
+
 def _review_catalog(dataset_id: str, name: str, run_id: str) -> dict[str, object]:
     return {
         "tenant_id": "tenant_demo",
@@ -55,6 +63,54 @@ def _review_catalog(dataset_id: str, name: str, run_id: str) -> dict[str, object
     }
 
 
+def _product_health_catalog(dataset_id: str, name: str, run_id: str) -> dict[str, object]:
+    return {
+        "tenant_id": "tenant_demo",
+        "dataset_id": dataset_id,
+        "name": name,
+        "s3_uri": f"s3://asklake-demo/product_health/gold/run_id={run_id}/",
+        "storage": {
+            "local_fallback_path": f"/tmp/{dataset_id}/{run_id}/gold_product_health.parquet",
+        },
+        "schema": {
+            "fields": [
+                {"name": "product_id", "type": "string", "nullable": False},
+                {"name": "category", "type": "string", "nullable": True},
+                {"name": "product_name", "type": "string", "nullable": True},
+                {"name": "risk_score", "type": "number", "nullable": False},
+                {"name": "negative_review_rate", "type": "number", "nullable": True},
+                {"name": "conversion_rate", "type": "number", "nullable": True},
+                {"name": "late_delivery_rate", "type": "number", "nullable": True},
+            ]
+        },
+        "lineage": {
+            "pipeline_id": "pipeline_product_health_e2e",
+            "run_id": run_id,
+            "source_ids": [
+                "source_reviews_seed",
+                "source_behavior_events_seed",
+                "source_delivery_trips_seed",
+                "source_product_master_seed",
+            ],
+        },
+        "query": {
+            "table_name": "gold_product_health",
+            "allowed_columns": [
+                "product_id",
+                "category",
+                "product_name",
+                "risk_score",
+                "negative_review_rate",
+                "conversion_rate",
+                "late_delivery_rate",
+            ],
+            "default_limit": 100,
+            "timeout_seconds": 30,
+        },
+        "updated_at": "2026-06-28T10:00:00+09:00",
+    }
+
+
 def make_week2_client() -> TestClient:
     temp_dir = tempfile.TemporaryDirectory()
     settings = Settings(
@@ -67,8 +123,15 @@ def make_week2_client() -> TestClient:
     return TestClient(app)
 
 
-def test_week2_ai_query_returns_fixture_backed_ai_query_result() -> None:
-    client = TestClient(create_app(settings=Settings(week2_sql_engine="fake")))
+def test_week2_ai_query_returns_fixture_backed_ai_query_result(tmp_path: Path) -> None:
+    client = TestClient(
+        create_app(
+            settings=Settings(
+                week2_sql_engine="fake",
+                result_store_path=str(tmp_path / "results"),
+            )
+        )
+    )
 
     response = client.post(
         "/api/week2/ai/query",
@@ -84,6 +147,19 @@ def test_week2_ai_query_returns_fixture_backed_ai_query_result() -> None:
     assert payload["selected_datasets"][0]["dataset_id"] == "dataset_reviews_gold"
     assert "review_count" in payload["selected_datasets"][0]["reason"]
     assert payload["status"] == "succeeded"
+    assert payload["route"] == "sql"
+    assert payload["retrieval_trace"][0] == {
+        "source_type": "catalog",
+        "source_id": "dataset_reviews_gold",
+        "score": 6.0,
+        "matched_terms": ["review_count", "product_id"],
+        "evidence_index": 0,
+    }
+    assert any(
+        item["source_type"] == "schema"
+        and item["source_id"] == "dataset_reviews_gold.schema.review_count"
+        for item in payload["retrieval_trace"]
+    )
     assert payload["guardrail"]["validation_status"] == "passed"
     assert payload["sql"] == payload["query_result"]["sql"]
     assert payload["rows"] == payload["query_result"]["rows"]
@@ -242,10 +318,34 @@ def test_week2_ai_query_blocks_when_catalog_local_fallback_path_is_missing() -> 
     result = service.answer("리뷰가 가장 많은 상품 알려줘")
 
     assert result.status == "blocked"
+    assert result.route == "sql"
     assert result.guardrail.validation_status == "blocked"
     assert result.guardrail.failure_code == "local_path_missing"
     assert result.query_result.rows == []
     assert "local_fallback_path" in result.summary
+
+
+def test_week2_ai_query_blocks_unsupported_question_without_sql_engine_call() -> None:
+    catalog = _review_catalog(
+        "dataset_reviews_with_path",
+        "Reviews With Path",
+        "run_reviews_with_path_001",
+    )
+    service = Week2AIQueryService(
+        sql_engine=FailingSqlEngine(),
+        catalog_source=InMemoryCatalogSource(catalog),
+    )
+
+    result = service.answer("내일 매출을 예측해줘")
+
+    assert result.status == "blocked"
+    assert result.route == "unsupported"
+    assert result.sql == ""
+    assert result.query_result.sql == ""
+    assert result.query_result.rows == []
+    assert result.guardrail.validation_status == "blocked"
+    assert result.guardrail.failure_code == "unsupported_question"
+    assert "지원하지 않는 질문" in result.summary
 
 
 def test_week2_ai_query_scores_catalog_metadata_terms_when_columns_tie() -> None:
@@ -271,6 +371,127 @@ def test_week2_ai_query_scores_catalog_metadata_terms_when_columns_tie() -> None
     assert result.evidence[0].run_id == "run_amazon_reviews_001"
     assert "amazon" in result.selected_datasets[0].reason.lower()
     assert "average_rating" in result.selected_datasets[0].reason
+
+
+def test_week2_ai_query_selects_product_health_catalog_for_risk_question() -> None:
+    reviews_catalog = _review_catalog(
+        "dataset_reviews_gold",
+        "Amazon Reviews Gold",
+        "run_reviews_001",
+    )
+    product_health_catalog = _product_health_catalog(
+        "dataset_product_health_gold",
+        "Product Health Gold",
+        "run_product_health_001",
+    )
+    service = Week2AIQueryService(
+        sql_engine=FakeSqlEngine(),
+        catalog_source=InMemoryCatalogSource(reviews_catalog, product_health_catalog),
+    )
+
+    result = service.answer("위험 점수가 높은 상품 알려줘")
+
+    assert result.selected_datasets[0].dataset_id == "dataset_product_health_gold"
+    assert result.route == "sql"
+    assert result.retrieval_trace[0].source_type == "catalog"
+    assert result.retrieval_trace[0].source_id == "dataset_product_health_gold"
+    assert result.retrieval_trace[0].score == 6
+    assert result.retrieval_trace[0].matched_terms == ["product_id", "risk_score"]
+    assert result.retrieval_trace[0].evidence_index == 0
+    assert result.evidence[0].dataset_id == "dataset_product_health_gold"
+    assert result.evidence[0].lineage["pipeline_id"] == "pipeline_product_health_e2e"
+    assert "risk_score" in result.selected_datasets[0].reason
+    assert result.sql == (
+        "SELECT product_id, risk_score, category, product_name, negative_review_rate, "
+        "conversion_rate, late_delivery_rate FROM gold_product_health "
+        "ORDER BY risk_score DESC LIMIT 10"
+    )
+    assert result.chart_spec.y == "risk_score"
+    assert result.rows[0]["risk_score"] == 0.92
+    assert "위험 점수 0.92" in result.summary
+
+
+def test_week2_ai_query_uses_hybrid_route_when_sql_question_asks_for_evidence() -> None:
+    reviews_catalog = _review_catalog(
+        "dataset_reviews_gold",
+        "Amazon Reviews Gold",
+        "run_reviews_001",
+    )
+    product_health_catalog = _product_health_catalog(
+        "dataset_product_health_gold",
+        "Product Health Gold",
+        "run_product_health_001",
+    )
+    service = Week2AIQueryService(
+        sql_engine=FakeSqlEngine(),
+        catalog_source=InMemoryCatalogSource(reviews_catalog, product_health_catalog),
+    )
+
+    result = service.answer("위험 점수가 높은 상품과 그 근거를 설명해줘")
+
+    assert result.status == "succeeded"
+    assert result.route == "hybrid"
+    assert result.sql
+    assert result.rows[0]["risk_score"] == 0.92
+    assert "SQL 결과와 CatalogMetadata 근거" in result.summary
+    assert any(
+        item.source_type == "schema"
+        and item.source_id == "dataset_product_health_gold.schema.risk_score"
+        for item in result.retrieval_trace
+    )
+
+
+def test_week2_ai_query_uses_rag_route_for_metadata_question_without_sql_engine_call() -> None:
+    product_health_catalog = _product_health_catalog(
+        "dataset_product_health_gold",
+        "Product Health Gold",
+        "run_product_health_001",
+    )
+    service = Week2AIQueryService(
+        sql_engine=FailingSqlEngine(),
+        catalog_source=InMemoryCatalogSource(product_health_catalog),
+    )
+
+    result = service.answer("이 데이터셋의 스키마와 lineage 근거를 알려줘")
+
+    assert result.status == "succeeded"
+    assert result.route == "rag"
+    assert result.sql == ""
+    assert result.query_result.sql == ""
+    assert result.query_result.rows == []
+    assert result.guardrail.validation_status == "passed"
+    assert "CatalogMetadata 근거" in result.summary
+    assert "schema=product_id, category, product_name, risk_score" in result.summary
+    assert any(item.source_type == "lineage" for item in result.retrieval_trace)
+
+
+def test_week2_ai_query_retrieval_trace_includes_catalog_rag_index_chunks() -> None:
+    reviews_catalog = _review_catalog(
+        "dataset_reviews_gold",
+        "Amazon Reviews Gold",
+        "run_reviews_001",
+    )
+    product_health_catalog = _product_health_catalog(
+        "dataset_product_health_gold",
+        "Product Health Gold",
+        "run_product_health_001",
+    )
+    service = Week2AIQueryService(
+        sql_engine=FakeSqlEngine(),
+        catalog_source=InMemoryCatalogSource(reviews_catalog, product_health_catalog),
+    )
+
+    result = service.answer("위험 점수가 높은 상품 알려줘")
+
+    assert result.route == "sql"
+    assert result.retrieval_trace[0].source_type == "catalog"
+    assert result.retrieval_trace[0].source_id == "dataset_product_health_gold"
+    assert any(
+        item.source_type == "schema"
+        and item.source_id == "dataset_product_health_gold.schema.risk_score"
+        and item.evidence_index == 0
+        for item in result.retrieval_trace
+    )
 
 
 def test_fake_sql_engine_blocks_non_select_sql() -> None:

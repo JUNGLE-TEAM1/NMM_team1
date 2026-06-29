@@ -74,7 +74,7 @@
 | --- | --- |
 | Must not break | AskLake 2주차 M1~M6 구현은 `SourceConfig`, `SchemaDefinition`, `TransformSpec`, `RuntimeConfig`, `KafkaTopicContract`, `WorkflowDefinition`, `ExecutionResult`, `CatalogMetadata`, `AIQueryResult` fixture contract 없이 시작하지 않는다. |
 | Failure condition | 각 모듈이 tenant id, source id, dataset id, runtime/transform/input event, workflow result, catalog metadata, SQL result shape를 서로 다르게 정의한다. |
-| Expected behavior | `contracts/*.sample.json`과 `docs/03`의 Week 2 contract package를 먼저 확인하고, 불확실한 path/row count/MinIO layout은 TODO 또는 decision으로 남긴다. |
+| Expected behavior | `contracts/*.sample.json`과 `docs/03`의 Week 2 contract package를 먼저 확인하고, 불확실한 path/row count/MinIO layout은 TODO 또는 decision으로 남긴다. `RuntimeConfig.source_inputs[]`는 legacy `input_format`/`input_path`와 새 `source_type`/`format`/`path`를 호환 유지하며, `source_type`과 `format`을 같은 계층으로 섞지 않는다. |
 | Verification method | JSON fixture 유효성, `docs/03` contract package, branch workspace `quality.md`와 `decisions.md`를 확인한다. |
 | Related docs/interface/Phase | `contracts/`, `docs/03`, `docs/project-context/asklake-week2-module-plan/` |
 
@@ -138,6 +138,36 @@
 | Verification method | `backend/tests/test_duckdb_sql_engine.py`, `backend/tests/test_week2_ai_query_duckdb.py`, `scripts/week2_m2_sql_runtime_smoke.py`를 확인한다. |
 | Related docs/interface/Phase | `docs/03`, `contracts/catalog_metadata.sample.json`, M2 SQL runtime smoke |
 
+### M6 route 또는 retrieval trace가 응답 근거와 어긋나는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | `AIQueryResult.route`는 실제 실행 경로를 나타내고, `retrieval_trace`는 선택된 evidence와 연결되어야 한다. |
+| Failure condition | SQL 실행 응답인데 route가 `rag`로 표시되거나, unsupported 질문이 `sql`로 표시되거나, trace의 `evidence_index`가 없는 evidence를 가리킨다. |
+| Expected behavior | SQL-only 응답은 `route=sql`, SQL+근거 응답은 `route=hybrid`, CatalogMetadata 설명 응답은 `route=rag`, 지원하지 않는 질문은 `route=unsupported`를 반환한다. Catalog 기반 trace는 `source_type=catalog`, `source_id=<dataset_id>`, score, matched_terms, evidence index를 포함한다. |
+| Verification method | `backend/tests/test_query_router.py`, `backend/tests/test_week2_ai_query.py` route/retrieval_trace regression과 `contracts/ai_query_result.sample.json`을 확인한다. |
+| Related docs/interface/Phase | `docs/03`, `docs/05`, `contracts/ai_query_result.sample.json`, M6 response contract |
+
+### M6 RAG-only route가 SQL engine을 호출하는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | schema/metric/lineage/catalog 설명만 필요한 질문은 SQL validate/execute를 호출하지 않는다. |
+| Failure condition | `route=rag` 응답에서 SQL이 생성되거나, SQL engine validate/execute가 호출되거나, SQL guardrail 실패를 RAG 설명 실패처럼 표시한다. |
+| Expected behavior | `route=rag`, `status=succeeded`, empty SQL/query rows, passed guardrail, CatalogMetadata 기반 summary와 retrieval trace를 반환한다. |
+| Verification method | `backend/tests/test_query_router.py`, `backend/tests/test_week2_ai_query.py`의 RAG-only no-SQL regression을 확인한다. |
+| Related docs/interface/Phase | `docs/03`, `docs/05`, M6 Hybrid Route |
+
+### M6 Catalog RAG-lite index가 안전하지 않은 데이터를 인덱싱하는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | M6 index는 CatalogMetadata의 안전한 metadata chunk만 사용하고, 원본 파일 전체, secret, credential, local fallback path를 인덱싱하지 않는다. |
+| Failure condition | `storage.local_fallback_path`, 실제 파일 내용, API key, credential, 허용되지 않은 컬럼이 index chunk text나 retrieval trace에 들어간다. 또는 `dataset_id + run_id + updated_at`이 바뀌었는데 stale cache를 계속 사용한다. |
+| Expected behavior | index 대상은 dataset name, schema fields, metrics, lineage, query allowlist, freshness로 제한된다. Catalog signature가 바뀌면 persisted cache를 재생성한다. |
+| Verification method | `backend/tests/test_catalog_retrieval_index.py`, `backend/tests/test_week2_ai_query.py`의 RAG-lite trace regression을 확인한다. |
+| Related docs/interface/Phase | `docs/03`, `docs/05`, `contracts/ai_query_result.sample.json`, M6 Catalog RAG Index |
+
 ### Mock/Fake Boundary를 넘어 실제 접근으로 진행되는 경우
 
 | 항목 | 내용 |
@@ -147,6 +177,16 @@
 | Expected behavior | workstream을 중단하고 mock/fake boundary 해제를 별도 결정으로 올린다. 승인 전에는 fixture, deterministic route, local fake provider만 사용한다. |
 | Verification method | `.milestones/target-mvp/manifest.yaml`, workstream `handoff.md`, branch `decisions.md`, secret/config diff를 확인한다. |
 | Related docs/interface/Phase | `docs/03`, `docs/08`, `docs/14`, `docs/17`, `.milestones/target-mvp/manifest.yaml` |
+
+### 질문 전제를 확인하지 않고 답변 또는 실행하는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | AI는 질문/명령이 일반론, 저장소 규칙, 비교 답변, 실행 요청, 정책 결정, 고영향 행동 중 무엇인지 먼저 판별한다. |
+| Failure condition | 일반론과 저장소 규칙이 다른데 전제를 밝히지 않거나, 개념 질문을 실행 승인처럼 처리하거나, PR/merge/finalize/cleanup/검증 생략 같은 고영향 행동을 확인 없이 진행한다. |
+| Expected behavior | 답이 전제에 따라 달라지면 `일반론 기준 / 이 저장소 기준`처럼 렌즈를 분리하고, 상태 변경 또는 고영향 행동이면 matching confirmation gate를 먼저 통과한다. |
+| Verification method | `docs/08`, `docs/09`, `docs/10`, `docs/13`, `docs/15`에서 Context Assumption Check 흐름을 확인한다. |
+| Related docs/interface/Phase | `docs/08`, `docs/09`, `docs/10`, `docs/13`, `docs/15` |
 
 ### 권한 없는 데이터가 SQL/RAG/Prompt에 들어가는 경우
 
