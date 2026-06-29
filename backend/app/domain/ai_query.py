@@ -32,6 +32,14 @@ class QueryEvidence(BaseModel):
     retrieval_terms: list[str] = Field(default_factory=list)
 
 
+class RetrievalTraceItem(BaseModel):
+    source_type: Literal["catalog", "schema", "metric", "lineage", "chunk"]
+    source_id: str
+    score: float
+    matched_terms: list[str] = Field(default_factory=list)
+    evidence_index: int | None = None
+
+
 class QueryResult(BaseModel):
     engine: str
     sql: str
@@ -96,6 +104,8 @@ class AIQueryResult(BaseModel):
     question: str
     selected_datasets: list[SelectedDataset]
     evidence: list[QueryEvidence]
+    route: Literal["sql", "rag", "hybrid", "unsupported"]
+    retrieval_trace: list[RetrievalTraceItem] = Field(default_factory=list)
     status: Literal["succeeded", "blocked", "failed"]
     sql: str
     query_result: QueryResult
