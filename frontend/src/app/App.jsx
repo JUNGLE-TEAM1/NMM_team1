@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  Activity,
   AlertCircle,
   ArrowLeft,
   ArrowRight,
@@ -72,12 +71,6 @@ const navItems = [
     label: "데이터셋",
     description: "Source / Target",
     icon: GitMerge,
-  },
-  {
-    path: "/runs",
-    label: "M5 데모",
-    description: "Workflow 증거",
-    icon: Activity,
   },
   {
     path: "/catalog",

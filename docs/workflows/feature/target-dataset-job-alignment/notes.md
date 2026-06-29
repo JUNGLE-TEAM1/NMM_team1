@@ -5,6 +5,7 @@
 - 2026-06-29: Target Dataset wizard 5단계 구조는 유지하고 copy/review summary를 ETL job definition 중심으로 정렬함.
 - Process는 `ETL processing rule`, Scheduling은 `ETL job schedule`, Review는 target dataset draft와 job definition을 분리해 표시한다.
 - 2026-06-29 Hotfix: 전체 검수에서 발견된 dataset type modal 단계 문구와 Target Source 선택 modal copy 불일치를 보정함.
+- 2026-06-29 Hotfix: 현재 데모 주 흐름과 충돌하지 않도록 `M5 데모` nav 항목을 숨김. `RunStatusPage`와 `/etl` route는 보존.
 
 ## 결정
 
@@ -21,3 +22,4 @@
 - `scripts/validate-harness.sh`: pass
 - Browser smoke: `http://127.0.0.1:13000/dataset`
 - Hotfix verification: dataset type modal 3개 card copy, Source Dataset 단계명, Target Source 선택 modal title/body 확인
+- Hotfix verification: sidebar에서 `M5 데모` nav 항목이 보이지 않고 dataset/catalog/query 흐름은 유지됨
