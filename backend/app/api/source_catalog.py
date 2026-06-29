@@ -6,6 +6,8 @@ from app.adapters.csv_source import CsvInspectionError
 from app.domain.schemas import (
     CatalogDataset,
     SourceCreate,
+    SourceDatasetCreate,
+    SourceDatasetRecord,
     SourceRecord,
     SourceRegistration,
     TrustGateEvaluationRequest,
@@ -43,6 +45,24 @@ def create_source_catalog_router(
         if source is None:
             raise HTTPException(status_code=404, detail="Source not found")
         return source
+
+    @router.post("/source-datasets", response_model=SourceDatasetRecord, status_code=status.HTTP_201_CREATED)
+    def create_source_dataset(dataset: SourceDatasetCreate) -> SourceDatasetRecord:
+        try:
+            return metadata_store.create_source_dataset(dataset)
+        except sqlite3.IntegrityError as error:
+            raise HTTPException(status_code=409, detail=f"Source dataset name already exists: {dataset.name}") from error
+
+    @router.get("/source-datasets", response_model=list[SourceDatasetRecord])
+    def list_source_datasets() -> list[SourceDatasetRecord]:
+        return metadata_store.list_source_datasets()
+
+    @router.get("/source-datasets/{dataset_id}", response_model=SourceDatasetRecord)
+    def get_source_dataset(dataset_id: str) -> SourceDatasetRecord:
+        dataset = metadata_store.get_source_dataset(dataset_id)
+        if dataset is None:
+            raise HTTPException(status_code=404, detail="Source dataset not found")
+        return dataset
 
     @router.get("/catalog/datasets", response_model=list[CatalogDataset])
     def list_catalog_datasets() -> list[CatalogDataset]:

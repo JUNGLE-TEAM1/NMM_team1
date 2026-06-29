@@ -951,6 +951,12 @@ code {
   align-items: center;
 }
 
+.wizard-placeholder.compact.warning {
+  border-color: #fecaca;
+  background: #fff7ed;
+  color: #b45309;
+}
+
 .wizard-placeholder strong {
   color: #334155;
   font-size: 15px;
@@ -3955,6 +3961,25 @@ tbody tr:hover {
   max-height: calc(100vh - 190px);
   overflow: auto;
   padding: 18px;
+}
+
+.source-picker-hint {
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  background: #fffbeb;
+  padding: 10px 12px;
+  color: #92400e;
+  font-size: 12px;
+}
+
+.spin-icon {
+  animation: asklake-spin 0.9s linear infinite;
+}
+
+@keyframes asklake-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .source-type-grid {

@@ -190,6 +190,7 @@ Target MVP는 아래 family를 순차적으로 확정한다.
 | Family | 목적 | 핵심 contract | 상태 |
 | --- | --- | --- | --- |
 | Source API | 연결 등록, 연결 테스트, schema discovery | `SourceConnection`, secret reference, schema/sample preview | baseline + 확장 |
+| Source Dataset API | 등록된 source connection에서 raw/source dataset metadata 생성/조회 | `SourceDataset`, `SourceConfig.connection_ref`, schema preview | C-2 구현 |
 | Pipeline / Job API | version, validation, deploy, run, retry, rerun, backfill | `PipelineVersion`, `JobRun`, `TaskRun`, idempotency key | target R2 |
 | Catalog / Trust API | draft, dataset detail, trust status, lineage, usage | `Dataset`, `DatasetStatus`, `TrustGateResult` | target R1 |
 | Quality / PII API | quality rule, result, PII candidate, classification | `QualityRule`, `QualityResult`, `Classification` | target R1/R2 |
@@ -205,12 +206,27 @@ Target MVP는 아래 family를 순차적으로 확정한다.
 R0.5 `Modular Contract Baseline`은 Target MVP를 병렬 workstream으로 구현하기 위한 최소 공유 계약이다.
 이 계약은 상세 endpoint나 저장소 schema를 고정하지 않고, module 간 mock/fake adapter와 integration spine이 같은 언어를 쓰게 하는 기준이다.
 
+### Source Dataset Metadata API
+
+C-2 `Source Dataset persistence`는 등록된 External Connection을 `SourceConnection` 표시명으로 보고, 그 connection에서 raw/source layer dataset metadata만 저장한다.
+실제 ingest, raw table creation, connector test, credential 저장은 실행하지 않는다.
+
+| Method | Path | Request / Response | Notes |
+| --- | --- | --- | --- |
+| `POST` | `/api/source-datasets` | `SourceDatasetCreate -> SourceDataset` | `connection_id`, `connection_name`, `connection_type`, `name`, `raw_scope`, `resource_label`, `schema_preview[]` 필요 |
+| `GET` | `/api/source-datasets` | `SourceDataset[]` | Target Dataset wizard의 source 후보로 사용 |
+| `GET` | `/api/source-datasets/{dataset_id}` | `SourceDataset` | metadata detail 조회 |
+
+`SourceDataset.schema_preview[]`는 `ColumnSchema`와 같은 `{name, type}` shape를 사용한다.
+샘플 fixture는 `contracts/source_dataset.sample.json`에 둔다.
+
 | Contract | Owner Workstream | 최소 필드/상태 | Mock/Fake Boundary |
 | --- | --- | --- | --- |
 | `Dataset` | Catalog / Trust | `id`, `name`, `source_ref`, `schema_version`, `status`, `owner`, `freshness`, `trust_gate_result_id` | Source/Job workstream은 fixture dataset으로 대체 가능 |
 | `DatasetStatus` | Catalog / Trust | `Draft`, `Verifying`, `Trusted`, `Degraded`, `Blocked`, `Archived` | Query/Ask는 status fixture로 policy path를 검증 가능 |
 | `TrustGateResult` | Catalog / Trust | `dataset_id`, `status`, `required_gates`, `passed_gates`, `failed_gates`, `reasons`, `evaluated_at` | quality/PII/policy engine은 placeholder result 허용 |
 | `SourceConnection` | Source Connector | `id`, `type`, `display_name`, `secret_ref`, `connection_status`, `last_checked_at` | 실제 RDB/API 대신 local fixture connector 허용 |
+| `SourceDataset` | Source Connector / Dataset UX | `id`, `connection_id`, `name`, `raw_scope`, `schema_preview`, `layer=source`, `status`, `created_at`, `updated_at` | C-2는 metadata draft만 저장하고 ingest/run은 실행하지 않음 |
 | `SchemaSnapshot` | Source Connector | `source_id`, `dataset_id`, `columns`, `sample_ref`, `row_count`, `captured_at` | sample rows는 bounded preview fixture 허용 |
 | `JobRun` | Job / Orchestrator | `id`, `job_type`, `status`, `dataset_id`, `idempotency_key`, `started_at`, `finished_at` | synchronous in-memory runner 허용 |
 | `TaskRun` | Job / Orchestrator | `id`, `job_run_id`, `task_type`, `status`, `attempt`, `error_summary` | single-task fixture 허용 |

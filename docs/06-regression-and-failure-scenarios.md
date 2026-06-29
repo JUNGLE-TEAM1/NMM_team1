@@ -88,6 +88,16 @@
 | Verification method | `docs/03`, `contracts/*.sample.json`, workspace `decisions.md`, `quality.md`, daily smoke evidence format을 확인한다. |
 | Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07`, `contracts/` |
 
+### Source Dataset 생성이 ingest 실행처럼 보이는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | Source Dataset 생성은 등록된 External Connection에서 raw/source dataset metadata를 저장하는 단계다. |
+| Failure condition | Source Dataset 저장 버튼이나 API 응답이 실제 connector test, file upload, stream consume, raw table creation, ETL run을 완료한 것처럼 표시한다. |
+| Expected behavior | `/api/source-datasets`는 `connection_id`, `raw_scope`, `schema_preview`, `layer=source`, `status=metadata_ready`만 저장하고 ingest/run은 후속 Phase로 남긴다. |
+| Verification method | `backend/tests/test_source_dataset_persistence.py`, 데이터셋 화면 Source Dataset wizard Review 저장, Target Dataset source picker 확인 |
+| Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07`, C-2 `feature/source-dataset-persistence` |
+
 ### Week 2 Airflow 실패가 local fallback 성공으로 가려지는 경우
 
 | 항목 | 내용 |
