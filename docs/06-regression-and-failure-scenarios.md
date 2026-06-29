@@ -148,6 +148,16 @@
 | Verification method | `backend/tests/test_query_router.py`, `backend/tests/test_week2_ai_query.py` route/retrieval_trace regression과 `contracts/ai_query_result.sample.json`을 확인한다. |
 | Related docs/interface/Phase | `docs/03`, `docs/05`, `contracts/ai_query_result.sample.json`, M6 response contract |
 
+### M6 answer metadata와 UI 표시가 답변 신뢰 상태를 잘못 나타내는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | `AIQueryResult.answer_metadata`는 summary text를 파싱하지 않고도 source/provider/fallback/grounding state와 사용 evidence index를 표시할 수 있어야 한다. |
+| Failure condition | M1이 fallback 또는 blocked 답변을 grounded external answer처럼 표시한다. 또는 M6가 blocked/unsupported 응답에 `grounding_state=grounded`를 반환한다. 또는 provider fallback이 `fallback_used=false`로 표시된다. |
+| Expected behavior | 성공한 grounded 답변은 `grounding_state=grounded`와 evidence index를 가진다. guardrail blocked/unsupported는 `source=internal`, `provider=m6`, `grounding_state=blocked`를 반환한다. OpenAI provider fallback은 `provider=openai`, `fallback_used=true`, `fallback_reason`을 반환한다. |
+| Verification method | `backend/tests/test_week2_ai_query.py`, `backend/tests/test_openai_llm_adapter.py`, `contracts/ai_query_result.sample.json`, frontend build를 확인한다. |
+| Related docs/interface/Phase | `docs/03`, `docs/05`, M6 Answer UX Metadata |
+
 ### M6 RAG-only route가 SQL engine을 호출하는 경우
 
 | 항목 | 내용 |

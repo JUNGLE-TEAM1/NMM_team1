@@ -51,6 +51,7 @@ AskLake의 Target MVP 대표 성공 시나리오는 `Trusted Dataset -> Query/As
 - [ ] Week 2 상품 리스크 대표 경로는 `pipeline_product_health_e2e`가 5GB 이상 reviews/behavior/delivery fact input을 처리해 `dataset_product_health_gold` / `gold_product_health`를 생성하고, source별 row count, bytes, duration, output path, run id를 evidence로 남긴다.
 - [ ] `gold_product_health` output은 M5 Catalog에 등록되고, M6는 Gold output file을 SQL로 조회해 위험 상품군과 근거 지표를 `AIQueryResult`로 반환한다.
 - [ ] M6 `AIQueryResult`는 기존 `sql`, `query_result`, `rows`, `summary`, `evidence`를 유지하면서 `route`와 `retrieval_trace`로 어떤 경로와 CatalogMetadata 근거를 선택했는지 설명한다.
+- [ ] M6 `AIQueryResult.answer_metadata`는 답변 source/provider/fallback/grounding state와 사용 evidence index를 반환해 M1이 summary text를 파싱하지 않고 답변 신뢰 상태를 표시할 수 있게 한다.
 - [ ] M6 Catalog RAG-lite index는 CatalogMetadata의 안전한 metadata chunk만 사용하고, `retrieval_trace`에 schema/metric/lineage 근거를 evidence와 연결해 남긴다.
 - [ ] M6 Hybrid Route는 SQL-only, RAG-only, Hybrid, Unsupported 질문을 구분하고, Hybrid는 SQL rows와 CatalogMetadata evidence를 함께 사용한다.
 - [ ] M6 답변 생성은 `LLMAdapter` 경계를 통과하되 Week 2 기본값은 외부 호출 없는 deterministic template adapter이며, adapter context에는 SQL rows, evidence, retrieval trace 같은 허용된 재료만 포함한다.
@@ -78,6 +79,7 @@ AskLake의 Target MVP 대표 성공 시나리오는 `Trusted Dataset -> Query/As
 - [ ] 권한 없는 컬럼이나 dataset은 실행, retrieval, prompt 단계 전에 제거되거나 차단된다.
 - [ ] Ask는 SQL, RAG, Hybrid, Unsupported 중 하나로 route된다.
 - [ ] Ask route와 retrieval trace는 응답에 남아 UI나 report가 M6 scoring을 재계산하지 않아도 선택 근거를 표시할 수 있다.
+- [ ] Ask 화면은 route, provider/source, fallback, grounding state, evidence trace를 compact하게 표시하고 blocked/insufficient-evidence 답변을 성공처럼 꾸미지 않는다.
 - [ ] Catalog RAG-lite index는 source of truth가 아니라 derived cache이며, CatalogMetadata `dataset_id + run_id + updated_at` 변경 시 stale로 보고 재생성된다.
 - [ ] RAG-only Ask는 SQL engine validate/execute를 호출하지 않고 CatalogMetadata evidence로만 답한다.
 - [ ] Blocked/Unsupported Ask는 외부 LLM 또는 LLM adapter를 호출하지 않고 보류 사유를 반환한다.
