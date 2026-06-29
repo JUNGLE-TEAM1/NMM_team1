@@ -2,10 +2,10 @@
 
 ## Short Report / 짧은 보고
 
-- Type: Planned Phase
+- Type: Contract alignment
 - Date: 2026-06-29
-- Changed: Phase workspace를 생성했다.
-- Verified: 실행 전.
-- Remaining: 구현, 검증, PR.
-- Next context: External Connection create/list/read API와 UI 연결.
-- Risk: credential secret 저장 범위가 섞이면 보안/계약 위험이 커진다.
+- Changed: C-1 구현 전 External Connection UI를 기존 `SourceConnection` / `SourceConfig.connection_ref` 계약에 매핑하도록 plan, decisions, shared docs, sources, quality, sync를 보정했다.
+- Verified: `rg`로 M2~M6 workspace/contract 문맥 확인, `git diff --check`, `scripts/validate-harness.sh`.
+- Remaining: 최소 persistence/API 또는 fixture adapter 구현 방식 결정 후 실제 C-1 구현.
+- Next context: `docs/03-interface-reference.md`의 `SourceConnection`, `contracts/source_config.sample.json`의 `connection_ref`, `contracts/runtime_config.sample.json`의 `source_inputs[]`, `contracts/kafka_topic_contract.sample.json`의 Kafka handoff를 기준으로 구현한다.
+- Risk: 새 `/api/external-connections`를 바로 추가하면 기존 `/sources`, Week2 `SourceConfig`, M3/M4 source options와 중복될 수 있다.
