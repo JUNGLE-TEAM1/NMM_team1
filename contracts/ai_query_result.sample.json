@@ -90,6 +90,14 @@
     }
   ],
   "summary": "B001 상품이 리뷰 42개로 가장 많습니다. 근거: dataset=dataset_reviews_gold; run_id=run_reviews_demo_001; row_count=3; schema=product_id, review_count, average_rating. SQL 결과와 CatalogMetadata 근거를 함께 사용했습니다.",
+  "answer_metadata": {
+    "source": "template",
+    "provider": "template",
+    "fallback_used": false,
+    "fallback_reason": null,
+    "used_evidence_indexes": [0],
+    "grounding_state": "grounded"
+  },
   "chart_spec": {
     "type": "bar",
     "x": "product_id",

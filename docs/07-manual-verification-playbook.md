@@ -189,7 +189,8 @@ PYTHONPATH=backend .venv/bin/python scripts/week2_m2_product_health_l6_evidence.
 9. M6 AI Query에서 "위험 점수가 높은 상품과 그 근거를 설명해줘."를 실행해 `route=hybrid`, SQL rows, CatalogMetadata evidence가 함께 반환되는지 확인한다.
 10. M6 AI Query에서 "이 데이터셋의 스키마와 lineage 근거를 알려줘."를 실행해 `route=rag`이고 SQL rows 없이 CatalogMetadata evidence만 반환되는지 확인한다.
 11. M1에서 run -> catalog -> ask -> evidence 흐름이 끊기지 않고, 위험 상품군과 `risk_score`, `negative_review_rate`, `conversion_rate`, `late_delivery_rate`가 표시되는지 확인한다.
-12. 발표 문구나 UI가 "Gold 파일이 5GB"라고 설명하지 않고, 5GB를 input 처리 evidence로 표시하는지 확인한다.
+12. M1 `/query`에서 answer metadata panel이 provider/source, fallback, grounding state, evidence indexes를 표시하고, blocked/unsupported를 성공 답변처럼 보이지 않게 하는지 확인한다.
+13. 발표 문구나 UI가 "Gold 파일이 5GB"라고 설명하지 않고, 5GB를 input 처리 evidence로 표시하는지 확인한다.
 
 ### M6 OpenAI LLM Adapter 점검
 

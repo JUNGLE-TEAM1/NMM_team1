@@ -6,6 +6,7 @@ from app.adapters.fixture_catalog_source import FixtureCatalogSource
 from app.adapters.template_llm_adapter import TemplateLLMAdapter
 from app.domain.ai_query import (
     AIQueryResult,
+    AnswerMetadata,
     GuardrailResult,
     QueryEvidence,
     QueryResult,
@@ -13,7 +14,7 @@ from app.domain.ai_query import (
     SelectedDataset,
     SqlEngineContext,
 )
-from app.domain.llm_answer import LLMAnswerContext
+from app.domain.llm_answer import LLMAnswer, LLMAnswerContext
 from app.domain.retrieval_index import RetrievalIndexHit
 from app.domain.target_contracts import now_iso
 from app.ports.catalog_source import CatalogSource
@@ -105,9 +106,10 @@ class Week2AIQueryService:
             evidence_index=0,
             index_hits=retrieval.index_hits,
         )
+        answer: LLMAnswer | None = None
         summary = self._blocked_summary(guardrail)
         if status == "succeeded" and guardrail.validation_status == "passed":
-            summary = self.llm_adapter.generate_summary(
+            answer = self.llm_adapter.generate_summary(
                 LLMAnswerContext(
                     question=question,
                     route=route_decision.route,
@@ -120,7 +122,8 @@ class Week2AIQueryService:
                     retrieval_trace=retrieval_trace,
                     guardrail=guardrail,
                 )
-            ).summary
+            )
+            summary = answer.summary
 
         return AIQueryResult(
             tenant_id=catalog["tenant_id"],
@@ -134,6 +137,12 @@ class Week2AIQueryService:
             query_result=query_result,
             rows=query_result.rows,
             summary=summary,
+            answer_metadata=self._answer_metadata(
+                answer=answer,
+                status=status,
+                guardrail=guardrail,
+                evidence=evidence,
+            ),
             chart_spec=plan.chart_spec,
             guardrail=guardrail,
             executed_at=now_iso(),
@@ -225,3 +234,39 @@ class Week2AIQueryService:
 
     def _blocked_summary(self, guardrail: GuardrailResult) -> str:
         return f"질문을 SQL로 실행하지 못했습니다: {guardrail.failure_message}"
+
+    def _answer_metadata(
+        self,
+        answer: LLMAnswer | None,
+        status: str,
+        guardrail: GuardrailResult,
+        evidence: list[QueryEvidence],
+    ) -> AnswerMetadata:
+        if status != "succeeded" or guardrail.validation_status != "passed":
+            return AnswerMetadata(
+                source="internal",
+                provider="m6",
+                used_evidence_indexes=[],
+                grounding_state="blocked",
+            )
+
+        if answer is None:
+            return AnswerMetadata(
+                source="internal",
+                provider="m6",
+                used_evidence_indexes=[],
+                grounding_state="insufficient_evidence",
+            )
+
+        grounding_state = "grounded"
+        if not evidence or not answer.used_evidence_indexes:
+            grounding_state = "insufficient_evidence"
+
+        return AnswerMetadata(
+            source=answer.source,
+            provider=answer.provider,
+            fallback_used=answer.fallback_used,
+            fallback_reason=answer.fallback_reason,
+            used_evidence_indexes=answer.used_evidence_indexes,
+            grounding_state=grounding_state,
+        )

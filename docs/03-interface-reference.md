@@ -419,6 +419,19 @@ Minimum `AIQueryResult` route and retrieval trace shape:
 
 `route` and `retrieval_trace` are additive fields. Existing M1 consumers may continue reading `status`, `sql`, `query_result`, `rows`, `summary`, and `evidence`, while richer Week 2 displays can show why M6 selected a SQL/RAG/Hybrid/Unsupported path.
 
+Minimum `AIQueryResult.answer_metadata` UX handoff shape:
+
+| Field | Required | Notes |
+| --- | --- | --- |
+| `answer_metadata.source` | yes | `template`, `external`, or `internal`. `internal` is reserved for M6 blocked/guardrail summaries that did not call `LLMAdapter`. |
+| `answer_metadata.provider` | yes | Display provider such as `template`, `openai`, or `m6`. |
+| `answer_metadata.fallback_used` | yes | true only when a provider adapter fell back to deterministic template answer generation. |
+| `answer_metadata.fallback_reason` | no | machine-readable reason such as `provider_error`, `empty_output`, or `no_api_key`. |
+| `answer_metadata.used_evidence_indexes[]` | yes | indexes into `AIQueryResult.evidence[]` that grounded the generated answer. It may be empty for blocked or insufficient-evidence states. |
+| `answer_metadata.grounding_state` | yes | `grounded`, `insufficient_evidence`, or `blocked`. M1 must not display `blocked` or `insufficient_evidence` as a successful grounded answer. |
+
+`answer_metadata` is additive and exists so M1 does not infer answer source, fallback, or grounding state from free-form summary text. M1 may show compact badges for provider/source/fallback/grounding, but M1 must not recompute M6 route or evidence scoring.
+
 Minimum M6 Catalog RAG-lite index boundary:
 
 | Field / Source | Included in M6 index | Notes |

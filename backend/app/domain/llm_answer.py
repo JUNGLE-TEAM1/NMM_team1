@@ -21,6 +21,9 @@ class LLMAnswerContext(BaseModel):
 class LLMAnswer(BaseModel):
     summary: str
     source: Literal["template", "external"] = "template"
+    provider: str = "template"
+    fallback_used: bool = False
+    fallback_reason: str | None = None
     used_evidence_indexes: list[int] = Field(default_factory=list)
 
 
