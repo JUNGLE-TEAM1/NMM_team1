@@ -96,46 +96,6 @@ def test_week2_catalog_metadata_tracks_successful_run_lineage() -> None:
     }
 
 
-def test_week2_workflow_run_can_execute_spark_runner_and_catalog_parquet_output() -> None:
-    client = make_client()
-
-    response = client.post(
-        "/api/week2/workflows/pipeline_reviews_json_e2e/runs",
-        json={"executor": "spark_runner", "triggered_by": "m2_owner"},
-    )
-
-    assert response.status_code == 201
-    run = response.json()
-    assert run["executor"] == "spark_runner"
-    assert run["status"] == "succeeded"
-    assert run["row_count"] == 4
-    assert run["bytes"] > 0
-    assert run["duration_ms"] >= 1
-    assert [task["node_id"] for task in run["task_results"]] == ["spark_read", "spark_write"]
-    assert run["task_results"][0]["row_count"] == 4
-    assert run["task_results"][-1]["bytes"] > 0
-    assert run["logs"][-1]["message"] == "spark runner executed Week 2 workflow boundary"
-
-    catalog_response = client.get("/api/week2/catalog/dataset_reviews_gold")
-
-    assert catalog_response.status_code == 200
-    catalog = catalog_response.json()
-    output_path = Path(catalog["storage"]["local_fallback_path"])
-    assert output_path.exists()
-    assert output_path.suffix == ".parquet"
-    assert output_path.name == "dataset_reviews_gold.parquet"
-    assert output_path.parent.name == "run_id=run_reviews_demo_001"
-    assert catalog["lineage"]["run_id"] == run["run_id"]
-    assert catalog["metrics"]["row_count"] == 4
-    assert catalog["metrics"]["bytes"] == output_path.stat().st_size
-
-    import pyarrow.parquet as pq
-
-    parquet_table = pq.read_table(output_path)
-    assert parquet_table.num_rows == 4
-    assert set(parquet_table.column_names) >= {"review_id", "product_id", "rating"}
-
-
 def test_week2_local_runner_representative_path_persists_run_catalog_and_output(
     tmp_path: Path,
 ) -> None:
@@ -323,7 +283,7 @@ def test_week2_airflow_and_local_failure_do_not_update_catalog(tmp_path: Path) -
         service.get_catalog_metadata("dataset_reviews_gold")
 
 
-@pytest.mark.parametrize("executor", ["spark", "typo_runner"])
+@pytest.mark.parametrize("executor", ["spark", "spark_runner", "typo_runner"])
 def test_week2_workflow_service_rejects_unknown_executor_without_creating_run(
     tmp_path: Path, executor: str
 ) -> None:
@@ -340,12 +300,13 @@ def test_week2_workflow_service_rejects_unknown_executor_without_creating_run(
     assert run["run_id"] == "run_reviews_demo_001"
 
 
-def test_week2_workflow_route_rejects_unknown_executor() -> None:
+@pytest.mark.parametrize("executor", ["spark", "spark_runner"])
+def test_week2_workflow_route_rejects_unknown_executor(executor: str) -> None:
     client = make_client()
 
     response = client.post(
         "/api/week2/workflows/pipeline_reviews_json_e2e/runs",
-        json={"executor": "spark", "triggered_by": "m5_owner"},
+        json={"executor": executor, "triggered_by": "m5_owner"},
     )
 
     assert response.status_code == 422

@@ -7,7 +7,7 @@
   "runner": {
     "default": "local_runner",
     "allowed": ["local_runner", "spark_runner"],
-    "spark_select_rule": "M5 selects spark_runner only when runtime_config.runner is spark and Spark smoke has passed"
+    "spark_select_rule": "Week2SparkRunner remains an M2 runtime smoke boundary; M5 workflow API does not expose spark_runner as a direct executor"
   },
   "spark_runner_smoke": {
     "runner": "spark_runner",

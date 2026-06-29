@@ -62,8 +62,7 @@
   "runner": {
     "primary": "airflow",
     "fallback": "local_runner",
-    "direct_executor": "spark_runner",
-    "direct_executor_condition": "Use spark_runner when M5 explicitly selects the M2 Week2SparkRunner boundary for local Parquet evidence",
+    "spark_execution_note": "Spark execution belongs inside the Airflow DAG task path or a later orchestrated integration, not as a direct M5 API executor",
     "fallback_condition": "Use local_runner when the Airflow adapter is unavailable or returns any status other than succeeded"
   }
 }

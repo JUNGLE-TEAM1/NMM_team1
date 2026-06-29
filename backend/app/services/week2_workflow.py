@@ -5,16 +5,15 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from app.domain.runtime_config import RuntimeConfig, StorageConfig
+from app.domain.runtime_config import StorageConfig
 from app.services.week2_airflow_adapter import Week2AirflowAdapter, Week2AirflowError
 from app.services.week2_catalog_store import Week2CatalogStore
 from app.services.week2_local_runner import Week2LocalRunner, Week2RunnerResult
-from app.services.week2_spark_runner import Week2SparkRunner
 from app.services.week2_storage_adapter import StorageLocation, Week2StorageAdapter
 
 SUCCESSFUL_RUN_STATUSES = {"succeeded", "fallback_succeeded"}
 AIRFLOW_SUCCESS_STATUS = "succeeded"
-SUPPORTED_EXECUTORS = {"airflow", "local_runner", "spark_runner"}
+SUPPORTED_EXECUTORS = {"airflow", "local_runner"}
 
 
 class Week2WorkflowNotFoundError(ValueError):
@@ -37,7 +36,6 @@ class Week2WorkflowService:
         contracts_dir: Path | None = None,
         airflow_adapter: Week2AirflowAdapter | None = None,
         local_runner: Week2LocalRunner | None = None,
-        spark_runner: Week2SparkRunner | None = None,
         output_root: Path | None = None,
         catalog_store: Week2CatalogStore | None = None,
     ) -> None:
@@ -57,7 +55,6 @@ class Week2WorkflowService:
             schema_definition=self.schema_definition,
             output_root=self.output_root,
         )
-        self.spark_runner = spark_runner or Week2SparkRunner()
         self.storage_adapter = Week2StorageAdapter()
         self.runs = self.catalog_store.load_runs()
         self.catalog = self.catalog_store.load_catalog()
@@ -124,8 +121,6 @@ class Week2WorkflowService:
 
         if executor == "local_runner":
             return self.local_runner.run(self.workflow_definition, run_id=run_id)
-        if executor == "spark_runner":
-            return self.spark_runner.run(self._spark_runtime_config(run_id), run_id=run_id)
 
         try:
             airflow_result = self.airflow_adapter.run(self.workflow_definition, run_id=run_id)
@@ -169,36 +164,6 @@ class Week2WorkflowService:
         updated_output = deepcopy(output)
         updated_output["uri"] = replace_run_id(updated_output["uri"], run_id)
         return updated_output
-
-    def _spark_runtime_config(self, run_id: str) -> RuntimeConfig:
-        """계약 fixture를 기준으로 spark_runner에 넘길 RuntimeConfig를 만든다."""
-
-        source_options = self.source_config.get("options", {})
-        source_ref = self.source_config.get("connection_ref", {})
-        target_dataset = self.workflow_definition.get("target_dataset") or self.catalog_template["dataset_id"]
-
-        return RuntimeConfig(
-            runner="spark_runner",
-            input_format=source_options.get("format", "jsonl"),
-            input_path=source_ref["path"],
-            output_format="parquet",
-            output_root=str(self.output_root),
-            storage=self._runtime_storage_config(),
-            options={
-                "compression": self._parquet_compression(),
-                "output_file_name": f"{target_dataset}.parquet",
-            },
-        )
-
-    def _parquet_compression(self) -> str:
-        """runtime_config fixture에서 Parquet compression 설정을 읽고 기본값은 snappy로 둔다."""
-
-        runtime_config_path = self.contracts_dir / "runtime_config.sample.json"
-        if not runtime_config_path.exists():
-            return "snappy"
-        with runtime_config_path.open(encoding="utf-8") as runtime_config_file:
-            runtime_config = json.load(runtime_config_file)
-        return runtime_config.get("parquet", {}).get("compression", "snappy")
 
     def _runtime_storage_config(self) -> StorageConfig:
         """runtime/catalog fixture를 합쳐 runner와 Catalog가 공유할 storage 설정을 만든다."""
@@ -257,8 +222,6 @@ class Week2WorkflowService:
             logs.append({"level": "info", "message": "airflow adapter executed Week 2 workflow boundary"})
         elif executor == "airflow":
             logs.append({"level": "info", "message": "airflow adapter fell back to local runner"})
-        elif executor == "spark_runner":
-            logs.append({"level": "info", "message": "spark runner executed Week 2 workflow boundary"})
         else:
             logs.append({"level": "info", "message": "local runner executed Week 2 workflow boundary"})
         return logs
