@@ -189,6 +189,7 @@ class CatalogRetrievalIndex:
         text = " ".join(
             [
                 f"dataset {dataset_id}",
+                "lineage",
                 f"pipeline {pipeline_id}",
                 f"run {lineage.get('run_id', '')}",
                 f"sources {source_ids}",
