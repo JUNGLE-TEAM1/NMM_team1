@@ -30,3 +30,7 @@
 - validation: backend focused tests, frontend build, browser smoke, `scripts/validate-harness.sh --strict`, `scripts/test-harness.sh` passed
 - result: local checks passed
 - deferral reason: PR/push not started yet
+- pushed branch: feature/target-dataset-job-draft
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/292
+- merge status: open
+- issue close status: n/a
