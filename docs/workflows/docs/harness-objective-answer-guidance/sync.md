@@ -45,7 +45,7 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 - issue creation result: not requested
 - issue project result: not requested
 - PR closing keyword:
-- pushed branch:
-- PR link:
-- merge status:
+- pushed branch: `codex/docs/harness-objective-answer-guidance-v2`
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/264
+- merge status: PR created; merge/finalize/cleanup은 사람 확인 전 실행하지 않음.
 - issue close status:
