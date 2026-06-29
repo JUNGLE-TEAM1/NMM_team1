@@ -290,6 +290,32 @@ External Connection은 외부 원천에 접속하기 위한 연결 설정이고,
 - 기존 `D-*` 구현은 R-1 이후 재사용 가능한 UI 재료로만 취급하고, 잘못된 개념 문구는 각 R Phase에서 제거한다.
 - 각 Phase는 독립 확인 가능해야 하며, 사람이 화면을 확인한 뒤 다음 Phase로 진행한다.
 
+## Dataset Module Connection Queue
+
+상태: Ready after PR #284 merge or explicit human confirmation to stack on current branch.
+
+`R-*` 큐가 정리한 draft UX를 실제 AskLake module 계약에 연결한다.
+연결 순서는 `External Connection persistence -> Source Dataset persistence -> Target Dataset + ETL Job draft -> M5 Run -> M2/M4 runtime evidence -> M3 CatalogMetadata -> M6 AI Query context`로 둔다.
+
+| 순서 | Branch / workspace | 목표 | 선행 조건 | 완료 기준 |
+| --- | --- | --- | --- | --- |
+| C-1 | `feature/external-connection-persistence` | External Connection 생성/목록 API를 추가하고 UI mock connection card를 API 응답으로 교체한다 | PR #284 merge 또는 사람 확인 | External Connection draft가 저장/조회되고 credential secret은 저장하지 않음 |
+| C-2 | `feature/source-dataset-persistence` | 등록된 External Connection에서 Source Dataset 생성/목록 API를 연결한다 | C-1 완료 또는 사람 확인 | Source Dataset이 connection id, raw scope, schema preview draft를 가진 metadata로 저장/조회됨 |
+| C-3 | `feature/target-dataset-job-draft` | Target Dataset과 ETL job definition draft 저장을 연결한다 | C-2 완료 또는 사람 확인 | Target Dataset review 결과가 source reference, process, schedule, job definition draft로 저장됨 |
+| C-4 | `feature/target-dataset-run-handoff` | 저장된 ETL job definition을 M5 workflow/run 생성으로 넘긴다 | C-3 완료 또는 사람 확인 | Target Dataset에서 run을 만들고 run status를 조회할 수 있음 |
+| C-5 | `feature/runtime-evidence-integration` | M2 batch/runtime과 M4 Kafka evidence를 run output evidence로 연결한다 | C-4 완료 또는 사람 확인 | ExecutionResult에 row count, bytes, duration, output path, Kafka replay evidence가 일관되게 남음 |
+| C-6 | `feature/catalog-metadata-integration` | 실행 결과를 M3/M5 CatalogMetadata로 등록하고 데이터 카탈로그 화면에 반영한다 | C-5 완료 또는 사람 확인 | CatalogMetadata가 schema, storage, metrics, lineage, SQL allowlist context를 제공함 |
+| C-7 | `feature/ai-query-dataset-context` | M6 AI Query가 CatalogMetadata와 Target Dataset context를 읽어 질문/SQL 결과를 만든다 | C-6 완료 또는 사람 확인 | AI Query가 선택된 dataset context로 read-only SQL/evidence 결과를 표시함 |
+
+범위 원칙:
+
+- PR #284의 화면 구조가 기준선이다. 연결 Phase는 UX를 다시 크게 바꾸지 않는다.
+- C-1에서 실제 credential secret 저장, 연결 테스트, production connector 실행은 제외한다.
+- C-2에서 ingest/run 실행은 제외하고 Source Dataset metadata 저장까지만 닫는다.
+- C-3에서 ETL job은 draft definition까지 저장하고 실행은 C-4 이후로 넘긴다.
+- C-4 이후 M5 실행 화면은 `M5 데모`가 아니라 `Job Runs` 또는 `실행 기록` 같은 사용자 언어로 재도입한다.
+- M2/M4/M3/M6는 독립 메뉴가 아니라 Dataset creation 이후의 runtime, evidence, catalog, query 소비자로 연결한다.
+
 ## Local Environment Follow-up Queue
 
 로컬 환경 요구사항은 `docs/04-development-guide.md`를 Source of Truth로 둔다.
