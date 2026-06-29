@@ -55,7 +55,7 @@ import {
   triggerWeek2Run,
 } from "../api/asklakeClient";
 import { createSourceDataset, listSourceDatasets } from "../api/sourceDatasetApi";
-import { createTargetDataset, triggerTargetDatasetRun } from "../api/targetDatasetApi";
+import { createTargetDataset, listTargetDatasetRuns, triggerTargetDatasetRun } from "../api/targetDatasetApi";
 import asklakeLogo from "../assets/asklake-logo.png";
 import { StatusPill } from "../components/StatusPill";
 import {
@@ -323,6 +323,14 @@ function formatRunStatusLabel(status) {
   if (status === "fallback_succeeded") return "fallback succeeded";
   if (status === "fallback_failed") return "fallback failed";
   return status || "unknown";
+}
+
+function formatRuntimeOutputScope(executionResult) {
+  const handoff = executionResult?.target_dataset_handoff;
+  if (handoff?.runtime_output_scope === "week2_fixture_output") {
+    return `fixture output ${handoff.runtime_output_dataset_id || "dataset_reviews_gold"}`;
+  }
+  return "target output";
 }
 
 const externalConnectionTypes = [
@@ -953,7 +961,8 @@ function SourcesPage({ navigate, setNotice }) {
         executor: "local_runner",
         triggeredBy: "demo_user",
       });
-      setTargetRuns((runs) => [runRecord, ...runs.filter((run) => run.id !== runRecord.id)]);
+      const runRecords = await listTargetDatasetRuns(lastCreatedTargetDraft.id);
+      setTargetRuns(runRecords.length > 0 ? runRecords : [runRecord]);
       setNotice(`${runRecord.target_dataset_name} Job Run을 시작했습니다.`);
     } catch (error) {
       setTargetRunError(error.message);
@@ -1909,14 +1918,14 @@ function SourcesPage({ navigate, setNotice }) {
                 <Play size={18} />
                 <div>
                   <strong>Job Runs</strong>
-                  <p>저장된 ETL job definition draft를 실행 기록으로 넘겨 상태를 확인합니다.</p>
+                  <p>저장된 ETL job definition draft를 M5 handoff smoke로 넘겨 상태를 확인합니다.</p>
                 </div>
               </div>
               <div className="target-run-actions">
                 <div>
                   <span>executor</span>
                   <strong>local_runner</strong>
-                  <p>이번 Phase는 M5 workflow/run API handoff만 확인합니다.</p>
+                  <p>이번 Phase는 M5 workflow/run API handoff만 확인하며 runtime output은 Week2 fixture입니다.</p>
                 </div>
                 <button type="button" className="primary-action" onClick={startTargetDatasetRun} disabled={!canStartTargetRun}>
                   {isStartingTargetRun ? "Run 생성 중..." : "Job Run 시작"}
@@ -1930,7 +1939,9 @@ function SourcesPage({ navigate, setNotice }) {
                       <div>
                         <span>run_id</span>
                         <strong>{run.week2_run_id}</strong>
-                        <p>{run.pipeline_id} · {run.executor}</p>
+                        <p>
+                          {run.pipeline_id} · {run.executor} · {formatRuntimeOutputScope(run.execution_result)}
+                        </p>
                       </div>
                       <span className={`target-run-status ${targetRunTone(run.status)}`}>
                         {formatRunStatusLabel(run.status)}

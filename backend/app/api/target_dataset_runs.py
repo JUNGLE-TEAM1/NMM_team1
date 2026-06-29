@@ -69,11 +69,20 @@ def execution_result_with_target_handoff(
     target_dataset: dict[str, Any],
 ) -> dict[str, Any]:
     next_result = dict(execution_result)
+    outputs = next_result.get("outputs") or []
+    runtime_output = outputs[0] if outputs else {}
+    job_definition = target_dataset["job_definition"]
     next_result["target_dataset_handoff"] = {
         "target_dataset_id": target_dataset["id"],
         "target_dataset_name": target_dataset["name"],
-        "job_definition_status": target_dataset["job_definition"]["status"],
+        "job_definition_status": job_definition["status"],
         "source_dataset_id": target_dataset["source_dataset_id"],
         "selected_fields": target_dataset["selected_fields"],
+        "process_rule": target_dataset["process_rule"],
+        "schedule": target_dataset["schedule"],
+        "output_schema": target_dataset["output_schema"],
+        "runtime_output_scope": "week2_fixture_output",
+        "runtime_output_dataset_id": runtime_output.get("dataset_id"),
+        "runtime_pipeline_id": next_result.get("pipeline_id"),
     }
     return next_result

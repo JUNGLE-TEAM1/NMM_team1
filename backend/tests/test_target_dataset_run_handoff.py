@@ -95,11 +95,26 @@ def test_target_dataset_run_handoff_creates_week2_run_link() -> None:
         "job_definition_status": "draft",
         "source_dataset_id": target_dataset["source_dataset_id"],
         "selected_fields": ["review_id", "product_id", "rating"],
+        "process_rule": {
+            "type": "select_fields",
+            "selected_fields": ["review_id", "product_id", "rating"],
+        },
+        "schedule": {"mode": "manual", "note": "데모에서는 수동 실행으로만 준비합니다."},
+        "output_schema": [
+            {"name": "review_id", "type": "string"},
+            {"name": "product_id", "type": "string"},
+            {"name": "rating", "type": "number"},
+        ],
+        "runtime_output_scope": "week2_fixture_output",
+        "runtime_output_dataset_id": "dataset_reviews_gold",
+        "runtime_pipeline_id": "pipeline_reviews_json_e2e",
     }
+    assert run_record["execution_result"]["outputs"][0]["dataset_id"] == "dataset_reviews_gold"
 
     list_response = client.get(f"/api/target-datasets/{target_dataset['id']}/runs")
     assert list_response.status_code == 200
     assert list_response.json()[0]["id"] == run_record["id"]
+    assert list_response.json()[0]["execution_result"]["target_dataset_handoff"]["runtime_output_scope"] == "week2_fixture_output"
 
     detail_response = client.get(f"/api/target-dataset-runs/{run_record['id']}")
     assert detail_response.status_code == 200

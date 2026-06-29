@@ -151,10 +151,11 @@ Target MVP 기능이 구현될 때 아래 경로를 단계별로 실제 manual v
 2. `/sources` 데이터셋 화면에서 Target Dataset C-3 흐름을 따라 draft를 저장한다.
 3. Review 화면의 `Job Runs` 패널이 저장된 draft 이후에만 보이는지 확인한다.
 4. `Job Run 시작`을 누른다.
-5. 성공 알림이 표시되고 `run_id`, executor, status가 `Job Runs` 목록에 표시되는지 확인한다.
-6. `GET /api/target-datasets/{dataset_id}/runs` 응답에 `week2_run_id`, `pipeline_id`, `status`, `execution_result.target_dataset_handoff`가 있는지 확인한다.
-7. `GET /api/week2/runs/{week2_run_id}`로 M5 `ExecutionResult`가 조회되는지 확인한다.
-8. 독립 `M5 데모` 메뉴를 되살리지 않았고, runtime evidence/CatalogMetadata 보강은 후속 Phase로 남아 있는지 확인한다.
+5. 성공 알림이 표시되고 `run_id`, executor, status, `fixture output dataset_reviews_gold`가 `Job Runs` 목록에 표시되는지 확인한다.
+6. 생성 직후 화면이 `GET /api/target-datasets/{dataset_id}/runs` 목록 결과를 반영하는지 확인한다.
+7. `GET /api/target-datasets/{dataset_id}/runs` 응답에 `week2_run_id`, `pipeline_id`, `status`, `execution_result.target_dataset_handoff.runtime_output_scope=week2_fixture_output`가 있는지 확인한다.
+8. `GET /api/week2/runs/{week2_run_id}`로 M5 `ExecutionResult`가 조회되는지 확인한다.
+9. 독립 `M5 데모` 메뉴를 되살리지 않았고, runtime evidence/CatalogMetadata 보강은 후속 Phase로 남아 있는지 확인한다.
 
 ### Modular Contract Baseline 점검
 

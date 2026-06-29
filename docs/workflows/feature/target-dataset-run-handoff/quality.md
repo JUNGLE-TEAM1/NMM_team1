@@ -3,8 +3,8 @@
 - Quality gate status: passed
 - TDD status: Target Dataset run handoff backend 테스트를 추가하고 통과시켰다.
 - Required checks: backend focused tests, frontend build, browser smoke, `scripts/validate-harness.sh --strict`, `scripts/test-harness.sh`.
-- Manual verification: run 생성, status 조회, 성공/fallback status 표시.
-- Regression focus: `M5 데모` nav를 되살리지 않는다.
+- Manual verification: run 생성, status 조회, 성공/fallback status, `fixture output dataset_reviews_gold` 표시.
+- Regression focus: `M5 데모` nav를 되살리지 않고 Week2 fixture output을 실제 Target output처럼 표시하지 않는다.
 
 ## TDD Plan / TDD 계획
 
@@ -21,8 +21,8 @@
 | --- | --- | --- | --- |
 | backend focused tests | `PYTHONPATH=backend pytest backend/tests/test_target_dataset_run_handoff.py backend/tests/test_target_dataset_job_draft.py backend/tests/test_week2_workflow_catalog.py::test_week2_workflow_run_returns_execution_result_contract backend/tests/test_week2_workflow_catalog.py::test_week2_catalog_metadata_tracks_successful_run_lineage` | pass | 8 passed |
 | frontend build | `cd frontend && npm ci && npm run build` | pass | Vite build succeeded |
-| browser smoke | local backend `8000`, frontend `13003` | pass | Target draft 저장 후 `Job Run 시작`, `run_reviews_demo_001`, `fallback succeeded` 표시 확인 |
-| API smoke | `GET /api/target-datasets/{dataset_id}/runs` | pass | `week2_run_id`, `execution_result.target_dataset_handoff`, `status=fallback_succeeded` 확인 |
+| browser smoke | local backend `8000`, frontend `13003` | pass | Target draft 저장 후 `Job Run 시작`, `run_reviews_demo_002`, `fallback succeeded`, `fixture output dataset_reviews_gold` 표시 확인 |
+| API smoke | `GET /api/target-datasets/{dataset_id}/runs` | pass | `week2_run_id`, `execution_result.target_dataset_handoff.runtime_output_scope=week2_fixture_output`, `status=fallback_succeeded` 확인 |
 | harness validation | `scripts/validate-harness.sh --strict` | pass | Harness validation passed |
 | harness regression | `scripts/test-harness.sh` | pass | Harness regression tests passed: 31 |
 
