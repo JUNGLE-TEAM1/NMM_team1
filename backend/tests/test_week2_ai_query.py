@@ -267,6 +267,48 @@ def test_week2_ai_query_scores_catalog_metadata_terms_when_columns_tie() -> None
     assert "average_rating" in result.selected_datasets[0].reason
 
 
+def test_week2_ai_query_prefers_reviews_catalog_for_review_question_when_product_health_exists() -> None:
+    reviews_catalog = _review_catalog(
+        "dataset_reviews_gold",
+        "Amazon Reviews Gold",
+        "run_reviews_demo_001",
+    )
+    product_health_catalog = {
+        "tenant_id": "tenant_demo",
+        "dataset_id": "dataset_product_health_gold",
+        "name": "Product Health Gold",
+        "s3_uri": "s3://asklake-demo/product_health/gold/run_id=run_product_health_demo_001/",
+        "storage": {
+            "local_fallback_path": "/tmp/product_health/run_product_health_demo_001/dataset_product_health_gold.parquet",
+        },
+        "schema": {
+            "fields": [
+                {"name": "product_id", "type": "string", "nullable": False},
+                {"name": "review_count", "type": "integer", "nullable": False},
+                {"name": "average_rating", "type": "number", "nullable": True},
+                {"name": "risk_score", "type": "number", "nullable": False},
+            ]
+        },
+        "lineage": {"run_id": "run_product_health_demo_001"},
+        "query": {
+            "table_name": "gold_product_health",
+            "allowed_columns": ["product_id", "review_count", "average_rating", "risk_score"],
+            "default_limit": 100,
+            "timeout_seconds": 30,
+        },
+        "updated_at": "2026-06-26T10:05:00+09:00",
+    }
+    service = Week2AIQueryService(
+        RecordingSqlEngine(),
+        catalog_source=InMemoryCatalogSource(product_health_catalog, reviews_catalog),
+    )
+
+    result = service.answer("리뷰가 가장 많은 상품 알려줘")
+
+    assert result.selected_datasets[0].dataset_id == "dataset_reviews_gold"
+    assert result.evidence[0].dataset_id == "dataset_reviews_gold"
+
+
 def test_fake_sql_engine_blocks_non_select_sql() -> None:
     context = SqlEngineContext(
         table_name="reviews_gold",

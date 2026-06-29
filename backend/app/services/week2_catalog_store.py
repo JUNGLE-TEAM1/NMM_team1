@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any
 
 
-RUN_SEQUENCE_RE = re.compile(r"run_reviews_demo_(\d+)$")
+RUN_SEQUENCE_RE = re.compile(r"(?P<prefix>.+)_(?P<sequence>\d+)$")
 
 
 class Week2CatalogStore:
@@ -25,12 +25,12 @@ class Week2CatalogStore:
     def save_catalog(self, catalog: dict[str, Any]) -> None:
         write_json(self.catalog_dir / f"{catalog['dataset_id']}.json", catalog)
 
-    def sequence_start(self, runs: dict[str, dict[str, Any]]) -> int:
+    def sequence_start(self, runs: dict[str, dict[str, Any]], run_id_prefix: str = "run_reviews_demo") -> int:
         latest = 0
         for run_id in runs:
             match = RUN_SEQUENCE_RE.match(run_id)
-            if match is not None:
-                latest = max(latest, int(match.group(1)))
+            if match is not None and match.group("prefix") == run_id_prefix:
+                latest = max(latest, int(match.group("sequence")))
         return latest
 
 

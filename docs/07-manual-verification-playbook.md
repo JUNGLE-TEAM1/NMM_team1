@@ -71,12 +71,13 @@
 1. Docker daemon이 실행 중인지 확인한다.
 2. `docker compose -f docker-compose.airflow.yml up -d`를 실행한다.
 3. `curl -fsS http://localhost:8080/health`가 Airflow health 응답을 반환하는지 확인한다.
-4. Airflow UI `http://localhost:8080`에서 `asklake_week2_reviews` DAG가 보이는지 확인한다.
+4. Airflow UI `http://localhost:8080`에서 `asklake_week2_reviews`, `asklake_week2_product_health` DAG가 보이는지 확인한다.
 5. backend를 아래 환경값과 함께 실행한다.
 
 ```bash
 ASKLAKE_WEEK2_AIRFLOW_BASE_URL=http://localhost:8080 \
 ASKLAKE_WEEK2_AIRFLOW_DAG_ID=asklake_week2_reviews \
+ASKLAKE_WEEK2_PRODUCT_HEALTH_AIRFLOW_DAG_ID=asklake_week2_product_health \
 ASKLAKE_WEEK2_AIRFLOW_USERNAME=airflow \
 ASKLAKE_WEEK2_AIRFLOW_PASSWORD=airflow \
 ASKLAKE_WEEK2_AIRFLOW_RESULT_ROOT=data/week2/_airflow_results \
@@ -90,7 +91,47 @@ PYTHONPATH=backend ./.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
 8. run log에 `airflow adapter executed Week 2 workflow boundary`가 있고 `falling back`이 없는지 확인한다.
 9. `data/week2/_airflow_results/<run_id>.json`과 `data/week2/reviews/gold/run_id=<run_id>/dataset_reviews_gold.jsonl`이 생겼는지 확인한다.
 10. `GET /api/week2/catalog/dataset_reviews_gold`에서 같은 `run_id`, row count, bytes, local path가 확인되는지 확인한다.
-11. 확인 뒤 필요한 경우 `docker compose -f docker-compose.airflow.yml down`을 실행한다.
+11. `POST /api/week2/workflows/pipeline_product_health_e2e/runs`에 `{"executor":"airflow","triggered_by":"m5_owner"}`를 보낸다.
+12. 응답 `status`가 `succeeded`이고 run log에 `airflow adapter executed Week 2 workflow boundary`가 있는지 확인한다.
+13. `data/week2/_airflow_results/<run_id>.json`과 `data/week2/product_health/gold/run_id=<run_id>/dataset_product_health_gold.parquet` 또는 `.jsonl` smoke output이 생겼는지 확인한다.
+14. `GET /api/week2/catalog/dataset_product_health_gold`에서 `query.table_name=gold_product_health`, 같은 `run_id`, row count, bytes, local path가 확인되는지 확인한다.
+15. 확인 뒤 필요한 경우 `docker compose -f docker-compose.airflow.yml down`을 실행한다.
+
+## Week 2 M5 product-health Catalog smoke 점검
+
+이 경로는 M5가 product-health 계산을 소유하지 않고, `Week2RunnerResult` 호환 결과를 `ExecutionResult`와 `CatalogMetadata`로 연결하는지 확인한다.
+
+1. backend를 실행한다.
+
+```bash
+PYTHONPATH=backend ./.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+2. `POST /api/week2/workflows/pipeline_product_health_e2e/runs`에 `{"executor":"local_runner","triggered_by":"m5_owner"}`를 보낸다.
+3. 응답 `run_id`가 `run_product_health_demo_001` 형식인지 확인한다.
+4. 응답 `task_results`에 `reviews_seed`, `behavior_events_seed`, `delivery_trips_seed`, `product_master_seed` source evidence가 있는지 확인한다.
+5. `GET /api/week2/catalog/dataset_product_health_gold`를 호출한다.
+6. Catalog에서 `lineage.run_id`, `storage.local_fallback_path`, `metrics.row_count`, `metrics.bytes`가 run 결과와 이어지는지 확인한다.
+7. Catalog의 `query.table_name`이 `gold_product_health`이고, `query.allowed_columns`에 `risk_score`, `negative_review_rate`, `conversion_rate`, `late_delivery_rate`가 포함되는지 확인한다.
+8. 실패 run을 강제로 만들 수 있는 테스트 환경에서는 실패 run 뒤에도 최신 성공 Catalog `run_id`가 유지되는지 확인한다.
+
+## Week 2 M5 product-health Airflow demo page 점검
+
+이 경로는 기존 React 화면과 독립된 단일 페이지에서 product-health Airflow run과 Catalog 결과를 눈으로 확인한다.
+
+1. `Week 2 M5 Airflow local smoke 점검`의 Airflow와 backend 실행을 완료한다.
+2. frontend dev server를 실행한다.
+
+```bash
+cd frontend
+npm run dev -- --host 127.0.0.1 --port 5173
+```
+
+3. browser에서 `http://127.0.0.1:5173/product-health-airflow-demo.html`을 연다.
+4. `Executor`가 `airflow`인지 확인하고 `실행`을 누른다.
+5. `Run Receipt`에서 `run_product_health_demo_###`, `status=succeeded`, source row/bytes, Gold output path를 확인한다.
+6. `Source Evidence`에서 `reviews_seed`, `behavior_events_seed`, `delivery_trips_seed`, `product_master_seed`가 같은 run에 묶였는지 확인한다.
+7. `Catalog Metadata`에서 `table=gold_product_health`, `dataset_product_health_gold` local path, allowed columns, metrics, lineage run id를 확인한다.
 
 ## Target MVP 수동 점검 후보
 
@@ -104,7 +145,7 @@ Target MVP 기능이 구현될 때 아래 경로를 단계별로 실제 manual v
 4. `.milestones/target-mvp/manifest.yaml`이 workstream scope, contracts, integration checkpoint를 포함하는지 확인한다.
 5. Query/Ask workstream이 실제 Trust 구현 전에는 mock/fake policy boundary 안에서만 진행되도록 기록되어 있는지 확인한다.
 6. 첫 병렬 wave와 integration checkpoint가 `docs/05` acceptance checkpoint와 연결되는지 확인한다.
-7. Week 2 모듈 구현 전 `contracts/source_config.sample.json`, `contracts/schema_definition.sample.json`, `contracts/transform_spec.sample.json`, `contracts/runtime_config.sample.json`, `contracts/kafka_topic_contract.sample.json`, `contracts/workflow_definition.sample.json`, `contracts/execution_result.sample.json`, `contracts/catalog_metadata.sample.json`, `contracts/ai_query_result.sample.json`이 존재하고 유효한 JSON인지 확인한다.
+7. Week 2 모듈 구현 전 `contracts/source_config.sample.json`, `contracts/schema_definition.sample.json`, `contracts/transform_spec.sample.json`, `contracts/runtime_config.sample.json`, `contracts/kafka_topic_contract.sample.json`, `contracts/workflow_definition.sample.json`, `contracts/execution_result.sample.json`, `contracts/catalog_metadata.sample.json`, product-health `workflow_definition`/`execution_result`/`catalog_metadata` fixture, `contracts/ai_query_result.sample.json`이 존재하고 유효한 JSON인지 확인한다.
 8. Week 2 fixture가 M1~M6 producer/consumer, M2 runtime, M3 transform intent, M4 Kafka raw event handoff, Airflow/local runner fallback, direct `spark_runner`, `SqlEngineAdapter` 경계를 명시하는지 확인한다.
 9. Week 2 공통 hardening으로 API/UI route, ID 규칙, storage path pattern, workflow/run status, `QueryResult`, guardrail failure shape, daily smoke evidence 형식이 `docs/03`에 정리되어 있는지 확인한다.
 10. `contracts/ai_query_result.sample.json`의 `query_result` 필드가 `docs/03`의 `QueryResult` 필드와 일치하는지 확인한다.

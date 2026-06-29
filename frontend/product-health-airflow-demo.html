@@ -1,0 +1,657 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Product Health Airflow Demo</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f6f7f9;
+        --panel: #ffffff;
+        --panel-soft: #f0f4f8;
+        --ink: #18212f;
+        --muted: #657286;
+        --line: #d9e1ea;
+        --green: #1f8a55;
+        --red: #c13d32;
+        --blue: #2868b6;
+        --gold: #8a6a18;
+        --shadow: 0 10px 30px rgba(23, 36, 52, 0.08);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-width: 320px;
+        background: var(--bg);
+        color: var(--ink);
+        font-family:
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        letter-spacing: 0;
+      }
+
+      button,
+      input,
+      select {
+        font: inherit;
+      }
+
+      button {
+        min-height: 40px;
+        border: 1px solid #1f5e9f;
+        border-radius: 6px;
+        background: var(--blue);
+        color: #ffffff;
+        cursor: pointer;
+        font-weight: 700;
+        padding: 0 14px;
+      }
+
+      button.secondary {
+        border-color: var(--line);
+        background: #ffffff;
+        color: var(--ink);
+      }
+
+      button:disabled {
+        cursor: wait;
+        opacity: 0.65;
+      }
+
+      input,
+      select {
+        min-height: 40px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #ffffff;
+        color: var(--ink);
+        padding: 0 10px;
+      }
+
+      .shell {
+        width: min(1180px, calc(100vw - 32px));
+        margin: 24px auto;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 18px;
+        margin-bottom: 18px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(26px, 3vw, 40px);
+        line-height: 1.1;
+      }
+
+      .subtitle {
+        margin: 8px 0 0;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .controls {
+        display: grid;
+        grid-template-columns: minmax(180px, 280px) 145px auto auto;
+        gap: 10px;
+        align-items: end;
+      }
+
+      label {
+        display: grid;
+        gap: 6px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(340px, 0.9fr);
+        gap: 16px;
+      }
+
+      .panel {
+        min-width: 0;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        box-shadow: var(--shadow);
+      }
+
+      .panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        min-height: 54px;
+        border-bottom: 1px solid var(--line);
+        padding: 14px 16px;
+      }
+
+      .panel-title {
+        margin: 0;
+        font-size: 16px;
+      }
+
+      .panel-body {
+        padding: 16px;
+      }
+
+      .stack {
+        display: grid;
+        gap: 16px;
+      }
+
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .metric {
+        min-width: 0;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel-soft);
+        padding: 12px;
+      }
+
+      .metric span {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .metric strong {
+        display: block;
+        overflow-wrap: anywhere;
+        margin-top: 7px;
+        font-size: 17px;
+      }
+
+      .status {
+        display: inline-flex;
+        align-items: center;
+        min-height: 28px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        padding: 0 10px;
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .status.succeeded,
+      .status.fallback_succeeded {
+        border-color: rgba(31, 138, 85, 0.28);
+        background: rgba(31, 138, 85, 0.1);
+        color: var(--green);
+      }
+
+      .status.failed,
+      .status.fallback_failed,
+      .status.error {
+        border-color: rgba(193, 61, 50, 0.28);
+        background: rgba(193, 61, 50, 0.1);
+        color: var(--red);
+      }
+
+      .path {
+        overflow-wrap: anywhere;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fbfcfd;
+        color: #243348;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 12px;
+        line-height: 1.55;
+        padding: 10px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+      }
+
+      th,
+      td {
+        border-bottom: 1px solid var(--line);
+        padding: 10px 8px;
+        text-align: left;
+        vertical-align: top;
+        overflow-wrap: anywhere;
+        font-size: 13px;
+      }
+
+      th {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .chip {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: #ffffff;
+        color: #243348;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 12px;
+        padding: 6px 9px;
+      }
+
+      .logs {
+        display: grid;
+        max-height: 280px;
+        overflow: auto;
+        gap: 8px;
+      }
+
+      .log {
+        border-left: 3px solid var(--blue);
+        background: #fbfcfd;
+        padding: 8px 10px;
+        color: #263446;
+        font-size: 13px;
+      }
+
+      .log.warning {
+        border-color: var(--gold);
+      }
+
+      .log.error {
+        border-color: var(--red);
+      }
+
+      .empty {
+        border: 1px dashed var(--line);
+        border-radius: 8px;
+        color: var(--muted);
+        padding: 18px;
+        text-align: center;
+      }
+
+      .error-box {
+        display: none;
+        margin-bottom: 14px;
+        border: 1px solid rgba(193, 61, 50, 0.28);
+        border-radius: 8px;
+        background: rgba(193, 61, 50, 0.1);
+        color: var(--red);
+        padding: 12px;
+        font-weight: 700;
+      }
+
+      @media (max-width: 920px) {
+        .topbar {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .controls {
+          grid-template-columns: 1fr 1fr;
+        }
+
+        .grid {
+          grid-template-columns: 1fr;
+        }
+
+        .metrics {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 560px) {
+        .shell {
+          width: min(100vw - 20px, 1180px);
+          margin: 12px auto;
+        }
+
+        .controls,
+        .metrics {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <section class="topbar">
+        <div>
+          <h1>Product Health Airflow Demo</h1>
+          <p class="subtitle">
+            pipeline_product_health_e2e -> dataset_product_health_gold -> gold_product_health
+          </p>
+        </div>
+        <div class="controls">
+          <label>
+            API base
+            <input id="apiBase" value="http://127.0.0.1:8002" placeholder="http://127.0.0.1:8002" />
+          </label>
+          <label>
+            Executor
+            <select id="executor">
+              <option value="airflow">airflow</option>
+              <option value="local_runner">local_runner</option>
+            </select>
+          </label>
+          <button id="runButton" type="button">실행</button>
+          <button id="refreshButton" class="secondary" type="button">Catalog 조회</button>
+        </div>
+      </section>
+
+      <div id="errorBox" class="error-box"></div>
+
+      <section class="grid">
+        <div class="stack">
+          <article class="panel">
+            <div class="panel-header">
+              <h2 class="panel-title">Run Receipt</h2>
+              <span id="runStatus" class="status">idle</span>
+            </div>
+            <div class="panel-body stack">
+              <div class="metrics">
+                <div class="metric"><span>run_id</span><strong id="runId">-</strong></div>
+                <div class="metric"><span>executor</span><strong id="runExecutor">-</strong></div>
+                <div class="metric"><span>row_count</span><strong id="runRows">-</strong></div>
+                <div class="metric"><span>bytes</span><strong id="runBytes">-</strong></div>
+              </div>
+              <div>
+                <label>Gold output</label>
+                <div id="runOutput" class="path">-</div>
+              </div>
+            </div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-header">
+              <h2 class="panel-title">Task Evidence</h2>
+            </div>
+            <div class="panel-body">
+              <div id="taskTable"></div>
+            </div>
+          </article>
+        </div>
+
+        <div class="stack">
+          <article class="panel">
+            <div class="panel-header">
+              <h2 class="panel-title">Catalog Metadata</h2>
+              <span id="catalogStatus" class="status">unknown</span>
+            </div>
+            <div class="panel-body stack">
+              <div class="metrics">
+                <div class="metric"><span>table</span><strong id="catalogTable">-</strong></div>
+                <div class="metric"><span>run_id</span><strong id="catalogRunId">-</strong></div>
+                <div class="metric"><span>rows</span><strong id="catalogRows">-</strong></div>
+                <div class="metric"><span>bytes</span><strong id="catalogBytes">-</strong></div>
+              </div>
+              <div>
+                <label>local_fallback_path</label>
+                <div id="catalogPath" class="path">-</div>
+              </div>
+              <div>
+                <label>allowed_columns</label>
+                <div id="allowedColumns" class="chips"></div>
+              </div>
+            </div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-header">
+              <h2 class="panel-title">Logs</h2>
+            </div>
+            <div class="panel-body">
+              <div id="logs" class="logs"></div>
+            </div>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const apiBaseInput = document.querySelector("#apiBase");
+      const executorInput = document.querySelector("#executor");
+      const runButton = document.querySelector("#runButton");
+      const refreshButton = document.querySelector("#refreshButton");
+      const errorBox = document.querySelector("#errorBox");
+      const state = { run: null, catalog: null, busy: false };
+
+      const fields = {
+        runStatus: document.querySelector("#runStatus"),
+        runId: document.querySelector("#runId"),
+        runExecutor: document.querySelector("#runExecutor"),
+        runRows: document.querySelector("#runRows"),
+        runBytes: document.querySelector("#runBytes"),
+        runOutput: document.querySelector("#runOutput"),
+        taskTable: document.querySelector("#taskTable"),
+        catalogStatus: document.querySelector("#catalogStatus"),
+        catalogTable: document.querySelector("#catalogTable"),
+        catalogRunId: document.querySelector("#catalogRunId"),
+        catalogRows: document.querySelector("#catalogRows"),
+        catalogBytes: document.querySelector("#catalogBytes"),
+        catalogPath: document.querySelector("#catalogPath"),
+        allowedColumns: document.querySelector("#allowedColumns"),
+        logs: document.querySelector("#logs"),
+      };
+
+      runButton.addEventListener("click", runWorkflow);
+      refreshButton.addEventListener("click", refreshCatalog);
+      refreshCatalog();
+
+      async function runWorkflow() {
+        setBusy(true);
+        clearError();
+        try {
+          state.run = await apiRequest("/api/week2/workflows/pipeline_product_health_e2e/runs", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              executor: executorInput.value,
+              triggered_by: "m5_product_health_demo",
+            }),
+          });
+          renderRun();
+          await refreshCatalog();
+        } catch (error) {
+          showError(error);
+        } finally {
+          setBusy(false);
+        }
+      }
+
+      async function refreshCatalog() {
+        clearError();
+        try {
+          state.catalog = await apiRequest("/api/week2/catalog/dataset_product_health_gold");
+          renderCatalog();
+        } catch (error) {
+          if (String(error.message || error).includes("404")) {
+            state.catalog = null;
+            renderCatalog();
+            return;
+          }
+          showError(error);
+        }
+      }
+
+      async function apiRequest(path, options = {}) {
+        const base = apiBaseInput.value.trim().replace(/\/$/, "");
+        const response = await fetch(`${base}${path}`, options);
+        const text = await response.text();
+        const payload = text ? JSON.parse(text) : {};
+        if (!response.ok) {
+          const detail = payload.detail ? `: ${payload.detail}` : "";
+          throw new Error(`${response.status} ${response.statusText}${detail}`);
+        }
+        return payload;
+      }
+
+      function renderRun() {
+        const run = state.run;
+        if (!run) {
+          setStatus(fields.runStatus, "idle");
+          fields.runId.textContent = "-";
+          fields.runExecutor.textContent = "-";
+          fields.runRows.textContent = "-";
+          fields.runBytes.textContent = "-";
+          fields.runOutput.textContent = "-";
+          fields.taskTable.innerHTML = '<div class="empty">아직 실행된 run이 없습니다.</div>';
+          fields.logs.innerHTML = '<div class="empty">로그가 없습니다.</div>';
+          return;
+        }
+
+        setStatus(fields.runStatus, run.status);
+        fields.runId.textContent = run.run_id || "-";
+        fields.runExecutor.textContent = run.executor || "-";
+        fields.runRows.textContent = formatNumber(run.row_count);
+        fields.runBytes.textContent = formatBytes(run.bytes);
+        fields.runOutput.textContent = firstOutputPath(run);
+        renderTaskTable(run.task_results || []);
+        renderLogs(run.logs || []);
+      }
+
+      function renderCatalog() {
+        const catalog = state.catalog;
+        if (!catalog) {
+          setStatus(fields.catalogStatus, "unknown");
+          fields.catalogTable.textContent = "-";
+          fields.catalogRunId.textContent = "-";
+          fields.catalogRows.textContent = "-";
+          fields.catalogBytes.textContent = "-";
+          fields.catalogPath.textContent = "-";
+          fields.allowedColumns.innerHTML = '<span class="chip">Catalog 없음</span>';
+          return;
+        }
+
+        setStatus(fields.catalogStatus, "succeeded");
+        fields.catalogTable.textContent = catalog.query?.table_name || "-";
+        fields.catalogRunId.textContent = catalog.lineage?.run_id || "-";
+        fields.catalogRows.textContent = formatNumber(catalog.metrics?.row_count);
+        fields.catalogBytes.textContent = formatBytes(catalog.metrics?.bytes);
+        fields.catalogPath.textContent = catalog.storage?.local_fallback_path || "-";
+        fields.allowedColumns.innerHTML = (catalog.query?.allowed_columns || [])
+          .map((column) => `<span class="chip">${escapeHtml(column)}</span>`)
+          .join("");
+      }
+
+      function renderTaskTable(taskResults) {
+        if (!taskResults.length) {
+          fields.taskTable.innerHTML = '<div class="empty">task result가 없습니다.</div>';
+          return;
+        }
+        fields.taskTable.innerHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th>node</th>
+                <th>source</th>
+                <th>rows</th>
+                <th>bytes</th>
+                <th>path</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${taskResults
+                .map(
+                  (task) => `
+                    <tr>
+                      <td>${escapeHtml(task.node_id || "-")}</td>
+                      <td>${escapeHtml(task.source_id || "-")}</td>
+                      <td>${formatNumber(task.row_count)}</td>
+                      <td>${formatBytes(task.bytes)}</td>
+                      <td>${escapeHtml(task.input_path || task.output_path || "-")}</td>
+                    </tr>
+                  `,
+                )
+                .join("")}
+            </tbody>
+          </table>
+        `;
+      }
+
+      function renderLogs(logs) {
+        if (!logs.length) {
+          fields.logs.innerHTML = '<div class="empty">로그가 없습니다.</div>';
+          return;
+        }
+        fields.logs.innerHTML = logs
+          .map((log) => {
+            const level = escapeHtml(log.level || "info");
+            const message = escapeHtml(log.message || "");
+            return `<div class="log ${level}"><strong>${level}</strong> ${message}</div>`;
+          })
+          .join("");
+      }
+
+      function setBusy(isBusy) {
+        state.busy = isBusy;
+        runButton.disabled = isBusy;
+        refreshButton.disabled = isBusy;
+        runButton.textContent = isBusy ? "실행 중" : "실행";
+      }
+
+      function setStatus(element, status) {
+        element.className = `status ${status || ""}`;
+        element.textContent = status || "unknown";
+      }
+
+      function firstOutputPath(run) {
+        const output = Array.isArray(run.outputs) ? run.outputs[0] : null;
+        return run.output_path || output?.uri || "-";
+      }
+
+      function formatNumber(value) {
+        return Number.isFinite(value) ? new Intl.NumberFormat("ko-KR").format(value) : "-";
+      }
+
+      function formatBytes(value) {
+        if (!Number.isFinite(value)) return "-";
+        if (value < 1024) return `${value} B`;
+        if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
+        return `${(value / 1024 / 1024).toFixed(1)} MB`;
+      }
+
+      function showError(error) {
+        errorBox.style.display = "block";
+        errorBox.textContent = error.message || String(error);
+      }
+
+      function clearError() {
+        errorBox.style.display = "none";
+        errorBox.textContent = "";
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      renderRun();
+    </script>
+  </body>
+</html>

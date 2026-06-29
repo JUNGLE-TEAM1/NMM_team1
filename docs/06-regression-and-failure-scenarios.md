@@ -94,9 +94,19 @@
 | --- | --- |
 | Must not break | M5 Airflow smoke는 local fallback 성공만으로 Airflow 연결 성공이라고 판단하지 않는다. |
 | Failure condition | Airflow DAG trigger, DAG success, result artifact, Catalog update 중 하나가 실패했는데 `fallback_succeeded`만 보고 Airflow 연결이 완료된 것으로 표시한다. |
-| Expected behavior | 일반 demo API는 fallback을 유지하되, Airflow smoke evidence는 `status=succeeded`, `airflow adapter executed Week 2 workflow boundary` log, `data/week2/_airflow_results/<run_id>.json`, output JSONL, Catalog lineage를 함께 확인한다. |
+| Expected behavior | 일반 demo API는 fallback을 유지하되, Airflow smoke evidence는 `status=succeeded`, `airflow adapter executed Week 2 workflow boundary` log, `data/week2/_airflow_results/<run_id>.json`, reviews JSONL 또는 product-health Parquet/JSONL smoke output, Catalog lineage를 함께 확인한다. |
 | Verification method | `docs/07` Week 2 M5 Airflow local smoke 점검과 `backend/tests/test_week2_airflow_adapter.py`를 확인한다. |
 | Related docs/interface/Phase | `docs/03`, `docs/07`, `backend/app/services/week2_airflow_adapter.py`, `docker-compose.airflow.yml` |
+
+### Product-health Airflow run이 reviews DAG로 잘못 라우팅되는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | `pipeline_product_health_e2e`의 `executor=airflow` run은 `asklake_week2_product_health` DAG를 호출한다. |
+| Failure condition | product-health run이 `asklake_week2_reviews` DAG로 전달되어 product-health source evidence와 `dataset_product_health_gold` output을 만들지 못한다. |
+| Expected behavior | `Week2AirflowAdapter`가 `pipeline_id` 기준으로 DAG id를 선택하고, product-health DAG 결과 artifact를 읽어 같은 run의 Catalog를 갱신한다. |
+| Verification method | `backend/tests/test_week2_airflow_adapter.py`의 product-health DAG routing 테스트와 `docs/07` product-health Airflow demo page 점검을 확인한다. |
+| Related docs/interface/Phase | `docs/03`, `docs/07`, M5 Airflow smoke |
 
 ### Week 2 storage URI와 local fallback path가 다른 prefix를 가리키는 경우
 
@@ -117,6 +127,16 @@
 | Expected behavior | SQL 실행 전 guardrail이 실패하면 `AIQueryResult.status`는 `blocked`가 되고, 성공한 경우에만 `QueryResult.engine=duckdb`와 실제 row를 반환한다. |
 | Verification method | `backend/tests/test_duckdb_sql_engine.py`, `backend/tests/test_week2_ai_query_duckdb.py`, `scripts/week2_m2_sql_runtime_smoke.py`를 확인한다. |
 | Related docs/interface/Phase | `docs/03`, `contracts/catalog_metadata.sample.json`, M2 SQL runtime smoke |
+
+### Product-health 실패 run이 성공 Catalog를 덮는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | `pipeline_product_health_e2e` 실패 run은 `dataset_product_health_gold`의 latest successful Catalog metadata를 덮어쓰지 않는다. |
+| Failure condition | 실패한 product-health runner 결과가 `CatalogMetadata.lineage.run_id`, `storage.local_fallback_path`, `metrics`를 최신 성공 run에서 실패 run으로 바꾼다. |
+| Expected behavior | 실패 run은 `ExecutionResult`로 저장되지만, Catalog latest entry는 마지막 성공 run의 `run_id`, output path, SQL context를 유지한다. |
+| Verification method | `backend/tests/test_week2_workflow_catalog.py`의 product-health 실패 run 회귀 테스트를 확인한다. |
+| Related docs/interface/Phase | `docs/03`, `contracts/catalog_metadata.product_health.sample.json`, M5 Workflow/Catalog |
 
 ### Mock/Fake Boundary를 넘어 실제 접근으로 진행되는 경우
 

@@ -15,6 +15,21 @@ from app.services.week2_workflow import (
     Week2WorkflowService,
 )
 
+PRODUCT_HEALTH_ALLOWED_COLUMNS = [
+    "product_id",
+    "product_name",
+    "category_l1",
+    "review_count",
+    "average_rating",
+    "negative_review_rate",
+    "view_count",
+    "purchase_count",
+    "conversion_rate",
+    "delivery_count",
+    "late_delivery_rate",
+    "risk_score",
+]
+
 
 def make_client() -> TestClient:
     temp_dir = tempfile.TemporaryDirectory()
@@ -195,6 +210,90 @@ def test_week2_catalog_metadata_tracks_latest_successful_run() -> None:
         "reviews/gold/run_id=run_reviews_demo_002/dataset_reviews_gold.jsonl"
     )
     assert catalog["lineage"]["run_id"] == "run_reviews_demo_002"
+
+
+def test_week2_product_health_workflow_run_registers_catalog_metadata() -> None:
+    client = make_client()
+    client.post("/api/week2/workflows/pipeline_reviews_json_e2e/runs")
+
+    response = client.post(
+        "/api/week2/workflows/pipeline_product_health_e2e/runs",
+        json={"executor": "local_runner", "triggered_by": "m5_owner"},
+    )
+
+    assert response.status_code == 201
+    run = response.json()
+    assert run["contract"] == "ExecutionResult"
+    assert run["pipeline_id"] == "pipeline_product_health_e2e"
+    assert run["run_id"] == "run_product_health_demo_001"
+    assert run["executor"] == "local_runner"
+    assert run["status"] == "fallback_succeeded"
+    assert run["outputs"][0]["dataset_id"] == "dataset_product_health_gold"
+    assert run["outputs"][0]["uri"] == "s3://asklake-demo/product_health/gold/run_id=run_product_health_demo_001/"
+    assert run["row_count"] > 0
+    assert run["bytes"] > 0
+    assert run["duration_ms"] >= 1
+
+    source_tasks = [task for task in run["task_results"] if task["node_id"].startswith("node_source_")]
+    assert {task["source_id"] for task in source_tasks} == {
+        "reviews_seed",
+        "behavior_events_seed",
+        "delivery_trips_seed",
+        "product_master_seed",
+    }
+    assert all(task["input_path"].startswith("handoff://product_health/") for task in source_tasks)
+    assert run["task_results"][-1]["node_id"] == "node_load_product_health_gold"
+    assert run["task_results"][-1]["output_path"].endswith(
+        "product_health/gold/run_id=run_product_health_demo_001/dataset_product_health_gold.parquet"
+    )
+
+    catalog_response = client.get("/api/week2/catalog/dataset_product_health_gold")
+
+    assert catalog_response.status_code == 200
+    catalog = catalog_response.json()
+    output_path = Path(catalog["storage"]["local_fallback_path"])
+    assert output_path.exists()
+    assert output_path.suffix == ".parquet"
+    assert catalog["dataset_id"] == "dataset_product_health_gold"
+    assert catalog["s3_uri"] == "s3://asklake-demo/product_health/gold/run_id=run_product_health_demo_001/"
+    assert catalog["storage"]["prefix"] == "product_health/gold/run_id=run_product_health_demo_001/"
+    assert catalog["lineage"]["pipeline_id"] == "pipeline_product_health_e2e"
+    assert catalog["lineage"]["run_id"] == run["run_id"]
+    assert catalog["lineage"]["source_ids"] == [
+        "reviews_seed",
+        "behavior_events_seed",
+        "delivery_trips_seed",
+        "product_master_seed",
+    ]
+    assert catalog["query"]["table_name"] == "gold_product_health"
+    assert catalog["query"]["allow_readonly_sql"] is True
+    assert catalog["query"]["allowed_columns"] == PRODUCT_HEALTH_ALLOWED_COLUMNS
+    assert catalog["metrics"]["row_count"] == run["task_results"][-1]["row_count"]
+    assert catalog["metrics"]["bytes"] == output_path.stat().st_size
+
+    import pyarrow.parquet as pq
+
+    parquet_table = pq.read_table(output_path)
+    assert parquet_table.num_rows == catalog["metrics"]["row_count"]
+    assert set(PRODUCT_HEALTH_ALLOWED_COLUMNS).issubset(parquet_table.column_names)
+
+
+def test_week2_product_health_failed_run_does_not_overwrite_latest_catalog(tmp_path: Path) -> None:
+    service = Week2WorkflowService(output_root=tmp_path / "out")
+
+    first_run = service.trigger_run("pipeline_product_health_e2e", executor="local_runner", triggered_by="m5_owner")
+    first_catalog = service.get_catalog_metadata("dataset_product_health_gold")
+    service.product_health_runner = FailingProductHealthRunner()
+
+    failed_run = service.trigger_run("pipeline_product_health_e2e", executor="local_runner", triggered_by="m5_owner")
+    catalog_after_failure = service.get_catalog_metadata("dataset_product_health_gold")
+
+    assert first_run["status"] == "fallback_succeeded"
+    assert first_catalog["lineage"]["run_id"] == "run_product_health_demo_001"
+    assert failed_run["status"] == "failed"
+    assert failed_run["run_id"] == "run_product_health_demo_002"
+    assert catalog_after_failure["lineage"]["run_id"] == "run_product_health_demo_001"
+    assert catalog_after_failure["s3_uri"] == first_catalog["s3_uri"]
 
 
 def test_week2_catalog_metadata_ignores_failed_run_after_success(tmp_path: Path) -> None:
@@ -378,6 +477,25 @@ class FailingRunner:
                 }
             ],
             logs=[{"level": "error", "message": "forced failure"}],
+            duration_ms=1,
+        )
+
+
+class FailingProductHealthRunner:
+    def run(self, workflow_definition: dict, run_id: str) -> Week2RunnerResult:
+        return Week2RunnerResult(
+            status="failed",
+            task_results=[
+                {
+                    "node_id": "node_load_product_health_gold",
+                    "status": "failed",
+                    "attempt": 1,
+                    "row_count": None,
+                    "bytes": None,
+                    "error": "forced product-health failure",
+                }
+            ],
+            logs=[{"level": "error", "message": "forced product-health failure"}],
             duration_ms=1,
         )
 

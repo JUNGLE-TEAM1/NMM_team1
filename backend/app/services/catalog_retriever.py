@@ -16,6 +16,10 @@ class CatalogRetriever:
         "product_id": ("상품", "product", "products"),
         "average_rating": ("평점", "별점", "rating", "ratings"),
     }
+    _dataset_domain_aliases = {
+        "reviews": ("리뷰", "review", "reviews", "rating", "ratings", "amazon"),
+        "product_health": ("위험", "리스크", "risk", "health", "전환", "conversion", "배송", "delivery", "late"),
+    }
 
     def retrieve(self, question: str, catalogs: list[dict[str, Any]]) -> CatalogRetrievalResult:
         if not catalogs:
@@ -27,6 +31,7 @@ class CatalogRetriever:
         normalized_question = question.lower()
         question_tokens = self._tokens(normalized_question)
         metadata_tokens = self._metadata_tokens(catalog)
+        identity_tokens = self._identity_tokens(catalog)
         allowed_columns = catalog["query"]["allowed_columns"]
         reason_terms: list[str] = []
         score = 0
@@ -43,6 +48,13 @@ class CatalogRetriever:
                 reason_terms.append(token)
                 score += 2
 
+        for domain, aliases in self._dataset_domain_aliases.items():
+            if domain not in identity_tokens:
+                continue
+            if any(alias in normalized_question or alias in question_tokens for alias in aliases):
+                reason_terms.append(domain)
+                score += 2
+
         if not reason_terms:
             reason_terms = allowed_columns[:2]
 
@@ -51,6 +63,15 @@ class CatalogRetriever:
             reason_terms=reason_terms,
             score=score,
         )
+
+    def _identity_tokens(self, catalog: dict[str, Any]) -> set[str]:
+        query = catalog.get("query", {})
+        values = [
+            str(catalog.get("dataset_id", "")),
+            str(catalog.get("name", "")),
+            str(query.get("table_name", "")),
+        ]
+        return self._tokens(" ".join(values).lower())
 
     def _metadata_tokens(self, catalog: dict[str, Any]) -> set[str]:
         schema_fields = catalog.get("schema", {}).get("fields", [])

@@ -1,6 +1,7 @@
 import json
 import re
 from copy import deepcopy
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -9,12 +10,26 @@ from app.domain.runtime_config import RuntimeConfig, StorageConfig
 from app.services.week2_airflow_adapter import Week2AirflowAdapter, Week2AirflowError
 from app.services.week2_catalog_store import Week2CatalogStore
 from app.services.week2_local_runner import Week2LocalRunner, Week2RunnerResult
+from app.services.week2_product_health_runner import Week2ProductHealthHandoffRunner
 from app.services.week2_spark_runner import Week2SparkRunner
 from app.services.week2_storage_adapter import StorageLocation, Week2StorageAdapter
 
 SUCCESSFUL_RUN_STATUSES = {"succeeded", "fallback_succeeded"}
 AIRFLOW_SUCCESS_STATUS = "succeeded"
 SUPPORTED_EXECUTORS = {"airflow", "local_runner", "spark_runner"}
+PRODUCT_HEALTH_PIPELINE_ID = "pipeline_product_health_e2e"
+DEFAULT_WORKFLOW_CONTRACTS = [
+    (
+        "workflow_definition.sample.json",
+        "execution_result.sample.json",
+        "catalog_metadata.sample.json",
+    ),
+    (
+        "workflow_definition.product_health.sample.json",
+        "execution_result.product_health.sample.json",
+        "catalog_metadata.product_health.sample.json",
+    ),
+]
 
 
 class Week2WorkflowNotFoundError(ValueError):
@@ -29,6 +44,15 @@ class Week2WorkflowInvalidExecutorError(ValueError):
     pass
 
 
+@dataclass(frozen=True)
+class Week2WorkflowBundle:
+    pipeline_id: str
+    workflow_definition: dict[str, Any]
+    execution_template: dict[str, Any]
+    catalog_template: dict[str, Any]
+    run_id_prefix: str
+
+
 class Week2WorkflowService:
     """Week 2 workflow 실행, runner 선택, run/catalog 저장을 묶는 서비스."""
 
@@ -37,6 +61,7 @@ class Week2WorkflowService:
         contracts_dir: Path | None = None,
         airflow_adapter: Week2AirflowAdapter | None = None,
         local_runner: Week2LocalRunner | None = None,
+        product_health_runner: Week2ProductHealthHandoffRunner | None = None,
         spark_runner: Week2SparkRunner | None = None,
         output_root: Path | None = None,
         catalog_store: Week2CatalogStore | None = None,
@@ -47,9 +72,10 @@ class Week2WorkflowService:
         self.output_root = output_root or default_week2_output_root()
         self.source_config = self._load_contract("source_config.sample.json")
         self.schema_definition = self._load_contract("schema_definition.sample.json")
-        self.workflow_definition = self._load_contract("workflow_definition.sample.json")
-        self.execution_template = self._load_contract("execution_result.sample.json")
-        self.catalog_template = self._load_contract("catalog_metadata.sample.json")
+        self.workflow_bundles = self._load_workflow_bundles()
+        self.workflow_definition = self.workflow_bundles["pipeline_reviews_json_e2e"].workflow_definition
+        self.execution_template = self.workflow_bundles["pipeline_reviews_json_e2e"].execution_template
+        self.catalog_template = self.workflow_bundles["pipeline_reviews_json_e2e"].catalog_template
         self.catalog_store = catalog_store or Week2CatalogStore(self.output_root / "_metadata")
         self.airflow_adapter = airflow_adapter or Week2AirflowAdapter()
         self.local_runner = local_runner or Week2LocalRunner(
@@ -57,28 +83,36 @@ class Week2WorkflowService:
             schema_definition=self.schema_definition,
             output_root=self.output_root,
         )
+        self.product_health_runner = product_health_runner or Week2ProductHealthHandoffRunner(
+            output_root=self.output_root,
+        )
         self.spark_runner = spark_runner or Week2SparkRunner()
         self.storage_adapter = Week2StorageAdapter()
         self.runs = self.catalog_store.load_runs()
         self.catalog = self.catalog_store.load_catalog()
-        self.sequence = self.catalog_store.sequence_start(self.runs)
+        self.sequences = {
+            bundle.run_id_prefix: self.catalog_store.sequence_start(self.runs, bundle.run_id_prefix)
+            for bundle in self.workflow_bundles.values()
+        }
+        self.sequence = self.sequences["run_reviews_demo"]
 
     def trigger_run(self, pipeline_id: str, executor: str, triggered_by: str) -> dict[str, Any]:
         """요청받은 executor로 workflow를 실행하고 run/catalog metadata를 저장한다."""
 
-        if pipeline_id != self.workflow_definition["pipeline_id"]:
-            raise Week2WorkflowNotFoundError("Week 2 workflow not found")
+        bundle = self._workflow_bundle(pipeline_id)
         if executor not in SUPPORTED_EXECUTORS:
             supported = ", ".join(sorted(SUPPORTED_EXECUTORS))
             raise Week2WorkflowInvalidExecutorError(f"Unsupported Week 2 executor: {executor}. Supported: {supported}")
 
-        self.sequence += 1
-        run_id = f"run_reviews_demo_{self.sequence:03d}"
+        self.sequences[bundle.run_id_prefix] += 1
+        run_id = f"{bundle.run_id_prefix}_{self.sequences[bundle.run_id_prefix]:03d}"
+        if bundle.run_id_prefix == "run_reviews_demo":
+            self.sequence = self.sequences[bundle.run_id_prefix]
         timestamp = now_iso()
-        runner_result = self._run_with_executor(executor, run_id)
+        runner_result = self._run_with_executor(bundle, executor, run_id)
         status = runner_result.status
 
-        run = deepcopy(self.execution_template)
+        run = deepcopy(bundle.execution_template)
         run["run_id"] = run_id
         run["pipeline_id"] = pipeline_id
         run["executor"] = executor
@@ -98,7 +132,7 @@ class Week2WorkflowService:
         self.runs[run_id] = run
         self.catalog_store.save_run(run)
         if status in SUCCESSFUL_RUN_STATUSES:
-            catalog = self._catalog_for_run(run_id, timestamp, runner_result)
+            catalog = self._catalog_for_run(bundle, run_id, timestamp, runner_result)
             self.catalog[catalog["dataset_id"]] = catalog
             self.catalog_store.save_catalog(catalog)
         return run
@@ -119,18 +153,47 @@ class Week2WorkflowService:
             raise Week2WorkflowNotFoundError("Week 2 catalog metadata not found")
         return catalog
 
-    def _run_with_executor(self, executor: str, run_id: str) -> Week2RunnerResult:
+    def _workflow_bundle(self, pipeline_id: str) -> Week2WorkflowBundle:
+        bundle = self.workflow_bundles.get(pipeline_id)
+        if bundle is None:
+            raise Week2WorkflowNotFoundError("Week 2 workflow not found")
+        return bundle
+
+    def _load_workflow_bundles(self) -> dict[str, Week2WorkflowBundle]:
+        bundles = {}
+        for workflow_file, execution_file, catalog_file in DEFAULT_WORKFLOW_CONTRACTS:
+            workflow_definition = self._load_contract(workflow_file)
+            execution_template = self._load_contract(execution_file)
+            catalog_template = self._load_contract(catalog_file)
+            pipeline_id = workflow_definition["pipeline_id"]
+            bundles[pipeline_id] = Week2WorkflowBundle(
+                pipeline_id=pipeline_id,
+                workflow_definition=workflow_definition,
+                execution_template=execution_template,
+                catalog_template=catalog_template,
+                run_id_prefix=run_id_prefix_from_template(execution_template["run_id"]),
+            )
+        return bundles
+
+    def _run_with_executor(
+        self,
+        bundle: Week2WorkflowBundle,
+        executor: str,
+        run_id: str,
+    ) -> Week2RunnerResult:
         """executor 이름에 맞는 runner를 호출하고 Airflow 실패 시 local fallback을 적용한다."""
 
         if executor == "local_runner":
-            return self.local_runner.run(self.workflow_definition, run_id=run_id)
+            return self._fallback_runner(bundle).run(bundle.workflow_definition, run_id=run_id)
         if executor == "spark_runner":
-            return self.spark_runner.run(self._spark_runtime_config(run_id), run_id=run_id)
+            if bundle.pipeline_id == PRODUCT_HEALTH_PIPELINE_ID:
+                return self.product_health_runner.run(bundle.workflow_definition, run_id=run_id)
+            return self.spark_runner.run(self._spark_runtime_config(bundle, run_id), run_id=run_id)
 
         try:
-            airflow_result = self.airflow_adapter.run(self.workflow_definition, run_id=run_id)
+            airflow_result = self.airflow_adapter.run(bundle.workflow_definition, run_id=run_id)
         except Week2AirflowError as error:
-            fallback_result = self.local_runner.run(self.workflow_definition, run_id=run_id)
+            fallback_result = self._fallback_runner(bundle).run(bundle.workflow_definition, run_id=run_id)
             return result_with_logs(
                 fallback_result,
                 [
@@ -142,7 +205,7 @@ class Week2WorkflowService:
             )
 
         if should_fallback_to_local_runner(airflow_result):
-            fallback_result = self.local_runner.run(self.workflow_definition, run_id=run_id)
+            fallback_result = self._fallback_runner(bundle).run(bundle.workflow_definition, run_id=run_id)
             return result_with_logs(
                 fallback_result,
                 airflow_result.logs
@@ -155,6 +218,11 @@ class Week2WorkflowService:
             )
 
         return airflow_result
+
+    def _fallback_runner(self, bundle: Week2WorkflowBundle) -> Any:
+        if bundle.pipeline_id == PRODUCT_HEALTH_PIPELINE_ID:
+            return self.product_health_runner
+        return self.local_runner
 
     def _load_contract(self, file_name: str) -> dict[str, Any]:
         """contracts 디렉터리의 JSON fixture를 dict로 읽는다."""
@@ -170,12 +238,12 @@ class Week2WorkflowService:
         updated_output["uri"] = replace_run_id(updated_output["uri"], run_id)
         return updated_output
 
-    def _spark_runtime_config(self, run_id: str) -> RuntimeConfig:
+    def _spark_runtime_config(self, bundle: Week2WorkflowBundle, run_id: str) -> RuntimeConfig:
         """계약 fixture를 기준으로 spark_runner에 넘길 RuntimeConfig를 만든다."""
 
         source_options = self.source_config.get("options", {})
         source_ref = self.source_config.get("connection_ref", {})
-        target_dataset = self.workflow_definition.get("target_dataset") or self.catalog_template["dataset_id"]
+        target_dataset = bundle.workflow_definition.get("target_dataset") or bundle.catalog_template["dataset_id"]
 
         return RuntimeConfig(
             runner="spark_runner",
@@ -183,7 +251,7 @@ class Week2WorkflowService:
             input_path=source_ref["path"],
             output_format="parquet",
             output_root=str(self.output_root),
-            storage=self._runtime_storage_config(),
+            storage=self._runtime_storage_config(bundle.catalog_template),
             options={
                 "compression": self._parquet_compression(),
                 "output_file_name": f"{target_dataset}.parquet",
@@ -200,7 +268,7 @@ class Week2WorkflowService:
             runtime_config = json.load(runtime_config_file)
         return runtime_config.get("parquet", {}).get("compression", "snappy")
 
-    def _runtime_storage_config(self) -> StorageConfig:
+    def _runtime_storage_config(self, catalog_template: dict[str, Any]) -> StorageConfig:
         """runtime/catalog fixture를 합쳐 runner와 Catalog가 공유할 storage 설정을 만든다."""
 
         runtime_config_path = self.contracts_dir / "runtime_config.sample.json"
@@ -209,19 +277,25 @@ class Week2WorkflowService:
             with runtime_config_path.open(encoding="utf-8") as runtime_config_file:
                 runtime_storage = json.load(runtime_config_file).get("storage", {})
         return StorageConfig(
-            profile=runtime_storage.get("profile", self.catalog_template["storage"].get("profile", "minio")),
-            bucket=runtime_storage.get("bucket", self.catalog_template["storage"].get("bucket", "asklake-demo")),
+            profile=runtime_storage.get("profile", catalog_template["storage"].get("profile", "minio")),
+            bucket=runtime_storage.get("bucket", catalog_template["storage"].get("bucket", "asklake-demo")),
             endpoint=runtime_storage.get("endpoint"),
-            prefix=self.catalog_template["storage"]["prefix"],
+            prefix=catalog_template["storage"]["prefix"],
             local_fallback_root=str(self.output_root),
         )
 
-    def _catalog_for_run(self, run_id: str, timestamp: str, runner_result: Any) -> dict[str, Any]:
+    def _catalog_for_run(
+        self,
+        bundle: Week2WorkflowBundle,
+        run_id: str,
+        timestamp: str,
+        runner_result: Any,
+    ) -> dict[str, Any]:
         """runner 결과를 CatalogMetadata fixture에 반영해 저장 가능한 catalog record를 만든다."""
 
-        catalog = deepcopy(self.catalog_template)
+        catalog = deepcopy(bundle.catalog_template)
         output_file_name = Path(runner_result.output_path).name if runner_result.output_path else f"{catalog['dataset_id']}.parquet"
-        storage_location = self._catalog_storage_location(run_id, output_file_name)
+        storage_location = self._catalog_storage_location(bundle.catalog_template, run_id, output_file_name)
         catalog["s3_uri"] = storage_location.uri
         catalog["storage"]["bucket"] = storage_location.bucket
         catalog["storage"]["prefix"] = storage_location.prefix
@@ -230,15 +304,21 @@ class Week2WorkflowService:
         catalog["metrics"]["bytes"] = output_bytes(runner_result)
         catalog["metrics"]["quality"]["schema_match"] = "passed"
         catalog["metrics"]["quality"]["row_count_checked"] = output_row_count(runner_result) is not None
+        catalog["lineage"]["pipeline_id"] = bundle.pipeline_id
         catalog["lineage"]["run_id"] = run_id
         catalog["updated_at"] = timestamp
         return catalog
 
-    def _catalog_storage_location(self, run_id: str, output_file_name: str) -> StorageLocation:
+    def _catalog_storage_location(
+        self,
+        catalog_template: dict[str, Any],
+        run_id: str,
+        output_file_name: str,
+    ) -> StorageLocation:
         """Catalog에 기록할 S3-compatible URI와 local fallback path를 계산한다."""
 
         return self.storage_adapter.build_location(
-            self._runtime_storage_config(),
+            self._runtime_storage_config(catalog_template),
             run_id=run_id,
             file_name=output_file_name,
             local_root=self.output_root,
@@ -295,6 +375,15 @@ def replace_run_id(value: str, run_id: str) -> str:
     """문자열 안의 기존 run_id segment를 새 run_id로 바꾼다."""
 
     return re.sub(r"run_id=[^/]+", f"run_id={run_id}", value)
+
+
+def run_id_prefix_from_template(run_id: str) -> str:
+    """sample run_id에서 숫자 suffix를 제거해 workflow별 sequence prefix를 만든다."""
+
+    match = re.match(r"(?P<prefix>.+)_\d+$", run_id)
+    if match is None:
+        raise ValueError(f"ExecutionResult sample run_id must end with a numeric suffix: {run_id}")
+    return match.group("prefix")
 
 
 def should_fallback_to_local_runner(airflow_result: Week2RunnerResult) -> bool:

@@ -23,6 +23,7 @@ class Week2AirflowConfig:
     base_url: str
     dag_id: str
     result_root: Path
+    dag_ids_by_pipeline: dict[str, str] | None = None
     username: str | None = None
     password: str | None = None
     timeout_seconds: float = 5
@@ -40,12 +41,23 @@ class Week2AirflowConfig:
             base_url=base_url,
             dag_id=source.get("ASKLAKE_WEEK2_AIRFLOW_DAG_ID", "asklake_week2_reviews"),
             result_root=airflow_result_root_from_env(result_root),
+            dag_ids_by_pipeline={
+                "pipeline_product_health_e2e": source.get(
+                    "ASKLAKE_WEEK2_PRODUCT_HEALTH_AIRFLOW_DAG_ID",
+                    "asklake_week2_product_health",
+                )
+            },
             username=source.get("ASKLAKE_WEEK2_AIRFLOW_USERNAME") or source.get("AIRFLOW_USERNAME"),
             password=source.get("ASKLAKE_WEEK2_AIRFLOW_PASSWORD") or source.get("AIRFLOW_PASSWORD"),
             timeout_seconds=float(source.get("ASKLAKE_WEEK2_AIRFLOW_TIMEOUT_SECONDS", "5")),
             max_polls=int(source.get("ASKLAKE_WEEK2_AIRFLOW_MAX_POLLS", "3")),
             poll_interval_seconds=float(source.get("ASKLAKE_WEEK2_AIRFLOW_POLL_INTERVAL_SECONDS", "1")),
         )
+
+    def dag_id_for_pipeline(self, pipeline_id: str) -> str:
+        if self.dag_ids_by_pipeline is None:
+            return self.dag_id
+        return self.dag_ids_by_pipeline.get(pipeline_id, self.dag_id)
 
 
 class AirflowHttpClient(Protocol):
@@ -91,12 +103,13 @@ class Week2AirflowAdapter:
             raise Week2AirflowUnavailableError("Week 2 Airflow adapter is not configured")
 
         client = self.http_client or HttpxAirflowHttpClient(self.config)
-        dag_run_path = f"/api/v1/dags/{self.config.dag_id}/dagRuns"
+        pipeline_id = workflow_definition["pipeline_id"]
+        dag_run_path = f"/api/v1/dags/{self.config.dag_id_for_pipeline(pipeline_id)}/dagRuns"
         dag_run_payload = {
             "dag_run_id": run_id,
             "conf": {
                 "run_id": run_id,
-                "pipeline_id": workflow_definition["pipeline_id"],
+                "pipeline_id": pipeline_id,
                 "workflow_definition": workflow_definition,
                 "airflow_result_file": airflow_result_file_name(run_id),
             },

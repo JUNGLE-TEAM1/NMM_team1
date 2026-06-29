@@ -93,6 +93,57 @@ def test_week2_airflow_adapter_triggers_dag_and_converts_week2_result() -> None:
     ]
 
 
+def test_week2_airflow_adapter_routes_product_health_to_product_health_dag() -> None:
+    http_client = FakeAirflowHttpClient(
+        [
+            {"dag_run_id": "run_product_health_demo_001", "state": "queued"},
+            {
+                "dag_run_id": "run_product_health_demo_001",
+                "state": "success",
+                "week2_result": {
+                    "status": "succeeded",
+                    "task_results": [
+                        {
+                            "node_id": "node_load_product_health_gold",
+                            "status": "succeeded",
+                            "attempt": 1,
+                            "row_count": 3,
+                            "bytes": 2048,
+                            "error": None,
+                        }
+                    ],
+                    "logs": [{"level": "info", "message": "Airflow product-health DAG completed"}],
+                    "row_count": 3367,
+                    "bytes": 55296,
+                    "duration_ms": 25,
+                    "output_path": "data/week2/product_health/gold/run_id=run_product_health_demo_001/dataset_product_health_gold.parquet",
+                    "output_row_count": 3,
+                    "output_bytes": 2048,
+                },
+            },
+        ]
+    )
+    adapter = Week2AirflowAdapter(
+        config=airflow_config(
+            max_polls=1,
+            dag_ids_by_pipeline={"pipeline_product_health_e2e": "asklake_week2_product_health"},
+        ),
+        http_client=http_client,
+    )
+
+    result = adapter.run(
+        {"pipeline_id": "pipeline_product_health_e2e"},
+        run_id="run_product_health_demo_001",
+    )
+
+    assert result.status == "succeeded"
+    assert result.output_row_count == 3
+    assert http_client.requests[0][1] == "/api/v1/dags/asklake_week2_product_health/dagRuns"
+    assert http_client.requests[1][1] == (
+        "/api/v1/dags/asklake_week2_product_health/dagRuns/run_product_health_demo_001"
+    )
+
+
 def test_week2_airflow_adapter_reads_shared_result_artifact(tmp_path: Path) -> None:
     result_root = tmp_path / "_airflow_results"
     result_root.mkdir()
@@ -218,11 +269,16 @@ def test_week2_workflow_uses_airflow_adapter_result_without_local_fallback(tmp_p
     assert catalog["storage"]["local_fallback_path"] == str(output_path)
 
 
-def airflow_config(max_polls: int = 3, result_root: Path | None = None) -> Week2AirflowConfig:
+def airflow_config(
+    max_polls: int = 3,
+    result_root: Path | None = None,
+    dag_ids_by_pipeline: dict[str, str] | None = None,
+) -> Week2AirflowConfig:
     return Week2AirflowConfig(
         base_url="http://airflow.local",
         dag_id="asklake_week2_reviews",
         result_root=result_root or Path("/tmp/week2/_airflow_results"),
+        dag_ids_by_pipeline=dag_ids_by_pipeline,
         max_polls=max_polls,
         poll_interval_seconds=0,
     )

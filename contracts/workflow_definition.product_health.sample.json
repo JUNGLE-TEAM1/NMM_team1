@@ -1,0 +1,82 @@
+{
+  "contract": "WorkflowDefinition",
+  "producer": "M1/M5",
+  "consumers": ["M5"],
+  "tenant_id": "tenant_demo",
+  "pipeline_id": "pipeline_product_health_e2e",
+  "name": "Product Health Gold E2E",
+  "nodes": [
+    {
+      "id": "node_source_product_reviews",
+      "type": "Source",
+      "source_id": "reviews_seed",
+      "outputs": ["artifact_product_reviews_raw"]
+    },
+    {
+      "id": "node_source_behavior_events",
+      "type": "Source",
+      "source_id": "behavior_events_seed",
+      "outputs": ["artifact_behavior_events_raw"]
+    },
+    {
+      "id": "node_source_delivery_trips",
+      "type": "Source",
+      "source_id": "delivery_trips_seed",
+      "outputs": ["artifact_delivery_trips_raw"]
+    },
+    {
+      "id": "node_source_product_master",
+      "type": "Source",
+      "source_id": "product_master_seed",
+      "outputs": ["artifact_product_master_raw"]
+    },
+    {
+      "id": "node_materialize_product_health_bronze",
+      "type": "Materialize",
+      "layer": "bronze",
+      "inputs": [
+        "artifact_product_reviews_raw",
+        "artifact_behavior_events_raw",
+        "artifact_delivery_trips_raw",
+        "artifact_product_master_raw"
+      ],
+      "outputs": ["artifact_product_health_bronze"]
+    },
+    {
+      "id": "node_materialize_product_health_silver",
+      "type": "Materialize",
+      "layer": "silver",
+      "inputs": ["artifact_product_health_bronze"],
+      "outputs": ["artifact_product_health_silver"]
+    },
+    {
+      "id": "node_load_product_health_gold",
+      "type": "Load",
+      "target_dataset": "dataset_product_health_gold",
+      "inputs": ["artifact_product_health_silver"],
+      "outputs": ["dataset_product_health_gold"]
+    }
+  ],
+  "edges": [
+    ["node_source_product_reviews", "node_materialize_product_health_bronze"],
+    ["node_source_behavior_events", "node_materialize_product_health_bronze"],
+    ["node_source_delivery_trips", "node_materialize_product_health_bronze"],
+    ["node_source_product_master", "node_materialize_product_health_bronze"],
+    ["node_materialize_product_health_bronze", "node_materialize_product_health_silver"],
+    ["node_materialize_product_health_silver", "node_load_product_health_gold"]
+  ],
+  "retry": {
+    "max_attempts": 2,
+    "backoff_seconds": 30
+  },
+  "target_dataset": "dataset_product_health_gold",
+  "schedule": null,
+  "status_model": ["queued", "running", "succeeded", "failed", "fallback_succeeded", "fallback_failed"],
+  "runner": {
+    "primary": "airflow",
+    "fallback": "local_runner",
+    "direct_executor": "spark_runner",
+    "direct_executor_condition": "Use spark_runner when M2/M3 product-health runner returns Week2RunnerResult-compatible evidence",
+    "fallback_condition": "Use product-health handoff fixture until M2/M3 runner is attached"
+  }
+}

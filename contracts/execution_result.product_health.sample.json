@@ -1,0 +1,67 @@
+{
+  "contract": "ExecutionResult",
+  "producers": ["M2", "M3", "M5"],
+  "consumers": ["M1", "M5", "M6"],
+  "tenant_id": "tenant_demo",
+  "run_id": "run_product_health_demo_001",
+  "pipeline_id": "pipeline_product_health_e2e",
+  "executor": "local_runner",
+  "allowed_executors": ["airflow", "local_runner", "spark_runner"],
+  "fallback_compatible_executor": "local_runner",
+  "status": "fallback_succeeded",
+  "triggered_by": "demo_user",
+  "timestamps": {
+    "started_at": "2026-06-25T10:00:00+09:00",
+    "finished_at": "2026-06-25T10:02:30+09:00"
+  },
+  "row_count": null,
+  "row_count_decision": "All source rows processed by the product-health workflow run",
+  "bytes": null,
+  "duration_ms": null,
+  "duration_ms_decision": "Runner execution duration in milliseconds",
+  "metric_semantics": {
+    "row_count": "source_rows_processed_across_reviews_behavior_delivery_product_master",
+    "bytes": "source_input_bytes_read_across_reviews_behavior_delivery_product_master",
+    "duration_ms": "runner_execution_duration_milliseconds",
+    "task_results.row_count": "source or layer-level rows; load node records output dataset rows",
+    "task_results.bytes": "source input bytes or output artifact bytes"
+  },
+  "outputs": [
+    {
+      "dataset_id": "dataset_product_health_gold",
+      "layer": "gold",
+      "uri": "s3://asklake-demo/product_health/gold/run_id=run_product_health_demo_001/",
+      "uri_status": "example_pending_minio_path_contract"
+    }
+  ],
+  "task_results": [
+    {
+      "node_id": "node_source_product_reviews",
+      "status": "succeeded",
+      "attempt": 1,
+      "row_count": null,
+      "bytes": null,
+      "error": null
+    },
+    {
+      "node_id": "node_load_product_health_gold",
+      "status": "succeeded",
+      "attempt": 1,
+      "row_count": null,
+      "bytes": null,
+      "error": null
+    }
+  ],
+  "lineage": {
+    "source_ids": ["reviews_seed", "behavior_events_seed", "delivery_trips_seed", "product_master_seed"],
+    "input_datasets": ["dataset_product_health_silver"],
+    "output_datasets": ["dataset_product_health_gold"]
+  },
+  "logs": [
+    {
+      "level": "info",
+      "message": "TODO: replace with actual M2/M3 product-health runner log summary"
+    }
+  ],
+  "error": null
+}

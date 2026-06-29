@@ -249,6 +249,9 @@ The fixture package lives in `contracts/` and is a thin consumer/producer contra
 | `contracts/workflow_definition.sample.json` | M1/M5 | M5 | Source -> Select/Filter -> Cast/Normalize -> Aggregate -> Load workflow shape |
 | `contracts/execution_result.sample.json` | M2, M3, M4, M5 | M1, M5, M6 | Airflow, local runner, and spark runner compatible execution result shape |
 | `contracts/catalog_metadata.sample.json` | M2, M3, M4, M5 | M1, M6 | Dataset metadata, location, schema, metrics, lineage, and SQL allowlist context |
+| `contracts/workflow_definition.product_health.sample.json` | M1/M5 | M5 | Product-health presentation workflow identity and source/layer/load node boundary |
+| `contracts/execution_result.product_health.sample.json` | M2, M3, M5 | M1, M5, M6 | Product-health run evidence shape, including source-level task evidence |
+| `contracts/catalog_metadata.product_health.sample.json` | M2, M3, M5 | M1, M6 | `dataset_product_health_gold` metadata, `gold_product_health` SQL context, schema, metrics, and lineage |
 | `contracts/ai_query_result.sample.json` | M6 | M1 | Dataset selection, evidence, SELECT-only SQL, rows, summary, and chart result shape |
 
 Locked Week 2 contract decisions:
@@ -259,7 +262,10 @@ Locked Week 2 contract decisions:
 - Week 2 workflow run request `executor` accepts `local_runner`, `airflow`, or `spark_runner`. `spark_runner` means M5 calls the M2 `Week2SparkRunner` boundary directly; it does not mean Airflow DAG-internal Spark execution is already implemented.
 - `KafkaTopicContract` is evidence and raw-event handoff for Week 2. Kafka is not a blocker for the Amazon Reviews main E2E path unless a later Phase explicitly changes the main path.
 - `ExecutionResult.duration_ms` is part of the locked execution evidence and comes from `Week2RunnerResult.duration_ms`.
-- M5 Airflow local smoke uses a shared result artifact. `Week2AirflowAdapter` triggers DAG `asklake_week2_reviews` with `conf.airflow_result_file=<run_id>.json`; the DAG writes `data/week2/_airflow_results/<run_id>.json`; the artifact contains `week2_result` with the `Week2RunnerResult`-compatible fields `status`, `task_results`, `logs`, `row_count`, `bytes`, `duration_ms`, `output_path`, `output_row_count`, and `output_bytes`.
+- M5 supports two Week 2 workflow/catalog paths: the existing reviews path `pipeline_reviews_json_e2e` -> `dataset_reviews_gold`, and the product-health presentation path `pipeline_product_health_e2e` -> `dataset_product_health_gold`. Product-health run IDs use `run_product_health_demo_<sequence>`.
+- Product-health Catalog metadata exposes `query.table_name=gold_product_health` and the allowlisted columns `product_id`, `product_name`, `category_l1`, `review_count`, `average_rating`, `negative_review_rate`, `view_count`, `purchase_count`, `conversion_rate`, `delivery_count`, `late_delivery_rate`, and `risk_score`. M5 records these fields but does not own the risk score or join semantics.
+- M5 Airflow local smoke uses a shared result artifact. `Week2AirflowAdapter` chooses the DAG by `pipeline_id`: reviews uses `ASKLAKE_WEEK2_AIRFLOW_DAG_ID` default `asklake_week2_reviews`, and product-health uses `ASKLAKE_WEEK2_PRODUCT_HEALTH_AIRFLOW_DAG_ID` default `asklake_week2_product_health`. Each DAG writes `data/week2/_airflow_results/<run_id>.json`; the artifact contains `week2_result` with the `Week2RunnerResult`-compatible fields `status`, `task_results`, `logs`, `row_count`, `bytes`, `duration_ms`, `output_path`, `output_row_count`, and `output_bytes`.
+- Product-health Airflow demo UI is the standalone static page `frontend/product-health-airflow-demo.html`. It is not part of the main React route tree. It calls `POST /api/week2/workflows/pipeline_product_health_e2e/runs`, `GET /api/week2/catalog/dataset_product_health_gold`, and shows run receipt, source evidence, Catalog SQL context, lineage, metrics, and logs.
 - M2 Taxi local batch evidence uses `pipeline_taxi_daily_metrics`, `dataset_taxi_daily_metrics_gold`, and `gold_taxi_daily_metrics`. It is local Parquet evidence only; PostgreSQL loader, MinIO/S3 write, PySpark, and Airflow DAG-internal invocation are later phases.
 - The hardcoded Taxi daily Gold schema, aggregation, and valid-row mask are provisional evidence scaffolding, not durable M2-owned transform semantics. Final Gold metric definitions, quality rules, quarantine behavior, and period rules remain M3-owned `TransformSpec` / `QualityRule` responsibilities. M2's durable responsibility is runner/runtime/storage execution plus row_count, bytes, duration, output path, and related evidence. When the M3 spec execution path is available, this hardcoded Taxi Gold builder must be removed or demoted to a demo/test fixture.
 
@@ -312,7 +318,7 @@ s3://<bucket>/<domain>/<layer>/[dataset_path/]run_id=<run_id>/
 ```
 
 `dataset_path` is optional and may hold a domain-specific Gold output such as `daily_metrics`.
-MVP default bucket is `asklake-demo`. The local fallback file path is calculated from the same prefix under `RuntimeConfig.storage.local_fallback_root`, so `s3://asklake-demo/reviews/gold/run_id=run_reviews_demo_001/` maps to `data/week2/reviews/gold/run_id=run_reviews_demo_001/<output_file>`. Local MinIO smoke uses `RuntimeConfig.storage.endpoint=http://localhost:9000` and credential environment names only; secret values must stay outside Git. Object upload is opt-in through runner options and does not replace local fallback evidence.
+MVP default bucket is `asklake-demo`. The local fallback file path is calculated from the same prefix under `RuntimeConfig.storage.local_fallback_root`, so `s3://asklake-demo/reviews/gold/run_id=run_reviews_demo_001/` maps to `data/week2/reviews/gold/run_id=run_reviews_demo_001/<output_file>`, and `s3://asklake-demo/product_health/gold/run_id=run_product_health_demo_001/` maps to `data/week2/product_health/gold/run_id=run_product_health_demo_001/<output_file>`. Local MinIO smoke uses `RuntimeConfig.storage.endpoint=http://localhost:9000` and credential environment names only; secret values must stay outside Git. Object upload is opt-in through runner options and does not replace local fallback evidence.
 
 Week 2 SQL execution uses an adapter boundary:
 
@@ -404,7 +410,7 @@ Consumer module, Blocked issue, Next first action
 M6 must not import DuckDB, Trino, or Athena directly. The MVP implementation may use `DuckDBSqlEngine` behind the adapter.
 The Week 2 runtime can opt into the real DuckDB adapter with `Settings.week2_sql_engine="duckdb"` for local SQL smoke. The default remains `fake` until the M6 SQL MVP path intentionally switches the API default.
 Unconfirmed values such as real sample file path, row count, remote bucket contents, and production S3 path remain TODO in fixture files until the responsible module verifies them.
-M1 static shell placeholders are not source of truth. When real API state is connected, M1 must display `tenant_demo`, `pipeline_reviews_json_e2e`, `dataset_reviews_gold`, and other shared fixture identifiers unless this section is updated first.
+M1 static shell placeholders are not source of truth. When real API state is connected, M1 must display `tenant_demo`, `pipeline_reviews_json_e2e`, `dataset_reviews_gold`, `pipeline_product_health_e2e`, `dataset_product_health_gold`, and other shared fixture identifiers unless this section is updated first.
 
 ### Workstream Ownership
 
