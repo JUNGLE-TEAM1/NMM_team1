@@ -109,10 +109,45 @@ Target MVP 기능이 구현될 때 아래 경로를 단계별로 실제 manual v
 9. Week 2 공통 hardening으로 API/UI route, ID 규칙, storage path pattern, workflow/run status, `QueryResult`, guardrail failure shape, daily smoke evidence 형식이 `docs/03`에 정리되어 있는지 확인한다.
 10. `contracts/ai_query_result.sample.json`의 `query_result` 필드가 `docs/03`의 `QueryResult` 필드와 일치하는지 확인한다.
 11. M2 Taxi local batch evidence를 확인할 때 `scripts/week2_m2_taxi_local_batch_evidence.py --profile fixed`가 하루치 Taxi row를 Gold Parquet 1행으로 만들고, `--profile local-full-month`가 월별 파일 전체 row count와 Gold output path를 evidence JSON에 남기는지 확인한다.
+12. M2 Taxi 5GB local Spark evidence를 확인할 때는 로컬 Taxi Parquet directory를 아래처럼 실행한다. 성공 기준은 summary JSON에 `status=succeeded`, input row/bytes, duration, output path, output row/bytes가 남고, output Parquet을 실제로 읽을 수 있는 것이다. 이 검증은 Docker Spark cluster, MinIO/S3 durable write, Product Health 대표 경로를 대체하지 않는다.
+
+```bash
+PYTHONPATH=backend SPARK_LOCAL_IP=127.0.0.1 .venv/bin/python scripts/week2_m2_taxi_spark_local_evidence.py \
+  --input '<LOCAL_TAXI_PARQUET_DIR>' \
+  --profile local-full-month \
+  --run-id run_taxi_5gb_local_spark_001 \
+  --master 'local[2]' \
+  --driver-memory 8g \
+  --disable-vectorized-reader \
+  --summary-path data/results/m2_taxi_5gb_local_evidence/run_taxi_5gb_local_spark_001_summary.json
+```
+
+13. M2 Taxi Docker Spark evidence를 확인할 때는 host의 Taxi directory를 container의 `/data/taxi`로 mount하고, repo의 `data/results/...`를 container의 `/app/data/results/...`로 쓴다. 작은 파일을 먼저 돌린 뒤 같은 Spark master/worker 경로로 5GB directory를 돌린다. 성공 기준은 summary JSON에 `status=succeeded`, Spark master가 `spark://m2-spark-master:7077`, input row/bytes, duration, output path, output row/bytes가 남고, output Parquet을 실제로 읽을 수 있는 것이다. 끝나면 cluster를 내려둔다.
+
+```bash
+ASKLAKE_TAXI_HOST_DIR='<LOCAL_TAXI_PARENT_DIR>' scripts/week2_m2_taxi_spark_docker_evidence.sh small
+ASKLAKE_TAXI_HOST_DIR='<LOCAL_TAXI_PARENT_DIR>' scripts/week2_m2_taxi_spark_docker_evidence.sh 5gb
+scripts/week2_m2_taxi_spark_docker_evidence.sh down
+```
+
+14. M2 Taxi Docker Spark MinIO output smoke를 확인할 때는 같은 Docker Spark cluster compose에 포함된 `m2-minio`를 함께 띄운다. 성공 기준은 summary JSON에 `status=succeeded`, `spark_upload_taxi_daily_metrics` task success, local output path, `s3://asklake-demo/...` object URI, input/output row와 bytes가 남는 것이다. 이 검증은 Spark가 직접 `s3a://`로 쓰는 경로가 아니라, Spark local fallback write 뒤 `Week2StorageAdapter`가 같은 output file을 S3-compatible object로 업로드하는 경로다.
+
+```bash
+ASKLAKE_TAXI_HOST_DIR='<LOCAL_TAXI_PARENT_DIR>' scripts/week2_m2_taxi_spark_docker_evidence.sh minio-small
+scripts/week2_m2_taxi_spark_docker_evidence.sh down
+```
 
 ### Week 2 상품 리스크 대표 경로 점검
 
 이 경로는 Week2 발표 대표 path가 5GB 이상 fact input을 처리해 `gold_product_health`를 만들고, Catalog/SQL/UI까지 이어지는지 확인한다.
+
+작은 입력으로 먼저 M2 실행 경로만 확인할 때는 아래 smoke를 실행한다.
+
+```bash
+PYTHONPATH=backend .venv/bin/python scripts/week2_m2_product_health_l6_evidence.py
+```
+
+이 smoke는 Product Health source별 read/write evidence, M3 L6 preview-only aggregate spec 실행, `gold_product_health.parquet` 생성, DuckDB SQL read를 확인한다. 5GB input 처리와 `risk_score` 최종 의미 확정은 포함하지 않는다.
 
 1. `pipeline_product_health_e2e` run을 실행하거나 사전 실행된 5GB run id를 선택한다.
 2. `ExecutionResult.status`가 `succeeded`인지 확인한다.
@@ -121,7 +156,7 @@ Target MVP 기능이 구현될 때 아래 경로를 단계별로 실제 manual v
 5. bronze output path, silver output path, gold output path가 같은 `run_id`와 연결되는지 확인한다.
 6. `GET /api/week2/catalog/dataset_product_health_gold` 또는 대응 Catalog 화면에서 `gold_product_health` output path, Gold row count, Gold bytes, lineage를 확인한다.
 7. M6 AI Query에서 "리뷰가 나쁘고 구매 전환도 낮고 배송 지연까지 겹친 문제 상품군을 찾아줘."를 실행한다.
-8. `AIQueryResult.query_result.engine=duckdb`, SELECT-only SQL, returned rows, evidence `dataset_id=dataset_product_health_gold`가 확인되는지 본다.
+8. `AIQueryResult.route=sql`, `AIQueryResult.query_result.engine=duckdb`, SELECT-only SQL, returned rows, evidence `dataset_id=dataset_product_health_gold`, `retrieval_trace[].source_id=dataset_product_health_gold`가 확인되는지 본다.
 9. M1에서 run -> catalog -> ask -> evidence 흐름이 끊기지 않고, 위험 상품군과 `risk_score`, `negative_review_rate`, `conversion_rate`, `late_delivery_rate`가 표시되는지 확인한다.
 10. 발표 문구나 UI가 "Gold 파일이 5GB"라고 설명하지 않고, 5GB를 input 처리 evidence로 표시하는지 확인한다.
 

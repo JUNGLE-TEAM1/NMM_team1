@@ -3,7 +3,7 @@ import hmac
 import os
 import re
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote, urlsplit
@@ -12,6 +12,8 @@ import httpx
 
 from app.domain.runtime_config import StorageConfig
 from app.services.week2_local_runner import repo_root
+
+UTC = timezone.utc
 
 
 @dataclass(frozen=True)

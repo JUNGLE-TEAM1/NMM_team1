@@ -11,6 +11,7 @@ COPY backend/app ./app
 COPY backend/tests ./tests
 COPY backend/samples ./samples
 COPY contracts ./contracts
+COPY scripts ./scripts
 
 EXPOSE 8000
 

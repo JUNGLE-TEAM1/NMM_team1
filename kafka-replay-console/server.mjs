@@ -5,6 +5,7 @@ import {
   existsSync,
   mkdirSync,
   statSync,
+  writeFileSync,
 } from "node:fs";
 import { readdir, stat } from "node:fs/promises";
 import { once } from "node:events";
@@ -21,6 +22,9 @@ const config = {
   bootstrap: process.env.KAFKA_BOOTSTRAP_SERVERS || "localhost:29092",
   kafkaUiUrl: process.env.KAFKA_UI_URL || "http://localhost:8084",
   fullCountLimit: Number(process.env.KAFKA_REPLAY_FULL_COUNT_MAX_BYTES || 64 * 1024 * 1024),
+  evidenceDir:
+    process.env.KAFKA_REPLAY_EVIDENCE_DIR ||
+    path.join(workspaceRoot, "data", "results", "week2", "_metadata", "kafka_replay"),
 };
 const kafka = new Kafka({
   clientId: "kafka-replay-console",
@@ -105,9 +109,98 @@ function rowToObject(headers, cells, lineNumber) {
   return record;
 }
 
+function replayRunId() {
+  return `run_kafka_replay_${new Date().toISOString().replace(/\D/g, "").slice(0, 14)}_${Math.random()
+    .toString(36)
+    .slice(2, 8)}`;
+}
+
+function evidenceStatus(status) {
+  if (status === "finished") return "succeeded";
+  if (status === "error") return "failed";
+  return status;
+}
+
+function evidenceHealth(status, error) {
+  if (status === "failed") return { status: "error", message: error || "Kafka replay failed" };
+  if (["queued", "starting", "running", "paused"].includes(status)) {
+    return { status: "running", message: "Kafka replay job is active" };
+  }
+  return { status: "ok", message: "Kafka replay evidence recorded" };
+}
+
+function durationSeconds(job) {
+  if (!job.startedAt) return 0;
+  const end = job.finishedAt || new Date().toISOString();
+  const elapsed = Date.parse(end) - Date.parse(job.startedAt);
+  return Number.isFinite(elapsed) && elapsed > 0 ? elapsed / 1000 : 0;
+}
+
+function publicEvidence(job) {
+  const status = evidenceStatus(job.status);
+  const elapsedSeconds = durationSeconds(job);
+  const throughputPerSecond = elapsedSeconds > 0 ? Math.round((job.sent / elapsedSeconds) * 100) / 100 : 0;
+  const updatedAt = new Date().toISOString();
+  const kafkaTopic = `kafka://${config.bootstrap}/${job.topic}`;
+  return {
+    contract: "KafkaReplayEvidence",
+    run_id: job.runId,
+    job_id: job.id,
+    tenant_id: "tenant_demo",
+    module: "M4 Kafka Replay",
+    producer: "kafka-replay-console",
+    status,
+    source_file: job.filePath,
+    source_file_name: path.basename(job.filePath),
+    topic: job.topic,
+    partitions: job.partitions,
+    records_per_second: job.recordsPerSecond,
+    batch_size: job.batchSize,
+    key_column: job.keyColumn || null,
+    start_row: job.startRow,
+    max_rows: job.maxRows,
+    total_rows: job.totalRows,
+    row_count_known: job.rowCountKnown,
+    started_at: job.startedAt,
+    finished_at: job.finishedAt,
+    updated_at: updatedAt,
+    metrics: {
+      sent_rows: job.sent,
+      failed_rows: job.failed,
+      skipped_rows: job.skipped,
+      error_count: job.error ? 1 : 0,
+      file_bytes: job.fileBytes,
+      processed_bytes: job.processedBytes,
+      progress_percent: job.progressPercent,
+      throughput_per_second: throughputPerSecond,
+      duration_ms: Math.round(elapsedSeconds * 1000),
+    },
+    lineage: {
+      source_file: job.filePath,
+      kafka_topic: kafkaTopic,
+      source_ref: `file://${job.filePath}`,
+      target_ref: kafkaTopic,
+      handoff: "Spark or another Kafka consumer can read this topic with its own consumer group.",
+    },
+    health: evidenceHealth(status, job.error),
+    error: job.error,
+  };
+}
+
+function persistEvidence(job) {
+  mkdirSync(config.evidenceDir, { recursive: true });
+  const evidence = publicEvidence(job);
+  const evidencePath = path.join(config.evidenceDir, `${job.runId}.json`);
+  writeFileSync(evidencePath, `${JSON.stringify(evidence, null, 2)}\n`, "utf8");
+  writeFileSync(path.join(config.evidenceDir, "latest.json"), `${JSON.stringify(evidence, null, 2)}\n`, "utf8");
+  job.evidencePath = evidencePath;
+  return evidence;
+}
+
 function publicJob(job) {
   return {
     id: job.id,
+    runId: job.runId,
     status: job.status,
     filePath: job.filePath,
     topic: job.topic,
@@ -127,6 +220,7 @@ function publicJob(job) {
     startedAt: job.startedAt,
     finishedAt: job.finishedAt,
     error: job.error,
+    evidencePath: job.evidencePath,
     lastMessage: job.lastMessage,
   };
 }
@@ -248,6 +342,7 @@ async function runJob(job) {
   let batch = [];
   try {
     job.status = "starting";
+    persistEvidence(job);
     await ensureTopic(job.topic, job.partitions);
     await producer.connect();
 
@@ -267,11 +362,13 @@ async function runJob(job) {
       batch = [];
       job.sent += sentCount;
       updateProgress(job);
+      persistEvidence(job);
       if (delayMs > 0) await sleep(delayMs);
     }
 
     job.status = "running";
     job.startedAt = new Date().toISOString();
+    persistEvidence(job);
     for await (const line of reader) {
       job.processedBytes = input.bytesRead;
       updateProgress(job);
@@ -312,6 +409,7 @@ async function runJob(job) {
     job.error = error.message;
   } finally {
     job.finishedAt = new Date().toISOString();
+    persistEvidence(job);
     await producer.disconnect().catch(() => {});
   }
 }
@@ -324,6 +422,7 @@ async function startReplay(body) {
   const maxRows = clampInt(body.maxRows, 0, 0, Number.MAX_SAFE_INTEGER);
   const job = {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    runId: replayRunId(),
     status: "queued",
     filePath,
     topic: sanitizeTopic(body.topic),
@@ -349,9 +448,11 @@ async function startReplay(body) {
     startedAt: null,
     finishedAt: null,
     error: null,
+    evidencePath: null,
     lastMessage: null,
   };
   jobs.set(job.id, job);
+  persistEvidence(job);
   void runJob(job);
   return publicJob(job);
 }
@@ -407,6 +508,7 @@ async function handleApi(request, response, pathname) {
         kafkaUi: config.kafkaUiUrl,
         bootstrapServer: config.bootstrap,
         largeInspectBytes: config.fullCountLimit,
+        evidenceDir: config.evidenceDir,
       });
     } else if (request.method === "GET" && pathname === "/api/files") {
       sendJson(response, 200, { files: await discoverCsvFiles() });
@@ -421,6 +523,8 @@ async function handleApi(request, response, pathname) {
       sendJson(response, 200, { job: await startReplay(await readBody(request)) });
     } else if (request.method === "GET" && pathname === "/api/replay/jobs") {
       sendJson(response, 200, { jobs: [...jobs.values()].map(publicJob).reverse() });
+    } else if (request.method === "GET" && pathname === "/api/replay/evidence") {
+      sendJson(response, 200, { evidence: [...jobs.values()].map(publicEvidence).reverse() });
     } else {
       const match = pathname.match(/^\/api\/replay\/jobs\/([^/]+)\/(pause|resume|stop)$/);
       const job = match ? jobs.get(match[1]) : null;
@@ -431,6 +535,7 @@ async function handleApi(request, response, pathname) {
       if (match[2] === "pause" && job.status === "running") job.status = "paused";
       if (match[2] === "resume" && job.status === "paused") job.status = "running";
       if (match[2] === "stop") job.stopRequested = true;
+      persistEvidence(job);
       sendJson(response, 200, { job: publicJob(job) });
     }
   } catch (error) {
@@ -455,6 +560,7 @@ createServer(async (request, response) => {
       "POST /api/inspect",
       "POST /api/replay/start",
       "GET /api/replay/jobs",
+      "GET /api/replay/evidence",
       "POST /api/replay/jobs/:id/pause|resume|stop",
     ],
   });

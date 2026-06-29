@@ -74,7 +74,7 @@
 | --- | --- |
 | Must not break | AskLake 2주차 M1~M6 구현은 `SourceConfig`, `SchemaDefinition`, `TransformSpec`, `RuntimeConfig`, `KafkaTopicContract`, `WorkflowDefinition`, `ExecutionResult`, `CatalogMetadata`, `AIQueryResult` fixture contract 없이 시작하지 않는다. |
 | Failure condition | 각 모듈이 tenant id, source id, dataset id, runtime/transform/input event, workflow result, catalog metadata, SQL result shape를 서로 다르게 정의한다. |
-| Expected behavior | `contracts/*.sample.json`과 `docs/03`의 Week 2 contract package를 먼저 확인하고, 불확실한 path/row count/MinIO layout은 TODO 또는 decision으로 남긴다. |
+| Expected behavior | `contracts/*.sample.json`과 `docs/03`의 Week 2 contract package를 먼저 확인하고, 불확실한 path/row count/MinIO layout은 TODO 또는 decision으로 남긴다. `RuntimeConfig.source_inputs[]`는 legacy `input_format`/`input_path`와 새 `source_type`/`format`/`path`를 호환 유지하며, `source_type`과 `format`을 같은 계층으로 섞지 않는다. |
 | Verification method | JSON fixture 유효성, `docs/03` contract package, branch workspace `quality.md`와 `decisions.md`를 확인한다. |
 | Related docs/interface/Phase | `contracts/`, `docs/03`, `docs/project-context/asklake-week2-module-plan/` |
 
@@ -117,6 +117,16 @@
 | Expected behavior | SQL 실행 전 guardrail이 실패하면 `AIQueryResult.status`는 `blocked`가 되고, 성공한 경우에만 `QueryResult.engine=duckdb`와 실제 row를 반환한다. |
 | Verification method | `backend/tests/test_duckdb_sql_engine.py`, `backend/tests/test_week2_ai_query_duckdb.py`, `scripts/week2_m2_sql_runtime_smoke.py`를 확인한다. |
 | Related docs/interface/Phase | `docs/03`, `contracts/catalog_metadata.sample.json`, M2 SQL runtime smoke |
+
+### M6 route 또는 retrieval trace가 응답 근거와 어긋나는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | `AIQueryResult.route`는 실제 실행 경로를 나타내고, `retrieval_trace`는 선택된 evidence와 연결되어야 한다. |
+| Failure condition | SQL 실행 응답인데 route가 `rag`로 표시되거나, unsupported 질문이 `sql`로 표시되거나, trace의 `evidence_index`가 없는 evidence를 가리킨다. |
+| Expected behavior | SQL-first 응답은 `route=sql`, 지원하지 않는 질문은 `route=unsupported`를 반환한다. Catalog 기반 trace는 `source_type=catalog`, `source_id=<dataset_id>`, score, matched_terms, evidence index를 포함한다. |
+| Verification method | `backend/tests/test_week2_ai_query.py` route/retrieval_trace regression과 `contracts/ai_query_result.sample.json`을 확인한다. |
+| Related docs/interface/Phase | `docs/03`, `docs/05`, `contracts/ai_query_result.sample.json`, M6 response contract |
 
 ### Mock/Fake Boundary를 넘어 실제 접근으로 진행되는 경우
 

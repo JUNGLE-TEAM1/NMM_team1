@@ -62,6 +62,31 @@ python -m http.server 8099 --directory demo-output/kafka-replay-parquet
 http://localhost:8099/kafka-replay-parquet-preview.html
 ```
 
+## AskLake 하네스 evidence 확인
+
+`kafka-replay-console` API로 replay를 실행하면 job 진행 상태가 아래 경로에 저장된다.
+
+```text
+data/results/week2/_metadata/kafka_replay/<run_id>.json
+data/results/week2/_metadata/kafka_replay/latest.json
+```
+
+backend가 켜져 있으면 아래 API로 같은 evidence를 확인한다.
+
+```bash
+curl -fsS http://localhost:8000/api/week2/kafka-replay/health
+curl -fsS http://localhost:8000/api/week2/kafka-replay/runs
+curl -fsS http://localhost:8000/api/week2/kafka-replay/runs/<run_id>
+```
+
+확인 기준:
+
+- `contract`가 `KafkaReplayEvidence`다.
+- `metrics.sent_rows`가 replay로 보낸 row 수와 맞는다.
+- `metrics.error_count`가 실패 시나리오가 아니면 `0`이다.
+- `lineage.source_file`에서 `lineage.kafka_topic`으로 흐름이 남는다.
+- `health.status`가 실행 중에는 `running`, 완료 뒤에는 `ok`다.
+
 ## 운영 흐름으로 읽기
 
 데모 흐름:

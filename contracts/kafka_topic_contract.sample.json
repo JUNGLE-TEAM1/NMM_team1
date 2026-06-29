@@ -15,17 +15,26 @@
   },
   "replay": {
     "command": "python scripts/kafka_replay_to_parquet_demo.py",
-    "rate_per_second": "TODO: confirm M4 replay rate",
-    "source_file": "TODO: confirm M4 replay source file"
+    "rate_per_second": 1000,
+    "source_file": "demo-output/replay-samples/sample-65536-bytes.csv"
   },
   "evidence": {
-    "metrics": ["message_count", "throughput_per_second", "consumer_lag", "error_count", "restart_result"],
-    "output_path": "TODO: confirm raw event evidence output path",
+    "contract": "KafkaReplayEvidence",
+    "metrics": ["sent_rows", "throughput_per_second", "error_count", "progress_percent", "duration_ms"],
+    "output_path": "data/results/week2/_metadata/kafka_replay/<run_id>.json",
+    "latest_path": "data/results/week2/_metadata/kafka_replay/latest.json",
+    "backend_routes": [
+      "GET /api/week2/kafka-replay/health",
+      "GET /api/week2/kafka-replay/runs",
+      "GET /api/week2/kafka-replay/runs/{run_id}"
+    ],
+    "lineage": ["source_file", "kafka_topic", "source_ref", "target_ref"],
+    "kafka_ui_metrics": ["message_count", "consumer_lag", "throughput_per_second"],
     "main_path_blocker": false
   },
   "handoff": {
     "m3_uses_raw_event_contract": true,
     "m5_records_evidence_only_until_gold_path_exists": true
   },
-  "updated_at": "2026-06-26T00:00:00+09:00"
+  "updated_at": "2026-06-28T00:00:00+09:00"
 }
