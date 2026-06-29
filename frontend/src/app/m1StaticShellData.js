@@ -61,6 +61,14 @@ export const m1AiQueryPlaceholder = {
   status: "M6 연결 대기",
   question: "Day 4 검증 질문 확정 전",
   sql: "SELECT product_id, review_count, average_rating FROM reviews_output_pending LIMIT 10",
+  answer_metadata: {
+    source: "internal",
+    provider: "m6",
+    fallback_used: false,
+    fallback_reason: null,
+    used_evidence_indexes: [],
+    grounding_state: "blocked",
+  },
   chart_spec: "bar(product_id, review_count)",
 };
 
