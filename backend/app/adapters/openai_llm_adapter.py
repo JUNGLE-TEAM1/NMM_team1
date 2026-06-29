@@ -29,7 +29,7 @@ class OpenAILLMAdapter:
 
     def generate_summary(self, context: LLMAnswerContext) -> LLMAnswer:
         if not self.api_key:
-            return self.fallback_adapter.generate_summary(context)
+            return self._fallback_answer(context, "no_api_key")
 
         try:
             response = self.http_post(
@@ -40,14 +40,15 @@ class OpenAILLMAdapter:
             )
             summary = self._extract_output_text(response)
         except Exception:
-            return self.fallback_adapter.generate_summary(context)
+            return self._fallback_answer(context, "provider_error")
 
         if not summary:
-            return self.fallback_adapter.generate_summary(context)
+            return self._fallback_answer(context, "empty_output")
 
         return LLMAnswer(
             summary=summary,
             source="external",
+            provider=self.provider,
             used_evidence_indexes=self._used_evidence_indexes(context),
         )
 
@@ -147,6 +148,16 @@ class OpenAILLMAdapter:
         if context.evidence:
             return [0]
         return []
+
+    def _fallback_answer(self, context: LLMAnswerContext, reason: str) -> LLMAnswer:
+        answer = self.fallback_adapter.generate_summary(context)
+        return answer.model_copy(
+            update={
+                "provider": self.provider,
+                "fallback_used": True,
+                "fallback_reason": reason,
+            }
+        )
 
     def _post_json(
         self,

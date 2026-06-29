@@ -336,6 +336,12 @@ def test_week2_ai_query_uses_llm_adapter_for_successful_answer_context() -> None
 
     assert result.status == "succeeded"
     assert result.summary == "adapter-generated summary"
+    assert result.answer_metadata.source == "template"
+    assert result.answer_metadata.provider == "template"
+    assert result.answer_metadata.fallback_used is False
+    assert result.answer_metadata.fallback_reason is None
+    assert result.answer_metadata.used_evidence_indexes == [0]
+    assert result.answer_metadata.grounding_state == "grounded"
     assert len(llm_adapter.contexts) == 1
     context = llm_adapter.contexts[0]
     assert context.question == "리뷰가 가장 많은 상품 알려줘"
@@ -385,6 +391,11 @@ def test_week2_ai_query_skips_llm_adapter_when_sql_route_is_blocked() -> None:
 
     assert result.status == "blocked"
     assert result.guardrail.failure_code == "local_path_missing"
+    assert result.answer_metadata.source == "internal"
+    assert result.answer_metadata.provider == "m6"
+    assert result.answer_metadata.fallback_used is False
+    assert result.answer_metadata.used_evidence_indexes == []
+    assert result.answer_metadata.grounding_state == "blocked"
 
 
 def test_week2_ai_query_skips_llm_adapter_when_question_is_unsupported() -> None:
@@ -403,6 +414,9 @@ def test_week2_ai_query_skips_llm_adapter_when_question_is_unsupported() -> None
 
     assert result.status == "blocked"
     assert result.route == "unsupported"
+    assert result.answer_metadata.source == "internal"
+    assert result.answer_metadata.provider == "m6"
+    assert result.answer_metadata.grounding_state == "blocked"
 
 
 def test_week2_ai_query_blocks_when_catalog_local_fallback_path_is_missing() -> None:

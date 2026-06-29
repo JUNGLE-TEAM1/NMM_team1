@@ -96,6 +96,15 @@ class ChartSpec(BaseModel):
     title: str
 
 
+class AnswerMetadata(BaseModel):
+    source: Literal["template", "external", "internal"]
+    provider: str
+    fallback_used: bool = False
+    fallback_reason: str | None = None
+    used_evidence_indexes: list[int] = Field(default_factory=list)
+    grounding_state: Literal["grounded", "insufficient_evidence", "blocked"]
+
+
 class AIQueryResult(BaseModel):
     contract: str = "AIQueryResult"
     producer: str = "M6"
@@ -111,6 +120,7 @@ class AIQueryResult(BaseModel):
     query_result: QueryResult
     rows: list[dict[str, Any]]
     summary: str
+    answer_metadata: AnswerMetadata
     chart_spec: ChartSpec
     guardrail: GuardrailResult
     executed_at: str = Field(default_factory=now_iso)

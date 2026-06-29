@@ -85,6 +85,9 @@ def test_openai_llm_adapter_builds_safe_responses_request() -> None:
 
     assert answer.summary == "B001 상품이 위험 점수 0.92로 가장 높습니다."
     assert answer.source == "external"
+    assert answer.provider == "openai"
+    assert answer.fallback_used is False
+    assert answer.fallback_reason is None
     assert answer.used_evidence_indexes == [0]
     assert recorded["url"] == "https://api.openai.test/v1/responses"
     assert recorded["headers"]["Authorization"] == "Bearer unit-test-key"
@@ -129,6 +132,8 @@ def test_openai_llm_adapter_extracts_nested_output_text() -> None:
 
     assert answer.summary == "nested summary"
     assert answer.source == "external"
+    assert answer.provider == "openai"
+    assert answer.fallback_used is False
 
 
 def test_openai_llm_adapter_falls_back_to_template_on_provider_error() -> None:
@@ -145,7 +150,29 @@ def test_openai_llm_adapter_falls_back_to_template_on_provider_error() -> None:
     answer = adapter.generate_summary(_context())
 
     assert answer.source == "template"
+    assert answer.provider == "openai"
+    assert answer.fallback_used is True
+    assert answer.fallback_reason == "provider_error"
     assert "위험 점수 0.92" in answer.summary
+
+
+def test_openai_llm_adapter_marks_empty_output_fallback() -> None:
+    def empty_post(
+        url: str,
+        headers: dict[str, str],
+        body: dict[str, Any],
+        timeout_seconds: int,
+    ) -> dict[str, Any]:
+        return {"output_text": "   "}
+
+    adapter = OpenAILLMAdapter(api_key="unit-test-key", http_post=empty_post)
+
+    answer = adapter.generate_summary(_context())
+
+    assert answer.source == "template"
+    assert answer.provider == "openai"
+    assert answer.fallback_used is True
+    assert answer.fallback_reason == "empty_output"
 
 
 def test_openai_llm_adapter_health_requires_api_key() -> None:
