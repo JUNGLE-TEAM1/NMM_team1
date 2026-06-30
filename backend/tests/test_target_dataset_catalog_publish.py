@@ -33,12 +33,13 @@ def test_publish_succeeded_target_dataset_job_run_to_catalog() -> None:
     assert dataset["source_id"] == run["id"]
     assert dataset["source_type"] == "target_dataset_job_run"
     assert dataset["path"] == executed["output_path"]
-    assert dataset["row_count"] == 1
-    assert dataset["schema"] == draft["schema_preview"]
-    assert dataset["sample"][0]["product_id"] == "demo_product_001"
+    assert dataset["row_count"] == executed["row_count"]
+    assert any(column["name"] == "product_id" for column in dataset["schema"])
+    assert any(column["name"] == "risk_score" for column in dataset["schema"])
+    assert dataset["sample"][0]["product_id"] == "gold_prod_000001"
     assert dataset["lineage"]["run_id"] == run["id"]
     assert dataset["lineage"]["target_dataset_draft_id"] == draft["id"]
-    assert dataset["metrics"]["row_count"] == 1
+    assert dataset["metrics"]["row_count"] == executed["row_count"]
     assert dataset["metrics"]["bytes"] == executed["output_bytes"]
     assert dataset["storage"]["local_path"] == executed["output_path"]
     assert dataset["runtime_evidence"]["runner"] == "local_runner"

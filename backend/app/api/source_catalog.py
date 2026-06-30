@@ -48,7 +48,7 @@ from app.services.silver_dataset_materialization import (
     SilverDatasetMaterializationError,
     SilverDatasetMaterializationService,
 )
-from app.services.target_dataset_local_runner import TargetDatasetLocalRunner, TargetDatasetLocalRunnerError
+from app.services.target_dataset_runtime_executor import TargetDatasetRuntimeExecutor, TargetDatasetRuntimeExecutorError
 
 
 def create_source_catalog_router(
@@ -380,13 +380,13 @@ def create_source_catalog_router(
         if draft is None:
             raise HTTPException(status_code=404, detail="Target dataset draft not found")
         try:
-            result = TargetDatasetLocalRunner().run(run, draft)
-        except TargetDatasetLocalRunnerError as error:
+            result = TargetDatasetRuntimeExecutor().execute(run, draft)
+        except TargetDatasetRuntimeExecutorError as error:
             raise HTTPException(status_code=400, detail=str(error)) from error
         return metadata_store.update_target_dataset_job_run_materialization(
             run_id=run.id,
-            status="succeeded",
-            run_note=run_note_for_materialization(result.runtime_evidence),
+            status=result.status,
+            run_note=result.run_note,
             output_path=result.output_path,
             row_count=result.row_count,
             output_bytes=result.output_bytes,

@@ -107,6 +107,56 @@ def test_create_list_and_read_target_dataset_job_run_handoff() -> None:
     assert detail_response.json()["target_dataset_draft_id"] == draft["id"]
 
 
+def test_execute_airflow_target_dataset_job_run_records_readiness_only() -> None:
+    client = make_client()
+    payload = target_dataset_draft_payload("dataset_product_health_airflow")
+    payload["gold_output"] = "dataset_product_health_airflow"
+    payload["executor_handoff"] = "airflow"
+    draft = client.post("/api/target-dataset-drafts", json=payload).json()
+    run = client.post(
+        "/api/target-dataset-job-runs",
+        json={"target_dataset_draft_id": draft["id"], "job_type": "gold_build", "triggered_by": "demo_user"},
+    ).json()
+
+    response = client.post(f"/api/target-dataset-job-runs/{run['id']}/execute")
+
+    assert response.status_code == 200
+    executed = response.json()
+    assert executed["status"] == "ready_to_run"
+    assert executed["output_path"] is None
+    assert executed["row_count"] is None
+    assert executed["runtime_evidence"]["runner"] == "airflow"
+    assert executed["runtime_evidence"]["executor_status"] == "readiness_only"
+    assert executed["runtime_evidence"]["trigger_attempted"] is False
+    assert executed["runtime_evidence"]["result_artifact_status"] == "not_connected"
+    assert "DAG trigger is not executed" in executed["run_note"]
+
+
+def test_execute_spark_target_dataset_job_run_records_readiness_only() -> None:
+    client = make_client()
+    payload = target_dataset_draft_payload("dataset_product_health_spark")
+    payload["gold_output"] = "dataset_product_health_spark"
+    payload["executor_handoff"] = "spark_runner"
+    draft = client.post("/api/target-dataset-drafts", json=payload).json()
+    run = client.post(
+        "/api/target-dataset-job-runs",
+        json={"target_dataset_draft_id": draft["id"], "job_type": "gold_build", "triggered_by": "demo_user"},
+    ).json()
+
+    response = client.post(f"/api/target-dataset-job-runs/{run['id']}/execute")
+
+    assert response.status_code == 200
+    executed = response.json()
+    assert executed["status"] == "ready_to_run"
+    assert executed["output_path"] is None
+    assert executed["row_count"] is None
+    assert executed["runtime_evidence"]["runner"] == "spark_runner"
+    assert executed["runtime_evidence"]["executor_status"] == "readiness_only"
+    assert executed["runtime_evidence"]["trigger_attempted"] is False
+    assert executed["runtime_evidence"]["result_artifact_status"] == "not_connected"
+    assert "Spark job is not executed" in executed["run_note"]
+
+
 def test_create_target_dataset_job_run_rejects_missing_draft() -> None:
     client = make_client()
 

@@ -1310,7 +1310,7 @@ def read_jsonl_sample(path: Path, limit: int = 5) -> list[dict[str, object]]:
 def read_parquet_sample(path: Path, limit: int = 5) -> list[dict[str, object]]:
     if limit <= 0 or not path.exists():
         return []
-    table = pq.read_table(path)
+    table = pq.ParquetFile(path).read()
     return [json_safe_row(row) for row in table.slice(0, limit).to_pylist()]
 
 

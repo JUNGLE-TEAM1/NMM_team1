@@ -7,13 +7,14 @@ Jobs와 Runs를 분리된 관리 개념으로 정리하고, local runner, Airflo
 ## 상태
 
 - 2026-06-30: 계획 생성. Airflow DAG와 Spark cluster는 실제 실행 가능함이 확인됐지만 AskLake Run record와 UI 연동은 아직 정렬이 필요하다.
+- 2026-06-30: C-29 실행. `local_runner`는 실제 execution evidence, Airflow/Spark는 `ready_to_run`/`readiness_only` evidence로 정렬한다.
 
 ## 범위
 
 - Job definition과 Run record 경계 정리.
 - local runner/Airflow/Spark executor status shape 정렬.
-- Airflow trigger result artifact를 Run record로 ingest.
-- Spark runner 또는 cluster job evidence를 Run record에 연결.
+- Airflow trigger 전 단계의 blocked/readiness evidence를 Run record로 남김.
+- Spark runner 전 단계의 blocked/readiness evidence를 Run record로 남김.
 - `/runs`에서 executor별 상태와 output evidence 표시.
 
 ## 제외 범위
@@ -42,9 +43,9 @@ Jobs와 Runs를 분리된 관리 개념으로 정리하고, local runner, Airflo
 ## Acceptance Criteria
 
 - Jobs는 definition/schedule/edit 대상이고 Runs는 execution evidence 대상임이 UI에서 구분된다.
-- local runner, Airflow, Spark 결과가 같은 Run card/detail shape로 보인다.
-- Airflow success artifact가 Run record에 연결된다.
-- Spark cluster job success가 evidence로 표시된다.
+- local runner, Airflow, Spark 결과가 같은 Run card shape로 보인다.
+- Airflow는 trigger 없이 `ready_to_run` evidence로 표시된다.
+- Spark는 job 실행 없이 `ready_to_run` evidence로 표시된다.
 
 ## Regression / Failure Scenario
 

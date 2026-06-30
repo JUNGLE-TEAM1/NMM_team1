@@ -381,7 +381,7 @@ External Connection은 외부 원천에 접속하기 위한 연결 설정이고,
 - C-27은 Silver local materialization을 닫는다. Spark distributed execution과 streaming ingest는 기본 경로로 승격하지 않는다.
 - C-28은 Gold local materialization과 MinIO/S3-compatible upload evidence를 닫는다. AWS S3 production profile, Spark direct S3A write, Catalog publish는 제외한다.
 - C-28A는 C-26C/C-27/C-28에서 생긴 runtime artifact 경로를 `data/lake/bronze`, `data/lake/silver`, `data/lake/gold`로 정렬한다. 실제 object storage upload는 여전히 `not_uploaded` evidence로 분리한다.
-- C-29는 Jobs/Runs runtime record 정렬이다. Airflow scheduler 운영화, retry/backfill, production orchestration은 제외한다.
+- C-29는 Jobs/Runs runtime record 정렬이다. `local_runner`는 실제 execution evidence로 남기고, Airflow/Spark는 trigger 없이 `ready_to_run`/`readiness_only` evidence로 남긴다. Airflow scheduler 운영화, retry/backfill, production orchestration은 제외한다.
 - C-30은 Catalog와 AI Query live dataset 소비를 닫는다. external LLM/RAG/vector DB 추가와 write SQL은 제외한다.
 - C-31은 구현 Phase가 아니라 deep browser verification Phase다. 문제 발견 시 독립 Hotfix 또는 후속 Phase로 분리한다.
 - C-4 이후 M5 실행 화면은 `M5 데모`가 아니라 `Job Runs` 또는 `실행 기록` 같은 사용자 언어로 재도입한다.

@@ -5568,7 +5568,7 @@ function JobRunsPage({ setNotice }) {
         records: current.records.map((record) => (record.id === executed.id ? executed : record)),
       }));
       setExecuteState({ status: "executed", runId, error: "" });
-      setNotice(`${executed.gold_output} ${runOutputModeLabel(executed)} 완료됐습니다.`);
+      setNotice(`${executed.gold_output} ${runOutputModeLabel(executed)} ${executed.status === "succeeded" ? "완료됐습니다." : "준비 상태로 기록됐습니다."}`);
     } catch (error) {
       setExecuteState({ status: "error", runId, error: error.message });
       setNotice(`Local 실행 실패: ${error.message}`);
@@ -5602,14 +5602,16 @@ function JobRunsPage({ setNotice }) {
         facts: [
           ["Type", "Gold Build"],
           ["Status", runStatusLabel(run.status)],
+          ["Executor", executorLabel(run.executor_handoff)],
+          ["Run Role", run.runtime_evidence?.run_record_role || "definition handoff"],
           ["Output", outputFileName(run.output_path)],
           ["Rows", formatMetric(run.row_count)],
           ["Bytes", formatBytes(run.output_bytes)],
-          ["Storage", run.runtime_evidence?.object_storage?.status || run.runtime_evidence?.output_format || "-"],
+          ["Artifact", run.runtime_evidence?.result_artifact_status || run.runtime_evidence?.object_storage?.status || run.runtime_evidence?.output_format || "-"],
         ],
         actions: [
           {
-            label: isExecuting ? "실행 중" : "실행",
+            label: isExecuting ? "확인 중" : run.executor_handoff === "local_runner" ? "실행" : "준비 확인",
             icon: Play,
             disabled: isExecuting || isPublishing || run.status !== "queued",
             onClick: () => executeRun(run.id),
@@ -5620,7 +5622,7 @@ function JobRunsPage({ setNotice }) {
             disabled: isExecuting || isPublishing || run.status !== "succeeded",
             onClick: () => publishRun(run.id),
           },
-        ].filter((action) => !action.disabled || action.label === "실행 중" || action.label === "등록 중"),
+        ].filter((action) => !action.disabled || action.label === "실행 중" || action.label === "확인 중" || action.label === "등록 중"),
       },
     };
   });
@@ -5682,9 +5684,18 @@ function runHistoryEmptyMessage(filter, error) {
 
 function runStatusLabel(status) {
   if (status === "queued") return "실행 대기";
+  if (status === "ready_to_run") return "준비됨";
+  if (status === "running") return "실행 중";
   if (status === "succeeded") return "성공";
   if (status === "failed") return "실패";
   return status || "상태 없음";
+}
+
+function executorLabel(executor) {
+  if (executor === "local_runner") return "local_runner";
+  if (executor === "airflow") return "Airflow";
+  if (executor === "spark_runner") return "Spark";
+  return executor || "-";
 }
 
 function shortRunId(runId) {
@@ -6255,6 +6266,9 @@ function KafkaReplayEvidencePanel({ setNotice }) {
 }
 
 function runOutputModeLabel(run) {
+  if (run?.runtime_evidence?.executor_status === "readiness_only") {
+    return `${executorLabel(run.executor_handoff)} readiness`;
+  }
   if (run?.runtime_evidence?.materialization_mode === "prepared_gold_reference") {
     return "prepared parquet reference";
   }

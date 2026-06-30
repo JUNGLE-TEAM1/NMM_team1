@@ -39,6 +39,8 @@ def test_execute_target_dataset_job_run_materializes_gold_from_silver_parquet() 
     assert executed["duration_ms"] >= 1
     assert executed["runtime_evidence"]["runner"] == "local_runner"
     assert executed["runtime_evidence"]["status"] == "succeeded"
+    assert executed["runtime_evidence"]["executor_status"] == "executed"
+    assert executed["runtime_evidence"]["run_record_role"] == "execution_evidence"
     assert executed["runtime_evidence"]["materialization_mode"] == "silver_parquet_to_gold"
     assert executed["runtime_evidence"]["output_format"] == "parquet"
     assert executed["runtime_evidence"]["output_bytes"] == executed["output_bytes"]
