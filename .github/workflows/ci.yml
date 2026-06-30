@@ -10,11 +10,105 @@ permissions:
 jobs:
   harness:
     runs-on: ubuntu-latest
+    outputs:
+      harness_heavy: ${{ steps.path-filter.outputs.harness_heavy }}
+      runtime_heavy: ${{ steps.path-filter.outputs.runtime_heavy }}
+      manifest_heavy: ${{ steps.path-filter.outputs.manifest_heavy }}
+      sensitive_change: ${{ steps.path-filter.outputs.sensitive_change }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Detect changed paths
+        id: path-filter
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            git diff --name-only "${{ github.event.pull_request.base.sha }}...HEAD" > /tmp/changed-files.txt
+          else
+            git ls-files > /tmp/changed-files.txt
+          fi
+
+          echo "Changed files:"
+          sed 's/^/- /' /tmp/changed-files.txt
+
+          matches_any() {
+            local pattern
+            for pattern in "$@"; do
+              if grep -E -q "$pattern" /tmp/changed-files.txt; then
+                return 0
+              fi
+            done
+            return 1
+          }
+
+          harness_heavy=false
+          runtime_heavy=false
+          manifest_heavy=false
+          sensitive_change=false
+
+          if [[ "${{ github.event_name }}" != "pull_request" ]]; then
+            harness_heavy=true
+            runtime_heavy=true
+            manifest_heavy=true
+            sensitive_change=true
+          fi
+
+          if matches_any \
+            '^\.github/workflows/' \
+            '^scripts/' \
+            '^docs/08-development-workflow\.md$' \
+            '^docs/10-next-action-menu\.md$' \
+            '^docs/11-git-sync-policy\.md$' \
+            '^docs/12-quality-gates\.md$' \
+            '^docs/18-harness-regression-policy\.md$' \
+            '^docs/system-guardrails\.md$'; then
+            harness_heavy=true
+          fi
+
+          if matches_any \
+            '^infra/docker/' \
+            '^infra/k8s/' \
+            '^docker-compose[^/]*\.ya?ml$' \
+            '^backend/requirements\.txt$' \
+            '^frontend/package(-lock)?\.json$' \
+            '^backend/' \
+            '^frontend/'; then
+            runtime_heavy=true
+          fi
+
+          if matches_any '^infra/k8s/'; then
+            manifest_heavy=true
+          fi
+
+          if matches_any \
+            '^contracts/' \
+            '(^|/)migrations?/' \
+            '(^|/)(schema|schemas|security|auth|policy|policies)(/|$)' \
+            '^backend/app/domain/' \
+            '^backend/app/ports/' \
+            '^backend/app/services/query_policy\.py$'; then
+            sensitive_change=true
+          fi
+
+          {
+            echo "harness_heavy=${harness_heavy}"
+            echo "runtime_heavy=${runtime_heavy}"
+            echo "manifest_heavy=${manifest_heavy}"
+            echo "sensitive_change=${sensitive_change}"
+          } >> "$GITHUB_OUTPUT"
+
+          {
+            echo "## CI path filter"
+            echo "- harness heavy: ${harness_heavy}"
+            echo "- runtime/container heavy: ${runtime_heavy}"
+            echo "- manifest heavy: ${manifest_heavy}"
+            echo "- migration/schema/security sensitive: ${sensitive_change}"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Install ripgrep
         run: |
@@ -36,48 +130,150 @@ jobs:
           node tests/migration-schema-security-check.test.js
           node tests/pr-size-hard-gate.test.js
 
-      - name: Harness validation
+      - name: Fast harness validation
+        run: |
+          scripts/validate-harness.sh
+
+      - name: Strict harness validation
+        if: steps.path-filter.outputs.harness_heavy == 'true'
+        run: |
+          scripts/validate-harness.sh --strict
+
+      - name: Harness fixture regression
+        if: steps.path-filter.outputs.harness_heavy == 'true'
         run: |
           scripts/test-harness.sh
-          scripts/validate-harness.sh
-          scripts/validate-harness.sh --strict
+
+      - name: Heavy harness skipped
+        if: steps.path-filter.outputs.harness_heavy != 'true'
+        run: |
+          echo "Strict harness validation and fixture regression skipped by path filter."
 
   container-smoke:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect runtime paths
+        id: path-filter
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            git diff --name-only "${{ github.event.pull_request.base.sha }}...HEAD" > /tmp/changed-files.txt
+          else
+            git ls-files > /tmp/changed-files.txt
+          fi
+
+          runtime_heavy=false
+          if [[ "${{ github.event_name }}" != "pull_request" ]]; then
+            runtime_heavy=true
+          elif grep -E -q '^(infra/docker/|docker-compose[^/]*\.ya?ml$|backend/requirements\.txt$|frontend/package(-lock)?\.json$|backend/|frontend/)' /tmp/changed-files.txt; then
+            runtime_heavy=true
+          fi
+
+          echo "runtime_heavy=${runtime_heavy}" >> "$GITHUB_OUTPUT"
+          echo "Container smoke required: ${runtime_heavy}" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Build backend image
+        if: steps.path-filter.outputs.runtime_heavy == 'true'
         run: |
           docker build -f infra/docker/backend.Dockerfile -t asklake-backend:${{ github.sha }} .
 
       - name: Test backend health contract
+        if: steps.path-filter.outputs.runtime_heavy == 'true'
         run: |
           docker run --rm asklake-backend:${{ github.sha }} python -m pytest
 
       - name: Build frontend image
+        if: steps.path-filter.outputs.runtime_heavy == 'true'
         run: |
           docker build -f infra/docker/frontend.Dockerfile -t asklake-frontend:${{ github.sha }} .
 
       - name: Run compose smoke
+        if: steps.path-filter.outputs.runtime_heavy == 'true'
         run: |
           scripts/smoke-container-app.sh
+
+      - name: Container smoke skipped
+        if: steps.path-filter.outputs.runtime_heavy != 'true'
+        run: |
+          echo "container-smoke required check passed: runtime/container paths were not changed."
 
   manifest-smoke:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect manifest paths
+        id: path-filter
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            git diff --name-only "${{ github.event.pull_request.base.sha }}...HEAD" > /tmp/changed-files.txt
+          else
+            git ls-files > /tmp/changed-files.txt
+          fi
+
+          manifest_heavy=false
+          if [[ "${{ github.event_name }}" != "pull_request" ]]; then
+            manifest_heavy=true
+          elif grep -E -q '^(infra/k8s/|\.github/workflows/ci\.yml$)' /tmp/changed-files.txt; then
+            manifest_heavy=true
+          fi
+
+          echo "manifest_heavy=${manifest_heavy}" >> "$GITHUB_OUTPUT"
+          echo "Manifest smoke required: ${manifest_heavy}" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Install ripgrep
+        if: steps.path-filter.outputs.manifest_heavy == 'true'
         run: |
           sudo apt-get update
           sudo apt-get install -y ripgrep
 
       - name: Check Kubernetes manifest shape
+        if: steps.path-filter.outputs.manifest_heavy == 'true'
         run: |
           test -f infra/k8s/base/namespace.yaml
           test -f infra/k8s/base/backend-deployment.yaml
           test -f infra/k8s/base/frontend-deployment.yaml
           rg -n "apiVersion:|kind:" infra/k8s/base
+
+      - name: Manifest smoke skipped
+        if: steps.path-filter.outputs.manifest_heavy != 'true'
+        run: |
+          echo "manifest-smoke required check passed: Kubernetes manifest paths were not changed."
+
+  ci-status:
+    runs-on: ubuntu-latest
+    needs:
+      - harness
+      - container-smoke
+      - manifest-smoke
+    if: always()
+    steps:
+      - name: Summarize CI gates
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "harness result: ${{ needs.harness.result }}"
+          echo "container-smoke result: ${{ needs.container-smoke.result }}"
+          echo "manifest-smoke result: ${{ needs.manifest-smoke.result }}"
+          echo "harness heavy: ${{ needs.harness.outputs.harness_heavy }}"
+          echo "runtime heavy: ${{ needs.harness.outputs.runtime_heavy }}"
+          echo "manifest heavy: ${{ needs.harness.outputs.manifest_heavy }}"
+          echo "sensitive change: ${{ needs.harness.outputs.sensitive_change }}"
+
+          if [[ "${{ needs.harness.result }}" != "success" || "${{ needs.container-smoke.result }}" != "success" || "${{ needs.manifest-smoke.result }}" != "success" ]]; then
+            exit 1
+          fi
