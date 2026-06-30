@@ -10,3 +10,11 @@
 - API Schemas: `backend/app/domain/schemas.py`
 - Target Dataset UI: `frontend/src/app/App.jsx`
 - Target Dataset styles: `frontend/src/app/styles.css`
+
+## Required Handoff Files
+
+- `plan.md`
+- `quality.md`
+- `decisions.md`
+- `sync.md`
+- `report.md`

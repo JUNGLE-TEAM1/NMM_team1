@@ -4,6 +4,7 @@
 
 - Type: Feature
 - Date: 2026-06-30
+- Context Budget mode: Escalate Read
 - Changed: M3 Product Health 계약을 Target Dataset Processing 추천 template로 조회/표시/저장하는 첫 조각을 추가했다.
 - Verified: `PYTHONPATH=. pytest tests/test_product_health_processing_template.py tests/test_target_dataset_job_draft.py` passed, `npm run build` passed.
 - Remaining: multi-source Source Dataset role mapping, editable Transform Builder, Silver/Gold preview, M2 execution, Catalog/AI Query 연결.

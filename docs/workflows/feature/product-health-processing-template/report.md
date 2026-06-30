@@ -5,6 +5,7 @@
 - Type: Feature
 - Date: 2026-06-30
 - Branch/work location: `feature/product-health-processing-template`, `docs/workflows/feature/product-health-processing-template/`
+- Context Budget mode: Escalate Read
 - Changed: Product Health Processing Template 조회 API, Target Dataset Processing 추천/직접 설정 mode, `process_rule` 저장 구조, 관련 문서/테스트
 - Verified: related backend tests passed, frontend build passed
 - Remaining: PR 2 multi-source role mapping, PR 3 builder edit, PR 4 preview, PR 5 M2 execution, PR 6 Catalog/AI Query
