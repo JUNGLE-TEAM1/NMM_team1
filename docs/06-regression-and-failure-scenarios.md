@@ -103,9 +103,9 @@
 | 항목 | 내용 |
 | --- | --- |
 | Must not break | Target Dataset Review 저장은 Target Dataset metadata와 ETL job definition draft를 저장하는 단계다. |
-| Failure condition | Review 저장이 pipeline run, M5 orchestration, CatalogMetadata 등록을 수행하거나 실행 완료처럼 표시한다. |
-| Expected behavior | `/api/target-datasets`는 `source_dataset_id`, `process_rule`, `selected_fields`, `schedule`, `job_definition`, `status=draft`를 저장하고 실행은 후속 handoff Phase로 남긴다. |
-| Verification method | `backend/tests/test_target_dataset_job_draft.py`, 데이터셋 화면 Target Dataset wizard Review 저장, 저장된 draft id 확인 |
+| Failure condition | Review 저장이 pipeline run, M5 orchestration, CatalogMetadata 등록을 수행하거나 Product Health 추천 template 저장을 M2 실행 완료처럼 표시한다. |
+| Expected behavior | `/api/target-datasets`는 `source_dataset_id`, `process_rule`, `selected_fields`, `schedule`, `job_definition`, `status=draft`를 저장한다. Product Health recommended `process_rule`도 `steps[]`와 `quality_rules[]`를 metadata로 저장할 뿐 실행은 후속 handoff Phase로 남긴다. |
+| Verification method | `backend/tests/test_target_dataset_job_draft.py`, `backend/tests/test_product_health_processing_template.py`, 데이터셋 화면 Target Dataset wizard Review 저장, 저장된 draft id 확인 |
 | Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07`, C-3 `feature/target-dataset-job-draft` |
 
 ### Target Dataset run handoff가 M5 데모 화면으로 되돌아가는 경우

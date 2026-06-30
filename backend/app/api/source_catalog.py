@@ -8,6 +8,7 @@ from app.domain.schemas import (
     ExternalConnectionCreate,
     ExternalConnectionRecord,
     ExternalTableSchema,
+    ProcessingTemplateRecord,
     SourceCreate,
     SourceDatasetCreate,
     SourceDatasetRecord,
@@ -27,6 +28,10 @@ from app.services.external_connections import (
     ExternalTableNotFoundError,
     PostgresSchemaInspector,
 )
+from app.services.product_health_processing_template import (
+    ProductHealthProcessingTemplateError,
+    ProductHealthProcessingTemplateService,
+)
 from app.services.source_catalog import SourceCatalogService
 
 
@@ -41,6 +46,7 @@ def create_source_catalog_router(
 ) -> APIRouter:
     router = APIRouter(prefix="/api")
     postgres_schema_inspector = schema_inspector or PostgresSchemaInspector()
+    product_health_template_service = ProductHealthProcessingTemplateService()
 
     @router.post("/sources", response_model=SourceRegistration, status_code=status.HTTP_201_CREATED)
     def create_source(source: SourceCreate) -> SourceRegistration:
@@ -134,6 +140,13 @@ def create_source_catalog_router(
             raise HTTPException(status_code=404, detail=str(error)) from error
         except ExternalConnectionError as error:
             raise HTTPException(status_code=400, detail=str(error)) from error
+
+    @router.get("/processing-templates/product-health", response_model=ProcessingTemplateRecord)
+    def get_product_health_processing_template() -> ProcessingTemplateRecord:
+        try:
+            return ProcessingTemplateRecord.model_validate(product_health_template_service.get_template())
+        except ProductHealthProcessingTemplateError as error:
+            raise HTTPException(status_code=500, detail=str(error)) from error
 
     @router.post("/source-datasets", response_model=SourceDatasetRecord, status_code=status.HTTP_201_CREATED)
     def create_source_dataset(dataset: SourceDatasetCreate) -> SourceDatasetRecord:
