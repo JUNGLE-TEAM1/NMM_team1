@@ -168,6 +168,25 @@ BACKEND_PORT=18001 FRONTEND_PORT=13001 scripts/smoke-container-app.sh
 BACKEND_PORT=8001 FRONTEND_PORT=3001 docker compose up
 ```
 
+로컬 OpenAI LLM 연결은 repository root의 `.env.local`을 사용한다.
+이 파일은 VS Code에서 직접 열어 편집하는 local-only 파일이며 Git에 commit하지 않는다.
+실제 API key는 `.env.local`의 `OPENAI_API_KEY`에만 넣고, `.env.example`에는 빈 예시만 둔다.
+Docker Compose backend는 local demo dataset과 CatalogMetadata를 읽기 위해 repository root의 `data/`를 `/app/data`로 mount한다.
+
+```bash
+WEEK2_LLM_PROVIDER=openai
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-4.1-mini
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_TIMEOUT_SECONDS=30
+```
+
+`.env.local`을 수정한 뒤에는 backend container를 재생성해야 한다.
+
+```bash
+docker compose up -d --force-recreate backend frontend
+```
+
 ### 하네스 검증 명령
 
 ```bash
