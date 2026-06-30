@@ -376,6 +376,18 @@ function normalizeDatasetName(value) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
 }
 
+function connectionTypeLabel(connectionType) {
+  const labels = {
+    csv: "CSV",
+    kafka: "Kafka",
+    postgres: "PostgreSQL",
+    mongodb: "MongoDB",
+    api: "API",
+    s3: "S3",
+  };
+  return labels[connectionType] || "External";
+}
+
 function mapSourceDatasetRecord(record, rankOffset = 100) {
   const schema = (record.schema_preview || []).map((field) => ({
     name: field.name,
@@ -387,7 +399,7 @@ function mapSourceDatasetRecord(record, rankOffset = 100) {
     id: record.id,
     name: record.name,
     sourceType: record.connection_type,
-    typeLabel: record.connection_type === "postgres" ? "PostgreSQL" : record.connection_type.toUpperCase(),
+    typeLabel: connectionTypeLabel(record.connection_type),
     status: "Metadata ready",
     description: `${record.connection_name}에서 정의한 raw/source dataset입니다.`,
     resource: record.raw_scope,
@@ -430,9 +442,10 @@ function schemaForConnectionType(connectionType) {
 
 function mapExternalConnectionRecord(record, rankOffset = 100) {
   const typeMeta = connectionTypeMeta(record.connection_type);
-  const isPostgres = record.connection_type === "postgres";
-  const rawScope = isPostgres ? `${record.default_schema}.${record.default_table}` : record.default_table;
+  const isDatabaseResource = record.connection_type === "postgres" || record.connection_type === "mongodb";
+  const rawScope = isDatabaseResource ? `${record.default_schema}.${record.default_table}` : record.default_table;
   const schema = schemaForConnectionType(record.connection_type);
+  const resourceNoun = record.connection_type === "mongodb" ? "collection" : "table";
 
   return {
     id: record.id,
@@ -443,8 +456,8 @@ function mapExternalConnectionRecord(record, rankOffset = 100) {
     description:
       record.connection_type === "kafka"
         ? `${record.host}:${record.port} broker의 ${rawScope} topic을 Source Dataset 후보로 사용합니다.`
-        : isPostgres
-          ? `${record.host}:${record.port}/${record.database}의 ${rawScope} table을 Source Dataset 후보로 사용합니다.`
+        : isDatabaseResource
+          ? `${record.host}:${record.port}/${record.database}의 ${rawScope} ${resourceNoun}을 Source Dataset 후보로 사용합니다.`
           : `${rawScope} source를 ${typeMeta.label} 연결로 사용합니다.`,
     resourceLabel: typeMeta.resourceLabel,
     resource: rawScope,
@@ -1313,35 +1326,42 @@ function SourcesPage({ navigate, setNotice }) {
   const hasValidConnectionPort =
     Number.isInteger(parsedConnectionPort) && parsedConnectionPort >= 1 && parsedConnectionPort <= 65535;
   const isPostgresConnection = selectedConnectionType.id === "postgres";
+  const isMongoConnection = selectedConnectionType.id === "mongodb";
   const isKafkaConnection = selectedConnectionType.id === "kafka";
+  const usesSchemaPreviewConnection = isPostgresConnection || isMongoConnection;
+  const usesConnectionTest = usesSchemaPreviewConnection || isKafkaConnection;
   const parsedReplayRowsPerSecond = Number(connectionReplayRowsPerSecond);
   const hasValidReplayRowsPerSecond =
     Number.isInteger(parsedReplayRowsPerSecond) && parsedReplayRowsPerSecond >= 1 && parsedReplayRowsPerSecond <= 1000000;
   const externalConnectionPayload = {
     name: connectionName.trim(),
     connection_type: selectedConnectionType.id,
-    host: isPostgresConnection || isKafkaConnection ? connectionHost.trim() : "local",
-    port: isPostgresConnection || isKafkaConnection ? parsedConnectionPort : 1,
+    host: usesConnectionTest ? connectionHost.trim() : "local",
+    port: usesConnectionTest ? parsedConnectionPort : 1,
     database: isKafkaConnection
       ? connectionReplayCsvPath.trim()
-      : isPostgresConnection
+      : usesSchemaPreviewConnection
         ? connectionDatabase.trim()
         : connectionResource.trim(),
     username: isKafkaConnection
       ? `replay_rows_per_second_${connectionReplayRowsPerSecond.trim() || realtimeReplayRatePerSecond}`
-      : isPostgresConnection
+      : usesSchemaPreviewConnection
         ? connectionUsername.trim()
         : "metadata",
-    password_secret_ref: isPostgresConnection ? connectionPasswordSecretRef.trim() : "none",
-    default_schema: isPostgresConnection ? connectionSchemaName : selectedConnectionType.id,
-    default_table: isPostgresConnection ? connectionTableName : connectionResource.trim(),
+    password_secret_ref: usesSchemaPreviewConnection ? connectionPasswordSecretRef.trim() : "none",
+    default_schema: isMongoConnection
+      ? connectionSchemaName || connectionDatabase.trim()
+      : isPostgresConnection
+        ? connectionSchemaName
+        : selectedConnectionType.id,
+    default_table: usesSchemaPreviewConnection ? connectionTableName : connectionResource.trim(),
   };
   const externalConnectionProfileSignature = JSON.stringify(externalConnectionPayload);
   const hasValidExternalConnectionProfile = Boolean(
-    connectionName.trim() &&
+      connectionName.trim() &&
       connectionResource.trim() &&
       (!isKafkaConnection || (connectionHost.trim() && hasValidConnectionPort && connectionReplayCsvPath.trim() && hasValidReplayRowsPerSecond)) &&
-      (!isPostgresConnection ||
+      (!usesSchemaPreviewConnection ||
         (connectionHost.trim() &&
           hasValidConnectionPort &&
           connectionDatabase.trim() &&
@@ -1353,16 +1373,17 @@ function SourcesPage({ navigate, setNotice }) {
     Boolean(connectionTestResult) &&
     connectionTestSignature === externalConnectionProfileSignature;
   const canTestExternalConnection =
+    usesConnectionTest &&
     currentConnectionStep.id === "configure" &&
     hasValidExternalConnectionProfile &&
     !isTestingExternalConnection;
   const canGoNextConnection =
     (currentConnectionStep.id === "connector-type" && Boolean(selectedConnectionType)) ||
     (currentConnectionStep.id === "configure" &&
-      (isPostgresConnection || isKafkaConnection ? hasPassedExternalConnectionTest : hasValidExternalConnectionProfile));
+      (usesConnectionTest ? hasPassedExternalConnectionTest : hasValidExternalConnectionProfile));
   const canSaveExternalConnection =
     currentConnectionStep.id === "review" &&
-    (isPostgresConnection || isKafkaConnection ? hasPassedExternalConnectionTest : hasValidExternalConnectionProfile) &&
+    (usesConnectionTest ? hasPassedExternalConnectionTest : hasValidExternalConnectionProfile) &&
     !isSavingExternalConnection;
 
   useEffect(() => {
@@ -1531,7 +1552,7 @@ function SourcesPage({ navigate, setNotice }) {
     setSourceRawScope(connection.resource);
     setLastCreatedSourceDatasetId("");
     setNotice(`${connection.name} external connection을 선택했습니다.`);
-    if (connection.isPersisted && connection.connectorId === "postgres") {
+    if (connection.isPersisted && ["postgres", "mongodb"].includes(connection.connectorId)) {
       await loadSourceConnectionSchema(connection, connection.resource);
     }
   }
@@ -1552,7 +1573,7 @@ function SourcesPage({ navigate, setNotice }) {
         schema: schema.schema_preview.map((field) => ({
           name: field.name,
           type: field.type,
-          sample: schema.row_count_estimate ? `estimate ${schema.row_count_estimate} rows` : "postgres metadata",
+          sample: schema.row_count_estimate ? `estimate ${schema.row_count_estimate} rows` : `${connection.typeLabel} metadata`,
         })),
       }));
       setNotice(`${schema.raw_scope} schema preview를 불러왔습니다.`);
@@ -1959,6 +1980,15 @@ function SourcesPage({ navigate, setNotice }) {
       setConnectionUsername("metadata");
       setConnectionPasswordSecretRef("none");
     }
+    if (connectionType.id === "mongodb") {
+      setConnectionName("AskLake MongoDB Events");
+      setConnectionResource("asklake_demo.customer_events");
+      setConnectionHost("mongo");
+      setConnectionPort("27017");
+      setConnectionDatabase("asklake_demo");
+      setConnectionUsername("asklake");
+      setConnectionPasswordSecretRef("ASKLAKE_MONGODB_PASSWORD");
+    }
     setLastCreatedExternalConnectionId("");
     setExternalConnectionError("");
     setConnectionTestResult(null);
@@ -2112,7 +2142,9 @@ function SourcesPage({ navigate, setNotice }) {
               <p>
                 {selectedConnectionType.id === "kafka"
                   ? "저장 전에 Kafka broker 접속과 topic schema preview를 확인합니다."
-                  : "저장 전에 PostgreSQL 접속 권한과 table schema preview를 확인합니다."}
+                  : usesSchemaPreviewConnection
+                    ? `저장 전에 ${selectedConnectionType.label} 접속 권한과 schema preview를 확인합니다.`
+                    : `${selectedConnectionType.label} connection draft를 준비합니다.`}
               </p>
             </div>
           </div>
@@ -2143,7 +2175,7 @@ function SourcesPage({ navigate, setNotice }) {
                   placeholder={selectedConnectionType.placeholder}
                 />
               </label>
-              {selectedConnectionType.id === "postgres" || selectedConnectionType.id === "kafka" ? (
+              {usesConnectionTest ? (
                 <>
                   <label className="target-name-field">
                     <span>host</span>
@@ -2160,12 +2192,12 @@ function SourcesPage({ navigate, setNotice }) {
                       type="number"
                       value={connectionPort}
                       onChange={(event) => setConnectionPort(event.target.value)}
-                      placeholder={selectedConnectionType.id === "kafka" ? "29092" : "55432"}
+                      placeholder={selectedConnectionType.id === "kafka" ? "29092" : selectedConnectionType.id === "mongodb" ? "27017" : "55432"}
                     />
                   </label>
                 </>
               ) : null}
-              {selectedConnectionType.id === "postgres" ? (
+              {usesSchemaPreviewConnection ? (
                 <>
                   <label className="target-name-field">
                     <span>database</span>
@@ -2196,14 +2228,14 @@ function SourcesPage({ navigate, setNotice }) {
                   </label>
                 </>
               ) : null}
-              {selectedConnectionType.id === "postgres" ? (
+              {usesSchemaPreviewConnection ? (
                 <div className="target-summary-strip">
                   <span>Auth mode</span>
                   <strong>{selectedConnectionType.authMode}</strong>
                   <p>비밀번호 원문은 저장하지 않고 password_env 값으로만 테스트합니다.</p>
                 </div>
               ) : null}
-              {selectedConnectionType.id === "postgres" || selectedConnectionType.id === "kafka" ? (
+              {usesConnectionTest ? (
                 <>
                   <button
                     type="button"
@@ -2224,7 +2256,7 @@ function SourcesPage({ navigate, setNotice }) {
                   ) : connectionTestResult ? (
                     <div className="wizard-placeholder compact warning">
                       <AlertCircle size={22} />
-                      <strong>현재 입력값은 아직 검증되지 않았습니다. Test Connection을 눌러 broker와 topic을 다시 확인하세요.</strong>
+                      <strong>현재 입력값은 아직 검증되지 않았습니다. Test Connection을 눌러 연결과 schema preview를 다시 확인하세요.</strong>
                     </div>
                   ) : null}
                   {!connectionTestResult && !connectionTestError ? (
@@ -2250,7 +2282,9 @@ function SourcesPage({ navigate, setNotice }) {
                   <p>
                     {selectedConnectionType.id === "kafka"
                       ? "Test Connection은 Kafka broker 접속과 topic schema preview를 확인하지만 credential 원문은 저장하지 않습니다."
-                      : "Test Connection은 실제 PostgreSQL metadata를 읽지만 credential 원문은 저장하지 않습니다."}
+                      : usesSchemaPreviewConnection
+                        ? `Test Connection은 실제 ${selectedConnectionType.label} metadata를 읽지만 credential 원문은 저장하지 않습니다.`
+                        : "Connection draft는 credential 원문 없이 metadata로만 저장합니다."}
                   </p>
                 </div>
               </div>
@@ -2290,9 +2324,9 @@ function SourcesPage({ navigate, setNotice }) {
             <strong>{connectionResource.trim() || selectedConnectionType.placeholder}</strong>
             <p>{selectedConnectionType.id === "kafka" ? "preloaded Kafka topic" : selectedConnectionType.authMode}</p>
           </article>
-          {selectedConnectionType.id === "postgres" ? (
+          {usesSchemaPreviewConnection ? (
             <article>
-              <span>PostgreSQL</span>
+              <span>{selectedConnectionType.label}</span>
               <strong>{connectionHost}:{connectionPort}/{connectionDatabase}</strong>
               <p>{connectionUsername} · {connectionPasswordSecretRef}</p>
             </article>
