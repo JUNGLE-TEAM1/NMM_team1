@@ -25,7 +25,7 @@
 - Full backend tests: not run. 변경 범위가 Product Health handoff import와 M6 Catalog/AI Query focused path에 집중된다.
 - Frontend build: not run. UI 변경 없음.
 - Docker/container smoke: not run. local ignored data import와 backend service smoke 범위다.
-- Remote CI: not run. Branch push/PR not attempted from dirty mixed worktree.
+- Remote CI: not run. Branch push completed; PR creation is still deferred while unrelated dirty worktree changes remain.
 
 ## CI/CD Gate
 

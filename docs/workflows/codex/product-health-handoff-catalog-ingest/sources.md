@@ -14,4 +14,4 @@
 | `backend/app/services/catalog_metadata.py` | CatalogMetadata helper functions |
 | `backend/app/services/catalog_retriever.py` | M6 catalog retrieval rulebase |
 | `backend/app/services/catalog_rag_index.py` | M6 metadata index rulebase |
-| `docs/workflows/feature/product-health-handoff-catalog-ingest/decisions.md` | handoff import decision handoff |
+| `docs/workflows/codex/product-health-handoff-catalog-ingest/decisions.md` | handoff import decision handoff |
