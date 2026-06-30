@@ -39,8 +39,8 @@ schema preview는 M3가 확장 가능한 structured shape로 저장한다.
 
 ## 완료 기준
 
-- [ ] Source Dataset을 External Connection 기반으로 저장할 수 있다.
-- [ ] Source Dataset 목록을 조회할 수 있다.
+- [x] Source Dataset을 External Connection 기반으로 저장할 수 있다.
+- [x] Source Dataset 목록을 조회할 수 있다.
 - [ ] Target Dataset wizard의 source 선택 후보가 API 기반 Source Dataset 목록을 사용한다.
-- [ ] ingest/run 실행을 암시하지 않는다.
-- [ ] report와 quality evidence를 남긴다.
+- [x] ingest/run 실행을 암시하지 않는다.
+- [x] report와 quality evidence를 남긴다.

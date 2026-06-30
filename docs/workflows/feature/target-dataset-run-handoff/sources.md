@@ -1,5 +1,9 @@
-# Target dataset run handoff source 기록
+# Target Dataset run handoff sources
 
-- Source queue: `docs/08-development-workflow.md` Dataset Module Connection Queue
-- Prior phase: `docs/workflows/feature/target-dataset-job-draft/`
-- decisions.md handoff: M5는 Target Dataset의 run handoff로 붙이고 독립 demo nav로 노출하지 않는다.
+- `backend/app/domain/schemas.py`
+- `backend/app/ports/metadata_store.py`
+- `backend/app/adapters/sqlite_metadata_store.py`
+- `backend/app/api/source_catalog.py`
+- `frontend/src/api/targetDatasetDraftApi.js`
+- `frontend/src/app/App.jsx`
+- `frontend/src/app/styles.css`

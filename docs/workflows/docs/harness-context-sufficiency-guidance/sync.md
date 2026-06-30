@@ -21,11 +21,11 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 
 ## Pre-Merge Sync
 
-- main commit:
-- conflicts:
-- validation:
+- main commit: not checked
+- conflicts: not checked
+- validation: `scripts/validate-harness.sh` passed; `scripts/validate-harness.sh --strict` failed because unrelated untracked `docs/workflows/feature/data-integration-screen-reset/quality.md` has invalid `Quality gate status: complete` and that workspace has Source of Truth proposals with `Decision status: none`; `scripts/test-harness.sh` failed at `valid complete workspace passes` because the fixture copy includes the same unrelated untracked workspace
 - result:
-- deferral reason:
+- deferral reason: current checkout is `feature/data-integration-screen-reset`, while this workspace expects `docs/harness-context-sufficiency-guidance`; pull/merge/rebase/branch switch/pre-merge sync requires human confirmation and dirty-worktree scope separation
 
 ## PR Conflict Resolution
 

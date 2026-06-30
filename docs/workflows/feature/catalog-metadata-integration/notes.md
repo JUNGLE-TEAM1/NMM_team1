@@ -1,4 +1,5 @@
-# Catalog metadata integration 노트
+# Catalog metadata integration notes
 
-- 2026-06-29: C-6 Phase로 생성했다.
-- 성공한 run output을 데이터 카탈로그에서 소비 가능한 CatalogMetadata로 등록한다.
+- 같은 run을 여러 번 publish해도 `source_id=run.id` 기준 기존 CatalogDataset을 반환한다.
+- `source_type=target_dataset_job_run`인 catalog row만 Gold Datasets의 registered 항목으로 표시한다.
+- 기존 CSV/source catalog row는 새 evidence 필드가 비어 있어도 유지된다.

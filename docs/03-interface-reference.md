@@ -68,9 +68,54 @@ Current implementation baseline contract와 Target MVP interface family를 분�
 POST /api/sources
 GET /api/sources
 GET /api/sources/{source_id}
+POST /api/external-connections
+GET /api/external-connections
+GET /api/external-connections/{connection_id}
+PATCH /api/external-connections/{connection_id}
+DELETE /api/external-connections/{connection_id}
+POST /api/source-datasets
+GET /api/source-datasets
+GET /api/source-datasets/{dataset_id}
+PATCH /api/source-datasets/{dataset_id}
+DELETE /api/source-datasets/{dataset_id}
+POST /api/source-datasets/{dataset_id}/snapshots
+GET /api/source-datasets/{dataset_id}/snapshots
+POST /api/silver-datasets
+GET /api/silver-datasets
+GET /api/silver-datasets/{dataset_id}
+PATCH /api/silver-datasets/{dataset_id}
+PATCH /api/silver-datasets/{dataset_id}/schedule
+DELETE /api/silver-datasets/{dataset_id}
+POST /api/silver-datasets/{dataset_id}/materializations
+GET /api/silver-datasets/{dataset_id}/materializations
+POST /api/target-dataset-drafts
+GET /api/target-dataset-drafts
+GET /api/target-dataset-drafts/{draft_id}
+PATCH /api/target-dataset-drafts/{draft_id}
+PATCH /api/target-dataset-drafts/{draft_id}/schedule
+DELETE /api/target-dataset-drafts/{draft_id}
+POST /api/target-dataset-job-runs
+GET /api/target-dataset-job-runs
+GET /api/target-dataset-job-runs/{run_id}
+POST /api/target-dataset-job-runs/{run_id}/execute
+POST /api/target-dataset-job-runs/{run_id}/publish-catalog
 GET /api/catalog/datasets
 GET /api/catalog/datasets/{dataset_id}
 ```
+
+- Dataset module UI routes:
+
+```text
+/connections
+/datasets/source
+/datasets/silver
+/datasets/gold
+/jobs/silver-transform
+/jobs/gold-build
+/runs
+```
+
+`/dataset`, `/sources`, and `/datasets` remain compatibility routes for the Source Datasets view. The route split is UI-only in C-3.6 and uses the existing external connection, source dataset, and target dataset draft APIs.
 
 - `POST /api/sources` minimum request:
 
@@ -81,6 +126,305 @@ GET /api/catalog/datasets/{dataset_id}
   "path": "samples/orders.csv"
 }
 ```
+
+- `POST /api/external-connections` minimum request:
+
+```json
+{
+  "name": "conn_product_health_reviews_file",
+  "connector_type": "local_file",
+  "resource": "backend/samples/product_health_reviews_seed.jsonl",
+  "resource_label": "file_path",
+  "auth_mode": "No credential",
+  "mode_label": "직접 연결 가능",
+  "contract_hint": "SourceConfig.connection_ref.path",
+  "detected_format": "JSONL",
+  "detected_dataset": "Product reviews / VOC",
+  "confidence": "High",
+  "recommended_role": "Source Dataset",
+  "sync_mode": "manual",
+  "sync_schedule": "manual on demand",
+  "schema_preview": [
+    { "name": "review_id", "type": "string" },
+    { "name": "rating", "type": "number" }
+  ]
+}
+```
+
+External connection persistence stores metadata, inspect preview, and ingestion/sync schedule hints only. `sync_mode` is one of `manual`, `scheduled`, or `streaming`; `sync_schedule` is a human-readable hint such as `manual on demand`, `daily scan`, or `continuous topic consumption`. It does not store raw credential values, test database passwords, ingest files, register a scheduler, create Source Sync Jobs, or consume Kafka.
+
+`GET /api/external-connections/credential-policy` returns the DB/S3/Kafka credential boundary. The accepted contract is `secret_ref_only`: local development may pass env var names as references, but request/response/log/metadata must not contain raw credential values. C-25 sets `connection_test_enabled=true` for lightweight runtime tests only. PostgreSQL, MongoDB, S3/MinIO, and Kafka tests may verify driver connectivity, lightweight query/ping, bucket listing, or broker metadata, but they do not persist credentials, ingest data, create Source Datasets, or complete schema discovery.
+
+`POST /api/external-connections/test` minimum request:
+
+```json
+{
+  "connector_type": "postgres",
+  "resource": "127.0.0.1:15432/asklake",
+  "secret_refs": {
+    "username": "ASKLAKE_DEMO_POSTGRES_USER",
+    "password": "ASKLAKE_DEMO_POSTGRES_PASSWORD"
+  }
+}
+```
+
+Minimum response:
+
+```json
+{
+  "status": "passed",
+  "connector_type": "postgres",
+  "checked_capabilities": ["driver_connect", "lightweight_query"],
+  "safe_summary": {
+    "host": "127.0.0.1",
+    "port": 15432,
+    "database": "asklake",
+    "credential_refs_configured": ["username", "password"]
+  },
+  "secret_values_exposed": false,
+  "schema_discovery_completed": false,
+  "message": "PostgreSQL connection test passed. Schema discovery is still separate."
+}
+```
+
+`secret_refs` values must be environment variable names, not the secret values themselves. Raw fields such as `password`, `access_key`, `secret_key`, `token`, and `raw_credential` are rejected in request options. A passed connection test means the runtime is reachable; it is not schema discovery, ingestion, sync job registration, or dataset creation.
+
+`PATCH /api/external-connections/{connection_id}` supports metadata management for an existing External Connection. C-13 permits updating `name`, `resource`, `resource_label`, `auth_mode`, `mode_label`, `contract_hint`, `detected_format`, `detected_dataset`, `confidence`, `recommended_role`, `sync_mode`, `sync_schedule`, and `schema_preview`. `DELETE /api/external-connections/{connection_id}` removes the External Connection metadata row only and is rejected while any Source Dataset references the connection.
+
+- `POST /api/source-datasets` minimum request:
+
+```json
+{
+  "connection_id": "conn_product_health_reviews_file",
+  "connection_name": "Product Health Reviews File",
+  "connection_type": "local_file",
+  "name": "source_product_health_reviews",
+  "raw_scope": "backend/samples/product_health_reviews_seed.jsonl",
+  "resource_label": "file_path",
+  "schema_preview": [
+    { "name": "review_id", "type": "string" },
+    { "name": "rating", "type": "number" }
+  ]
+}
+```
+
+`PATCH /api/source-datasets/{dataset_id}` supports metadata management for an existing Source Dataset. C-9 permits updating `name`, `raw_scope`, `resource_label`, `schema_preview`, and `status`. `DELETE /api/source-datasets/{dataset_id}` removes the Source Dataset metadata row only and is rejected while any Silver Dataset references the Source Dataset.
+
+C-16 adds optional read-side `file_evidence` to Source/Silver/Target Dataset responses. `file_evidence.status` is one of `file_backed`, `missing`, or `metadata_only`; it may include `path`, `bytes`, `row_count`, `row_count_status`, `schema_fields`, and `message`. It is evidence derived at read time from local files, not a persisted credential, ingestion result, or file delete contract.
+
+C-26C adds Source Dataset raw snapshot execution. `POST /api/source-datasets/{dataset_id}/snapshots` is a manual bounded ingest action that is separate from Source Dataset metadata creation. Local file/folder datasets write JSONL snapshot output under `data/lake/bronze/source_snapshots/`; PostgreSQL/MongoDB/S3/Kafka snapshot requests may pass `secret_refs` and `options` again at execution time because raw credential values are not persisted.
+
+Minimum request:
+
+```json
+{
+  "sample_size": 100,
+  "secret_refs": {},
+  "options": {}
+}
+```
+
+Minimum response:
+
+```json
+{
+  "id": "snapshot-id",
+  "source_dataset_id": "source-dataset-id",
+  "source_dataset_name": "source_product_health_reviews",
+  "connection_id": "conn_product_health_reviews_file",
+  "connection_type": "local_file",
+  "input_scope": "backend/samples/product_health_reviews_seed.jsonl",
+  "output_path": "data/lake/bronze/source_snapshots/source_product_health_reviews/20260630T133508Z-9def9ede.jsonl",
+  "row_count": 100,
+  "output_bytes": 40124,
+  "input_bytes": 540000,
+  "status": "succeeded",
+  "duration_ms": 4,
+  "message": "100개 row/message를 raw snapshot으로 저장했습니다.",
+  "created_at": "2026-06-30T13:35:08Z"
+}
+```
+
+`GET /api/source-datasets/{dataset_id}/snapshots` returns latest snapshots first. Snapshot success updates the Source Dataset status to `snapshot_ready`; failure returns an error and must not make metadata appear successfully ingested.
+
+- `POST /api/silver-datasets` minimum request:
+
+```json
+{
+  "source_dataset_id": "source_product_health_reviews",
+  "source_dataset_name": "source_product_health_reviews",
+  "name": "silver_product_health_reviews",
+  "purpose": "리뷰 평점과 텍스트를 제품 품질 분석용 silver schema로 표준화",
+  "standardize_rules": ["normalize_ids", "cast_types"],
+  "validation_rules": ["required_keys", "schema_drift"],
+  "schedule": {
+    "mode": "manual",
+    "note": ""
+  },
+  "schema_preview": [
+    { "name": "review_id", "type": "string" },
+    { "name": "product_id", "type": "string" },
+    { "name": "rating", "type": "number" }
+  ]
+}
+```
+
+Silver Dataset persistence stores metadata only at creation time. C-10 requires `source_dataset_id` to reference an existing Source Dataset and stores `standardize_rules`, `validation_rules`, and `schema_preview` as the planned transform contract. It does not automatically materialize rows, run Spark/Airflow, publish CatalogMetadata, or switch Gold output state.
+
+C-27 adds manual local Silver materialization. `POST /api/silver-datasets/{dataset_id}/materializations` reads the latest Source Dataset snapshot when available, otherwise bounded local source input, and writes a parquet output under `data/lake/silver/`. Unsupported runtime connector inputs must create a Source snapshot first. Spark distributed execution remains a separate capability and is not reported as success by this endpoint.
+
+Minimum request:
+
+```json
+{
+  "sample_size": 10000,
+  "prefer_latest_source_snapshot": true
+}
+```
+
+Minimum response:
+
+```json
+{
+  "id": "materialization-id",
+  "silver_dataset_id": "silver-dataset-id",
+  "silver_dataset_name": "silver_product_health_reviews",
+  "source_dataset_id": "source-dataset-id",
+  "source_dataset_name": "source_product_health_reviews",
+  "input_path": "data/lake/bronze/source_snapshots/source_product_health_reviews/20260630T133508Z-9def9ede.jsonl",
+  "output_path": "data/lake/silver/silver_product_health_reviews.parquet",
+  "row_count": 100,
+  "output_bytes": 13000,
+  "failed_row_count": 0,
+  "status": "succeeded",
+  "duration_ms": 177,
+  "message": "100개 row를 Silver parquet로 materialize했습니다.",
+  "created_at": "2026-06-30T14:00:00Z"
+}
+```
+
+`GET /api/silver-datasets/{dataset_id}/materializations` returns latest materializations first. Materialization success updates the Silver Dataset status to `materialized`; failure returns an error and must not make metadata-only Silver appear file-backed.
+
+`PATCH /api/silver-datasets/{dataset_id}` supports metadata management for an existing Silver Dataset. C-13 permits updating `name`, `purpose`, `standardize_rules`, `validation_rules`, `schema_preview`, and `status`; schedule remains managed by the Job schedule endpoint. If a Target Dataset draft references the Silver Dataset, changing `name` is rejected to avoid stale lineage labels, while non-name metadata such as `purpose` and rules remains editable. `DELETE /api/silver-datasets/{dataset_id}` removes the Silver Dataset metadata row only and is rejected while any Target Dataset draft references the Silver Dataset.
+
+`PATCH /api/silver-datasets/{dataset_id}/schedule` updates only the Silver Transform Job schedule metadata derived from the Silver Dataset. Request body is `{"mode":"manual"|"placeholder","note":"..."}`. It does not modify `source_dataset_id`, transform rules, validation rules, schema, source rows, or register a real scheduler.
+
+- `POST /api/target-dataset-drafts` minimum request:
+
+```json
+{
+  "target_dataset_name": "dataset_product_health_gold",
+  "description": "제품 상태 분석용 gold dataset draft",
+  "base_source_ref": {
+    "source_id": "silver_product_catalog",
+    "name": "silver_product_catalog",
+    "role": "base",
+    "type_label": "Silver Dataset",
+    "resource": "from source_partner_catalog_api"
+  },
+  "target_grain": "product_id",
+  "source_refs": [
+    {
+      "source_id": "silver_product_catalog",
+      "name": "silver_product_catalog",
+      "role": "base",
+      "type_label": "Silver Dataset",
+      "resource": "from source_partner_catalog_api"
+    },
+    {
+      "source_id": "silver_product_reviews",
+      "name": "silver_product_reviews",
+      "role": "enrichment",
+      "type_label": "Silver Dataset",
+      "resource": "from source_product_health_reviews"
+    }
+  ],
+  "silver_outputs": [
+    {
+      "name": "silver_product_catalog",
+      "from_source_id": "source_partner_catalog_api",
+      "from_source_name": "Partner Catalog API",
+      "purpose": "상품 id/category 표준화"
+    }
+  ],
+  "processing_recipes": ["standardize_sources", "join_product", "score_health"],
+  "gold_output": "dataset_product_health_gold",
+  "executor_handoff": "local_runner",
+  "schedule": {
+    "mode": "manual",
+    "note": "데모에서는 수동 실행으로만 준비합니다."
+  },
+  "schema_preview": [
+    { "name": "product_id", "type": "string" },
+    { "name": "risk_score", "type": "number" }
+  ]
+}
+```
+
+Target dataset draft persistence stores job definition metadata only. From C-11, the Gold Dataset wizard input is persisted Silver Dataset metadata. The legacy field names `base_source_ref` and `source_refs` remain for runner/catalog compatibility, but UI payloads set their `type_label` to `Silver Dataset` and point `silver_outputs[]` back to the original Source Dataset lineage. The UI separates `Process -> Handoff/Run -> Scheduling -> Review`; `executor_handoff` is selected in Handoff/Run but still does not trigger Airflow, run Spark/local runner, materialize Silver/Gold files, or publish CatalogMetadata.
+
+`PATCH /api/target-dataset-drafts/{draft_id}` supports metadata management for an existing planned Gold/Target Dataset draft. C-13 permits updating `target_dataset_name`, `description`, `base_source_ref`, `target_grain`, `source_refs`, `silver_outputs`, `processing_recipes`, `gold_output`, `executor_handoff`, `schema_preview`, and `status`; schedule remains managed by the Job schedule endpoint. UI edits keep `target_dataset_name` and `gold_output` aligned so the Gold list title changes immediately after a rename. `DELETE /api/target-dataset-drafts/{draft_id}` removes the planned draft metadata row only and is rejected while any Job Run references the draft. Published/registered CatalogDataset rows are not modified or deleted by this endpoint.
+
+`PATCH /api/target-dataset-drafts/{draft_id}/schedule` updates only the Gold Build Job schedule metadata stored on the Target Dataset draft. Request body is `{"mode":"manual"|"placeholder","note":"..."}`. It does not modify Silver inputs, processing recipes, executor handoff, schema, or create a Job Run. Gold Build Jobs keep `Run 준비` as the action that creates a queued run from the current draft metadata.
+
+- `POST /api/target-dataset-job-runs` minimum request:
+
+```json
+{
+  "target_dataset_draft_id": "target_draft_product_health_gold",
+  "job_type": "gold_build",
+  "triggered_by": "demo_user"
+}
+```
+
+Target dataset job run handoff creates a queued run record from a saved Target Dataset draft. C-4 does not trigger Airflow, run local/spark runner, materialize Silver/Gold files, or publish CatalogMetadata.
+
+`POST /api/target-dataset-job-runs/{run_id}/execute` is local execution only. It supports `executor_handoff=local_runner` and has three demo-safe modes. If a prepared Product Health Gold parquet matches `gold_output`, it references that parquet as `runtime_evidence.materialization_mode=prepared_gold_reference` without rerunning large ETL. If no prepared Gold exists but all declared Silver outputs have local parquet files, it reads those Silver parquet files and writes Gold parquet under `data/lake/gold/run_id=<run_id>/` as `runtime_evidence.materialization_mode=silver_parquet_to_gold`. The run also includes `runtime_evidence.object_storage.status=not_uploaded` and an expected S3-compatible `object_uri` so local materialization success is not confused with MinIO upload success. Legacy fallback may still write planned JSONL evidence as `local_demo_jsonl` when Silver parquet inputs are unavailable. All modes update the run with `status=succeeded`, `output_path`, `row_count`, `output_bytes`, `silver_output_paths`, `logs`, `duration_ms`, `source_evidence[]`, and `runtime_evidence`. It does not trigger Airflow/Spark or production S3 upload.
+
+`POST /api/target-dataset-job-runs/{run_id}/publish-catalog` publishes a succeeded run to `CatalogDataset`. It is idempotent by `run_id`: repeated publish requests return the existing catalog dataset instead of creating duplicates. It rejects queued/failed/unmaterialized runs. JSONL demo outputs keep the draft schema preview; prepared parquet outputs publish the actual parquet schema and `storage.format=parquet` so AI Query allowlist matches DuckDB-visible columns.
+
+`GET /api/catalog/datasets/management-policy` returns the current registered `CatalogDataset` management boundary. C-21 keeps registered CatalogDataset rows read-only for product UI management: allowed actions are `detail` and `ai_query_context`; disabled actions are `metadata_update`, `metadata_delete`, `file_delete`, and `cascade_delete`. Metadata-only delete, actual output file delete, and cascade delete must remain separate future flows with 409 reference checks and explicit human confirmation before any file removal.
+
+M6 AI Query consumes published `CatalogDataset` rows through the `CatalogSource` adapter. `source_type=target_dataset_job_run` and `status=ready` rows are converted to `CatalogMetadata` shape with `schema.fields`, `storage.local_fallback_path`, `metrics`, `lineage`, and `query.allowed_columns`; Week2 stored/fixture catalogs remain fallback candidates when no published target dataset matches.
+
+```json
+{
+  "connection_id": "conn_product_health_reviews_file",
+  "connection_name": "Product Health Reviews File",
+  "connection_type": "local_file",
+  "name": "source_product_health_reviews",
+  "raw_scope": "backend/samples/product_health_reviews_seed.jsonl",
+  "resource_label": "file_path",
+  "schema_preview": [
+    { "name": "review_id", "type": "string" },
+    { "name": "rating", "type": "number" }
+  ]
+}
+```
+
+- Source dataset minimum response:
+
+```json
+{
+  "id": "source_dataset_uuid",
+  "connection_id": "conn_product_health_reviews_file",
+  "connection_name": "Product Health Reviews File",
+  "connection_type": "local_file",
+  "name": "source_product_health_reviews",
+  "raw_scope": "backend/samples/product_health_reviews_seed.jsonl",
+  "resource_label": "file_path",
+  "schema_preview": [
+    { "name": "review_id", "type": "string" },
+    { "name": "rating", "type": "number" }
+  ],
+  "layer": "source",
+  "status": "metadata_ready",
+  "created_at": "2026-06-30T00:00:00Z",
+  "updated_at": "2026-06-30T00:00:00Z"
+}
+```
+
+Source dataset persistence stores metadata only. It does not ingest files, consume Kafka, test database credentials, or register final `CatalogMetadata`.
 
 - Catalog dataset minimum response:
 
@@ -109,7 +453,31 @@ GET /api/catalog/datasets/{dataset_id}
     "failed_gates": ["quality", "pii", "owner", "policy", "approval"],
     "reasons": ["quality gate is pending"],
     "evaluated_at": "2026-06-24T00:00:00Z"
-  }
+  },
+  "lineage": {
+    "run_id": "run_product_health_001",
+    "target_dataset_draft_id": "target_draft_product_health_gold",
+    "target_dataset_name": "dataset_product_health_gold",
+    "source_refs": [],
+    "silver_output_paths": ["data/lake/silver/run_id=run_product_health_001/silver_product_reviews.jsonl"],
+    "processing_recipes": ["standardize_sources", "join_product", "score_health"]
+  },
+  "metrics": {
+    "row_count": 1,
+    "bytes": 1024,
+    "duration_ms": 12,
+    "source_count": 2,
+    "silver_output_count": 2
+  },
+  "storage": {
+    "local_path": "data/lake/gold/run_id=run_product_health_001/dataset_product_health_gold.jsonl",
+    "format": "jsonl"
+  },
+  "runtime_evidence": {
+    "runner": "local_runner",
+    "status": "succeeded"
+  },
+  "source_evidence": []
 }
 ```
 
@@ -320,10 +688,12 @@ Week 2 draft API/UI route contract:
 | Catalog detail | `GET /api/week2/catalog/{dataset_id}` / `/catalog/{dataset_id}` | M5 + M1 | `CatalogMetadata` |
 | Kafka replay health | `GET /api/week2/kafka-replay/health` | M4 + M5 | `KafkaReplayEvidence` summary |
 | Kafka replay runs | `GET /api/week2/kafka-replay/runs`, `GET /api/week2/kafka-replay/runs/{run_id}` | M4 + M5 | `KafkaReplayEvidence` |
+| Airflow readiness | `GET /api/week2/airflow/readiness` | M5 + M1 | Airflow env readiness summary |
+| Spark readiness | `GET /api/week2/spark/readiness` | M2 + M5 + M1 | Spark runner readiness summary |
 | AI query | `POST /api/week2/ai/query` / `/ask` | M6 + M1 | `AIQueryResult` |
 
 These are Week 2 draft routes, not final product API routes. If an implementation uses existing baseline `/api/sources`, `/api/pipelines`, or `/api/catalog/datasets` routes, it must either adapt to these fixture names at the boundary or update this section before module work continues.
-Locked for this contract pass: Source register and schema preview routes remain fixture-first until a later implementation PR adds them. The currently executable Week 2 routes are workflow run, run status, catalog detail, Kafka replay evidence, and AI query. M1 may replace placeholders with fixture/API state, but placeholder identifiers must converge on the shared Week 2 IDs in this section.
+Locked for this contract pass: Source register and schema preview routes remain fixture-first until a later implementation PR adds them. The currently executable Week 2 routes are workflow run, run status, catalog detail, Kafka replay evidence, Airflow readiness, Spark readiness, and AI query. M1 may replace placeholders with fixture/API state, but placeholder identifiers must converge on the shared Week 2 IDs in this section.
 
 M4 Kafka replay writes harness-readable evidence under `data/results/week2/_metadata/kafka_replay/`.
 Each replay run produces `<run_id>.json` plus `latest.json`. The minimum `KafkaReplayEvidence` shape is:
@@ -348,6 +718,12 @@ Each replay run produces `<run_id>.json` plus `latest.json`. The minimum `KafkaR
 
 Kafka UI remains the live view for broker-side message count, consumer lag, and live throughput. `KafkaReplayEvidence` is the durable harness receipt that AskLake backend/report flows can read after the replay job.
 
+C-18 exposes this evidence in the AskLake execution history UI as read-only state. The UI may show health, latest run, persisted replay metrics, lineage source/target, and missing evidence status, but it must not provide a Kafka consume/produce trigger.
+
+C-19 exposes Airflow DAG trigger readiness in the AskLake execution history UI as read-only state. `GET /api/week2/airflow/readiness` returns `status`, `trigger_available`, `fallback_available`, `base_url`, `dag_id`, `result_root`, `result_root_exists`, `username_configured`, `password_configured`, `credential_values_exposed=false`, and `required_env`. It must not return credential values and must not trigger the DAG. If Airflow env is missing, the response is `status=not_configured`, `trigger_available=false`, and `fallback_available=true`.
+
+C-20 exposes Spark runner readiness in the AskLake execution history UI as read-only state. `GET /api/week2/spark/readiness` returns `status`, `runner=spark_runner`, `runner_implementation=local_pyarrow_smoke`, `local_smoke_available`, `distributed_cluster_available=false`, `cluster_configured`, `spark_master`, dependency booleans, `supported_source_types=["local_file"]`, deferred source types, supported input formats, and L6 preview operation names. It must not start Spark, trigger a distributed cluster job, read Kafka/S3/DB sources, or rerun Product Health large ETL. A configured Spark master is environment metadata only until a later cluster execution Phase provides evidence.
+
 Week 2 storage path pattern:
 
 ```text
@@ -362,6 +738,8 @@ Week 2 SQL execution uses an adapter boundary:
 
 ```text
 M6 AI Query
+-> CatalogSource: published CatalogDataset, Week2 catalog store, or fixture fallback
+-> CatalogMetadata query/storage/schema context
 -> SqlEngineAdapter
 -> DuckDBSqlEngine for MVP
 -> CatalogMetadata.s3_uri or local path

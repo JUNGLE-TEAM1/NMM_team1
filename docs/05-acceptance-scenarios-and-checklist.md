@@ -51,6 +51,15 @@ AskLake의 Target MVP 대표 성공 시나리오는 `Trusted Dataset -> Query/As
 - [ ] Week 2 상품 리스크 대표 경로는 `pipeline_product_health_e2e`가 5GB 이상 reviews/behavior/delivery fact input을 처리해 `dataset_product_health_gold` / `gold_product_health`를 생성하고, source별 row count, bytes, duration, output path, run id를 evidence로 남긴다.
 - [ ] `gold_product_health` output은 M5 Catalog에 등록되고, M6는 Gold output file을 SQL로 조회해 위험 상품군과 근거 지표를 `AIQueryResult`로 반환한다.
 - [ ] M6 `AIQueryResult`는 기존 `sql`, `query_result`, `rows`, `summary`, `evidence`를 유지하면서 `route`와 `retrieval_trace`로 어떤 경로와 CatalogMetadata 근거를 선택했는지 설명한다.
+- [ ] C-6에서 publish된 Gold CatalogDataset은 M6 AI Query 후보로 선택될 수 있고, `selected_datasets`, `evidence`, `retrieval_trace`, SQL table context가 같은 catalog/run을 가리킨다.
+- [ ] AI Query 화면 readiness panel은 publish된 Gold CatalogDataset이 있을 때 fixed Product Health catalog가 아니라 live catalog id, local path, schema columns, lineage를 표시한다.
+- [ ] registered CatalogDataset은 Gold Dataset 화면에서 read-only management boundary로 표시되고, metadata update/delete, file delete, cascade delete가 같은 액션으로 제공되지 않는다.
+- [ ] Source/Silver/Gold Dataset 상세는 실제 local file이 있으면 `file-backed` evidence를, 없거나 metadata-only이면 성공처럼 보이지 않는 상태를 표시한다.
+- [ ] Gold Build local execution은 prepared Gold parquet reference와 1-row local demo JSONL materialization을 구분하고, Catalog publish/AI Query가 실제 output schema/path를 사용한다.
+- [ ] Kafka replay evidence는 실행 기록 UI에서 read-only health/run receipt로 보이고, evidence가 없어도 broker failure처럼 표시하지 않는다.
+- [ ] Airflow readiness는 실행 기록 UI에서 env missing/configured, DAG id, result root, local fallback 여부를 read-only로 보여주며 DAG trigger나 credential 값을 제공하지 않는다.
+- [ ] Spark readiness는 실행 기록 UI에서 `local_file` local smoke와 distributed cluster 실행 경계를 read-only로 보여주며 S3/DB/Kafka Spark read가 가능한 것처럼 표시하지 않는다.
+- [ ] DB/S3 credential 연결은 `secret_ref_only` design boundary로 표시되고, UI/API/log/metadata에 raw password/access key/token 값이 저장되거나 노출되지 않는다.
 - [ ] Week 2 M5 Airflow smoke는 실제 DAG 실행 결과 artifact를 backend가 읽고, `executor=airflow` run이 fallback 없이 Catalog lineage와 metrics를 갱신한다.
 - [ ] M2 Taxi local batch supporting evidence는 TLC Taxi Parquet 입력을 `gold_taxi_daily_metrics` Parquet output으로 만들고 row count, bytes, duration, output path를 기록한다. 이는 `gold_product_health` 대표 경로를 대체하지 않는다.
 
@@ -59,6 +68,7 @@ AskLake의 Target MVP 대표 성공 시나리오는 `Trusted Dataset -> Query/As
 - [ ] 입력 source 또는 dataset은 schema inference, user override, 또는 schema 확인을 거친다.
 - [ ] transform/normalize/load 결과가 output dataset으로 남는다.
 - [ ] row count, bytes, duration, output path 같은 처리 증거가 기록된다.
+- [ ] 성공한 run만 CatalogMetadata로 publish되고, catalog에는 schema, storage, metrics, lineage, runtime/source evidence가 남는다.
 - [ ] SQL 또는 `QueryResult`로 output dataset 결과를 검산할 수 있다.
 - [ ] dataset은 `Draft`, `Verifying`, `Trusted`, `Degraded`, `Blocked`, `Archived` 상태를 구분한다.
 - [ ] 최초 실행 성공만으로 dataset이 `Trusted`가 되지 않는다.
@@ -98,6 +108,7 @@ AskLake의 Target MVP 대표 성공 시나리오는 `Trusted Dataset -> Query/As
 - [ ] `docs/05` acceptance가 `docs/06` regression guard와 연결된다.
 - [ ] `docs/07` manual verification이 현재 workflow와 Target MVP를 구분한다.
 - [ ] `docs/08` 다음 Phase queue가 `docs/01` milestone과 일치한다.
+- [ ] 협업 질문/명령 처리 규칙은 일반론, 저장소 규칙, 비교 답변, 실행 승인, 정책 결정을 구분하고 필요한 경우 전제를 명시한다.
 
 ## 5) 배포와 운영 기준
 
@@ -137,7 +148,7 @@ R1~R7은 아래 workstream alias로 유지한다.
 | Alias | Workstream | 수용 체크포인트 |
 | --- | --- | --- |
 | R1 | Catalog / Trust | dataset trust status와 gate 결과가 API/UI에서 확인된다. |
-| R2 | Job / Orchestrator | job/task 상태, event, audit 기초가 중복 없이 기록된다. |
+| R2 | Job / Orchestrator | job/task 상태, event, audit 기초가 중복 없이 기록되고, Jobs 화면의 schedule 수정은 definition 수정이나 실제 scheduler 등록과 분리된다. |
 | R3 | Source Connector | 선택한 source 1개가 연결 성공/실패와 schema discovery를 제공한다. |
 | R4 | Query / Policy | 허용/마스킹/차단 query가 정책과 audit evidence를 남긴다. |
 | R5 | Ask / Evidence | Ask 결과가 evidence 또는 보류 사유를 제공하고 권한 거부를 통과한다. |

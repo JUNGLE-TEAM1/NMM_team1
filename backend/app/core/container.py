@@ -4,6 +4,7 @@ from app.adapters.csv_source import CsvSourceConnector
 from app.adapters.duckdb_sql_engine import DuckDBSqlEngine
 from app.adapters.fixture_catalog_source import FixtureCatalogSource
 from app.adapters.local_result_store import LocalResultStore
+from app.adapters.sqlite_catalog_metadata_source import SQLiteCatalogMetadataSource
 from app.adapters.sqlite_metadata_store import SQLiteMetadataStore
 from app.adapters.week2_catalog_store_source import Week2CatalogStoreSource
 from app.core.settings import Settings
@@ -54,9 +55,13 @@ class AppContainer:
         return Week2KafkaReplayEvidenceService(self.week2_output_root())
 
     def create_catalog_source(self) -> CatalogSource:
-        return Week2CatalogStoreSource(
+        week2_catalog_source = Week2CatalogStoreSource(
             self.week2_catalog_store,
             fallback_source=FixtureCatalogSource(),
+        )
+        return SQLiteCatalogMetadataSource(
+            self.metadata_store,
+            fallback_source=week2_catalog_source,
         )
 
     def create_sql_engine(self) -> SqlEngineAdapter:

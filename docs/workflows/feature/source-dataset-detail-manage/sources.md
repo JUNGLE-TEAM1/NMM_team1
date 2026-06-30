@@ -1,0 +1,7 @@
+# Source dataset detail/manage sources
+
+- `backend/app/domain/schemas.py`
+- `backend/app/adapters/sqlite_metadata_store.py`
+- `backend/app/api/source_catalog.py`
+- `frontend/src/app/App.jsx`
+- `frontend/src/api/sourceDatasetApi.js`

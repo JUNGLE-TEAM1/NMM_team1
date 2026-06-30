@@ -94,6 +94,44 @@ report가 늘어나면 영역별 최신 report index를 작게 유지한다. 이
 | M1 Week2 final demo flow | [`m1-week2-final-demo-flow.md`](m1-week2-final-demo-flow.md) | 최신 M5/M6 진행 뒤 `/catalog` query readiness와 `/query` DuckDB/evidence 상태 표시를 M1 화면에 보강했는지 확인 |
 | M1 final browser smoke | [`m1-final-browser-smoke.md`](m1-final-browser-smoke.md) | 최신 main 기준 `/etl -> /catalog -> /query` browser smoke에서 run/catalog/query/evidence가 이어지는지 확인 |
 | M1 query route trace UI | [`m1-query-route-trace-ui.md`](m1-query-route-trace-ui.md) | M1 `/query` 화면이 M6 `AIQueryResult.route`와 `retrieval_trace[]`를 성공/차단 상태와 함께 표시하는지 확인 |
+| M1 Product Health supported query UI | [`m1-product-health-supported-query-ui.md`](m1-product-health-supported-query-ui.md) | M1 `/query` 화면이 `dataset_product_health_gold`와 DuckDB SQL 성공 결과를 발표용 answer panel로 표시하는지 확인 |
+| External Connection type alignment | [`external-connection-type-alignment.md`](external-connection-type-alignment.md) | External Connection 타입을 Local File/Folder/Prepared Dataset/Kafka Topic 중심으로 정리하고 Kafka replay 경로를 보존했는지 확인 |
+| External Connection persistence | [`external-connection-persistence.md`](external-connection-persistence.md) | External Connection metadata가 `/api/external-connections`로 저장/조회되고 Source Dataset 후보로 이어지는지 확인 |
+| Target Dataset multi-source processing | [`target-dataset-multi-source-processing.md`](target-dataset-multi-source-processing.md) | Target Dataset 생성이 여러 Source Dataset과 processing recipe 중심으로 보이는지 확인 |
+| Target Dataset job draft | [`target-dataset-job-draft.md`](target-dataset-job-draft.md) | Target Dataset / ETL job draft metadata가 저장/조회되고 C-4 run handoff 입력이 준비됐는지 확인 |
+| Dataset draft overview | [`dataset-draft-overview.md`](dataset-draft-overview.md) | 저장된 External Connection / Source Dataset / Target Dataset draft가 데이터셋 시작 화면에서 보이는지 확인 |
+| Data Navigation Reframe | [`data-navigation-reframe.md`](data-navigation-reframe.md) | 좌측 메뉴가 연결/데이터셋/작업/실행 기록으로 분리되고 C-4 실행 진입점이 정리됐는지 확인 |
+| Target Dataset run handoff | [`target-dataset-run-handoff.md`](target-dataset-run-handoff.md) | Gold Build Job에서 queued Job Run record를 만들고 실행 기록에서 조회할 수 있는지 확인 |
+| Local runner materialization | [`local-runner-materialization.md`](local-runner-materialization.md) | queued Gold Build Job Run이 local Silver/Gold JSONL evidence와 output metrics를 남기는지 확인 |
+| Runtime evidence integration | [`runtime-evidence-integration.md`](runtime-evidence-integration.md) | local materialization run에 source-level/runtime evidence shape가 남는지 확인 |
+| Catalog metadata integration | [`catalog-metadata-integration.md`](catalog-metadata-integration.md) | succeeded Job Run을 CatalogDataset으로 publish하고 Gold Datasets 화면에서 registered output을 확인할 수 있는지 확인 |
+| AI query dataset context | [`ai-query-dataset-context.md`](ai-query-dataset-context.md) | publish된 Target Dataset CatalogDataset이 M6 AI Query의 dataset/evidence/SQL context로 소비되는지 확인 |
+| AI query live catalog readiness | [`ai-query-live-catalog-readiness.md`](ai-query-live-catalog-readiness.md) | AI Query readiness panel이 fixed Product Health 대신 published live Gold CatalogDataset을 표시하는지 확인 |
+| Connection sync schedule | [`connection-sync-schedule.md`](connection-sync-schedule.md) | External Connection sync schedule과 Silver/Gold processing schedule의 경계를 정리한 C-8 계획 확인 |
+| Source Dataset detail/manage | [`source-dataset-detail-manage.md`](source-dataset-detail-manage.md) | Source Dataset 상세/수정/삭제를 다루는 C-9 계획 확인 |
+| Silver Dataset creation | [`silver-dataset-creation.md`](silver-dataset-creation.md) | Source Dataset에서 Silver Dataset을 독립 생성/저장하는 C-10 계획 확인 |
+| Gold input silver alignment | [`gold-input-silver-alignment.md`](gold-input-silver-alignment.md) | Gold Dataset 생성 입력을 Silver Dataset으로 보정하는 C-11 계획 확인 |
+| Job schedule management | [`job-schedule-management.md`](job-schedule-management.md) | Jobs 화면에서 schedule만 수정하고 definition 수정과 분리하는 C-12 계획 확인 |
+| Source Dataset persistence | [`source-dataset-persistence.md`](source-dataset-persistence.md) | External Connection에서 만든 raw/source dataset metadata가 `/api/source-datasets`로 저장/조회되는지 확인 |
+| File-backed Dataset detail | [`file-backed-dataset-detail.md`](file-backed-dataset-detail.md) | Source/Silver/Gold Dataset 상세에서 local file evidence와 metadata-only/missing 상태를 구분하는지 확인 |
+| Gold Build local materialization alignment | [`gold-build-local-materialization-alignment.md`](gold-build-local-materialization-alignment.md) | prepared Product Health Gold parquet reference와 local demo JSONL materialization 경계, Catalog/AI Query 연결 확인 |
+| Kafka replay evidence UI | [`kafka-replay-evidence-ui.md`](kafka-replay-evidence-ui.md) | Kafka replay durable receipt를 실행 기록 UI에서 read-only로 확인하고 missing evidence를 안전하게 표시하는지 확인 |
+| Airflow trigger readiness | [`airflow-trigger-readiness.md`](airflow-trigger-readiness.md) | Airflow env missing/configured 상태, local fallback, credential value 미노출 경계를 실행 기록 UI/API에서 확인 |
+| Spark runner readiness | [`spark-runner-readiness.md`](spark-runner-readiness.md) | Spark runner local smoke와 distributed cluster 실행 경계를 실행 기록 UI/API에서 확인 |
+| Runtime connection verification report | [`runtime-connection-verification-report.md`](runtime-connection-verification-report.md) | Kafka/Airflow/Spark/MinIO/PostgreSQL/MongoDB local runtime smoke와 AskLake connector blocked gap 확인 |
+| Runtime status surface decision | [`runtime-status-surface-decision.md`](runtime-status-surface-decision.md) | `/runs`를 compact run log로 유지하고 Airflow/Spark/Kafka readiness를 별도 surface 후보로 분리한 결정 확인 |
+| Runs runtime panel restore | [`runs-runtime-panel-restore.md`](runs-runtime-panel-restore.md) | superseded evidence. 과거 `/runs` runtime panel restore 결과와 현재 보류 사유 확인 |
+| External Connection runtime checks | [`external-connection-runtime-checks.md`](external-connection-runtime-checks.md) | PostgreSQL/MongoDB/MinIO/Kafka lightweight connection test와 secret redaction 경계 확인 |
+| External Connection wizard runtime test UX | [`external-connection-wizard-runtime-test-ux.md`](external-connection-wizard-runtime-test-ux.md) | 연결 생성 wizard 안에서 DB/S3/Kafka runtime connection test가 raw credential 저장 없이 Review/저장으로 이어지는지 확인 |
+| Source Dataset runtime discovery | [`source-dataset-runtime-discovery.md`](source-dataset-runtime-discovery.md) | Source Dataset 생성에서 local schema preview는 저장하고 DB/S3/Kafka는 discovery pending으로 차단하는지 확인 |
+| Runtime connector schema discovery | [`runtime-connector-schema-discovery.md`](runtime-connector-schema-discovery.md) | PostgreSQL/MongoDB/S3/Kafka에서 지정 scope의 lightweight schema/sample discovery를 수행하는지 확인 |
+| Source Dataset ingest snapshot | [`source-dataset-ingest-snapshot.md`](source-dataset-ingest-snapshot.md) | Source Dataset metadata 생성과 raw snapshot 실행이 분리되고 row count/bytes/output path evidence가 남는지 확인 |
+| Silver Dataset runtime materialization | [`silver-dataset-runtime-materialization.md`](silver-dataset-runtime-materialization.md) | Source Snapshot 또는 local Source에서 Silver parquet output을 생성하고 row count/bytes/output path evidence가 남는지 확인 |
+| Gold Dataset runtime materialization | [`gold-dataset-runtime-materialization.md`](gold-dataset-runtime-materialization.md) | materialized Silver parquet 입력으로 Gold parquet를 생성하고 local output과 object storage not-uploaded evidence를 분리하는지 확인 |
+| Data Lake storage alignment | [`data-lake-storage-alignment.md`](data-lake-storage-alignment.md) | Source/Silver/Gold runtime artifact 경로가 `data/lake/bronze|silver|gold`로 정렬됐는지 확인 |
+| CatalogDataset management boundary | [`catalog-dataset-management-boundary.md`](catalog-dataset-management-boundary.md) | registered CatalogDataset의 상세/AI Query context와 metadata/file/cascade delete 경계를 분리했는지 확인 |
+| Credential secret connection design | [`credential-secret-connection-design.md`](credential-secret-connection-design.md) | DB/S3 credential 연결이 raw secret 값이 아니라 `secret_ref_only` boundary로 남았는지 확인 |
+| Demo flow final audit Hotfix | [`demo-flow-final-audit-hotfix.md`](demo-flow-final-audit-hotfix.md) | C-queue 후 데모 UI drift, registered CatalogDataset action, Vite proxy target 검수 결과 확인 |
 | M1 Catalog Live UI | [`m1-catalog-live-ui.md`](m1-catalog-live-ui.md) | M1 live UI Phase 3에서 `/catalog`와 detail 화면이 M5 CatalogMetadata를 소비하는지 확인 |
 | PR Conflict Resolution Protocol | [`pr-conflict-resolution-protocol.md`](pr-conflict-resolution-protocol.md) | PR conflict 감지, 분류, 사람 확인, 해결 후 재검증과 evidence 기록 규칙 확인 |
 | Harness 변경사항 병합 후 점검 | [`harness-post-merge-change-audit.md`](harness-post-merge-change-audit.md) | PR #45~#47 병합 뒤 Pre-PR checkpoint, Product Rebaseline, validation/script 충돌 여부 확인 |
@@ -102,6 +140,7 @@ report가 늘어나면 영역별 최신 report index를 작게 유지한다. 이
 | 협업 하네스 팀 사용 가이드 | [`collaboration-harness-team-usage-guide.md`](collaboration-harness-team-usage-guide.md) | 팀원이 Phase 시작, 확인 gate 응답, PR/merge 경계, 문서 기록 방식을 실제 요청 예시로 익히는 온보딩 guide 확인 |
 | 협업 하네스 팀 사용 가이드 보고서 | [`collaboration-harness-team-guide-report.md`](collaboration-harness-team-guide-report.md) | 팀원용 사용 guide 작성 범위, 검증, 남은 위험, PR handoff 문맥 확인 |
 | 하네스 판단 질문 중립성 | [`harness-neutral-decision-guidance.md`](harness-neutral-decision-guidance.md) | AI가 질문자의 원하는 결론에 끌려가지 않고 반대 관점, 리스크, 보완책, 추천도, 제안자 책임을 함께 제시하는 기준 확인 |
+| 하네스 전제 확인 규칙 | [`context-assumption-check.md`](context-assumption-check.md) | 일반론/저장소 규칙/비교 답변/실행 승인/정책 결정 렌즈를 구분하고 고영향 행동 전 확인 gate로 연결하는 기준 확인 |
 | AWS 비용 추정 | [`aws-cost-estimate.md`](aws-cost-estimate.md) | EKS-ready 구성의 기본 비용과 데이터셋/로그/전송량 증가 시 추가 비용 파악 |
 | Infra / MVP / 장기 Roadmap | [`phase-1-mvp-roadmap.md`](phase-1-mvp-roadmap.md) | 인프라 선행 원칙, XFlow 참고 MVP 범위, M0~M5 MVP milestone, M6~M15 장기 milestone, 다음 구현 Phase |
 | Infrastructure Foundation | [`phase-2-infrastructure-foundation.md`](phase-2-infrastructure-foundation.md) | CI/CD, Docker, Kubernetes, AWS approval gate foundation |

@@ -1,0 +1,27 @@
+{
+  "id": "source_dataset_01JZ0C2SOURCE",
+  "connection_id": "conn_product_health_reviews_file",
+  "connection_name": "Product Health Reviews File",
+  "connection_type": "local_file",
+  "name": "source_product_health_reviews",
+  "raw_scope": "backend/samples/product_health_reviews_seed.jsonl",
+  "resource_label": "file_path",
+  "schema_preview": [
+    {
+      "name": "review_id",
+      "type": "string"
+    },
+    {
+      "name": "product_id",
+      "type": "string"
+    },
+    {
+      "name": "rating",
+      "type": "number"
+    }
+  ],
+  "layer": "source",
+  "status": "metadata_ready",
+  "created_at": "2026-06-30T00:00:00Z",
+  "updated_at": "2026-06-30T00:00:00Z"
+}

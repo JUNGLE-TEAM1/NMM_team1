@@ -2,10 +2,10 @@
 
 ## Short Report / 짧은 보고
 
-- Type: Planned Phase
-- Date: 2026-06-29
-- Changed: Phase workspace를 생성했다.
-- Verified: 실행 전.
-- Remaining: 구현, 검증, PR.
-- Next context: CatalogMetadata 기반 M6 AI Query dataset context 연결.
-- Risk: RAG/LLM production scope까지 포함하면 MVP 연결 범위를 넘는다.
+- Type: feature
+- Date: 2026-06-30
+- Changed: publish된 Target Dataset CatalogDataset을 AI Query CatalogSource 후보로 변환하는 adapter를 추가했다.
+- Verified: backend focused tests 21 passed, frontend build 통과, HTTP smoke와 browser smoke에서 published catalog context 선택을 확인했고 smoke data/output을 정리했다.
+- Remaining: RAG/goal 추천/자동 recipe 생성, SQL allowlist policy 세분화, AI Query readiness panel live catalog 보정.
+- Next context: AI Query는 `selected_datasets`, `evidence`, `retrieval_trace`, SQL `FROM` table을 같은 published catalog/run 기준으로 표시해야 한다.
+- Risk: C-7은 M6 query context 연결이며 대용량 처리나 Airflow/Spark 실행을 새로 검증하지 않는다.

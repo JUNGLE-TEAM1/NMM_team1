@@ -48,6 +48,57 @@ class Week2AirflowConfig:
         )
 
 
+def airflow_readiness(env: dict[str, str] | None = None) -> dict[str, Any]:
+    source = env if env is not None else os.environ
+    config = Week2AirflowConfig.from_env(source)
+    result_root_value = source.get("ASKLAKE_WEEK2_AIRFLOW_RESULT_ROOT")
+    result_root = airflow_result_root_from_env(result_root_value)
+    username_configured = bool(source.get("ASKLAKE_WEEK2_AIRFLOW_USERNAME") or source.get("AIRFLOW_USERNAME"))
+    password_configured = bool(source.get("ASKLAKE_WEEK2_AIRFLOW_PASSWORD") or source.get("AIRFLOW_PASSWORD"))
+
+    if config is None:
+        return {
+            "status": "not_configured",
+            "trigger_available": False,
+            "fallback_available": True,
+            "message": "Airflow env is not configured. Week 2 airflow executor will fall back to local runner.",
+            "base_url": None,
+            "dag_id": source.get("ASKLAKE_WEEK2_AIRFLOW_DAG_ID", "asklake_week2_reviews"),
+            "result_root": str(result_root),
+            "result_root_exists": result_root.exists(),
+            "username_configured": username_configured,
+            "password_configured": password_configured,
+            "credential_values_exposed": False,
+            "required_env": [
+                "ASKLAKE_WEEK2_AIRFLOW_BASE_URL",
+                "ASKLAKE_WEEK2_AIRFLOW_DAG_ID",
+                "ASKLAKE_WEEK2_AIRFLOW_RESULT_ROOT",
+            ],
+        }
+
+    return {
+        "status": "configured",
+        "trigger_available": True,
+        "fallback_available": True,
+        "message": "Airflow env is configured. This readiness check does not trigger the DAG.",
+        "base_url": config.base_url,
+        "dag_id": config.dag_id,
+        "result_root": str(config.result_root),
+        "result_root_exists": config.result_root.exists(),
+        "username_configured": config.username is not None,
+        "password_configured": config.password is not None,
+        "credential_values_exposed": False,
+        "timeout_seconds": config.timeout_seconds,
+        "max_polls": config.max_polls,
+        "poll_interval_seconds": config.poll_interval_seconds,
+        "required_env": [
+            "ASKLAKE_WEEK2_AIRFLOW_BASE_URL",
+            "ASKLAKE_WEEK2_AIRFLOW_DAG_ID",
+            "ASKLAKE_WEEK2_AIRFLOW_RESULT_ROOT",
+        ],
+    }
+
+
 class AirflowHttpClient(Protocol):
     def request(self, method: str, path: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
         pass

@@ -120,8 +120,15 @@ class FakeSqlEngine:
     def _fixture_row(self, selected_columns: list[str]) -> dict[str, object]:
         available = {
             "product_id": "B001",
+            "internal_product_id": "aph_prod_000001",
             "category": "electronics",
+            "category_l1": "electronics",
+            "category_l2": "accessories",
+            "scenario_bucket": "review_delivery_risk",
+            "risk_driver": "negative_reviews|late_delivery",
+            "demo_category_label": "Beauty / Skin Care Sets",
             "product_name": "Demo Product",
+            "product_title": "Demo Product",
             "review_count": 42,
             "average_rating": 4.8,
             "risk_score": 0.92,

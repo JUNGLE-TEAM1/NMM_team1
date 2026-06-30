@@ -36,9 +36,37 @@ jobs:
           node tests/migration-schema-security-check.test.js
           node tests/pr-size-hard-gate.test.js
 
-      - name: Harness validation
+      - name: Detect harness regression impact
+        id: harness-impact
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || '' }}
+        run: |
+          if [[ -z "${BASE_SHA}" || -z "${HEAD_SHA}" ]]; then
+            echo "full=true" >> "$GITHUB_OUTPUT"
+            echo "Changed files are unavailable; running full harness regression."
+            exit 0
+          fi
+
+          merge_base="$(git merge-base "${BASE_SHA}" "${HEAD_SHA}")"
+          changed_files="$(git diff --name-only "${merge_base}" "${HEAD_SHA}")"
+          printf '%s\n' "${changed_files}"
+
+          if printf '%s\n' "${changed_files}" | rg -q '^(scripts/(start-workflow|status-workflow|validate-harness|prepare-pr|harness-flow-check|test-harness|audit-github-records|list-active-branches|cleanup-merged-branches)\.sh|scripts/lib/|\.github/workflows/(ci|harness-validation\.example)\.yml|\.github/scripts/|tests/(harness|pr-|migration-schema-security-check|pr-size-hard-gate)|docs/(08-development-workflow|10-next-action-menu|11-git-sync-policy|12-quality-gates|13-human-command-flow|18-harness-regression-policy|system-guardrails)\.md|docs/workflows/README\.md)'; then
+            echo "full=true" >> "$GITHUB_OUTPUT"
+            echo "Harness-impacting files changed; running full harness regression."
+          else
+            echo "full=false" >> "$GITHUB_OUTPUT"
+            echo "No harness-impacting files changed; skipping fixture regression."
+          fi
+
+      - name: Harness fixture regression
+        if: steps.harness-impact.outputs.full == 'true'
         run: |
           scripts/test-harness.sh
+
+      - name: Harness validation
+        run: |
           scripts/validate-harness.sh
           scripts/validate-harness.sh --strict
 

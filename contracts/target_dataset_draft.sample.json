@@ -1,0 +1,58 @@
+{
+  "id": "target_dataset_draft_01JZ0C2TARGET",
+  "target_dataset_name": "dataset_product_health_gold",
+  "description": "제품 상태 분석용 gold dataset draft",
+  "base_source_ref": {
+    "source_id": "source_partner_catalog_api",
+    "name": "Partner Catalog API",
+    "role": "base",
+    "type_label": "API",
+    "resource": "GET /partner/catalog"
+  },
+  "target_grain": "product_id",
+  "source_refs": [
+    {
+      "source_id": "source_partner_catalog_api",
+      "name": "Partner Catalog API",
+      "role": "base",
+      "type_label": "API",
+      "resource": "GET /partner/catalog"
+    },
+    {
+      "source_id": "source_product_health_reviews",
+      "name": "Product Health Reviews",
+      "role": "enrichment",
+      "type_label": "CSV / Local File",
+      "resource": "product_health_reviews.jsonl"
+    }
+  ],
+  "silver_outputs": [
+    {
+      "name": "silver_product_catalog",
+      "from_source_id": "source_partner_catalog_api",
+      "from_source_name": "Partner Catalog API",
+      "purpose": "상품 id/category 표준화"
+    },
+    {
+      "name": "silver_product_reviews",
+      "from_source_id": "source_product_health_reviews",
+      "from_source_name": "Product Health Reviews",
+      "purpose": "평점/리뷰 텍스트 정규화"
+    }
+  ],
+  "processing_recipes": ["standardize_sources", "join_product", "score_health"],
+  "gold_output": "dataset_product_health_gold",
+  "executor_handoff": "local_runner",
+  "schedule": {
+    "mode": "manual",
+    "note": "데모에서는 수동 실행으로만 준비합니다."
+  },
+  "schema_preview": [
+    { "name": "product_id", "type": "string" },
+    { "name": "risk_score", "type": "number" }
+  ],
+  "layer": "target",
+  "status": "draft_ready",
+  "created_at": "2026-06-30T00:00:00Z",
+  "updated_at": "2026-06-30T00:00:00Z"
+}

@@ -157,6 +157,12 @@ curl -fsS http://localhost:3000/
 
 자동 smoke 검증은 로컬의 다른 프로젝트와 충돌하지 않도록 backend `18000`, frontend `13000`을 기본 포트로 사용한다.
 
+Host Vite dev server는 기본적으로 `/api`를 `http://127.0.0.1:8000`으로 proxy한다. 최신 backend를 다른 포트에서 검수할 때는 stale 8000 server를 끄지 않고도 proxy target을 명시할 수 있다.
+
+```bash
+VITE_PROXY_TARGET=http://127.0.0.1:18000 npm --prefix frontend run dev -- --host 127.0.0.1 --port 5173
+```
+
 ```bash
 scripts/smoke-container-app.sh
 BACKEND_PORT=18001 FRONTEND_PORT=13001 scripts/smoke-container-app.sh

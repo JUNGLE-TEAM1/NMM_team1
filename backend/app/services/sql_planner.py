@@ -54,7 +54,19 @@ class SqlPlanner:
                 sort_direction="DESC",
                 title="Top products by risk score",
                 context=context,
-                optional_columns=["category", "product_name", "negative_review_rate", "conversion_rate", "late_delivery_rate"],
+                optional_columns=[
+                    "scenario_bucket",
+                    "risk_driver",
+                    "demo_category_label",
+                    "category",
+                    "category_l1",
+                    "category_l2",
+                    "product_name",
+                    "product_title",
+                    "negative_review_rate",
+                    "conversion_rate",
+                    "late_delivery_rate",
+                ],
             )
         if intent == "top_negative_review":
             return self._ranked_plan(
@@ -103,16 +115,22 @@ class SqlPlanner:
         if any(term in normalized for term in unsupported_terms):
             return "unsupported"
 
+        has_negative_signal = any(term in normalized for term in ["나쁘", "부정", "불만", "negative_review", "negative review", "negative"])
+        has_conversion_signal = any(term in normalized for term in ["전환율", "conversion", "구매 전환", "구매율"])
+        has_delivery_signal = any(term in normalized for term in ["배송 지연", "지연율", "late_delivery", "late delivery", "delivery delay", "shipping delay"])
+        if sum([has_negative_signal, has_conversion_signal, has_delivery_signal]) >= 2:
+            return "top_risk"
+
         if any(term in normalized for term in ["위험", "리스크", "risk", "risk_score"]):
             return "top_risk"
 
-        if any(term in normalized for term in ["부정", "negative_review", "negative review", "negative", "불만"]):
+        if has_negative_signal:
             return "top_negative_review"
 
-        if any(term in normalized for term in ["전환율", "conversion", "구매 전환", "구매율"]):
+        if has_conversion_signal:
             return "low_conversion"
 
-        if any(term in normalized for term in ["배송 지연", "지연율", "late_delivery", "late delivery", "delivery delay", "shipping delay"]):
+        if has_delivery_signal:
             return "top_late_delivery"
 
         if any(term in normalized for term in ["평점", "별점", "rating", "average"]):
@@ -132,10 +150,16 @@ class SqlPlanner:
         context: SqlEngineContext,
         optional_columns: list[str],
     ) -> SqlPlan:
-        columns = self._columns_or_none(["product_id", metric_column], optional_columns, context)
+        id_column = self._first_allowed(["product_id", "internal_product_id"], context)
+        if id_column is None:
+            return self._unsupported_plan(
+                f"CatalogMetadata allowed_columns에 product_id/internal_product_id 또는 {metric_column}가 없어 SQL을 만들 수 없습니다."
+            )
+
+        columns = self._columns_or_none([id_column, metric_column], optional_columns, context)
         if columns is None:
             return self._unsupported_plan(
-                f"CatalogMetadata allowed_columns에 product_id 또는 {metric_column}가 없어 SQL을 만들 수 없습니다."
+                f"CatalogMetadata allowed_columns에 {id_column} 또는 {metric_column}가 없어 SQL을 만들 수 없습니다."
             )
 
         sql = (
@@ -148,11 +172,18 @@ class SqlPlanner:
             sql=sql,
             chart_spec=ChartSpec(
                 type="bar",
-                x="product_id",
+                x=id_column,
                 y=metric_column,
                 title=title,
             ),
         )
+
+    def _first_allowed(self, candidates: list[str], context: SqlEngineContext) -> str | None:
+        allowed = set(context.allowed_columns)
+        for candidate in candidates:
+            if candidate in allowed:
+                return candidate
+        return None
 
     def _columns_or_none(
         self,

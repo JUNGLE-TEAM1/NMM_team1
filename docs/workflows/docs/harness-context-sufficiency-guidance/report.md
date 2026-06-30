@@ -11,7 +11,8 @@
 - Escalated context read: none
 - Context omitted intentionally: 제품/API/schema/구현 코드 문맥은 이번 문서 표현 보강 범위가 아니므로 생략
 - Changed: 작업 문맥은 AI가 초안을 만들 수 있고, 사람은 그 문맥을 이해한 뒤 충분성을 확인한다는 책임 경계를 사용가이드에 보강했다. 추가로 하네스가 책임을 새로 만드는 것이 아니라 원래 있던 협업 책임을 AI 도움으로 더 쉽게 다하게 해주는 장치라는 설명을 3장과 7장에 보강했다. 문서 앞부분에는 처음 읽는 경로를 추가했고, 6.6은 핵심 원칙을 먼저 보여준 뒤 상세 기준으로 이어지게 정리했다. FAQ의 강한 표현도 팀 근거 확인 톤으로 순화했다.
-- Verified: `rg` 문구 확인, 책임 부담 완화 문구 확인, 읽기 흐름/톤 보강 문구 확인, `git diff --check` 통과.
-- Remaining: PR 생성은 사용자 요청 전까지 보류한다.
-- Next context: 팀원에게는 직접 모든 문맥을 쓰라는 뜻이 아니라, AI 도움을 받아 만든 문맥이 자기 스코프/의도/팀 기준에 맞는지 확인하라는 의미로 설명한다. 책임 설명은 추가 부담이 아니라 원래 협업 책임을 더 쉽게 수행하는 방법으로 읽히게 한다.
-- Risk: 문서 표현 보강이며 시스템 강제 동작은 바뀌지 않는다.
+- Follow-up changed: 질문/명령에 답하기 전 AI가 일반론, 저장소 규칙, 비교 답변, 실행 요청, 정책 결정, 고영향 행동 여부를 먼저 판별하는 `Context Assumption Check`를 협업 합의, 사람 명령 흐름, Phase 시작 gate, Context Budget 관계, Next Action Menu, acceptance/regression/manual verification에 반영했다.
+- Verified: `rg` 문구 확인, 책임 부담 완화 문구 확인, 읽기 흐름/톤 보강 문구 확인, Context Assumption Check 문구 확인, `git diff --check`, `scripts/validate-harness.sh` 통과. `scripts/validate-harness.sh --strict`는 unrelated untracked `docs/workflows/feature/data-integration-screen-reset/`의 invalid `Quality gate status: complete`와 Source of Truth proposal `Decision status: none` 때문에 실패했다. `scripts/test-harness.sh`는 첫 fixture `valid complete workspace passes`에서 같은 unrelated untracked workspace strict issue 때문에 실패했다.
+- Remaining: 현재 checkout branch는 `feature/data-integration-screen-reset`이고 이 workspace expected branch는 `docs/harness-context-sufficiency-guidance`다. pull/merge/rebase/branch switch/push/PR 생성은 사람 확인 전까지 보류한다.
+- Next context: 팀원에게는 직접 모든 문맥을 쓰라는 뜻이 아니라, AI 도움을 받아 만든 문맥이 자기 스코프/의도/팀 기준에 맞는지 확인하라는 의미로 설명한다. 책임 설명은 추가 부담이 아니라 원래 협업 책임을 더 쉽게 수행하는 방법으로 읽히게 한다. 개념 질문도 먼저 적용 렌즈를 내부 판별하되, 단순 설명은 불필요하게 막지 않고 `일반론 기준 / 이 저장소 기준`을 나누어 답한다.
+- Risk: 문서 규칙 보강이며 시스템 강제 동작은 바뀌지 않는다. `docs/08-development-workflow.md`에는 Context Assumption Check hunk와 기존 Data Integration queue 미커밋 hunk가 함께 있고, 여러 `data-integration-*` 미추적 workspace가 strict/test fixture에 영향을 주므로 PR 범위 정리가 필요하다. Context Assumption Check PR에는 `frontend/src/app/App.jsx`와 `docs/workflows/feature/data-integration-*/`를 포함하지 않는 것이 기본 전략이다.

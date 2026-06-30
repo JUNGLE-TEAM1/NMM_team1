@@ -1,5 +1,4 @@
-# Catalog metadata integration 다음 행동 메뉴
+# Catalog metadata integration 다음 작업
 
-1. Recommended: C-5 완료 후 CatalogMetadata 등록과 Catalog 화면 연결을 구현한다.
-2. Alternative: Catalog detail부터 API 연결하고 list는 후속으로 보강한다.
-3. Stop: AI Query 실행 요구가 생기면 C-7로 분리한다.
+- C-7에서 M6 AI Query가 published CatalogDataset을 선택하고 storage path/schema/metrics/lineage를 근거로 사용한다.
+- 브라우저 수동 검증 시 `/runs`에서 `Catalog 등록` 후 `/datasets/gold`의 registered 항목을 확인한다.

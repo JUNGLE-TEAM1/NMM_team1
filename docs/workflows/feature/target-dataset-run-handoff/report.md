@@ -1,11 +1,10 @@
-# Target dataset run handoff 보고서
+# Target Dataset run handoff 보고서
 
 ## Short Report / 짧은 보고
 
-- Type: Planned Phase
-- Date: 2026-06-29
-- Changed: Phase workspace를 생성했다.
-- Verified: 실행 전.
-- Remaining: 구현, 검증, PR.
-- Next context: Target Dataset job definition draft를 M5 run으로 넘긴다.
-- Risk: run UI가 다시 module demo처럼 보이면 사용자 시나리오가 흐려진다.
+- Type: feature
+- Date: 2026-06-30
+- Changed: Target Dataset draft 기반 queued Job Run handoff API와 `/jobs/gold-build` Run 준비 버튼, `/runs` 조회 화면을 추가했다.
+- Verified: backend focused tests 6 passed, frontend build 통과, contract JSON validation 통과, HTTP smoke와 browser smoke에서 queued run 생성/조회 확인 후 smoke data를 정리했다.
+- Remaining: C-4.5에서 local runner로 실제 Silver/Gold materialization을 연결한다.
+- Risk: C-4 run은 queued handoff record이며 실제 실행 결과가 아니다.

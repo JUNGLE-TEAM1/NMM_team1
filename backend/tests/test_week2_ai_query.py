@@ -222,9 +222,10 @@ def test_week2_ai_query_evidence_grounding_includes_catalog_schema_metrics_and_l
     assert evidence["lineage"]["run_id"] == run["run_id"]
     assert evidence["lineage"]["source_ids"] == ["source_amazon_reviews_demo"]
     assert "average_rating" in evidence["retrieval_terms"]
-    assert run["run_id"] in payload["summary"]
-    assert f"row_count={catalog['metrics']['row_count']}" in payload["summary"]
-    assert "schema=product_id, review_count, average_rating" in payload["summary"]
+    assert "근거:" not in payload["summary"]
+    assert run["run_id"] not in payload["summary"]
+    assert f"row_count={catalog['metrics']['row_count']}" not in payload["summary"]
+    assert "schema=product_id, review_count, average_rating" not in payload["summary"]
 
 
 def test_week2_ai_query_uses_injected_catalog_source_for_evidence() -> None:
@@ -399,6 +400,56 @@ def test_week2_ai_query_selects_product_health_catalog_for_risk_question() -> No
     assert result.chart_spec.y == "risk_score"
     assert result.rows[0]["risk_score"] == 0.92
     assert "위험 점수 0.92" in result.summary
+    assert "근거:" not in result.summary
+
+
+def test_week2_ai_query_plans_product_health_internal_product_id_columns() -> None:
+    catalog = _product_health_catalog(
+        "dataset_product_health_gold",
+        "Product Health Gold",
+        "run_product_health_001",
+    )
+    catalog["schema"]["fields"] = [
+        {"name": "internal_product_id", "type": "string", "nullable": False},
+        {"name": "scenario_bucket", "type": "string", "nullable": False},
+        {"name": "risk_driver", "type": "string", "nullable": False},
+        {"name": "demo_category_label", "type": "string", "nullable": False},
+        {"name": "product_title", "type": "string", "nullable": False},
+        {"name": "risk_score", "type": "number", "nullable": False},
+        {"name": "negative_review_rate", "type": "number", "nullable": False},
+        {"name": "conversion_rate", "type": "number", "nullable": False},
+        {"name": "late_delivery_rate", "type": "number", "nullable": False},
+    ]
+    catalog["query"]["allowed_columns"] = [
+        "internal_product_id",
+        "scenario_bucket",
+        "risk_driver",
+        "demo_category_label",
+        "product_title",
+        "risk_score",
+        "negative_review_rate",
+        "conversion_rate",
+        "late_delivery_rate",
+    ]
+    service = Week2AIQueryService(
+        sql_engine=FakeSqlEngine(),
+        catalog_source=InMemoryCatalogSource(catalog),
+    )
+
+    result = service.answer("리뷰가 나쁘고 구매 전환도 낮고 배송 지연까지 겹친 문제 상품군을 찾아줘")
+
+    assert result.status == "succeeded"
+    assert result.selected_datasets[0].dataset_id == "dataset_product_health_gold"
+    assert result.sql == (
+        "SELECT internal_product_id, risk_score, scenario_bucket, risk_driver, "
+        "demo_category_label, product_title, negative_review_rate, conversion_rate, "
+        "late_delivery_rate FROM gold_product_health ORDER BY risk_score DESC LIMIT 10"
+    )
+    assert result.chart_spec.x == "internal_product_id"
+    assert result.chart_spec.y == "risk_score"
+    assert result.rows[0]["internal_product_id"] == "aph_prod_000001"
+    assert "aph_prod_000001 상품은 위험 점수 0.92" in result.summary
+    assert "근거:" not in result.summary
 
 
 def test_fake_sql_engine_blocks_non_select_sql() -> None:

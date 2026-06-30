@@ -1,4 +1,4 @@
-# Runtime evidence integration 노트
+# Runtime evidence integration notes
 
-- 2026-06-29: C-5 Phase로 생성했다.
-- M2 batch/runtime evidence와 M4 Kafka replay evidence를 run result에 붙인다.
+- `source_evidence[]`는 source/silver 단위 rows/bytes/duration/status를 담는다.
+- `runtime_evidence`는 runner-level summary다.

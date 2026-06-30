@@ -1,11 +1,12 @@
-# Target dataset job draft 보고서
+# Target Dataset job draft 보고서
 
 ## Short Report / 짧은 보고
 
-- Type: Planned Phase
-- Date: 2026-06-29
-- Changed: Phase workspace를 생성했다.
-- Verified: 실행 전.
-- Remaining: 구현, 검증, PR.
-- Next context: Target Dataset metadata와 ETL job definition draft 저장.
-- Risk: 저장과 실행이 한 Phase에 섞이면 M5 handoff가 불명확해진다.
+- Type: feature
+- Date: 2026-06-30
+- Changed: Target Dataset / ETL job draft metadata 저장 API와 SQLite persistence를 추가하고, Target Dataset Review CTA를 실제 저장 버튼으로 연결했다.
+- Follow-up change: Target Dataset wizard에서 runner/Airflow 선택을 Scheduling 안이 아니라 Process 다음 `Handoff/Run` 단계로 분리했다.
+- Verified: backend focused tests 9 passed, frontend build 통과, contract JSON validation 통과, HTTP smoke 통과, browser smoke에서 draft 저장과 API 조회를 확인했다.
+- Remaining: Airflow DAG trigger, local/spark runner 실행, Silver/Gold materialization, CatalogMetadata publish는 C-4 이후 범위다.
+- Next context: C-4는 `target_dataset_drafts` record를 읽어 M5 run handoff를 만들고 `executor_handoff`에 따라 local_runner/Airflow/spark_runner 경계를 호출한다.
+- Risk: 현재 저장되는 것은 metadata/job draft이며 실제 transform 실행 결과가 아니다.

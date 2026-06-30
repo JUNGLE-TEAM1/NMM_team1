@@ -42,6 +42,14 @@ export function getWeek2Catalog(datasetId = WEEK2_DEFAULT_DATASET_ID) {
   return request(`/api/week2/catalog/${encodePathSegment(nextDatasetId)}`);
 }
 
+export function getWeek2AirflowReadiness() {
+  return request("/api/week2/airflow/readiness");
+}
+
+export function getWeek2SparkReadiness() {
+  return request("/api/week2/spark/readiness");
+}
+
 export function askWeek2AiQuery(question) {
   const nextQuestion = requireNonBlankString(question, "Week2 AI query question");
 

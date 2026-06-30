@@ -1,5 +1,3 @@
-# Target dataset run handoff 다음 행동 메뉴
+# Target Dataset run handoff next actions
 
-1. Recommended: C-3 완료 후 M5 run handoff를 구현한다.
-2. Alternative: run status read-only 연결부터 진행한다.
-3. Stop: Airflow production deployment가 요구되면 별도 Phase로 분리한다.
+- C-4.5에서 queued run을 local runner 실행으로 전환하고 output path/row count/bytes를 기록한다.

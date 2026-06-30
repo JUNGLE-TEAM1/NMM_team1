@@ -1,0 +1,29 @@
+{
+  "id": "external_connection_01JZ0C2CONNECTION",
+  "name": "conn_product_health_reviews_file",
+  "connector_type": "local_file",
+  "resource": "backend/samples/product_health_reviews_seed.jsonl",
+  "resource_label": "file_path",
+  "auth_mode": "No credential",
+  "mode_label": "직접 연결 가능",
+  "contract_hint": "SourceConfig.connection_ref.path",
+  "detected_format": "JSONL",
+  "detected_dataset": "Product reviews / VOC",
+  "confidence": "High",
+  "recommended_role": "Source Dataset",
+  "sync_mode": "manual",
+  "sync_schedule": "manual on demand",
+  "schema_preview": [
+    {
+      "name": "review_id",
+      "type": "string"
+    },
+    {
+      "name": "rating",
+      "type": "number"
+    }
+  ],
+  "status": "metadata_ready",
+  "created_at": "2026-06-30T00:00:00Z",
+  "updated_at": "2026-06-30T00:00:00Z"
+}

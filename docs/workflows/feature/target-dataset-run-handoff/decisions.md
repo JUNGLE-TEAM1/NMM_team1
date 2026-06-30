@@ -1,6 +1,4 @@
-# Target dataset run handoff 결정 기록
+# Target Dataset run handoff decisions
 
-| Decision | Status | Rationale |
-| --- | --- | --- |
-| 화면명 | planned | `M5 데모` 대신 `실행 기록` 또는 `Job Runs`를 사용한다. |
-| runtime detail | deferred | C-4는 run 생성/status에 집중하고 runtime evidence는 C-5로 넘긴다. |
+- 기존 `pipeline_runs`는 legacy pipeline 전용이므로 C-4는 `target_dataset_job_runs`를 별도 테이블로 둔다.
+- run record는 조회 화면을 위해 Target Dataset draft 핵심 요약을 복사 저장한다.

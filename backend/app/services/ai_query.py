@@ -139,6 +139,8 @@ class Week2AIQueryService:
                     {
                         "row_count": metrics.get("row_count"),
                         "bytes": metrics.get("bytes"),
+                        "processed_input_total_bytes": metrics.get("processed_input_total_bytes"),
+                        "available_source_total_bytes": metrics.get("available_source_total_bytes"),
                         "quality": metrics.get("quality", {}),
                         "semantics": metrics.get("semantics", {}),
                     }
@@ -179,29 +181,17 @@ class Week2AIQueryService:
             return "SQL은 통과했지만 반환된 row가 없습니다."
 
         first_row = query_result.rows[0]
-        product_id = first_row.get("product_id")
+        product_id = first_row.get("product_id") or first_row.get("internal_product_id")
         answer_by_intent = {
-            "top_count": f"{product_id} 상품이 리뷰 {first_row.get('review_count')}개로 가장 많습니다.",
-            "top_rating": f"{product_id} 상품이 평균 평점 {first_row.get('average_rating')}로 가장 높습니다.",
-            "top_risk": f"{product_id} 상품이 위험 점수 {first_row.get('risk_score')}로 가장 높습니다.",
-            "top_negative_review": f"{product_id} 상품이 부정 리뷰율 {first_row.get('negative_review_rate')}로 가장 높습니다.",
-            "low_conversion": f"{product_id} 상품이 전환율 {first_row.get('conversion_rate')}로 가장 낮습니다.",
-            "top_late_delivery": f"{product_id} 상품이 배송 지연율 {first_row.get('late_delivery_rate')}로 가장 높습니다.",
+            "top_count": f"{product_id} 상품의 리뷰가 {first_row.get('review_count')}개로 가장 많습니다.",
+            "top_rating": f"{product_id} 상품의 평균 평점이 {first_row.get('average_rating')}로 가장 높습니다.",
+            "top_risk": f"{product_id} 상품은 위험 점수 {first_row.get('risk_score')}로 우선 확인 대상입니다.",
+            "top_negative_review": f"{product_id} 상품은 부정 리뷰율 {first_row.get('negative_review_rate')}로 우선 확인 대상입니다.",
+            "low_conversion": f"{product_id} 상품은 전환율 {first_row.get('conversion_rate')}로 가장 낮아 확인이 필요합니다.",
+            "top_late_delivery": f"{product_id} 상품은 배송 지연율 {first_row.get('late_delivery_rate')}로 우선 확인 대상입니다.",
         }
         answer = answer_by_intent.get(plan.intent, f"{product_id} 상품이 선택된 지표에서 가장 우선순위가 높습니다.")
         return self._grounded_summary(answer, evidence)
 
     def _grounded_summary(self, answer: str, evidence: QueryEvidence) -> str:
-        schema_names = [
-            str(field.get("name"))
-            for field in evidence.schema_fields
-            if field.get("name")
-        ]
-        evidence_parts = [f"dataset={evidence.dataset_id}"]
-        if evidence.run_id:
-            evidence_parts.append(f"run_id={evidence.run_id}")
-        if evidence.metrics.get("row_count") is not None:
-            evidence_parts.append(f"row_count={evidence.metrics['row_count']}")
-        if schema_names:
-            evidence_parts.append(f"schema={', '.join(schema_names)}")
-        return f"{answer} 근거: {'; '.join(evidence_parts)}."
+        return answer

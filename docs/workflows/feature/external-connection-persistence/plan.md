@@ -23,14 +23,13 @@
   - `contracts/source_config.sample.json`의 `connection_ref`.
   - `contracts/runtime_config.sample.json`의 `source_inputs[]`.
   - `contracts/kafka_topic_contract.sample.json`의 M4 Kafka handoff.
-- 구현은 contract alignment가 끝난 뒤 최소 create/list/read 또는 fixture adapter 중 하나로 선택한다.
+- 구현은 secret value 없이 External Connection metadata create/list/read API와 UI 저장 버튼을 제공한다.
 
 ## 범위 제외
 
 - 실제 credential 저장.
 - 실제 connection test.
 - 외부 시스템 ingest.
-- Source Dataset 생성 API.
 - Target Dataset/job 실행.
 - 기존 M2/M3/M4/M5/M6 contract를 우회하는 새 connection schema 발명.
 
@@ -51,7 +50,7 @@ secret value 저장과 실제 connection test는 제외하고, credential은 `se
 
 - [x] 기존 M2~M6 contract에서 가져올 connection/source boundary를 확인했다.
 - [x] External Connection UI와 `SourceConnection` / `SourceConfig.connection_ref` mapping을 문서화했다.
-- [ ] 최소 persistence/API 또는 fixture adapter 구현 방식을 결정했다.
-- [ ] 구현 시 Source Dataset wizard가 contract-compatible connection 목록을 사용한다.
-- [ ] secret value가 repo, local storage, API response에 남지 않는다.
-- [ ] report와 quality evidence를 남긴다.
+- [x] 최소 persistence/API 구현 방식을 결정하고 `/api/external-connections` create/list/read를 추가했다.
+- [x] 구현 시 Source Dataset wizard가 contract-compatible connection 목록을 사용한다.
+- [x] secret value가 repo, local storage, API response에 남지 않는다.
+- [x] report와 quality evidence를 남긴다.

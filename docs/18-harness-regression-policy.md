@@ -68,7 +68,7 @@ scripts/validate-harness.sh --strict
 scripts/status-workflow.sh <workspace>
 ```
 
-CI must run `scripts/test-harness.sh` as part of the harness job.
+CI must run `scripts/test-harness.sh` as part of the harness job when a PR changes harness-impacting files. Non-harness-impacting PRs may skip fixture regression through a CI path filter, but they still run `scripts/validate-harness.sh` and `scripts/validate-harness.sh --strict`.
 The harness CI checkout uses `fetch-depth: 0` so strict validation can compare workspace Source of Truth proposals against the workspace base commit.
 
 ## External E2E Boundary

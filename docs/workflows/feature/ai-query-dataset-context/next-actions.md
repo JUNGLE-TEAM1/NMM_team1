@@ -1,5 +1,4 @@
-# AI query dataset context 다음 행동 메뉴
+# AI query dataset context 다음 작업
 
-1. Recommended: C-6 완료 후 M6 AI Query dataset context 연결을 구현한다.
-2. Alternative: Catalog detail에서 AI Query handoff만 먼저 구현한다.
-3. Stop: RAG/LLM production 확장이 요구되면 별도 Phase로 분리한다.
+- 실제 publish된 Gold Dataset으로 `/api/week2/ai/query` HTTP smoke와 브라우저 smoke를 확인한다.
+- 이후 필요하면 AI Query 화면의 readiness panel을 live CatalogDataset 기준으로 보정한다.

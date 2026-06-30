@@ -1,4 +1,4 @@
-# Target dataset run handoff 노트
+# Target Dataset run handoff notes
 
-- 2026-06-29: C-4 Phase로 생성했다.
-- M5는 독립 `M5 데모` 메뉴가 아니라 Target Dataset 이후 run handoff로 붙인다.
+- `Gold Build Jobs`에서 `Run 준비`를 누르면 queued run record만 만든다.
+- 실제 output 생성은 다음 Phase다.

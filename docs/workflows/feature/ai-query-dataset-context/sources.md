@@ -1,5 +1,7 @@
-# AI query dataset context source 기록
+# AI query dataset context sources
 
-- Source queue: `docs/08-development-workflow.md` Dataset Module Connection Queue
-- Prior phase: `docs/workflows/feature/catalog-metadata-integration/`
-- decisions.md handoff: M6는 CatalogMetadata와 Target Dataset context를 읽고 read-only SQL/evidence 결과를 만든다.
+- `backend/app/adapters/sqlite_catalog_metadata_source.py`
+- `backend/app/core/container.py`
+- `backend/tests/test_ai_query_dataset_context.py`
+- `backend/app/services/ai_query.py`
+- `backend/app/services/catalog_retriever.py`

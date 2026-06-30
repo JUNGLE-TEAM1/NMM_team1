@@ -9,10 +9,13 @@
 ## 목표
 
 - 하네스 사용가이드에서 작업 문맥은 AI가 초안을 만들 수 있고, 사람은 그 문맥을 이해한 뒤 충분성을 확인한다는 책임 경계를 보강한다.
+- 후속 보강으로 AI가 질문/명령에 답하기 전 일반론, 저장소 규칙, 비교 답변, 실행 요청, 정책 결정, 고영향 행동 여부를 먼저 판별하는 Context Assumption Check를 Source of Truth 문서에 반영한다.
 
 ## 범위
 
 - `docs/reports/collaboration-harness-team-usage-guide.md`의 문맥 저장/문맥 충분성 확인 설명 보강
+- `docs/09`, `docs/13`, `docs/08`, `docs/15`, `docs/10`에 Context Assumption Check 연결
+- 관련 `docs/05`, `docs/06`, `docs/07` 검증 기준과 `docs/reports/` evidence 보강
 - 이번 Phase workspace 검증 기록 업데이트
 
 ## 범위 제외
@@ -20,6 +23,7 @@
 - AI 답변 중립성/객관성 섹션 재보강
 - GitHub Issue/PR 생성
 - 제품/API/schema/구현 코드 변경
+- pull/merge/rebase/push/PR 생성/merge/finalize/cleanup
 
 ## Source of Truth 문맥
 

@@ -1,5 +1,5 @@
-# Target dataset run handoff Git Sync
+# Target Dataset run handoff sync
 
-- Created: 2026-06-29
-- Base expectation: C-3 완료 branch 또는 main merge 이후.
-- Start sync: pending until implementation starts.
+- Branch: `feature/external-connection-persistence`
+- Workspace: `docs/workflows/feature/target-dataset-run-handoff`
+- Status: in progress

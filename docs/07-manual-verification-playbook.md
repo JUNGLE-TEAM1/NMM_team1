@@ -47,6 +47,15 @@
 6. `docs/05`, `docs/06`, `docs/07`, `docs/08`이 같은 milestone/phase 이름을 사용하는지 확인한다.
 7. 과거 M0~M5 report가 historical evidence로만 남고 새 기준에 맞춰 소급 수정되지 않았는지 확인한다.
 
+## 협업 전제 확인 수동 점검
+
+1. `docs/09-collaboration-agreement.md`에 Context Assumption Check 합의가 있는지 확인한다.
+2. `docs/13-human-command-flow.md`가 개념 질문, 저장소 규칙 질문, 실행 요청, 정책 결정을 구분하는 예시를 포함하는지 확인한다.
+3. `docs/08-development-workflow.md`의 Phase 시작 gate가 Context Assumption Check를 Context Loading/Context Budget 전에 적용하는지 확인한다.
+4. `docs/15-context-budget-rule.md`가 문맥 읽기 범위와 답변 전제 판별을 다른 책임으로 구분하는지 확인한다.
+5. `docs/10-next-action-menu.md`에 전제가 불명확할 때 사용할 메뉴가 있는지 확인한다.
+6. 단순 개념 질문은 불필요하게 막지 않고, 답이 달라지는 경우 `일반론 기준 / 이 저장소 기준`으로 나누어 답하도록 되어 있는지 확인한다.
+
 ## Current Baseline 수동 점검
 
 0. Docker가 필요한 경우 `command -v docker`, `docker --version`, `docker compose version`, `docker info`를 확인한다. macOS에서 `/Applications/Docker.app`이 설치되어 있고 꺼져 있으면 macOS 전용 safe start로 `open -a Docker`를 시도한 뒤 readiness loop를 돈다. Windows는 WSL2 + Docker Desktop integration shell에서 검증하는 것을 기본 경로로 두고, native PowerShell/CMD 동일 실행은 별도 evidence 없이는 미검증으로 기록한다. host `node`/`npm`은 Docker Compose Tier 1 경로에는 필수가 아니며, host frontend direct run을 검증할 때만 추가로 확인한다.
@@ -166,6 +175,123 @@ PYTHONPATH=backend .venv/bin/python scripts/week2_m2_product_health_l6_evidence.
 9. 조건 미충족 dataset이 일반 Query/Ask 후보로 노출되지 않는지 확인한다.
 10. 모든 필수 조건이 충족된 뒤에만 `Trusted`로 전환되는지 확인한다.
 11. gate 실패 시 `Blocked` 또는 제한 상태와 이유가 표시되는지 확인한다.
+
+### C-6 CatalogMetadata publish 점검
+
+1. 데이터셋 > Gold Build Jobs에서 `Run 준비`를 눌러 Job Run을 만든다.
+2. 실행 기록에서 queued run을 `Local 실행`한다.
+3. succeeded run에서 `Catalog 등록`을 누른다.
+4. 데이터셋 > Gold Datasets로 이동해 `registered` Gold Dataset이 표시되는지 확인한다.
+5. API로 `GET /api/catalog/datasets`를 조회해 `source_type=target_dataset_job_run`, `lineage.run_id`, `metrics.row_count`, `storage.local_path`, `runtime_evidence.runner`, `source_evidence[]`가 남는지 확인한다.
+6. queued run에서 publish가 거부되는지 확인한다.
+7. 같은 run을 다시 publish해도 catalog row가 중복 생성되지 않는지 확인한다.
+
+### C-12 Job schedule metadata 점검
+
+1. `/jobs/silver-transform`에서 Silver Transform Job의 `Schedule 수정`을 누른다.
+2. `Schedule placeholder`와 note를 저장한 뒤 카드에 schedule note가 반영되는지 확인한다.
+3. API로 `GET /api/silver-datasets`를 조회해 해당 Silver Dataset의 `schedule.mode/note`만 바뀌었는지 확인한다.
+4. `/jobs/gold-build`에서 Gold Build Job의 `Schedule 수정`을 누른다.
+5. `Schedule placeholder`와 note를 저장한 뒤 카드에 schedule note가 반영되는지 확인한다.
+6. `Run 준비`를 눌러 queued Job Run이 생성되고, run의 `schedule`이 저장된 Gold schedule metadata를 복사하는지 확인한다.
+7. schedule 수정이 Source/Silver/Gold definition edit, 실제 scheduler 등록, Airflow DAG trigger로 보이지 않는지 확인한다.
+
+### C-13 Dataset 관리 액션 점검
+
+1. `/connections`에서 External Connection 카드에 `상세`, `수정`, `삭제` 액션이 보이는지 확인한다.
+2. Connection metadata를 수정하고 목록에 반영되는지 확인한다.
+3. Source Dataset이 참조 중인 Connection 삭제가 차단되는지 확인한다.
+4. Silver Dataset이 참조 중인 Source Dataset 삭제가 차단되는지 확인한다.
+5. `/datasets/silver`에서 Silver Dataset 카드에 `상세`, `수정`, `삭제` 액션이 보이는지 확인한다.
+6. Silver metadata를 수정하고 목록에 반영되는지 확인한다.
+7. Target Dataset draft가 참조 중인 Silver 삭제가 차단되는지 확인한다.
+8. Target Dataset draft가 참조 중인 Silver의 `name` 변경은 차단되고 `purpose`/rules 수정은 가능한지 확인한다.
+9. `/datasets/gold`에서 planned Gold Dataset draft 카드에 `상세`, `수정`, `삭제` 액션이 보이는지 확인한다.
+10. Gold 이름 수정 후 목록 title이 새 이름으로 바뀌는지 확인한다.
+11. registered CatalogDataset은 상세만 가능하고 수정/삭제가 보이지 않거나 disabled인지 확인한다.
+12. `/jobs/silver-transform`에서 `Dataset 편집`을 누르면 해당 Silver Dataset 수정 modal이 바로 열리는지 확인한다.
+13. `/jobs/gold-build`에서 `Dataset 편집`을 누르면 해당 Gold/Target draft 수정 modal이 바로 열리는지 확인한다.
+
+### C-21 CatalogDataset management boundary 점검
+
+1. `GET /api/catalog/datasets/management-policy`가 `status=read_only_boundary`를 반환하는지 확인한다.
+2. policy의 `allowed_actions`가 `detail`, `ai_query_context`만 포함하는지 확인한다.
+3. policy의 `disabled_actions`에 `metadata_update`, `metadata_delete`, `file_delete`, `cascade_delete`가 포함되는지 확인한다.
+4. `/datasets/gold`에서 `CatalogDataset Management Boundary` panel이 보이는지 확인한다.
+5. registered CatalogDataset 카드에 수정/삭제 액션이 없고 상세만 가능한지 확인한다.
+6. output parquet/jsonl file delete가 metadata management와 같은 액션으로 제공되지 않는지 확인한다.
+
+### C-22 Credential secret connection design 점검
+
+1. `GET /api/external-connections/credential-policy`가 `status=secret_ref_design_only`를 반환하는지 확인한다.
+2. policy의 `credential_storage`가 `secret_ref_only`, `secret_value_storage`가 `forbidden`인지 확인한다.
+3. policy가 Database/Object Storage/Kafka required reference field names만 반환하고 실제 credential 값을 반환하지 않는지 확인한다.
+
+### C-25 External Connection runtime checks 점검
+
+1. PostgreSQL, MongoDB, MinIO/S3, Kafka local runtime이 떠 있는지 확인한다.
+2. backend를 local demo env reference와 함께 실행한다. request/response/log에는 env var 이름만 남기고 raw credential 값은 남기지 않는다.
+3. `POST /api/external-connections/test`로 `postgres`, `mongodb`, `s3`, `kafka`를 각각 확인한다.
+4. 각 response가 `status=passed`, `secret_values_exposed=false`, `schema_discovery_completed=false`를 반환하는지 확인한다.
+5. `/connections`에서 `Runtime connection checks` panel이 보이고, 테스트 성공이 Source Dataset 생성 또는 schema discovery 완료처럼 표시되지 않는지 확인한다.
+4. `/connections`에서 `Credential Secret Boundary` panel이 보이는지 확인한다.
+5. Database/Object Storage connector가 실제 접속/inspect/save 흐름으로 열리지 않고 후속 Phase 또는 blocked 상태로 보이는지 확인한다.
+6. diff와 test output에 실제 password/access key/token 값이 없는지 확인한다.
+
+### C-16 File-backed Dataset detail 점검
+
+1. `/datasets/source`에서 Source Dataset 목록에 `file-backed` 또는 `metadata-only` 상태가 보이는지 확인한다.
+2. Source Dataset 상세를 열어 local path, bytes, row count status, schema fields가 실제 evidence 상태에 맞게 표시되는지 확인한다.
+3. `/datasets/silver`에서 Silver Dataset 상세를 열어 prepared parquet path와 parquet metadata row/schema evidence가 표시되는지 확인한다.
+4. `/datasets/gold`에서 planned Gold Dataset 상세를 열어 prepared Gold parquet path와 row/schema evidence가 표시되는지 확인한다.
+5. 존재하지 않는 local path를 가진 Dataset은 `missing file`로 표시되고 목록 전체 로딩은 실패하지 않는지 확인한다.
+
+### C-17 Gold Build prepared/local 경계 점검
+
+1. `gold_output=dataset_product_health`인 Gold draft로 Gold Build Job Run을 만든다.
+2. 실행 기록에서 `Local 실행` 또는 API `POST /api/target-dataset-job-runs/{run_id}/execute`를 실행한다.
+3. 실행 결과가 `prepared parquet reference`, `rows 1000`, `data/local_sources/product_health/gold/gold_product_health.parquet`로 보이는지 확인한다.
+4. `Catalog 등록` 후 `GET /api/catalog/datasets`에서 `storage.format=parquet`, `runtime_evidence.materialization_mode=prepared_gold_reference`, 실제 parquet schema의 `internal_product_id`가 보이는지 확인한다.
+5. `/api/week2/ai/query`에 위험 점수 질문을 보내 `SELECT internal_product_id, risk_score ...` SQL과 succeeded status가 반환되는지 확인한다.
+6. 기존 `gold_output=dataset_product_health_gold` demo path는 `local_demo_jsonl`과 `data/dataset_runs/<run_id>/...jsonl`을 유지하는지 확인한다.
+
+### C-18 Kafka replay evidence UI 점검
+
+1. `/runs`를 연다.
+2. `Kafka Replay Evidence` panel이 보이는지 확인한다.
+3. evidence 파일이 없으면 `missing_evidence`와 `Kafka replay evidence 없음`이 표시되고 화면 전체가 실패하지 않는지 확인한다.
+4. evidence 파일이 있으면 latest run id, topic, sent rows, error count, throughput/progress가 표시되는지 확인한다.
+5. replay run 목록에서 `Evidence 보기`를 눌러 source file, target topic, started/finished, metrics가 read-only로 표시되는지 확인한다.
+6. UI에 Kafka consume/produce 실행 버튼이 없는지 확인한다.
+
+### C-19 Airflow trigger readiness UI 점검
+
+1. Airflow env 없이 backend와 frontend를 실행한다.
+2. `GET /api/week2/airflow/readiness`가 `status=not_configured`, `trigger_available=false`, `fallback_available=true`, `credential_values_exposed=false`를 반환하는지 확인한다.
+3. `/runs`를 연다.
+4. `Airflow Trigger Readiness` panel이 보이는지 확인한다.
+5. env missing 상태에서 DAG id, result root, local fallback 여부가 보이고, 화면 전체가 실패하지 않는지 확인한다.
+6. UI에 DAG trigger 실행 버튼이나 credential 값이 없는지 확인한다.
+7. Airflow env가 있는 환경에서는 같은 endpoint가 `status=configured`, `trigger_available=true`를 반환하되, readiness 조회만 수행하고 DAG trigger는 실행하지 않는지 확인한다.
+
+### C-20 Spark runner readiness UI 점검
+
+1. backend와 frontend를 실행한다.
+2. `GET /api/week2/spark/readiness`가 `runner=spark_runner`, `runner_implementation=local_pyarrow_smoke`, `distributed_cluster_available=false`를 반환하는지 확인한다.
+3. `/runs`를 연다.
+4. `Spark Runner Readiness` panel이 보이는지 확인한다.
+5. supported source type이 `local_file`로 표시되고, S3/PostgreSQL/MongoDB/Kafka는 deferred 또는 unsupported로 보이는지 확인한다.
+6. cluster master env가 있더라도 UI가 distributed Spark job 실행 가능 또는 Product Health large ETL 재실행으로 보이지 않는지 확인한다.
+7. UI에 Spark cluster 실행 버튼, S3/DB/Kafka read 실행 버튼, 대용량 ETL 재실행 버튼이 없는지 확인한다.
+
+### C-7 AI Query dataset context 점검
+
+1. C-6 흐름으로 Gold Dataset을 `Catalog 등록`한다.
+2. AI Query 화면에서 publish된 Gold Dataset schema가 답할 수 있는 질문을 실행한다.
+3. 결과의 `Dataset`, `Evidence`, `retrieval_trace`, SQL `FROM` table이 같은 published catalog/run을 가리키는지 확인한다.
+4. readiness panel이 `Live catalog readiness`로 표시되고 같은 published catalog id, local path, schema columns, run_id를 보여주는지 확인한다.
+5. row 결과가 없거나 storage path가 없으면 성공처럼 표시하지 않고 blocked/error로 보이는지 확인한다.
+6. publish된 target catalog가 없을 때 기존 Week2 fixture fallback query가 유지되는지 확인한다.
 
 ### Query / Access 점검
 

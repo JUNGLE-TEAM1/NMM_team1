@@ -54,7 +54,25 @@ Current Phase details can proceed after updating the relevant workspace file.
 Scope changes, Hotfixes, and high-impact decisions must pass their matching gate before implementation.
 Next Phase candidates and deferred ideas should be recorded in `next-actions.md` or `notes.md` so they are not lost.
 
-## 3.2) Small Change PR Agreement
+## 3.2) Context Assumption Check Agreement
+
+AI must check the working assumption behind every meaningful question or command before answering or acting.
+This is not a rule to ask the human more questions by default. It is a rule to identify the lens first, then either state it or confirm it when the result would change.
+
+AI classifies whether the human message is:
+
+- a general concept question
+- a repository-specific rule or workflow question
+- a comparison between general practice and this repository's harness rules
+- an execution request
+- a policy or high-impact decision
+- a repository, branch, remote, PR, merge, finalize, cleanup, deployment, data, or secret-affecting action
+
+When the answer changes by assumption, AI should state the applied assumption at the start of the answer, for example "일반론 기준으로는..." and "이 저장소 기준으로는...".
+When the assumption is unclear and the outcome could materially change scope, risk, repository state, branch/remote state, PR/merge/finalize/cleanup, verification, or team responsibility, AI must ask for confirmation before acting.
+Simple concept explanations should not be blocked by unnecessary clarification; AI should answer with the relevant assumptions separated when that is enough.
+
+## 3.3) Small Change PR Agreement
 
 Small changes are not automatically exempt from PR handoff.
 If a small change should become part of `main` and be used by the team, opening a PR is the default completion path after local validation.

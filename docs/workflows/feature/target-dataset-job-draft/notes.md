@@ -1,5 +1,4 @@
-# Target dataset job draft 노트
+# Target Dataset job draft 노트
 
-- 2026-06-29: C-3 Phase로 생성했다.
-- Target Dataset과 ETL job definition draft 저장까지만 담당한다.
-- run 생성은 C-4로 넘긴다.
+- 2026-06-30: 사용자가 실제 동작 검수 후 Target Dataset이 아직 저장되지 않는 것을 확인했고 C-3 진행을 요청했다.
+- 2026-06-30: 저장 payload에는 Base dataset, Target grain, Silver outputs, Processing recipes, executor handoff를 포함한다.

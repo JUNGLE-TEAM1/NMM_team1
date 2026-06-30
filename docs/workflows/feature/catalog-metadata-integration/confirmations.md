@@ -1,5 +1,4 @@
-# Catalog metadata integration 사람 확인 게이트
+# Catalog metadata integration 확인
 
-- Scope Confirm: pending after C-5.
-- Contract Confirm: CatalogMetadata shape 변경 시 사람 확인 필요.
-- Sync Confirm: 구현 시작 전 `docs/11-git-sync-policy.md` 확인 필요.
+- Human confirmation: `다음 페이즈를 진행해줘`.
+- Scope confirmation: 한 요청에서 C-6 하나만 진행.

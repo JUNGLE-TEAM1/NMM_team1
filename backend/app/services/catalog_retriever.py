@@ -14,6 +14,7 @@ class CatalogRetriever:
     _column_aliases = {
         "review_count": ("인기", "리뷰", "review", "reviews"),
         "product_id": ("상품", "product", "products"),
+        "internal_product_id": ("상품", "product", "products"),
         "average_rating": ("평점", "별점", "rating", "ratings"),
         "risk_score": ("위험", "리스크", "risk", "risks"),
         "negative_review_rate": ("부정", "불만", "negative", "negatives"),

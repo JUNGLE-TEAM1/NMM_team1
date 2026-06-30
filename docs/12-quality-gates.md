@@ -61,6 +61,8 @@ scripts/validate-harness.sh
 scripts/validate-harness.sh --strict
 ```
 
+`scripts/test-harness.sh` is the fixture regression suite for harness behavior. Run it in PR CI when the PR changes harness rules, harness scripts, harness CI jobs, GitHub lifecycle guard scripts, workspace templates, or required workspace evidence fields. For ordinary product or documentation PRs, keep `scripts/validate-harness.sh` and `scripts/validate-harness.sh --strict` on every PR and skip fixture regression to reduce CI time.
+
 Project-specific CI should add stack-specific lint, test, typecheck, build, security, migration, and smoke checks as needed.
 
 An optional harness-level CI example lives at `.github/workflows/harness-validation.example.yml`.
@@ -125,14 +127,14 @@ Reports summarize the result; `quality.md` keeps the working detail.
 ## 8) Guardrail Scenario Audit
 
 System guardrail scenario audit is separate from every-PR CI.
-Every PR should keep deterministic focused checks, harness regression tests, and strict validation.
+Every PR should keep deterministic focused checks and strict validation. Harness fixture regression tests run on every harness-impacting PR and may be skipped for non-harness-impacting PRs when the CI path filter records that no harness files changed.
 Lifecycle, repository setting, Project status, and external E2E rehearsal checks run only as read-only manual/scheduled audit or human-approved rehearsal because they depend on remote state and team tolerance for noise.
 
 Default split:
 
 | Tier | Default Frequency | Examples | Evidence |
 | --- | --- | --- | --- |
-| Tier 1: PR CI | every PR | linked issue unit tests, migration/schema/security focused tests, PR size hard gate tests, PR risk warning tests, `scripts/test-harness.sh`, `scripts/validate-harness.sh --strict` | `quality.md`, CI check result |
+| Tier 1: PR CI | every PR, with fixture regression only on harness-impacting PRs | linked issue unit tests, migration/schema/security focused tests, PR size hard gate tests, PR risk warning tests, conditional `scripts/test-harness.sh`, `scripts/validate-harness.sh --strict` | `quality.md`, CI check result |
 | Tier 2: Read-only scenario audit | manual or scheduled | active workspace drift, merged PR with stale issue/project status, template drift | `sync.md`, `quality.md`, Phase report |
 | Tier 3: Admin setting audit | human-approved/read-only | branch protection, required checks, secret scanning, CODEOWNERS, Environment approval | `docs/system-guardrails.md` status update or follow-up |
 | Tier 4: External E2E rehearsal | human-approved only | throwaway issue/branch/PR/project lifecycle rehearsal | explicit rollback, stop condition, report evidence |

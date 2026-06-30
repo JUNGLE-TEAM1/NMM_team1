@@ -2,10 +2,9 @@
 
 ## Short Report / 짧은 보고
 
-- Type: Planned Phase
-- Date: 2026-06-29
-- Changed: Phase workspace를 생성했다.
-- Verified: 실행 전.
-- Remaining: 구현, 검증, PR.
-- Next context: M2/M4 evidence를 `ExecutionResult` compatible shape로 연결한다.
-- Risk: 대용량 benchmark나 streaming production 요구가 들어오면 scope가 커진다.
+- Type: feature
+- Date: 2026-06-30
+- Changed: Job Run local materialization 결과에 `duration_ms`, `source_evidence[]`, `runtime_evidence`를 추가하고 `/runs`에 evidence count/duration을 표시했다.
+- Verified: backend focused tests 8 passed, frontend build 통과, contract JSON validation 통과, HTTP smoke와 browser smoke에서 evidence 필드 표시를 확인했고 smoke data/output을 정리했다.
+- Remaining: M4 Kafka replay와 M2 5GB batch evidence의 실제 통합, CatalogMetadata publish.
+- Risk: C-5는 evidence shape 정렬이며 Kafka/Airflow/Spark 대용량 실행 자체는 아니다.

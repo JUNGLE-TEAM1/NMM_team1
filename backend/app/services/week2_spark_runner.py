@@ -1,7 +1,9 @@
 import hashlib
 import hmac
+import importlib.util
 import json
 import os
+import shutil
 from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -28,6 +30,51 @@ L6_PREVIEW_SUPPORTED_OPERATIONS = {
     "quarantine_if_invalid",
     "aggregate",
 }
+
+
+def spark_readiness(env: dict[str, str] | None = None) -> dict[str, Any]:
+    """현재 Spark runner 경계와 실행 가능 범위를 read-only summary로 돌려준다."""
+
+    source = env if env is not None else os.environ
+    pyarrow_available = importlib.util.find_spec("pyarrow") is not None
+    pyspark_available = importlib.util.find_spec("pyspark") is not None
+    java_available = shutil.which("java") is not None
+    spark_master = source.get("ASKLAKE_SPARK_MASTER_URL") or source.get("SPARK_MASTER_URL")
+    cluster_configured = bool(spark_master)
+    local_smoke_available = pyarrow_available
+
+    return {
+        "status": "local_smoke_ready" if local_smoke_available else "dependency_missing",
+        "runner": "spark_runner",
+        "runner_implementation": "local_pyarrow_smoke",
+        "local_smoke_available": local_smoke_available,
+        "distributed_cluster_available": False,
+        "cluster_configured": cluster_configured,
+        "spark_master_configured": cluster_configured,
+        "spark_master": spark_master if cluster_configured else None,
+        "pyspark_available": pyspark_available,
+        "pyarrow_available": pyarrow_available,
+        "java_available": java_available,
+        "supported_source_types": ["local_file"],
+        "unsupported_source_types": ["s3", "postgres", "mongodb", "kafka"],
+        "supported_input_formats": ["json", "jsonl", "parquet"],
+        "output_format": "parquet",
+        "l6_preview_supported_operations": sorted(L6_PREVIEW_SUPPORTED_OPERATIONS),
+        "smoke_evidence_paths": [
+            "data/results/m2_taxi_5gb_local_evidence",
+            "data/results/m2_taxi_docker_spark_evidence",
+            "data/week2",
+        ],
+        "message": (
+            "Spark runner local smoke can read local_file inputs and write Parquet output."
+            if local_smoke_available
+            else "pyarrow is required for Spark runner local smoke."
+        ),
+        "boundary": (
+            "This readiness check does not start Spark, trigger a distributed cluster job, "
+            "read Kafka/S3/DB sources, or rerun Product Health large ETL."
+        ),
+    }
 
 
 class Week2SparkRunner:

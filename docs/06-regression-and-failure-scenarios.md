@@ -138,6 +138,16 @@
 | Verification method | `.milestones/target-mvp/manifest.yaml`, workstream `handoff.md`, branch `decisions.md`, secret/config diff를 확인한다. |
 | Related docs/interface/Phase | `docs/03`, `docs/08`, `docs/14`, `docs/17`, `.milestones/target-mvp/manifest.yaml` |
 
+### 질문 전제를 확인하지 않고 답변 또는 실행하는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | AI는 질문/명령이 일반론, 저장소 규칙, 비교 답변, 실행 요청, 정책 결정, 고영향 행동 중 무엇인지 먼저 판별한다. |
+| Failure condition | 일반론과 저장소 규칙이 다른데 전제를 밝히지 않거나, 개념 질문을 실행 승인처럼 처리하거나, PR/merge/finalize/cleanup/검증 생략 같은 고영향 행동을 확인 없이 진행한다. |
+| Expected behavior | 답이 전제에 따라 달라지면 `일반론 기준 / 이 저장소 기준`처럼 렌즈를 분리하고, 상태 변경 또는 고영향 행동이면 matching confirmation gate를 먼저 통과한다. |
+| Verification method | `docs/08`, `docs/09`, `docs/10`, `docs/13`, `docs/15`에서 Context Assumption Check 흐름을 확인한다. |
+| Related docs/interface/Phase | `docs/08`, `docs/09`, `docs/10`, `docs/13`, `docs/15` |
+
 ### 권한 없는 데이터가 SQL/RAG/Prompt에 들어가는 경우
 
 | 항목 | 내용 |
@@ -177,6 +187,106 @@
 | Expected behavior | run status는 `failed`가 되고 catalog는 not ready 또는 failed 상태를 보여준다. |
 | Verification method | 실패하는 sample source/transform으로 run을 실행하고 UI/API 상태를 확인한다. |
 | Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07` |
+
+### CatalogMetadata publish 무결성
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | 성공하지 않은 Job Run이 Gold CatalogDataset처럼 등록되지 않는다. |
+| Failure condition | queued/failed/unmaterialized run에서 `Catalog 등록`이 성공하거나, 같은 run을 여러 번 publish해 중복 catalog row가 생긴다. |
+| Expected behavior | publish API는 `succeeded`와 `output_path`/`row_count`가 있는 run만 허용하고, 같은 `run_id` 재요청은 기존 CatalogDataset을 반환한다. |
+| Verification method | `/api/target-dataset-job-runs/{run_id}/publish-catalog` backend test와 `/runs` UI publish smoke로 확인한다. |
+| Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07`, C-6 |
+
+### Job schedule metadata와 definition 수정이 섞이는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | Jobs 화면의 schedule 수정이 Source/Silver/Gold definition, schema, processing recipe, executor handoff를 바꾸지 않는다. |
+| Failure condition | `Schedule 수정` 저장이 transform/gold definition을 변경하거나 실제 scheduler/DAG 등록처럼 동작한다. |
+| Expected behavior | `PATCH /api/silver-datasets/{dataset_id}/schedule`와 `PATCH /api/target-dataset-drafts/{draft_id}/schedule`은 `schedule.mode/note`만 저장하고, `Run 준비`는 기존처럼 queued Job Run을 만든다. |
+| Verification method | C-12 backend focused tests와 `/jobs/silver-transform`, `/jobs/gold-build` browser smoke로 확인한다. |
+| Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07`, C-12 |
+
+### Dataset 관리 삭제가 참조 관계를 깨는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | External Connection, Source Dataset, Silver Dataset, Target Dataset draft 삭제가 downstream metadata 참조를 깨지 않는다. |
+| Failure condition | Source Dataset이 참조 중인 Connection, Silver가 참조 중인 Source, Target draft가 참조 중인 Silver, Job Run이 참조 중인 Target draft가 삭제된다. |
+| Expected behavior | 삭제 API는 metadata-only로 동작하고 참조 중이면 `409`와 명확한 이유를 반환한다. Target draft가 참조 중인 Silver의 `name` 변경도 stale lineage 방지를 위해 `409`로 차단한다. registered CatalogDataset은 C-13에서 수정/삭제하지 않는다. |
+| Verification method | C-13 backend focused tests와 `/connections`, `/datasets/silver`, `/datasets/gold`, Jobs `Dataset 편집` browser smoke로 확인한다. |
+| Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07`, C-13 |
+
+### CatalogDataset management가 evidence file 삭제와 섞이는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | registered CatalogDataset은 AI Query context와 run lineage evidence anchor이므로 metadata 관리와 실제 output file 삭제가 섞이지 않는다. |
+| Failure condition | Gold Dataset 화면에서 registered CatalogDataset 삭제 버튼이 metadata-only 삭제인지 file delete인지 구분 없이 제공되거나, 삭제가 AI Query readiness를 조용히 깨뜨린다. |
+| Expected behavior | C-21에서는 `GET /api/catalog/datasets/management-policy`와 Gold Dataset UI가 read-only boundary를 표시한다. 허용 action은 detail/AI Query context이고, metadata update/delete, file delete, cascade delete는 disabled/deferred다. |
+| Verification method | C-21 backend focused test와 `/datasets/gold` UI에서 management boundary panel, registered item 상세-only action을 확인한다. |
+| Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07`, C-21 |
+
+### Dataset detail이 metadata-only를 실제 파일처럼 보이게 하는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | Source/Silver/Gold Dataset 상세는 실제 local file evidence와 metadata-only/missing 상태를 구분한다. |
+| Failure condition | 존재하지 않는 path나 metadata-only draft가 `file-backed`처럼 보이거나, missing file 때문에 목록 전체가 실패한다. |
+| Expected behavior | `file_evidence.status`는 `file_backed`, `missing`, `metadata_only` 중 하나로 표시되고, path/bytes/row/schema evidence는 확인 가능한 경우에만 보인다. |
+| Verification method | C-16 backend focused tests와 `/datasets/source`, `/datasets/silver`, `/datasets/gold` browser smoke로 확인한다. |
+| Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07`, C-16 |
+
+### Prepared Gold parquet와 local demo JSONL 경계가 섞이는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | Gold Build local execution은 prepared parquet reference와 generated JSONL demo output을 구분한다. |
+| Failure condition | prepared parquet를 1-row demo materialization처럼 보이게 하거나, parquet Catalog schema가 draft preview와 달라 AI Query SQL이 실패한다. |
+| Expected behavior | prepared mode는 `runtime_evidence.materialization_mode=prepared_gold_reference`, `storage.format=parquet`, 실제 parquet schema를 Catalog에 남긴다. demo mode는 기존 `local_demo_jsonl`과 `data/dataset_runs/<run_id>/` JSONL output을 유지한다. |
+| Verification method | C-17 backend focused tests, `/runs` browser smoke, `/api/week2/ai/query` DuckDB smoke로 확인한다. |
+| Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07`, C-17 |
+
+### Kafka replay evidence 조회가 실제 Kafka 실행처럼 보이는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | Kafka replay UI는 durable receipt 조회 전용이며 broker/topic consume 또는 produce trigger를 제공하지 않는다. |
+| Failure condition | evidence가 없을 때 broker 장애처럼 보이거나, 사용자가 UI에서 실제 Kafka replay를 실행할 수 있다고 오해한다. |
+| Expected behavior | `/runs`의 Kafka Replay Evidence는 `missing_evidence`를 정상 상태로 설명하고, evidence가 있으면 health/run metrics와 lineage만 read-only로 표시한다. |
+| Verification method | C-18 backend focused tests와 `/runs` browser smoke로 확인한다. |
+| Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07`, C-18 |
+
+### Airflow readiness가 DAG trigger 성공처럼 보이는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | Airflow readiness UI는 env 설정 가능 상태와 local fallback 경계만 보여주며 DAG trigger 또는 DAG success evidence로 보이지 않는다. |
+| Failure condition | env missing 상태를 Airflow 실행 가능으로 표시하거나, readiness panel이 trigger button/credential value를 노출하거나, fallback 가능 상태를 Airflow DAG 성공처럼 표현한다. |
+| Expected behavior | `/runs`의 Airflow Trigger Readiness는 `not_configured`이면 `trigger_available=false`, `fallback_available=true`를 표시하고, `configured`여도 read-only readiness로 유지한다. 실제 DAG 성공은 별도 Airflow smoke evidence로만 판단한다. |
+| Verification method | C-19 backend focused tests, `/api/week2/airflow/readiness` HTTP smoke, `/runs` UI smoke로 확인한다. |
+| Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07`, C-19 |
+
+### Spark readiness가 distributed Spark 실행 가능처럼 보이는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | Spark readiness UI는 현재 `Week2SparkRunner`가 local pyarrow smoke 경계라는 점과 distributed cluster 실행 미지원 상태를 분리해서 표시한다. |
+| Failure condition | `spark_runner`가 S3/PostgreSQL/MongoDB/Kafka source를 직접 읽거나 distributed Spark cluster job을 실행할 수 있는 것처럼 표시한다. |
+| Expected behavior | `/runs`의 Spark Runner Readiness는 `runner_implementation=local_pyarrow_smoke`, `supported_source_types=["local_file"]`, `distributed_cluster_available=false`를 표시하고, cluster env가 있어도 실행 가능 evidence로 해석하지 않는다. |
+| Verification method | C-20 backend focused tests, `/api/week2/spark/readiness` HTTP smoke, `/runs` UI smoke로 확인한다. |
+| Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07`, C-20 |
+
+### AI Query dataset context 연결 무결성
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | publish된 Gold CatalogDataset이 AI Query 후보로 들어갈 때 schema/storage/metrics/lineage가 다른 fixture catalog와 섞이지 않는다. |
+| Failure condition | `selected_datasets`, `evidence.dataset_id`, `retrieval_trace.source_id`, SQL `FROM` table이 서로 다른 dataset/run을 가리키거나, publish된 catalog가 있어도 fixture만 선택된다. |
+| Expected behavior | AI Query는 published CatalogDataset을 CatalogMetadata shape로 변환해 선택하고, evidence와 SQL context가 같은 catalog id/run id/local path를 사용한다. |
+| Verification method | C-7 backend test와 `/api/week2/ai/query` HTTP smoke에서 publish된 target dataset context를 확인한다. |
+| Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07`, C-7 |
 
 ### 처리 증거 없이 대용량/복합 Dataset 조작이 완료된 것처럼 보이는 경우
 
@@ -269,6 +379,16 @@
 | Expected behavior | 각 고비용 기능은 container/local smoke 대체 경로와 option brief를 가진 뒤 승인된 Phase에서만 구현한다. |
 | Verification method | workspace `decisions.md`, `shared-docs.md`, `quality.md`, 관련 Phase report 확인 |
 | Related docs/interface/Phase | `docs/02`, `docs/08`, workspace `decisions.md` |
+
+### DB/S3 credential 값이 metadata 또는 로그에 저장되는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | DB/S3 connector는 `secret_ref` 또는 env var name 같은 reference만 저장하고 raw password/access key/token 값을 request/response/log/metadata에 남기지 않는다. |
+| Failure condition | External Connection create/update/inspect가 raw credential 필드를 받거나, error message가 credential 값을 echo하거나, placeholder credential이 Git에 commit된다. |
+| Expected behavior | `/api/external-connections/credential-policy`와 연결 UI가 `secret_ref_only` boundary를 표시한다. C-25부터 lightweight runtime connection test는 가능하지만 request는 env var name reference만 받고, 응답은 `secret_values_exposed=false`, `schema_discovery_completed=false`를 반환한다. Schema discovery, ingest, Source Dataset 생성, sync job 등록은 여전히 별도 단계다. |
+| Verification method | C-22/C-25 backend focused test, `/connections` UI policy/runtime check panel, diff secret scan으로 확인한다. |
+| Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07`, C-22 |
 
 ### CI/CD 우회
 

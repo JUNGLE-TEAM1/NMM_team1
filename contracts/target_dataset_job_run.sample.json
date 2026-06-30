@@ -1,0 +1,28 @@
+{
+  "id": "run_product_health_gold_001",
+  "target_dataset_draft_id": "target_draft_product_health_gold",
+  "target_dataset_name": "dataset_product_health_gold",
+  "gold_output": "dataset_product_health_gold",
+  "job_type": "gold_build",
+  "status": "queued",
+  "executor_handoff": "local_runner",
+  "schedule": {
+    "mode": "manual",
+    "note": "데모에서는 수동 실행으로만 준비합니다."
+  },
+  "source_count": 4,
+  "silver_output_count": 4,
+  "processing_recipes": ["standardize_sources", "join_product", "score_health"],
+  "triggered_by": "demo_user",
+  "run_note": "Run handoff queued. Runner execution is not triggered in C-4.",
+  "output_path": null,
+  "row_count": null,
+  "output_bytes": null,
+  "silver_output_paths": [],
+  "logs": [],
+  "duration_ms": null,
+  "source_evidence": [],
+  "runtime_evidence": {},
+  "created_at": "2026-06-30T00:00:00Z",
+  "updated_at": "2026-06-30T00:00:00Z"
+}

@@ -13,13 +13,15 @@
 3. `original-vs-revised-flow.md`
 4. `implementation-transition-plan.md`
 5. `main-e2e-path.md`
-6. `existing-implementation-anchor.md`
-7. `m3-json-main-path-decision.md`
-8. `runner-boundary-decision.md`
-9. `m5-airflow-integration-options.md`
-10. `m1-live-ui-phase-plan.md`
-11. 필요 시 `m5-technical-depth-study-guide.md`
-12. 필요 시 상위 폴더의 `decisions.md`, `plan.md`, `meeting-summary.md`
+6. `product-health-demo-data-design.md`
+7. `product-health-synthetic-data-contract.md`
+8. `existing-implementation-anchor.md`
+9. `m3-json-main-path-decision.md`
+10. `runner-boundary-decision.md`
+11. `m5-airflow-integration-options.md`
+12. `m1-live-ui-phase-plan.md`
+13. 필요 시 `m5-technical-depth-study-guide.md`
+14. 필요 시 상위 폴더의 `decisions.md`, `plan.md`, `meeting-summary.md`
 
 ## 현재 기준
 
@@ -73,6 +75,24 @@ Week2는 상품 리스크 분석 대표 경로와 Kafka replay/streaming evidenc
 Phase 2의 현재 기준은 [`implementation-transition-plan.md`](implementation-transition-plan.md)에 둔다.
 
 Phase 3의 현재 기준은 [`main-e2e-path.md`](main-e2e-path.md)에 둔다.
+
+Product Health 데모 데이터 준비와 합성 설계는 [`product-health-demo-data-design.md`](product-health-demo-data-design.md)에 둔다.
+
+Product Health 합성데이터 생성을 별도 작업으로 분리할 때의 입력, 출력, schema, metric, 검증 계약은 [`product-health-synthetic-data-contract.md`](product-health-synthetic-data-contract.md)에 둔다.
+
+Product Health 합성데이터 실행 Phase workspace는 아래 순서로 진행한다.
+
+| Phase | Workspace |
+| --- | --- |
+| PH-DATA-0 Raw sample profiling & contract calibration | [`docs/workflows/feature/product-health-raw-profiling/`](../../../workflows/feature/product-health-raw-profiling/) |
+| PH-DATA-1 Synthetic data script smoke | [`docs/workflows/feature/product-health-synthetic-smoke/`](../../../workflows/feature/product-health-synthetic-smoke/) |
+| PH-DATA-1B Scenario bucket calibration | [`docs/workflows/feature/product-health-scenario-calibration/`](../../../workflows/feature/product-health-scenario-calibration/) |
+| PH-DATA-2 Taxi local file 연결 | [`docs/workflows/feature/product-health-taxi-source-link/`](../../../workflows/feature/product-health-taxi-source-link/) |
+| PH-DATA-2B External Connection handoff alignment | [`docs/workflows/feature/product-health-connection-handoff/`](../../../workflows/feature/product-health-connection-handoff/) |
+| PH-DATA-2C Smoke byte semantics alignment | [`docs/workflows/feature/product-health-smoke-byte-semantics/`](../../../workflows/feature/product-health-smoke-byte-semantics/) |
+| PH-DATA-3 5GB evidence run | [`docs/workflows/feature/product-health-5gb-evidence/`](../../../workflows/feature/product-health-5gb-evidence/) |
+| PH-DATA-4 M5 Catalog ingest | [`docs/workflows/feature/product-health-catalog-ingest/`](../../../workflows/feature/product-health-catalog-ingest/) |
+| PH-DATA-5 M6 SQL grounding | [`docs/workflows/feature/product-health-sql-grounding/`](../../../workflows/feature/product-health-sql-grounding/) |
 
 Phase 4의 현재 기준은 [`existing-implementation-anchor.md`](existing-implementation-anchor.md)에 둔다.
 
