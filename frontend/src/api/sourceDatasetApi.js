@@ -11,3 +11,9 @@ export function createSourceDataset(dataset) {
     body: JSON.stringify(dataset),
   });
 }
+
+export function deleteSourceDataset(datasetId) {
+  return request(`/api/source-datasets/${encodeURIComponent(datasetId)}`, {
+    method: "DELETE",
+  });
+}

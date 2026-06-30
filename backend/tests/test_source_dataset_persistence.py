@@ -79,3 +79,17 @@ def test_get_missing_source_dataset_returns_not_found() -> None:
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Source dataset not found"
+
+
+def test_delete_source_dataset_disconnects_metadata() -> None:
+    client = make_client()
+    dataset = client.post("/api/source-datasets", json=source_dataset_payload()).json()
+
+    delete_response = client.delete(f"/api/source-datasets/{dataset['id']}")
+    detail_response = client.get(f"/api/source-datasets/{dataset['id']}")
+    list_response = client.get("/api/source-datasets")
+
+    assert delete_response.status_code == 204
+    assert detail_response.status_code == 404
+    assert list_response.status_code == 200
+    assert list_response.json() == []

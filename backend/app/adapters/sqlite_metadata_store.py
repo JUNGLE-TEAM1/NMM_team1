@@ -303,6 +303,11 @@ class SQLiteMetadataStore:
             row = connection.execute("SELECT * FROM source_datasets WHERE id = ?", (dataset_id,)).fetchone()
         return source_dataset_from_row(row) if row else None
 
+    def delete_source_dataset(self, dataset_id: str) -> bool:
+        with self.connect() as connection:
+            cursor = connection.execute("DELETE FROM source_datasets WHERE id = ?", (dataset_id,))
+        return cursor.rowcount > 0
+
     def create_target_dataset(self, dataset: TargetDatasetCreate) -> TargetDatasetRecord:
         dataset_id = str(uuid.uuid4())
         created_at = now_iso()

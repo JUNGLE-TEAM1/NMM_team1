@@ -374,6 +374,15 @@ code {
   background: #f9fafb;
 }
 
+.danger-action {
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+.danger-action:hover {
+  background: #fef2f2;
+}
+
 .copilot-toggle {
   color: #4f46e5;
 }
@@ -698,6 +707,28 @@ code {
 
 .dataset-asset-card {
   min-height: 190px;
+}
+
+.clickable-card {
+  cursor: pointer;
+}
+
+.clickable-card:focus-visible {
+  outline: 3px solid #bfdbfe;
+  outline-offset: 2px;
+}
+
+.source-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.source-card-actions .ghost-action {
+  min-height: 34px;
+  padding: 0 10px;
+  font-size: 12px;
 }
 
 .source-card-icon.target {
@@ -1780,6 +1811,11 @@ code {
   gap: 12px;
   align-items: center;
   padding: 10px 12px;
+}
+
+.schema-preview-table.with-meaning .schema-preview-head,
+.schema-preview-table.with-meaning .schema-preview-row {
+  grid-template-columns: minmax(110px, 1fr) minmax(80px, 0.55fr) minmax(180px, 1.5fr) minmax(120px, 0.9fr);
 }
 
 .schema-preview-head {
@@ -4323,6 +4359,10 @@ tbody tr:hover {
   width: min(980px, 100%);
 }
 
+.source-detail-modal {
+  width: min(1040px, 100%);
+}
+
 .source-modal header,
 .source-modal footer {
   display: flex;
@@ -4463,6 +4503,28 @@ tbody tr:hover {
   padding: 10px 12px;
   color: #92400e;
   font-size: 12px;
+}
+
+.source-detail-body {
+  display: grid;
+  gap: 16px;
+  max-height: calc(100vh - 190px);
+  overflow: auto;
+  padding: 18px;
+}
+
+.source-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.source-detail-section {
+  display: grid;
+  gap: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 14px;
 }
 
 .spin-icon {
