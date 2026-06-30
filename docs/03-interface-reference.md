@@ -649,6 +649,10 @@ Minimum M6 external LLM env contract:
 
 `OpenAILLMAdapter` uses the Responses API request boundary and must fall back to `TemplateLLMAdapter` if the provider response is unavailable, malformed, times out, or returns no usable output text.
 
+Local Docker Compose may load the external LLM env contract from repo-root `.env.local`.
+`.env.local` is a developer-edited local convenience file and must remain ignored by Git.
+`.env.example` may document the same variable names, but it must not contain real secret values.
+
 Minimum `AIQueryResult.evidence[]` grounding shape:
 
 | Field | Required | Notes |

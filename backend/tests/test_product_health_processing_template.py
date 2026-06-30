@@ -52,8 +52,16 @@ def test_product_health_processing_template_maps_m3_contracts() -> None:
     assert any(rule["id"] == "risk_score_range" for rule in template["quality_rules"])
     assert [field["name"] for field in template["output_schema"]] == [
         "product_id",
+        "synthetic_product_id",
+        "canonical_product_id",
         "product_name",
+        "normalized_brand",
+        "unified_category",
         "category_l1",
+        "ecommerce_product_id",
+        "amazon_parent_asin",
+        "match_confidence",
+        "match_method",
         "review_count",
         "average_rating",
         "negative_review_rate",

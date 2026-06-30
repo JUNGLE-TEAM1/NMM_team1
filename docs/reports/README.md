@@ -56,6 +56,7 @@ report가 늘어나면 영역별 최신 report index를 작게 유지한다. 이
 | M5 Day 2 Smoke Evidence | [`m5-day2-smoke-evidence.md`](m5-day2-smoke-evidence.md) | Week 2 M5 Workflow/Catalog local runner 실행 증거와 `ExecutionResult`/`CatalogMetadata` metric 의미 확인 |
 | Local Tool Runtime Readiness | [`local-tool-runtime-readiness.md`](local-tool-runtime-readiness.md) | Docker 같은 local runtime이 설치되어 있으나 꺼져 있을 때 agent가 safe start/readiness/fallback을 먼저 시도하는 규칙 확인 |
 | Local Environment Requirements | [`local-environment-requirements.md`](local-environment-requirements.md) | macOS/Windows 로컬 개발 지원 등급, Docker Compose 권장 경로, WSL2/native Windows 검증 경계 확인 |
+| Local LLM env 설정 | [`llm-local-env-settings.md`](llm-local-env-settings.md) | VS Code에서 편집하는 `.env.local` 기반 OpenAI LLM 설정과 Git ignore, Docker Compose env_file 연결 확인 |
 | Cross-Platform Smoke Audit | [`cross-platform-smoke-audit.md`](cross-platform-smoke-audit.md) | macOS Docker Compose smoke evidence와 Windows WSL2/native Windows 남은 검증 범위 확인 |
 | Windows WSL2 Smoke Audit | [`windows-wsl2-smoke-audit.md`](windows-wsl2-smoke-audit.md) | Windows WSL2 smoke 검증 handoff와 현재 macOS 환경의 not-executed evidence 확인 |
 | Windows WSL2 Smoke Execution | [`windows-wsl2-smoke-execution.md`](windows-wsl2-smoke-execution.md) | 실제 WSL2 shell에서 smoke를 재실행하고 repo-local portability fix와 남은 host prerequisite를 확인 |
