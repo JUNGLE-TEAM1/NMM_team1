@@ -209,18 +209,21 @@ R0.5 `Modular Contract Baseline`은 Target MVP를 병렬 workstream으로 구현
 ### External Connection Metadata API
 
 Taxi PostgreSQL Source Dataset 등록 slice는 External Connection을 metadata로 저장하고, 저장 전 PostgreSQL 접속/schema preview를 테스트한 뒤 Source Dataset 생성 전에 table schema preview를 조회한다.
+MongoDB Source Dataset seed slice는 같은 External Connection API에서 `connection_type=mongodb`를 사용해 local Docker MongoDB collection schema/sample preview를 읽고 Source Dataset metadata로 저장한다.
 비밀번호 원문 저장, 연결 테스트 상태 persistence, production credential vault 연동은 제외한다.
 `password_secret_ref`는 backend process env 또는 후속 secret store의 참조 이름이며 API 응답에 실제 password 값을 포함하지 않는다.
 
 | Method | Path | Request / Response | Notes |
 | --- | --- | --- | --- |
-| `POST` | `/api/external-connections/test` | `ExternalConnectionCreate -> ExternalTableSchema` | 저장 없이 env password ref로 PostgreSQL schema preview를 읽는다 |
-| `POST` | `/api/external-connections` | `ExternalConnectionCreate -> ExternalConnection` | 현재 실제 저장 대상은 `connection_type=postgres` |
+| `POST` | `/api/external-connections/test` | `ExternalConnectionCreate -> ExternalTableSchema` | 저장 없이 env password ref로 PostgreSQL table 또는 MongoDB collection schema preview를 읽는다 |
+| `POST` | `/api/external-connections` | `ExternalConnectionCreate -> ExternalConnection` | 현재 실제 저장 대상은 `connection_type=postgres` 또는 `connection_type=mongodb` |
 | `GET` | `/api/external-connections` | `ExternalConnection[]` | Source Dataset wizard의 connection 후보로 사용 |
 | `GET` | `/api/external-connections/{connection_id}` | `ExternalConnection` | 저장된 connection profile 조회 |
-| `GET` | `/api/external-connections/{connection_id}/schemas/{schema_name}/tables/{table_name}` | `ExternalTableSchema` | `information_schema.columns` 기반 schema preview. table row count는 estimate로만 반환 가능 |
+| `GET` | `/api/external-connections/{connection_id}/schemas/{schema_name}/tables/{table_name}` | `ExternalTableSchema` | PostgreSQL은 `schema.table`, MongoDB는 `database.collection`으로 해석한다. row count는 estimate로만 반환 가능 |
 
 `ExternalConnectionCreate` 최소 필드는 `name`, `connection_type`, `host`, `port`, `database`, `username`, `password_secret_ref`, `default_schema`, `default_table`이다.
+`ExternalConnectionCreate.connection_type`은 현재 `postgres`와 `mongodb`를 지원한다.
+MongoDB에서는 `default_schema`를 database name, `default_table`을 collection name으로 사용하며 응답 `resource_label`은 `collection`이다.
 `ExternalTableSchema.schema_preview[]`는 `ColumnSchema`와 같은 `{name, type}` shape를 사용한다.
 
 ### Source Dataset Metadata API

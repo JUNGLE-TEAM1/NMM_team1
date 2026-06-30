@@ -163,6 +163,36 @@ ASKLAKE_TAXI_POSTGRES_PASSWORD=asklake .venv/bin/python scripts/load_taxi_parque
 9. schema preview에 lowercase/canonical Taxi columns와 `airport_fee`가 보이고 `cbd_congestion_fee`가 없음을 확인한다.
 10. Source Dataset을 저장하고 `GET /api/source-datasets`에서 `connection_type=postgres`, `raw_scope=public.yellow_taxi_trips`, `schema_preview`, `layer=source`, `status=metadata_ready`를 확인한다.
 
+### MongoDB Source Dataset seed 점검
+
+이 경로는 기존 AskLake demo JSONL 일부를 로컬 Docker MongoDB에 적재하고, AskLake에서 실제 MongoDB collection preview를 읽어 Source Dataset metadata를 저장하는지 확인한다.
+Target Dataset 실행, Catalog 등록, AI Query 연결은 후속 Phase로 남긴다.
+
+1. MongoDB와 backend를 override compose로 실행한다.
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.mongodb.yml up -d --build mongo backend
+```
+
+2. 기존 demo JSONL 일부를 MongoDB에 적재한다.
+
+```bash
+docker exec nmm_team1-backend-1 python scripts/load_jsonl_to_mongodb.py \
+  --input data/asklakemart_chimera_raw_test/events.jsonl \
+  --host mongo \
+  --database asklake_demo \
+  --collection customer_events \
+  --limit 500 \
+  --truncate
+```
+
+3. `/sources`에서 `데이터셋 생성 -> External Connection -> MongoDB`를 선택한다.
+4. `host=mongo`, `port=27017`, `database=asklake_demo`, `username=asklake`, `password_env=ASKLAKE_MONGODB_PASSWORD`, `collection=asklake_demo.customer_events`를 입력하고 `Test Connection`으로 schema preview를 확인한 뒤 저장한다.
+5. `데이터셋 생성 -> Source Dataset`에서 저장된 MongoDB connection을 선택한다.
+6. schema preview에 `event_id`, `event_time`, `event_type`, `product_id`, `price` 같은 event field가 보이는지 확인한다.
+7. Source Dataset을 저장하고 `GET /api/source-datasets`에서 `connection_type=mongodb`, `raw_scope=asklake_demo.customer_events`, `resource_label=collection`, `layer=source`, `status=metadata_ready`를 확인한다.
+8. 화면 어디에서도 Target run, Catalog publish, AI Query 연결이 완료된 것처럼 보이지 않는지 확인한다.
+
 ### Dataset Module Target Dataset C-3 점검
 
 1. backend와 frontend를 실행한다.

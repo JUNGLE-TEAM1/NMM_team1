@@ -11,6 +11,11 @@ try:
 except ImportError:  # pragma: no cover - exercised when optional dependency is absent.
     psycopg = None
 
+try:
+    from pymongo import MongoClient
+except ImportError:  # pragma: no cover - exercised when optional dependency is absent.
+    MongoClient = None
+
 
 class ExternalConnectionError(ValueError):
     pass
@@ -313,6 +318,83 @@ class PostgresSchemaInspector:
         )
 
 
+class MongoDBSchemaInspector:
+    """Read-only MongoDB metadata inspector for Source Dataset registration."""
+
+    def inspect_collection(
+        self,
+        connection: ExternalConnectionRecord,
+        database_name: str,
+        collection_name: str,
+    ) -> ExternalTableSchema:
+        if MongoClient is None:
+            raise ExternalConnectionDependencyError("pymongo is required for MongoDB schema discovery")
+
+        password = os.environ.get(connection.password_secret_ref)
+        if not password:
+            raise ExternalConnectionSecretError(f"Missing password env: {connection.password_secret_ref}")
+
+        try:
+            with MongoClient(
+                host=connection.host,
+                port=connection.port,
+                username=connection.username,
+                password=password,
+                authSource="admin",
+                serverSelectionTimeoutMS=5000,
+            ) as mongo_client:
+                mongo_client.admin.command("ping")
+                database = mongo_client[database_name]
+                collection = database[collection_name]
+                documents = list(collection.find({}, {"_id": 0}).limit(50))
+                columns = infer_mongodb_columns(documents)
+                if not columns:
+                    raise ExternalTableNotFoundError(
+                        f"MongoDB collection not found or empty: {database_name}.{collection_name}"
+                    )
+                row_count_estimate = collection.estimated_document_count()
+        except ExternalConnectionError:
+            raise
+        except Exception as error:
+            raise ExternalConnectionError(f"MongoDB schema discovery failed: {error}") from error
+
+        return ExternalTableSchema(
+            connection_id=connection.id,
+            schema_name=database_name,
+            table_name=collection_name,
+            raw_scope=f"{database_name}.{collection_name}",
+            resource_label="collection",
+            schema_preview=columns,
+            row_count_estimate=row_count_estimate,
+        )
+
+
+class ExternalSchemaInspector:
+    def __init__(
+        self,
+        postgres_inspector: PostgresSchemaInspector | None = None,
+        mongodb_inspector: MongoDBSchemaInspector | None = None,
+    ) -> None:
+        self.postgres_inspector = postgres_inspector or PostgresSchemaInspector()
+        self.mongodb_inspector = mongodb_inspector or MongoDBSchemaInspector()
+
+    def inspect_table(
+        self,
+        connection: ExternalConnectionRecord,
+        schema_name: str,
+        table_name: str,
+    ) -> ExternalTableSchema:
+        return self.postgres_inspector.inspect_table(connection, schema_name, table_name)
+
+    def inspect_collection(
+        self,
+        connection: ExternalConnectionRecord,
+        database_name: str,
+        collection_name: str,
+    ) -> ExternalTableSchema:
+        return self.mongodb_inspector.inspect_collection(connection, database_name, collection_name)
+
+
 def read_columns(postgres_connection: Any, schema_name: str, table_name: str) -> list[ColumnSchema]:
     with postgres_connection.cursor() as cursor:
         cursor.execute(
@@ -345,3 +427,35 @@ def read_row_count_estimate(postgres_connection: Any, schema_name: str, table_na
         return None
     estimate = row[0]
     return int(estimate) if estimate is not None and int(estimate) >= 0 else None
+
+
+def infer_mongodb_columns(documents: list[dict[str, Any]]) -> list[ColumnSchema]:
+    field_types: dict[str, str] = {}
+    for document in documents:
+        for field_name, value in document.items():
+            inferred_type = mongodb_value_type(value)
+            existing_type = field_types.get(field_name)
+            if existing_type is None:
+                field_types[field_name] = inferred_type
+            elif existing_type != inferred_type:
+                field_types[field_name] = "mixed"
+
+    return [ColumnSchema(name=name, type=value_type) for name, value_type in field_types.items()]
+
+
+def mongodb_value_type(value: Any) -> str:
+    if value is None:
+        return "null"
+    if isinstance(value, bool):
+        return "boolean"
+    if isinstance(value, int):
+        return "integer"
+    if isinstance(value, float):
+        return "number"
+    if isinstance(value, str):
+        return "string"
+    if isinstance(value, list):
+        return "array"
+    if isinstance(value, dict):
+        return "object"
+    return type(value).__name__
