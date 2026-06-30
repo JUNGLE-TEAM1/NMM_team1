@@ -9,8 +9,16 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 
 EXPECTED_PRODUCT_HEALTH_COLUMNS = [
     "product_id",
+    "synthetic_product_id",
+    "canonical_product_id",
     "product_name",
+    "normalized_brand",
+    "unified_category",
     "category_l1",
+    "ecommerce_product_id",
+    "amazon_parent_asin",
+    "match_confidence",
+    "match_method",
     "review_count",
     "average_rating",
     "negative_review_rate",
@@ -41,11 +49,18 @@ def test_product_health_gold_contract_freezes_schema_and_metric_semantics() -> N
     assert contract["pipeline_id"] == "pipeline_product_health_e2e"
     assert contract["dataset_id"] == "dataset_product_health_gold"
     assert contract["table_name"] == "gold_product_health"
+    assert contract["schema_version"] == "schema_product_health_gold_v2"
+    assert contract["version"] == "product_health_gold_contract_v2"
     assert [field["name"] for field in contract["output_schema"]] == EXPECTED_PRODUCT_HEALTH_COLUMNS
     assert {source["source_id"] for source in contract["source_requirements"]} == EXPECTED_SOURCE_IDS
     assert contract["gold_build_strategy"]["layering"].startswith("bronze_preserve")
     assert "joining raw facts before aggregation and multiplying counts" in contract["gold_build_strategy"]["anti_patterns"]
     assert "dropping review/behavior/delivery products only because product master is missing" in contract["gold_build_strategy"]["anti_patterns"]
+    assert "publishing a synthetic cross-source product match without match_confidence and source identifiers" in contract["gold_build_strategy"]["anti_patterns"]
+    product_master_requirement = next(source for source in contract["source_requirements"] if source["source_id"] == "source_product_master_seed")
+    assert {"ecommerce_product_id", "amazon_parent_asin", "match_confidence", "match_method"}.issubset(
+        product_master_requirement["optional_fields"]
+    )
 
     metrics = {metric["metric_id"]: metric for metric in contract["metric_definitions"]}
     for metric_id in ["negative_review_rate", "risk_score", "conversion_rate", "late_delivery_rate"]:
@@ -85,6 +100,8 @@ def test_product_health_transform_spec_targets_gold_product_health_e2e() -> None
     assert spec["pipeline_id"] == "pipeline_product_health_e2e"
     assert spec["target_dataset"] == "dataset_product_health_gold"
     assert spec["target_table"] == "gold_product_health"
+    assert spec["schema_version"] == "schema_product_health_gold_v2"
+    assert spec["version"] == "transform_product_health_gold_v2"
     assert spec["semantic_contract_ref"] == "contracts/product_health_gold_contract.sample.json"
     assert spec["risk_score_policy_ref"] == "contracts/product_health_risk_score_policy.sample.json"
     assert spec["catalog_facts"]["output_columns"] == EXPECTED_PRODUCT_HEALTH_COLUMNS
@@ -134,6 +151,8 @@ def test_product_health_catalog_fixture_is_query_ready_for_m6_and_m1() -> None:
     assert schema["dataset_id"] == "dataset_product_health_gold"
     assert [field["path"] for field in schema["fields"]] == EXPECTED_PRODUCT_HEALTH_COLUMNS
     assert catalog["dataset_id"] == "dataset_product_health_gold"
+    assert schema["schema_version"] == "schema_product_health_gold_v2"
+    assert catalog["schema"]["schema_version"] == "schema_product_health_gold_v2"
     assert catalog["query"]["table_name"] == "gold_product_health"
     assert catalog["query"]["allowed_columns"] == EXPECTED_PRODUCT_HEALTH_COLUMNS
     assert "ORDER BY risk_score DESC" in catalog["query"]["canonical_demo_query"]

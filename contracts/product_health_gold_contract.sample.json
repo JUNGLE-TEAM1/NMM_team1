@@ -6,8 +6,8 @@
   "pipeline_id": "pipeline_product_health_e2e",
   "dataset_id": "dataset_product_health_gold",
   "table_name": "gold_product_health",
-  "schema_version": "schema_product_health_gold_v1",
-  "version": "product_health_gold_contract_v1",
+  "schema_version": "schema_product_health_gold_v2",
+  "version": "product_health_gold_contract_v2",
   "contract_status": "frozen_for_week2_demo",
   "grain": ["product_id"],
   "gold_build_strategy": {
@@ -31,7 +31,7 @@
       {
         "step": "product_join",
         "owner": "M2 runtime using M3 join keys",
-        "description": "Build a product_id universe from all available source-level aggregates, then enrich product_name and category_l1 from product master first and source hints second."
+        "description": "Build a product_id universe from all available source-level aggregates, then enrich product identity, source identifiers, product_name, normalized_brand, and category fields from product master or approved identity mapping evidence first and source hints second."
       },
       {
         "step": "metric_derivation",
@@ -49,6 +49,7 @@
       "deriving conversion_rate without behavior denominator evidence",
       "deriving late_delivery_rate from review text alone",
       "dropping review/behavior/delivery products only because product master is missing",
+      "publishing a synthetic cross-source product match without match_confidence and source identifiers",
       "using vector similarity as metric value evidence",
       "using the 100GB benchmark corpus as the presentation dataset"
     ]
@@ -79,14 +80,33 @@
       "source_id": "source_product_master_seed",
       "role": "product_dimension",
       "required_fields": ["product_id"],
-      "optional_fields": ["product_name", "category_l1"],
+      "optional_fields": [
+        "synthetic_product_id",
+        "canonical_product_id",
+        "product_name",
+        "normalized_brand",
+        "unified_category",
+        "category_l1",
+        "ecommerce_product_id",
+        "amazon_parent_asin",
+        "match_confidence",
+        "match_method"
+      ],
       "produces_metrics": []
     }
   ],
   "output_schema": [
     {"name": "product_id", "type": "string", "nullable": false, "semantic_role": "grain"},
+    {"name": "synthetic_product_id", "type": "string", "nullable": true, "semantic_role": "identity_evidence"},
+    {"name": "canonical_product_id", "type": "string", "nullable": true, "semantic_role": "identity_evidence"},
     {"name": "product_name", "type": "string", "nullable": true, "semantic_role": "dimension"},
+    {"name": "normalized_brand", "type": "string", "nullable": true, "semantic_role": "dimension"},
+    {"name": "unified_category", "type": "string", "nullable": true, "semantic_role": "dimension"},
     {"name": "category_l1", "type": "string", "nullable": true, "semantic_role": "dimension"},
+    {"name": "ecommerce_product_id", "type": "string", "nullable": true, "semantic_role": "source_identifier"},
+    {"name": "amazon_parent_asin", "type": "string", "nullable": true, "semantic_role": "source_identifier"},
+    {"name": "match_confidence", "type": "number", "nullable": true, "semantic_role": "identity_evidence"},
+    {"name": "match_method", "type": "string", "nullable": true, "semantic_role": "identity_evidence"},
     {"name": "review_count", "type": "integer", "nullable": false, "semantic_role": "supporting_metric"},
     {"name": "average_rating", "type": "number", "nullable": true, "semantic_role": "supporting_metric"},
     {"name": "negative_review_rate", "type": "number", "nullable": true, "semantic_role": "risk_component"},
