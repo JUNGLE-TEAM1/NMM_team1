@@ -55,6 +55,7 @@ frontend/src/
   app/               app shell, route mapping, and global styles
   components/        shared UI components
   design-system/     UI tokens and reusable primitive components
+  features/datasets/ source/silver/gold dataset workspace pages and dataset job UI
   features/catalog/  source form, catalog list/detail, catalog state hook
   features/pipeline/ pipeline run panel and run state hook
 ```
