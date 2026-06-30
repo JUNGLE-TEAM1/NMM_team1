@@ -342,6 +342,7 @@ External Connection은 외부 원천에 접속하기 위한 연결 설정이고,
 | C-32 | `feature/ai-query-result-persistence` | AI Query 결과를 페이지 이동 후에도 유지해 review loop를 끊기지 않게 한다 | C-31 완료 또는 사람 확인 | Query 실행 후 Catalog/Run으로 이동했다가 돌아와도 질문, 답변, evidence가 복원됨 |
 | C-33 | `feature/gold-input-creation-shortcuts` | Gold 생성 중 입력 dataset이 부족하면 Source/Silver 생성으로 바로 이동한다 | C-32 완료 또는 사람 확인 | Gold wizard의 Silver 선택 단계에서 Source/Silver 생성 wizard로 전환 가능함 |
 | C-34 | `feature/gold-input-return-flow` | Gold 입력 shortcut으로 만든 Source/Silver를 다시 Gold 선택 단계로 이어준다 | C-33 완료 또는 사람 확인 | Silver 저장 후 Gold wizard의 Silver 선택 단계로 돌아오고 새 Silver가 선택됨 |
+| C-35 | `feature/source-silver-gold-chain-smoke` | Source 생성부터 Silver 생성, Gold 입력 복귀까지 clean-room chain을 브라우저에서 검증한다 | C-34 완료 또는 사람 확인 | 새 Source와 Silver metadata를 저장하고 새 Silver가 Gold 입력으로 자동 선택됨 |
 
 범위 원칙:
 
@@ -390,6 +391,7 @@ External Connection은 외부 원천에 접속하기 위한 연결 설정이고,
 - C-32는 browser session 안의 UX 복원만 다룬다. 서버 저장, query history API, multi-user query log, 영구 audit trail은 포함하지 않는다.
 - C-33은 clean-room demo flow의 짧은 UX 보정이다. 새 생성 runner나 자동 recipe 추천은 포함하지 않고, 이미 있는 Source/Silver wizard로 이어지는 CTA만 연결한다.
 - C-34는 C-33 shortcut의 왕복 UX만 다룬다. Gold draft 임시 저장, 다중 단계 undo, full clean-room E2E 완료 선언은 포함하지 않는다.
+- C-35는 검증 Phase다. Source/Silver metadata 생성 chain을 브라우저로 확인하되 Gold 저장, run 실행, catalog publish, AI Query까지의 full clean-room E2E 완료 선언은 후속으로 둔다.
 - C-4 이후 M5 실행 화면은 `M5 데모`가 아니라 `Job Runs` 또는 `실행 기록` 같은 사용자 언어로 재도입한다.
 - M2/M4/M3/M6는 독립 메뉴가 아니라 Dataset creation 이후의 runtime, evidence, catalog, query 소비자로 연결한다.
 

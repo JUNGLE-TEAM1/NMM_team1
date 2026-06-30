@@ -135,6 +135,7 @@ report가 늘어나면 영역별 최신 report index를 작게 유지한다. 이
 | AI Query result persistence | [`ai-query-result-persistence.md`](ai-query-result-persistence.md) | AI Query 결과가 Catalog/Run 이동 후에도 browser session 안에서 복원되는지 확인 |
 | Gold input creation shortcuts | [`gold-input-creation-shortcuts.md`](gold-input-creation-shortcuts.md) | Gold Dataset 생성 중 입력 Source/Silver가 부족할 때 생성 wizard로 바로 이동하는 shortcut 확인 |
 | Gold input return flow | [`gold-input-return-flow.md`](gold-input-return-flow.md) | Gold shortcut으로 만든 Silver Dataset 저장 후 Gold 입력 선택 단계로 복귀하고 자동 선택되는지 확인 |
+| Source Silver Gold chain smoke | [`source-silver-gold-chain-smoke.md`](source-silver-gold-chain-smoke.md) | Gold shortcut에서 새 Source와 Silver metadata를 저장하고 새 Silver가 Gold 입력으로 자동 선택되는지 확인 |
 | CatalogDataset management boundary | [`catalog-dataset-management-boundary.md`](catalog-dataset-management-boundary.md) | registered CatalogDataset의 상세/AI Query context와 metadata/file/cascade delete 경계를 분리했는지 확인 |
 | Credential secret connection design | [`credential-secret-connection-design.md`](credential-secret-connection-design.md) | DB/S3 credential 연결이 raw secret 값이 아니라 `secret_ref_only` boundary로 남았는지 확인 |
 | Demo flow final audit Hotfix | [`demo-flow-final-audit-hotfix.md`](demo-flow-final-audit-hotfix.md) | C-queue 후 데모 UI drift, registered CatalogDataset action, Vite proxy target 검수 결과 확인 |
