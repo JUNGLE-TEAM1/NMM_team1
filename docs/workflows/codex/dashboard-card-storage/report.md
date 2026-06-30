@@ -8,7 +8,7 @@
 - Workspace state: ready-for-review
 - Changed: `DashboardCardCreate`/`DashboardCardRecord`, SQLite `dashboard_cards` table, `/api/week2/dashboard/cards` 저장/list/detail API, API tests, interface/acceptance docs를 추가했다.
 - Verified: dashboard API tests 4 passed, Python syntax passed, dashboard + AI Query focused regression 29 passed, `git diff --check` passed, `scripts/validate-harness.sh --strict` passed.
-- Remaining: UI 저장 버튼과 dashboard 화면 렌더링은 후속 PR 범위다.
+- Remaining: PR review/CI remains. UI 저장 버튼과 dashboard 화면 렌더링은 후속 PR 범위다.
 - Next context: AI Query result에서 `title`, `question`, `sql`, `chart_spec`, `dataset_id`를 `POST /api/week2/dashboard/cards`로 저장하면 card id와 `created_at`이 반환된다.
 - Risk: unrelated local UI changes exist and must stay excluded from commits/PR.
 
@@ -51,6 +51,11 @@ scripts/validate-harness.sh --strict
 - Related item: M1/M6 Dashboard card storage는 AI Query 결과의 `question`, `sql`, `chart_spec`, `dataset_id`를 저장/조회한다.
 - Status: focused backend tests passed.
 - Evidence: `backend/tests/test_dashboard_cards.py`
+
+## Remote Operations Reconciliation / 원격 운영 상태 보정
+
+- Branch pushed: `codex/dashboard-card-storage`
+- PR status: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/324 opened against `main`.
 
 ## Context Budget Evidence / 컨텍스트 예산 증거
 

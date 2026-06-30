@@ -6,7 +6,7 @@
 - Date: 2026-07-01
 - Changed: AI Query 결과에서 나온 `question`, `sql`, `chart_spec`, `dataset_id`를 Dashboard card로 저장/조회하는 backend API와 SQLite persistence를 추가했다.
 - Verified: dashboard API tests 4 passed, dashboard + AI Query focused regression 29 passed, Python syntax passed, `git diff --check` passed, `scripts/validate-harness.sh --strict` passed.
-- Remaining: UI 저장 버튼, dashboard 화면 렌더링, 카드 수정/삭제, SQL refresh는 후속 PR 범위다.
+- Remaining: PR review/CI remains. UI 저장 버튼, dashboard 화면 렌더링, 카드 수정/삭제, SQL refresh는 후속 PR 범위다.
 - Next context: `/api/week2/dashboard/cards`는 `POST`, `GET list`, `GET detail`만 제공한다. `chart_spec`은 최소 `type`, `x`, `y`, `title`을 요구한다.
 - Risk: 로컬 worktree에 unrelated `frontend` 변경이 남아 있어 selective staging이 필요하다.
 
@@ -28,3 +28,8 @@
 - Secret check: no secret or credential added.
 - Migration/data change: SQLite `dashboard_cards` table is created by `SQLiteMetadataStore.initialize()`. No external DB migration.
 - Env change: none.
+
+## Remote Operations Reconciliation / 원격 운영 상태 보정
+
+- Branch pushed: `codex/dashboard-card-storage`
+- PR status: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/324 opened against `main`.
