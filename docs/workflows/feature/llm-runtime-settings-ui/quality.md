@@ -1,9 +1,16 @@
 # 품질 기록
 
+- Quality gate status: passed
+
 ## Context Budget
 
 - Mode: Lite Read
 - Primary context: `AGENTS.md`, `docs/00-layer-map.md`, `.gitignore`, `.env.example`, `.env.local`, `docker-compose.yml`, `docs/03-interface-reference.md`, `docs/04-development-guide.md`
+
+## TDD Plan / TDD 계획
+
+- Applies: no
+- Reason: local env/documentation/Compose wiring change이며 application behavior branch를 새로 추가하지 않는다.
 
 ## 검증
 
@@ -30,3 +37,9 @@
 
 - 실제 API key 값은 출력, 문서화, commit하지 않았다.
 - `.env.local`은 ignored 상태다.
+
+## CI/CD Gate / CI-CD 게이트
+
+- CI required: yes for PR
+- CI result: local only, remote CI not run
+- Deploy/publish required: no

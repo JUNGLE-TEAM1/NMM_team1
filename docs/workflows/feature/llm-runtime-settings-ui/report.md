@@ -1,5 +1,7 @@
 # LLM local env 설정 파일 연결 보고서
 
+- Workspace state: complete
+
 ## Short Report / 짧은 보고
 
 - Type: feature
