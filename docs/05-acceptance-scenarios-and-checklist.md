@@ -69,8 +69,9 @@ AskLake의 Target MVP 대표 성공 시나리오는 `Trusted Dataset -> Query/As
 - [ ] Source Dataset metadata는 `connection_id`, `raw_scope`, `schema_preview`, `layer=source`를 포함하며 ingest/run 실행을 암시하지 않는다.
 - [ ] Target Dataset 생성 흐름의 Source 선택 후보는 저장된 Source Dataset metadata를 사용할 수 있다.
 - [ ] Target Dataset Processing 화면은 `추천 템플릿 사용`과 `직접 설정` mode를 구분하고, Product Health 추천 템플릿 선택 시 M3 `TransformSpec` 기반 `bronze -> silver -> aggregate -> join -> derive -> load` step list와 `quality_rules`를 review할 수 있다.
+- [ ] Product Health Transform Builder MVP는 role별 column mapping, silver cast type, null/quarantine policy를 수정할 수 있고 aggregate metrics, join key, `risk_score`, Gold schema는 review-only 또는 locked로 표시한다.
 - [ ] Target Dataset Review 저장은 `source_dataset_id`, `process_rule`, `selected_fields`, `schedule`, `job_definition`, `status=draft`를 가진 draft metadata를 만든다.
-- [ ] Product Health 추천 템플릿으로 저장한 Target Dataset `process_rule`에는 `template_id`, `template_version`, `target_dataset`, `query_table`, `steps[]`, `quality_rules[]`, `output_schema[]`가 포함된다.
+- [ ] Product Health 추천 템플릿으로 저장한 Target Dataset `process_rule`에는 `template_id`, `template_version`, `target_dataset`, `query_table`, `steps[]`, `builder_config`, `quality_rules[]`, `output_schema[]`가 포함된다.
 - [ ] Target Dataset Review 저장 후 화면에서 저장된 draft id를 확인할 수 있다.
 - [ ] Target Dataset draft 저장은 pipeline run, M5 orchestration, CatalogMetadata 등록을 실행하지 않는다.
 - [ ] 저장된 Target Dataset에서 Job Run을 생성하고 `week2_run_id`, executor, status를 확인할 수 있다.

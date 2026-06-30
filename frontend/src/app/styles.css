@@ -1569,6 +1569,264 @@ code {
   font-weight: 850;
 }
 
+.transform-builder-shell {
+  display: grid;
+  gap: 12px;
+}
+
+.builder-stage-strip {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.builder-stage-strip span {
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  background: #eff6ff;
+  padding: 8px 10px;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 850;
+  text-align: center;
+}
+
+.builder-section {
+  display: grid;
+  gap: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 12px;
+  min-width: 0;
+}
+
+.builder-section.locked {
+  background: #f8fafc;
+}
+
+.builder-section-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.builder-section-head strong {
+  display: block;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 850;
+}
+
+.builder-section-head p {
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.builder-section-head > span {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #f1f5f9;
+  padding: 5px 8px;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.builder-role-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.builder-role-card {
+  display: grid;
+  gap: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 10px;
+  min-width: 0;
+}
+
+.builder-role-card-head span {
+  display: block;
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.builder-role-card-head strong {
+  display: block;
+  margin-top: 3px;
+  color: #111827;
+  font-size: 13px;
+  font-weight: 850;
+  overflow-wrap: anywhere;
+}
+
+.builder-field-map {
+  display: grid;
+  gap: 7px;
+}
+
+.builder-field-row,
+.builder-rule-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(140px, 0.9fr);
+  gap: 8px;
+  align-items: center;
+}
+
+.builder-rule-row {
+  grid-template-columns: minmax(110px, 0.9fr) minmax(120px, 0.8fr) minmax(150px, 1fr);
+}
+
+.builder-field-row span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 850;
+  overflow-wrap: anywhere;
+}
+
+.builder-field-row small {
+  border-radius: 999px;
+  background: #eef2ff;
+  padding: 2px 6px;
+  color: #4338ca;
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.builder-field-row select,
+.builder-rule-row select {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 7px 8px;
+  color: #111827;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.builder-field-row select:disabled {
+  background: #f1f5f9;
+  color: #94a3b8;
+}
+
+.builder-rule-stack {
+  display: grid;
+  gap: 10px;
+}
+
+.builder-normalize-card {
+  display: grid;
+  gap: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 10px;
+}
+
+.builder-normalize-card strong {
+  display: block;
+  color: #111827;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.builder-normalize-card p {
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.builder-normalize-grid {
+  display: grid;
+  gap: 7px;
+}
+
+.builder-rule-row code {
+  border-radius: 6px;
+  background: #ffffff;
+  padding: 7px 8px;
+  color: #334155;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.builder-review-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.builder-metric-list,
+.builder-lock-list {
+  display: grid;
+  gap: 8px;
+}
+
+.builder-metric-list article,
+.builder-lock-list article {
+  display: grid;
+  gap: 6px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 9px;
+}
+
+.builder-metric-list strong,
+.builder-lock-list strong {
+  color: #111827;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.builder-metric-list p {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.builder-metric-list div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.builder-metric-list span {
+  border-radius: 999px;
+  background: #ecfdf5;
+  padding: 4px 7px;
+  color: #047857;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.builder-lock-list code {
+  border-radius: 6px;
+  background: #f1f5f9;
+  padding: 6px 7px;
+  color: #475569;
+  font-size: 11px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 .template-flow-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -4764,6 +5022,11 @@ tbody tr:hover {
   .schedule-choice-grid,
   .source-role-grid,
   .source-role-grid.compact,
+  .builder-stage-strip,
+  .builder-role-grid,
+  .builder-field-row,
+  .builder-rule-row,
+  .builder-review-grid,
   .template-contract-grid,
   .template-flow-grid,
   .target-run-row,

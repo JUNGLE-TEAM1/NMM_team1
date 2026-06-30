@@ -467,6 +467,9 @@ const productHealthRoleLabels = {
   product_master: "product_master",
 };
 
+const castTypeOptions = ["string", "number", "integer", "timestamp", "boolean", "json"];
+const nullPolicyOptions = ["keep_null", "quarantine_if_null", "drop_row_if_null", "fill_default"];
+
 function productHealthRoleFromRequirement(requirement) {
   const signature = `${requirement.source_id || ""} ${requirement.role || ""}`.toLowerCase();
   if (signature.includes("behavior")) return "behavior";
@@ -504,6 +507,99 @@ function buildSourceMappingPayload(requirement, source) {
     required_fields: requirement.required_fields || [],
     optional_fields: requirement.optional_fields || [],
     produces_metrics: requirement.produces_metrics || [],
+  };
+}
+
+function sourceRequirementFields(requirement) {
+  return [...(requirement.required_fields || []), ...(requirement.optional_fields || [])].filter(Boolean);
+}
+
+function sourceColumnMappingFor(source, requirement, currentFields = {}) {
+  const sourceColumns = source?.columns || [];
+  return sourceRequirementFields(requirement).reduce((mapping, field) => {
+    const currentValue = currentFields[field];
+    if (currentValue && sourceColumns.includes(currentValue)) {
+      mapping[field] = currentValue;
+      return mapping;
+    }
+
+    const matchingColumn = sourceColumns.find((column) => column.toLowerCase() === field.toLowerCase());
+    mapping[field] = matchingColumn || "";
+    return mapping;
+  }, {});
+}
+
+function stepsWithBuilderEdits(steps, castOverrides, nullPolicyOverrides) {
+  return steps.map((step) => {
+    if (step.operation_type !== "normalize") return step;
+
+    const casts = (step.details?.casts || []).map((cast) => ({
+      ...cast,
+      target_type: castOverrides[step.id]?.[cast.field] || cast.target_type,
+    }));
+    const nullPolicy = {
+      ...(step.details?.null_policy || {}),
+      ...(nullPolicyOverrides[step.id] || {}),
+    };
+
+    return {
+      ...step,
+      details: {
+        ...(step.details || {}),
+        casts,
+        null_policy: nullPolicy,
+      },
+    };
+  });
+}
+
+function builderConfigForTemplate({
+  template,
+  sourceMappings,
+  columnMappings,
+  castOverrides,
+  nullPolicyOverrides,
+  steps,
+}) {
+  if (!template) return null;
+
+  const aggregateSteps = steps
+    .filter((step) => step.operation_type === "aggregate")
+    .map((step) => ({
+      id: step.id,
+      group_by: step.details?.group_by || [],
+      metrics: step.details?.metrics || [],
+      confirmation_state: "review_only",
+    }));
+  const joinSteps = steps
+    .filter((step) => step.operation_type === "join")
+    .map((step) => ({
+      id: step.id,
+      join_type: step.details?.join_type,
+      keys: step.details?.keys || [],
+      strategy: step.details?.join_strategy,
+      confirmation_state: "review_only",
+    }));
+
+  return {
+    builder_version: "transform_builder_mvp_v1",
+    editable_sections: ["column_mappings", "cast_types", "null_policies"],
+    review_only_sections: ["aggregate_metrics", "join_keys"],
+    locked_sections: ["risk_score_policy", "gold_schema"],
+    column_mappings: sourceMappings
+      .filter((mapping) => mapping.source)
+      .map((mapping) => ({
+        role: mapping.role,
+        source_id: mapping.requirement.source_id,
+        source_dataset_id: mapping.source.id,
+        source_dataset_name: mapping.source.name,
+        fields: columnMappings[mapping.role]?.fields || {},
+      })),
+    cast_overrides: castOverrides,
+    null_policy_overrides: nullPolicyOverrides,
+    aggregate_confirmations: aggregateSteps,
+    join_confirmations: joinSteps,
+    locked_fields: template.locked_fields || [],
   };
 }
 
@@ -966,6 +1062,9 @@ function SourcesPage({ navigate, setNotice }) {
   const [productHealthTemplate, setProductHealthTemplate] = useState(null);
   const [isProcessingTemplateLoading, setIsProcessingTemplateLoading] = useState(false);
   const [processingTemplateError, setProcessingTemplateError] = useState("");
+  const [sourceColumnMappings, setSourceColumnMappings] = useState({});
+  const [castTypeOverrides, setCastTypeOverrides] = useState({});
+  const [nullPolicyOverrides, setNullPolicyOverrides] = useState({});
   const [targetName, setTargetName] = useState("dataset_product_health_gold");
   const [targetDescription, setTargetDescription] = useState("제품 상태 분석용 gold dataset draft");
   const [targetScheduleMode, setTargetScheduleMode] = useState("manual");
@@ -1024,6 +1123,29 @@ function SourcesPage({ navigate, setNotice }) {
   const effectiveSelectedFields = selectedFields.length > 0 ? selectedFields : primaryTargetSource?.columns || selectedSource?.columns || [];
   const recommendedTemplateSteps = productHealthTemplate?.steps || [];
   const recommendedTemplateQualityRules = productHealthTemplate?.quality_rules || [];
+  const productHealthBuilderSteps = useMemo(
+    () => stepsWithBuilderEdits(recommendedTemplateSteps, castTypeOverrides, nullPolicyOverrides),
+    [recommendedTemplateSteps, castTypeOverrides, nullPolicyOverrides],
+  );
+  const productHealthBuilderConfig = useMemo(
+    () =>
+      builderConfigForTemplate({
+        template: productHealthTemplate,
+        sourceMappings: productHealthSourceMappings,
+        columnMappings: sourceColumnMappings,
+        castOverrides: castTypeOverrides,
+        nullPolicyOverrides,
+        steps: productHealthBuilderSteps,
+      }),
+    [
+      productHealthTemplate,
+      productHealthSourceMappings,
+      sourceColumnMappings,
+      castTypeOverrides,
+      nullPolicyOverrides,
+      productHealthBuilderSteps,
+    ],
+  );
   const hasRecommendedTemplateReady =
     processingMode === "recommended_template" &&
     Boolean(productHealthTemplate && recommendedTemplateSteps.length > 0 && productHealthOutputSchema.length > 0);
@@ -1283,6 +1405,79 @@ function SourcesPage({ navigate, setNotice }) {
   }, [productHealthSourceRequirements, sourceDatasets]);
 
   useEffect(() => {
+    if (productHealthSourceMappings.length === 0) return;
+
+    setSourceColumnMappings((currentMappings) => {
+      let hasChange = false;
+      const nextMappings = { ...currentMappings };
+
+      productHealthSourceMappings.forEach((mapping) => {
+        if (!mapping.source) return;
+        const currentRoleMapping = nextMappings[mapping.role] || {};
+        const nextFields = sourceColumnMappingFor(mapping.source, mapping.requirement, currentRoleMapping.fields || {});
+        const nextRoleMapping = {
+          source_dataset_id: mapping.source.id,
+          source_dataset_name: mapping.source.name,
+          fields: nextFields,
+        };
+
+        if (JSON.stringify(currentRoleMapping) !== JSON.stringify(nextRoleMapping)) {
+          nextMappings[mapping.role] = nextRoleMapping;
+          hasChange = true;
+        }
+      });
+
+      return hasChange ? nextMappings : currentMappings;
+    });
+  }, [productHealthSourceMappings]);
+
+  useEffect(() => {
+    if (recommendedTemplateSteps.length === 0) return;
+
+    setCastTypeOverrides((currentOverrides) => {
+      let hasChange = false;
+      const nextOverrides = { ...currentOverrides };
+
+      recommendedTemplateSteps
+        .filter((step) => step.operation_type === "normalize")
+        .forEach((step) => {
+          const currentStepOverrides = nextOverrides[step.id] || {};
+          const nextStepOverrides = { ...currentStepOverrides };
+          (step.details?.casts || []).forEach((cast) => {
+            if (!nextStepOverrides[cast.field]) {
+              nextStepOverrides[cast.field] = cast.target_type;
+              hasChange = true;
+            }
+          });
+          nextOverrides[step.id] = nextStepOverrides;
+        });
+
+      return hasChange ? nextOverrides : currentOverrides;
+    });
+
+    setNullPolicyOverrides((currentOverrides) => {
+      let hasChange = false;
+      const nextOverrides = { ...currentOverrides };
+
+      recommendedTemplateSteps
+        .filter((step) => step.operation_type === "normalize")
+        .forEach((step) => {
+          const currentStepOverrides = nextOverrides[step.id] || {};
+          const nextStepOverrides = { ...currentStepOverrides };
+          Object.entries(step.details?.null_policy || {}).forEach(([field, policy]) => {
+            if (!nextStepOverrides[field]) {
+              nextStepOverrides[field] = policy;
+              hasChange = true;
+            }
+          });
+          nextOverrides[step.id] = nextStepOverrides;
+        });
+
+      return hasChange ? nextOverrides : currentOverrides;
+    });
+  }, [recommendedTemplateSteps]);
+
+  useEffect(() => {
     if (processingMode !== "recommended_template" || !primaryTargetSource) return;
     if (selectedSource?.id === primaryTargetSource.id) return;
     setSelectedSource(primaryTargetSource);
@@ -1326,6 +1521,53 @@ function SourcesPage({ navigate, setNotice }) {
     setTargetRuns([]);
     setTargetRunError("");
     setNotice(`${productHealthRoleLabels[role] || role} role에 ${source.name} source를 매핑했습니다.`);
+  }
+
+  function updateSourceColumnMapping(role, field, value) {
+    const source = targetSourceMappings[role];
+    setSourceColumnMappings((currentMappings) => ({
+      ...currentMappings,
+      [role]: {
+        source_dataset_id: source?.id || currentMappings[role]?.source_dataset_id || "",
+        source_dataset_name: source?.name || currentMappings[role]?.source_dataset_name || "",
+        fields: {
+          ...(currentMappings[role]?.fields || {}),
+          [field]: value,
+        },
+      },
+    }));
+    setLastCreatedTargetDraft(null);
+    setTargetDraftError("");
+    setTargetRuns([]);
+    setTargetRunError("");
+  }
+
+  function updateCastType(stepId, field, targetType) {
+    setCastTypeOverrides((currentOverrides) => ({
+      ...currentOverrides,
+      [stepId]: {
+        ...(currentOverrides[stepId] || {}),
+        [field]: targetType,
+      },
+    }));
+    setLastCreatedTargetDraft(null);
+    setTargetDraftError("");
+    setTargetRuns([]);
+    setTargetRunError("");
+  }
+
+  function updateNullPolicy(stepId, field, policy) {
+    setNullPolicyOverrides((currentOverrides) => ({
+      ...currentOverrides,
+      [stepId]: {
+        ...(currentOverrides[stepId] || {}),
+        [field]: policy,
+      },
+    }));
+    setLastCreatedTargetDraft(null);
+    setTargetDraftError("");
+    setTargetRuns([]);
+    setTargetRunError("");
   }
 
   async function selectSourceConnection(connection) {
@@ -1469,7 +1711,8 @@ function SourcesPage({ navigate, setNotice }) {
             source_contracts: productHealthTemplate.source_contracts,
             source_requirements: productHealthTemplate.source_requirements,
             source_mappings: productHealthSourceMappingPayload,
-            steps: recommendedTemplateSteps,
+            steps: productHealthBuilderSteps,
+            builder_config: productHealthBuilderConfig,
             quality_rules: recommendedTemplateQualityRules,
             output_schema: productHealthTemplate.output_schema,
             metric_definitions: productHealthTemplate.metric_definitions,
@@ -2538,27 +2781,159 @@ function SourcesPage({ navigate, setNotice }) {
                           </div>
                         </div>
 
-                        <div className="template-flow-grid" aria-label="Product Health recommended processing steps">
-                          {productHealthTemplate.flow.map((phase) => {
-                            const steps = recommendedTemplateSteps.filter((step) => step.phase === phase);
-                            return (
-                              <article className="template-flow-phase" key={phase}>
-                                <div className="template-flow-head">
-                                  <span>{phase}</span>
-                                  <strong>{steps.length} steps</strong>
-                                </div>
-                                <div className="template-step-list">
-                                  {steps.map((step) => (
-                                    <div className="template-step-item" key={step.id}>
-                                      <strong>{step.title}</strong>
-                                      <p>{step.description}</p>
-                                      <code>{stepDetailSummary(step)}</code>
+                        <div className="transform-builder-shell" aria-label="Product Health transform builder">
+                          <div className="builder-stage-strip">
+                            {productHealthTemplate.flow.map((phase) => (
+                              <span key={phase}>{phase}</span>
+                            ))}
+                          </div>
+
+                          <section className="builder-section">
+                            <div className="builder-section-head">
+                              <div>
+                                <strong>1. Source column mapping</strong>
+                                <p>M3 source_id의 required/optional field를 실제 Source Dataset column에 연결합니다.</p>
+                              </div>
+                              <span>{mappedProductHealthSourceCount}/{productHealthSourceMappings.length} sources</span>
+                            </div>
+                            <div className="builder-role-grid">
+                              {productHealthSourceMappings.map((mapping) => {
+                                const fields = sourceRequirementFields(mapping.requirement);
+                                const sourceColumns = mapping.source?.columns || [];
+                                const roleMapping = sourceColumnMappings[mapping.role]?.fields || {};
+                                return (
+                                  <article className="builder-role-card" key={mapping.role}>
+                                    <div className="builder-role-card-head">
+                                      <span>{mapping.label}</span>
+                                      <strong>{mapping.source ? mapping.source.name : "Source Dataset 필요"}</strong>
                                     </div>
-                                  ))}
+                                    <div className="builder-field-map">
+                                      {fields.map((field) => {
+                                        const isRequired = (mapping.requirement.required_fields || []).includes(field);
+                                        return (
+                                          <label className="builder-field-row" key={field}>
+                                            <span>
+                                              {field}
+                                              {isRequired ? <small>required</small> : <small>optional</small>}
+                                            </span>
+                                            <select
+                                              value={roleMapping[field] || ""}
+                                              disabled={!mapping.source}
+                                              onChange={(event) => updateSourceColumnMapping(mapping.role, field, event.target.value)}
+                                            >
+                                              <option value="">column 선택</option>
+                                              {sourceColumns.map((column) => (
+                                                <option value={column} key={column}>
+                                                  {column}
+                                                </option>
+                                              ))}
+                                            </select>
+                                          </label>
+                                        );
+                                      })}
+                                    </div>
+                                  </article>
+                                );
+                              })}
+                            </div>
+                          </section>
+
+                          <section className="builder-section">
+                            <div className="builder-section-head">
+                              <div>
+                                <strong>2. Silver normalize rules</strong>
+                                <p>cast type과 null/quarantine policy만 수정할 수 있습니다.</p>
+                              </div>
+                              <span>{productHealthBuilderSteps.filter((step) => step.operation_type === "normalize").length} steps</span>
+                            </div>
+                            <div className="builder-rule-stack">
+                              {productHealthBuilderSteps
+                                .filter((step) => step.operation_type === "normalize")
+                                .map((step) => (
+                                  <article className="builder-normalize-card" key={step.id}>
+                                    <div>
+                                      <strong>{step.title}</strong>
+                                      <p>
+                                        {step.input_artifacts?.[0]} {"->"} {step.output_artifact}
+                                      </p>
+                                    </div>
+                                    <div className="builder-normalize-grid">
+                                      {(step.details?.casts || []).map((cast) => (
+                                        <div className="builder-rule-row" key={`${step.id}-${cast.field}`}>
+                                          <code>{cast.field}</code>
+                                          <select
+                                            value={cast.target_type}
+                                            onChange={(event) => updateCastType(step.id, cast.field, event.target.value)}
+                                          >
+                                            {castTypeOptions.map((option) => (
+                                              <option value={option} key={option}>
+                                                {option}
+                                              </option>
+                                            ))}
+                                          </select>
+                                          <select
+                                            value={step.details?.null_policy?.[cast.field] || "keep_null"}
+                                            onChange={(event) => updateNullPolicy(step.id, cast.field, event.target.value)}
+                                          >
+                                            {nullPolicyOptions.map((option) => (
+                                              <option value={option} key={option}>
+                                                {option}
+                                              </option>
+                                            ))}
+                                          </select>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </article>
+                                ))}
+                            </div>
+                          </section>
+
+                          <div className="builder-review-grid">
+                            <section className="builder-section">
+                              <div className="builder-section-head">
+                                <div>
+                                  <strong>3. Aggregate metrics</strong>
+                                  <p>source별 metric은 검토만 가능하며 raw fact join 전에 계산됩니다.</p>
                                 </div>
-                              </article>
-                            );
-                          })}
+                                <span>read-only</span>
+                              </div>
+                              <div className="builder-metric-list">
+                                {productHealthBuilderSteps
+                                  .filter((step) => step.operation_type === "aggregate")
+                                  .map((step) => (
+                                    <article key={step.id}>
+                                      <strong>{step.title}</strong>
+                                      <p>group by {(step.details?.group_by || []).join(", ")}</p>
+                                      <div>
+                                        {(step.details?.metrics || []).map((metric) => (
+                                          <span key={metric.name}>{metric.name}</span>
+                                        ))}
+                                      </div>
+                                    </article>
+                                  ))}
+                              </div>
+                            </section>
+                            <section className="builder-section locked">
+                              <div className="builder-section-head">
+                                <div>
+                                  <strong>4. Join / derive lock</strong>
+                                  <p>join key, risk_score policy, Gold schema는 데모 계약이라 read-only입니다.</p>
+                                </div>
+                                <span>locked</span>
+                              </div>
+                              <div className="builder-lock-list">
+                                {productHealthBuilderSteps
+                                  .filter((step) => ["join", "derive", "load"].includes(step.operation_type))
+                                  .map((step) => (
+                                    <article key={step.id}>
+                                      <strong>{step.title}</strong>
+                                      <code>{stepDetailSummary(step)}</code>
+                                    </article>
+                                  ))}
+                              </div>
+                            </section>
+                          </div>
                         </div>
 
                         <div className="template-contract-grid">
@@ -2584,8 +2959,8 @@ function SourcesPage({ navigate, setNotice }) {
                             <div className="table-title-line">
                               <Table2 size={18} />
                               <div>
-                                <strong>Gold schema</strong>
-                                <p>{productHealthOutputSchema.length} locked output fields</p>
+                                <strong>Locked Gold schema</strong>
+                                <p>{productHealthOutputSchema.length} output fields · risk_score policy locked</p>
                               </div>
                             </div>
                             <div className="schema-chip-list">

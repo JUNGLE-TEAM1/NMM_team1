@@ -248,6 +248,7 @@ Product Health Processing Template slice는 M3 Product Health `TransformSpec` / 
 
 `ProcessingTemplate.steps[]`는 M3 operation을 UI 검토용으로 변환한 `{id, phase, operation_type, title, description, input_artifacts, output_artifact, details}` shape다.
 `phase`는 `bronze`, `silver`, `aggregate`, `join`, `derive`, `load` 중 하나이며, `details`에는 cast/null policy, aggregate metrics, join keys, derive expressions, load target 같은 원본 contract 정보를 포함한다.
+Target Dataset Processing UI는 이 template을 기본값으로 사용하되 `process_rule.builder_config`에 사용자 확인/수정 상태를 함께 저장할 수 있다. PR 3 MVP에서 editable 대상은 `column_mappings`, `cast_overrides`, `null_policy_overrides`이고, aggregate metrics, join keys, `risk_score` policy, Gold schema는 review-only 또는 locked로 저장한다.
 
 ### Target Dataset Job Draft API
 
