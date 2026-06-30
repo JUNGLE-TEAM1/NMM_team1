@@ -64,6 +64,7 @@ import {
   getExternalConnectionCredentialPolicy,
   inspectExternalConnection,
   listExternalConnections,
+  seedProductHealthRuntimeConnections,
   testExternalConnection,
   updateExternalConnection,
 } from "../api/externalConnectionApi";
@@ -826,22 +827,22 @@ function mapProductHealthInventoryItemToConnection(item) {
   const schema = (item.schema_preview || []).map((field) => ({
     name: field.name,
     type: field.type,
-    sample: item.binding_type === "prepared_dataset" ? "prepared metadata" : "source inventory",
+    sample: item.fallback_binding_type ? `${productHealthBindingLabel(item.fallback_binding_type)} fallback` : "source inventory",
   }));
 
   return {
     id: `product-health:${item.role}`,
     name: item.connection_name,
     connectorId: item.connection_type || "local_file",
-    typeLabel: item.binding_type === "prepared_dataset" ? "Prepared Dataset" : "Local File",
+    typeLabel: connectionTypeLabel(item.connection_type) || item.connection_type,
     status: item.status === "ready" ? "inventory ready" : item.status,
-    description: `${item.label} Product Health source inventory입니다.`,
+    description: `${item.label} Product Health runtime source입니다. Demo fallback evidence로 schema를 확인합니다.`,
     resourceLabel: item.resource_label,
     resource: item.path,
     authMode: "No credential",
     modeLabel: productHealthBindingLabel(item.binding_type),
     contractHint: "ProductHealthSourceInventory",
-    detectedFormat: item.binding_type === "prepared_dataset" ? "Parquet" : "Local source",
+    detectedFormat: item.fallback_binding_type === "prepared_dataset" ? "Fallback parquet" : "Runtime source",
     detectedDataset: item.label,
     confidence: item.status === "ready" ? "High" : "Missing",
     recommendedRole: "Source Dataset",
@@ -854,8 +855,27 @@ function mapProductHealthInventoryItemToConnection(item) {
   };
 }
 
+function mergeProductHealthInventoryWithSavedConnection(item, savedConnection) {
+  const inventoryConnection = mapProductHealthInventoryItemToConnection(item);
+  if (!savedConnection) return inventoryConnection;
+  return {
+    ...inventoryConnection,
+    id: savedConnection.id,
+    name: savedConnection.name,
+    status: savedConnection.status,
+    typeLabel: savedConnection.typeLabel,
+    authMode: savedConnection.authMode,
+    modeLabel: savedConnection.modeLabel,
+    contractHint: savedConnection.contractHint,
+    syncMode: savedConnection.syncMode,
+    syncSchedule: savedConnection.syncSchedule,
+    savedRuntimeConnection: true,
+  };
+}
+
 function productHealthBindingLabel(bindingType) {
   const labels = {
+    runtime_source: "Runtime source",
     raw_file: "Raw file",
     prepared_dataset: "Prepared dataset",
     missing: "Missing",
@@ -866,9 +886,17 @@ function productHealthBindingLabel(bindingType) {
 
 function productHealthStatusLabel(item) {
   if (!item) return "unknown";
+  if (item.status === "ready" && item.binding_type === "runtime_source") return "runtime + fallback ready";
   if (item.status === "ready" && item.binding_type === "prepared_dataset") return "prepared ready";
-  if (item.status === "ready") return "raw ready";
+  if (item.status === "ready") return "ready";
   return item.status;
+}
+
+function productHealthSourceIcon(item) {
+  if (item?.connection_type === "kafka") return <Network size={18} />;
+  if (item?.connection_type === "postgres" || item?.connection_type === "mongodb") return <Database size={18} />;
+  if (item?.connection_type === "s3" || item?.connection_type === "object_storage") return <Archive size={18} />;
+  return <FileJson size={18} />;
 }
 
 function formatConnectionResourceLabel(label) {
@@ -1394,6 +1422,7 @@ function SourcesPage({ navigate, setNotice, dataView = "datasets-source", pendin
   const [connectionInspectState, setConnectionInspectState] = useState({ status: "idle", result: null, error: "" });
   const [connectionRuntimeCheckState, setConnectionRuntimeCheckState] = useState({ status: "idle", checkId: "", result: null, error: "" });
   const [connectionSaveState, setConnectionSaveState] = useState({ status: "idle", record: null, error: "" });
+  const [productHealthConnectionSeedState, setProductHealthConnectionSeedState] = useState({ status: "idle", result: null, error: "" });
   const [savedExternalConnections, setSavedExternalConnections] = useState([]);
   const [credentialPolicy, setCredentialPolicy] = useState(null);
   const [productHealthSourceInventory, setProductHealthSourceInventory] = useState(null);
@@ -1788,7 +1817,8 @@ function SourcesPage({ navigate, setNotice, dataView = "datasets-source", pendin
       setNotice(`${item.label} source는 아직 Source Dataset으로 저장할 수 없습니다: ${item.message}`);
       return;
     }
-    const connection = mapProductHealthInventoryItemToConnection(item);
+    const savedRuntimeConnection = savedExternalConnections.find((connection) => connection.name === item.connection_name);
+    const connection = mergeProductHealthInventoryWithSavedConnection(item, savedRuntimeConnection);
     setSourceDraft(connection);
     setSourceDatasetName(item.source_dataset_name);
     setSourceRawScope(item.path);
@@ -1809,7 +1839,11 @@ function SourcesPage({ navigate, setNotice, dataView = "datasets-source", pendin
       error: "",
     });
     setSourceDatasetSaveState({ status: "idle", record: null, error: "" });
-    setNotice(`${item.label} Product Health source 후보를 선택했습니다.`);
+    setNotice(
+      savedRuntimeConnection
+        ? `${item.label} runtime connection을 선택했습니다. Source scope는 ${item.path}입니다.`
+        : `${item.label} source 후보를 선택했습니다. Product Health 연결 준비를 먼저 누르면 실제 External Connection과 연결됩니다.`,
+    );
   }
 
   async function discoverSelectedSourceConnection(connection = sourceDraft) {
@@ -2650,6 +2684,27 @@ function SourcesPage({ navigate, setNotice, dataView = "datasets-source", pendin
     }
   }
 
+  async function seedProductHealthConnections() {
+    setProductHealthConnectionSeedState({ status: "seeding", result: null, error: "" });
+    try {
+      const result = await seedProductHealthRuntimeConnections();
+      const mappedConnections = (result.connections || []).map(mapExternalConnectionRecord);
+      setSavedExternalConnections((connections) => {
+        const seededIds = new Set(mappedConnections.map((connection) => connection.id));
+        const seededNames = new Set(mappedConnections.map((connection) => connection.name));
+        return [
+          ...mappedConnections,
+          ...connections.filter((connection) => !seededIds.has(connection.id) && !seededNames.has(connection.name)),
+        ];
+      });
+      setProductHealthConnectionSeedState({ status: "seeded", result, error: "" });
+      setNotice(`${mappedConnections.length}개 Product Health runtime connection을 준비했습니다.`);
+    } catch (error) {
+      setProductHealthConnectionSeedState({ status: "error", result: null, error: error.message });
+      setNotice(`Product Health runtime connection 준비 실패: ${error.message}`);
+    }
+  }
+
   function goNextConnection() {
     if (canGoNextConnection && connectionWizardStepIndex < connectionWizardSteps.length - 1) {
       setConnectionWizardStepIndex((index) => index + 1);
@@ -3234,7 +3289,7 @@ function SourcesPage({ navigate, setNotice, dataView = "datasets-source", pendin
                     <Sparkles size={18} />
                     <div>
                       <strong>Product Health source inventory</strong>
-                      <p>준비된 복합 데이터셋 원천을 raw file과 prepared dataset으로 구분해서 Source Dataset 후보로 표시합니다.</p>
+                      <p>Kafka, PostgreSQL, MongoDB, S3/MinIO runtime source와 demo fallback evidence를 분리해서 표시합니다.</p>
                     </div>
                   </div>
                   <div className="connection-type-grid source-connection-grid product-health-source-grid">
@@ -3247,11 +3302,16 @@ function SourcesPage({ navigate, setNotice, dataView = "datasets-source", pendin
                         onClick={() => selectProductHealthInventorySource(item)}
                       >
                         <span className="connection-card-icon">
-                          {item.binding_type === "prepared_dataset" ? <Archive size={18} /> : <FileJson size={18} />}
+                          {productHealthSourceIcon(item)}
                         </span>
                         <strong>{item.label}</strong>
                         <p>{item.source_dataset_name}</p>
+                        <small>{connectionTypeLabel(item.connection_type)} · {formatConnectionResourceLabel(item.resource_label)}</small>
+                        <small>{item.path}</small>
                         <small>{productHealthBindingLabel(item.binding_type)} · {productHealthStatusLabel(item)}</small>
+                        {item.fallback_path ? (
+                          <small>fallback: {productHealthBindingLabel(item.fallback_binding_type)} · {item.fallback_path}</small>
+                        ) : null}
                         <small>{formatBytes(item.bytes)} · {item.row_count ?? "row 미측정"} rows · {item.schema_preview?.length || 0} fields</small>
                       </button>
                     ))}
@@ -4403,6 +4463,10 @@ function SourcesPage({ navigate, setNotice, dataView = "datasets-source", pendin
             actionLabel="연결 생성"
             onAction={() => startDatasetCreation("connection")}
           />
+          <ProductHealthRuntimeConnectionPanel
+            state={productHealthConnectionSeedState}
+            onSeed={seedProductHealthConnections}
+          />
           <OperationalList
             icon={ServerCog}
             title="External Connections"
@@ -4460,13 +4524,16 @@ function SourcesPage({ navigate, setNotice, dataView = "datasets-source", pendin
               id: sourceDataset.id,
               title: sourceDataset.name,
               meta: `${sourceDataset.connection_type} · ${sourceDataset.status}`,
-              detail: `${fileEvidenceLabel(sourceDataset.file_evidence)} · ${sourceDataset.raw_scope}`,
+              detail: sourceDataset.fallback_evidence
+                ? `runtime ${sourceDataset.raw_scope} · fallback ${fileEvidenceLabel(sourceDataset.fallback_evidence)}`
+                : `${fileEvidenceLabel(sourceDataset.file_evidence)} · ${sourceDataset.raw_scope}`,
               variant: "source-dataset",
               facts: [
                 ["Connection", sourceDataset.connection_name || sourceDataset.connection_type],
                 ["Raw scope", sourceDataset.raw_scope],
                 ["Schema", `${sourceDataset.schema_preview?.length || 0} fields`],
                 ["Evidence", fileEvidenceLabel(sourceDataset.file_evidence)],
+                ...(sourceDataset.fallback_evidence ? [["Fallback", `${fileEvidenceLabel(sourceDataset.fallback_evidence)} · ${sourceDataset.fallback_evidence.path}`]] : []),
               ],
               actions: [
                 {
@@ -5047,12 +5114,12 @@ function fileEvidenceLabel(evidence) {
   return "metadata-only";
 }
 
-function DatasetFileEvidencePanel({ evidence }) {
+function DatasetFileEvidencePanel({ evidence, title = "Local file evidence" }) {
   if (!evidence) {
     return (
       <div className="wizard-placeholder compact">
         <FileCheck2 size={22} />
-        <strong>metadata-only</strong>
+        <strong>{title}</strong>
         <p>연결된 local file evidence가 없습니다.</p>
       </div>
     );
@@ -5062,7 +5129,7 @@ function DatasetFileEvidencePanel({ evidence }) {
   return (
     <section className={`wizard-placeholder compact ${isMissing ? "danger" : ""}`}>
       {isMissing ? <AlertCircle size={22} /> : <FileCheck2 size={22} />}
-      <strong>{fileEvidenceLabel(evidence)}</strong>
+      <strong>{title}</strong>
       <p>{evidence.message}</p>
       <div className="source-manage-facts">
         <span>path</span>
@@ -5075,6 +5142,27 @@ function DatasetFileEvidencePanel({ evidence }) {
         <strong>{evidence.row_count_status}</strong>
         <span>schema fields</span>
         <strong>{formatMetric(evidence.schema_fields)}</strong>
+      </div>
+    </section>
+  );
+}
+
+function RuntimeSourceEvidencePanel({ runtime }) {
+  if (!runtime) return null;
+  return (
+    <section className="wizard-placeholder compact">
+      <ServerCog size={22} />
+      <strong>Runtime source</strong>
+      <p>Source Dataset이 실제로 참조하는 외부 시스템 범위입니다.</p>
+      <div className="source-manage-facts">
+        <span>connection</span>
+        <strong>{runtime.connection_name || runtime.connection_id || "-"}</strong>
+        <span>type</span>
+        <strong>{runtime.connection_type || "-"}</strong>
+        <span>resource label</span>
+        <strong>{runtime.resource_label || "-"}</strong>
+        <span>scope</span>
+        <strong>{runtime.resource || "-"}</strong>
       </div>
     </section>
   );
@@ -5244,7 +5332,11 @@ function SilverDatasetManageModal({
               </label>
             </section>
           </div>
-          <DatasetFileEvidencePanel evidence={dataset.file_evidence} />
+          <RuntimeSourceEvidencePanel runtime={dataset.runtime_source} />
+          {!dataset.runtime_source ? <DatasetFileEvidencePanel evidence={dataset.file_evidence} title="Local file evidence" /> : null}
+          {dataset.fallback_evidence ? (
+            <DatasetFileEvidencePanel evidence={dataset.fallback_evidence} title="Demo fallback evidence" />
+          ) : null}
           <section className="wizard-inline-panel snapshot-panel">
             <div className="snapshot-panel-header">
               <div className="table-title-line">
@@ -5730,6 +5822,71 @@ function isWideFact(label, value) {
   if (["path", "raw scope", "run id"].includes(normalizedLabel)) return true;
   if (["input", "output"].includes(normalizedLabel)) return isPathValue;
   return isPathValue;
+}
+
+function ProductHealthRuntimeConnectionPanel({ state, onSeed }) {
+  const result = state.result;
+  const readiness = result?.readiness || [
+    {
+      role: "behavior_events",
+      connector_type: "kafka",
+      source_scope: "product-health.behavior-events",
+      readiness_status: "testable",
+      fallback_available: true,
+    },
+    {
+      role: "product_catalog",
+      connector_type: "postgres",
+      source_scope: "public.product_catalog",
+      readiness_status: "secret_ref_required",
+      fallback_available: true,
+    },
+    {
+      role: "reviews",
+      connector_type: "mongodb",
+      source_scope: "asklake.product_reviews",
+      readiness_status: "secret_ref_required",
+      fallback_available: true,
+    },
+    {
+      role: "delivery_trip_logs",
+      connector_type: "s3",
+      source_scope: "s3://asklake-demo/product_health/delivery_trip_logs/",
+      readiness_status: "secret_ref_required",
+      fallback_available: true,
+    },
+  ];
+  const isSeeding = state.status === "seeding";
+
+  return (
+    <section className="wizard-inline-panel product-health-preset-panel">
+      <div className="table-title-line">
+        <ServerCog size={18} />
+        <div>
+          <strong>Product Health runtime connections</strong>
+          <p>Kafka, PostgreSQL, MongoDB, S3/MinIO 연결 metadata를 준비하고 secret 값 없이 readiness 경계를 표시합니다.</p>
+        </div>
+      </div>
+      <div className="fact-card-grid preset-fact-grid">
+        {readiness.map((item) => (
+          <div className="fact-card-item" key={item.role}>
+            <span>{item.role}</span>
+            <strong>{connectionTypeLabel(item.connector_type)}</strong>
+            <p>{item.source_scope}</p>
+            <small>{item.readiness_status} · fallback {item.fallback_available ? "ready" : "missing"}</small>
+          </div>
+        ))}
+      </div>
+      {state.error ? <p className="form-error">{state.error}</p> : null}
+      {result ? <p className="runtime-note">{result.message}</p> : null}
+      <div className="operational-list-actions">
+        <button type="button" className="primary-action" onClick={onSeed} disabled={isSeeding}>
+          {isSeeding ? <Loader2 size={16} className="spin" /> : <Sparkles size={16} />}
+          {isSeeding ? "연결 준비 중" : "Product Health 연결 준비"}
+        </button>
+      </div>
+    </section>
+  );
 }
 
 function ProductHealthPresetPanel({ state, onRun }) {

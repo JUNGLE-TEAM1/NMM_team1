@@ -175,6 +175,25 @@ class ExternalConnectionRecord(BaseModel):
     updated_at: str
 
 
+class ProductHealthRuntimeConnectionReadiness(BaseModel):
+    role: str
+    connection_name: str
+    connector_type: RuntimeConnectionType
+    runtime_resource: str
+    source_scope: str
+    readiness_status: Literal["testable", "secret_ref_required", "seeded"]
+    fallback_available: bool
+    message: str
+
+
+class ProductHealthRuntimeConnectionSeedResult(BaseModel):
+    scenario_id: str = "product_health"
+    status: Literal["seeded"]
+    connections: list[ExternalConnectionRecord]
+    readiness: list[ProductHealthRuntimeConnectionReadiness]
+    message: str
+
+
 class SourceDatasetCreate(BaseModel):
     connection_id: str = Field(min_length=1, max_length=120)
     connection_name: str = Field(min_length=1, max_length=120)
@@ -217,6 +236,8 @@ class SourceDatasetRecord(BaseModel):
     created_at: str
     updated_at: str
     file_evidence: DatasetFileEvidence | None = None
+    runtime_source: dict[str, object] | None = None
+    fallback_evidence: DatasetFileEvidence | None = None
 
 
 class ProductHealthSourceInventoryItem(BaseModel):
@@ -227,9 +248,15 @@ class ProductHealthSourceInventoryItem(BaseModel):
     connection_type: ConnectionType
     resource_label: str
     path: str
-    binding_type: Literal["raw_file", "prepared_dataset", "missing", "mismatch"]
+    binding_type: Literal["runtime_source", "raw_file", "prepared_dataset", "missing", "mismatch"]
     status: Literal["ready", "missing", "mismatch"]
     can_create_source_dataset: bool
+    runtime_source_type: ConnectionType | None = None
+    runtime_resource: str | None = None
+    fallback_binding_type: Literal["raw_file", "prepared_dataset", "missing", "mismatch"] | None = None
+    fallback_path: str | None = None
+    fallback_status: Literal["ready", "missing", "mismatch"] | None = None
+    fallback_message: str | None = None
     bytes: int | None = None
     row_count: int | None = None
     row_count_status: str = "not_measured"

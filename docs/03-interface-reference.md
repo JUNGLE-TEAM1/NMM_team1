@@ -255,7 +255,7 @@ Minimum response:
 
 `GET /api/source-datasets/{dataset_id}/snapshots` returns latest snapshots first. Snapshot success updates the Source Dataset status to `snapshot_ready`; failure returns an error and must not make metadata appear successfully ingested.
 
-C-37 adds a read-only Product Health source inventory endpoint for the clean-room demo source binding step. It does not download data, run full ingest, create Source Dataset rows, or materialize Silver/Gold outputs. It only exposes already prepared local/raw evidence as Source Dataset candidates.
+C-37 adds a read-only Product Health source inventory endpoint for the clean-room demo source binding step. C-42 reframes that inventory around runtime source systems while preserving demo fallback evidence. It does not download data, run full ingest, create Source Dataset rows, or materialize Silver/Gold outputs. It exposes Kafka/PostgreSQL/MongoDB/S3 source intent plus local/prepared fallback evidence used for schema and row proof.
 
 `GET /api/product-health/source-inventory` minimum response:
 
@@ -269,24 +269,115 @@ C-37 adds a read-only Product Health source inventory endpoint for the clean-roo
       "role": "behavior_events",
       "label": "Commerce behavior events",
       "source_dataset_name": "source_user_events",
-      "connection_name": "conn_product_health_behavior_events",
-      "connection_type": "local_file",
-      "resource_label": "file_path",
-      "path": "data/local_sources/product_health/raw/kaggle_ecommerce_behavior/2019-Oct.csv",
-      "binding_type": "raw_file",
+      "connection_name": "conn_product_health_behavior_kafka",
+      "connection_type": "kafka",
+      "resource_label": "kafka_topic",
+      "path": "product-health.behavior-events",
+      "binding_type": "runtime_source",
       "status": "ready",
       "can_create_source_dataset": true,
+      "runtime_source_type": "kafka",
+      "runtime_resource": "product-health.behavior-events",
+      "fallback_binding_type": "raw_file",
+      "fallback_path": "data/local_sources/product_health/raw/kaggle_ecommerce_behavior/2019-Oct.csv",
+      "fallback_status": "ready",
       "bytes": 5668612855,
       "row_count": null,
       "row_count_status": "not_measured",
       "schema_preview": [{"name": "event_time", "type": "string"}],
-      "message": "Local CSV file discovered."
+      "message": "kafka runtime source is the Product Health primary source. Schema and row evidence are provided by demo fallback raw_file."
     }
   ]
 }
 ```
 
-`binding_type` is one of `raw_file`, `prepared_dataset`, `missing`, or `mismatch`. `prepared_dataset` can be used as a demo-safe Source Dataset candidate, but it must not be presented as an original external raw file. `missing` and `mismatch` candidates are display-only and must not be saved as ready Source Datasets.
+`binding_type` is one of `runtime_source`, `raw_file`, `prepared_dataset`, `missing`, or `mismatch`. For Product Health after C-42, the normal ready value is `runtime_source`; local raw files and prepared parquet/json outputs should appear in `fallback_*` fields, not as the primary external source. `missing` and `mismatch` candidates are display-only and must not be saved as ready Source Datasets.
+
+Product Health runtime source mapping:
+
+| Role | Runtime source | Fallback evidence |
+| --- | --- | --- |
+| `behavior_events` | Kafka topic `product-health.behavior-events` | local behavior raw/prepared file |
+| `product_catalog` | PostgreSQL table `public.product_catalog` | local product catalog raw/prepared file |
+| `reviews` | MongoDB collection `asklake.product_reviews` | local review prepared file |
+| `delivery_trip_logs` | S3/MinIO prefix `s3://asklake-demo/product_health/delivery_trip_logs/` | local delivery prepared file |
+
+C-43 adds a Product Health runtime connection seed endpoint. It creates or updates four External Connection metadata records without storing raw credentials. Kafka is locally testable without secrets; PostgreSQL, MongoDB, and S3/MinIO remain `secret_ref_required` until env-name references and secret backend behavior are provided.
+
+`POST /api/product-health/runtime-connections/seed` minimum response:
+
+```json
+{
+  "scenario_id": "product_health",
+  "status": "seeded",
+  "connections": [
+    {
+      "name": "conn_product_health_behavior_kafka",
+      "connector_type": "kafka",
+      "resource": "127.0.0.1:29092",
+      "resource_label": "bootstrap_servers",
+      "auth_mode": "No credential in local demo",
+      "mode_label": "Product Health runtime connection seed",
+      "contract_hint": "Runtime source: Kafka broker 127.0.0.1:29092; Source Dataset scope: topic product-health.behavior-events",
+      "detected_dataset": "Product Health behavior events topic",
+      "recommended_role": "Product Health Source Connection"
+    }
+  ],
+  "readiness": [
+    {
+      "role": "behavior_events",
+      "connection_name": "conn_product_health_behavior_kafka",
+      "connector_type": "kafka",
+      "runtime_resource": "127.0.0.1:29092",
+      "source_scope": "product-health.behavior-events",
+      "readiness_status": "testable",
+      "fallback_available": true,
+      "message": "Local runtime can be tested without storing credentials; consume/replay remains a later phase."
+    }
+  ],
+  "message": "Product Health runtime connection metadata was seeded. Secret values were not stored."
+}
+```
+
+C-44 aligns Product Health Source Dataset save semantics with the runtime source contract. When a Product Health source is saved from inventory, `raw_scope` is the runtime scope (`topic`, `table`, `collection`, or `s3 prefix`) and `connection_type` remains the external system type. Local/prepared artifacts are returned as evidence only.
+
+`POST /api/source-datasets` and `GET /api/source-datasets*` may include these Product Health runtime fields:
+
+```json
+{
+  "connection_id": "external_connection_...",
+  "connection_name": "conn_product_health_behavior_kafka",
+  "connection_type": "kafka",
+  "name": "source_user_events",
+  "raw_scope": "product-health.behavior-events",
+  "resource_label": "kafka_topic",
+  "runtime_source": {
+    "connection_id": "external_connection_...",
+    "connection_name": "conn_product_health_behavior_kafka",
+    "connection_type": "kafka",
+    "resource_label": "kafka_topic",
+    "resource": "product-health.behavior-events",
+    "fallback_evidence_status": "file_backed"
+  },
+  "fallback_evidence": {
+    "status": "file_backed",
+    "path": "data/local_sources/product_health/raw/kaggle_ecommerce_behavior/2019-Oct.csv"
+  }
+}
+```
+
+`fallback_evidence.path` must not replace `raw_scope`. The UI may use `file_evidence` for backward-compatible evidence badges, but detail views should label Product Health runtime source and demo fallback evidence separately.
+
+The endpoint must be idempotent by connection name. It must not accept or return raw `password`, `access_key`, `secret_key`, `token`, or `raw_credential` values. Connection test execution remains separate through `/api/external-connections/test`.
+
+C-47 adds an operator-run Product Health runtime seed loader for the large synthetic dataset split. It is not called by the web UI and does not store raw credential values. `scripts/product_health_runtime_seed_loaders.py` accepts `contracts/product_health_runtime_seed_manifest.sample.json` style manifests and writes `ProductHealthRuntimeSeedLoadEvidence` under `data/results/product_health_runtime_seed_load/`.
+
+| Role | Loader target | Load method |
+| --- | --- | --- |
+| `behavior_events` | Kafka topic `product-health.behavior-events` | stream CSV/JSONL/Parquet rows as JSON messages to `kafka-console-producer` |
+| `product_catalog` | PostgreSQL table `public.product_catalog` | create table and stream CSV/JSONL/Parquet rows via `psql COPY` |
+| `reviews` | MongoDB collection `asklake.product_reviews` | stream CSV/JSONL/Parquet rows as JSON documents to `mongoimport` |
+| `delivery_trip_logs` | MinIO/S3 prefix `s3://asklake-demo/product_health/delivery_trip_logs/` | upload local Parquet/object files to S3-compatible storage with env-referenced credentials |
 
 C-41 adds a Product Health-only preset synthesis endpoint. It wraps the existing local synthesis script so the site can regenerate demo-ready `seed_product_mapping`, Silver parquet, Gold parquet, Catalog handoff, and run summary artifacts. It is not a generic transform builder, Airflow/Spark production execution, new raw download, or 5GB evidence remeasurement.
 

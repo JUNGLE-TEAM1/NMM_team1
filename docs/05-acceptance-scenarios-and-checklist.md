@@ -57,6 +57,7 @@ AskLake의 Target MVP 대표 성공 시나리오는 `Trusted Dataset -> Query/As
 - [ ] Source/Silver/Gold Dataset 상세는 실제 local file이 있으면 `file-backed` evidence를, 없거나 metadata-only이면 성공처럼 보이지 않는 상태를 표시한다.
 - [ ] Source Snapshot은 `bounded_sample` evidence로 표시되고, snapshot `row_count`/`output_bytes`가 full 5GB ingest 또는 processed input evidence처럼 보이지 않는다.
 - [ ] Product Health Source Inventory는 behavior/reviews/product catalog/delivery 후보를 Source Dataset 후보로 표시하고, `raw_file`과 `prepared_dataset` 및 missing/mismatch 상태를 구분한다.
+- [ ] Product Health Source Dataset 저장은 Kafka/PostgreSQL/MongoDB/S3 runtime scope를 `raw_scope`로 유지하고, local/prepared artifact는 fallback evidence로만 표시한다.
 - [ ] Gold Build local execution은 prepared Gold parquet reference와 1-row local demo JSONL materialization을 구분하고, Catalog publish/AI Query가 실제 output schema/path를 사용한다.
 - [ ] Kafka replay evidence는 실행 기록 UI에서 read-only health/run receipt로 보이고, evidence가 없어도 broker failure처럼 표시하지 않는다.
 - [ ] Airflow readiness는 실행 기록 UI에서 env missing/configured, DAG id, result root, local fallback 여부를 read-only로 보여주며 DAG trigger나 credential 값을 제공하지 않는다.
@@ -164,3 +165,6 @@ R1~R7은 아래 workstream alias로 유지한다.
 | C-38 Product Health Gold Run Execution | Product Health Gold Run 실행 결과가 prepared Gold reference 또는 Silver parquet materialization evidence로 남고, output path, row count, bytes, materialization mode, `catalog_publish_ready`를 포함한다. |
 | C-39 Catalog AI Query Clean-room Handoff | C-38 Run을 publish한 CatalogDataset과 AI Query의 selected dataset, evidence, retrieval trace, SQL table, `evidence.storage.local_fallback_path`가 같은 catalog/run/path를 가리킨다. |
 | C-41 Product Health Preset Synthesis | 사이트에서 Product Health preset 합성을 실행하면 `seed_product_mapping`, Silver parquet, `gold_product_health.parquet`, Catalog handoff, run summary artifact가 갱신되고 응답/UI가 row/path/status evidence를 표시한다. |
+| C-42 Product Health External Source Contract | Product Health Source inventory가 `behavior_events=Kafka`, `product_catalog=PostgreSQL`, `reviews=MongoDB`, `delivery_trip_logs=S3/MinIO` runtime source를 primary로 표시하고 local/prepared artifact는 fallback evidence로 분리한다. |
+| C-43 Product Health Runtime Connection Seed | 연결 화면에서 Product Health용 Kafka/PostgreSQL/MongoDB/S3 connection metadata를 준비할 수 있고, secret 값 없이 readiness/fallback 경계를 표시한다. |
+| C-47 Product Health Runtime Seed Loaders | operator loader가 11GB 합성 데이터셋 split을 Kafka/PostgreSQL/MongoDB/MinIO target별로 dry-run 검증하고, 실제 실행 시 `ProductHealthRuntimeSeedLoadEvidence`에 target, row/bytes, status를 남기며 secret 값을 기록하지 않는다. |

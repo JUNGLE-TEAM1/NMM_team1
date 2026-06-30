@@ -32,6 +32,12 @@ export function getExternalConnectionCredentialPolicy() {
   return request("/api/external-connections/credential-policy");
 }
 
+export function seedProductHealthRuntimeConnections() {
+  return request("/api/product-health/runtime-connections/seed", {
+    method: "POST",
+  });
+}
+
 export function updateExternalConnection(connectionId, connection) {
   return request(`/api/external-connections/${encodeURIComponent(connectionId)}`, {
     method: "PATCH",

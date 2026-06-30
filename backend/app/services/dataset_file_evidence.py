@@ -7,11 +7,46 @@ from app.services.data_lake_paths import GOLD_ROOT, SILVER_ROOT
 from app.services.prepared_product_health_outputs import prepared_gold_candidate_names
 
 
+PRODUCT_HEALTH_SOURCE_FALLBACKS = {
+    "source_user_events": [
+        Path("data/local_sources/product_health/raw/kaggle_ecommerce_behavior/2019-Oct.csv"),
+        Path("data/local_sources/product_health/silver/silver_user_events.parquet"),
+    ],
+    "source_product_catalog": [
+        Path("data/local_sources/product_health/raw/mep_3m/annotations.json"),
+        Path("data/local_sources/product_health/silver/silver_product_catalog.parquet"),
+    ],
+    "source_product_reviews": [
+        Path("data/local_sources/product_health/silver/silver_product_reviews.parquet"),
+        Path("data/local_sources/product_health/raw/amazon_reviews_2023/reviews.jsonl"),
+    ],
+    "source_delivery_trip_logs": [
+        Path("data/local_sources/product_health/silver/silver_delivery_trip_logs.parquet"),
+        Path("data/local_sources/product_health/raw/taxi/trips.parquet"),
+    ],
+}
+
+
 def source_file_evidence(path: str) -> DatasetFileEvidence:
     resolved = resolve_path(path)
     if resolved is None:
         return DatasetFileEvidence(status="missing", path=path, message=f"local path를 찾을 수 없습니다: {path}")
     return evidence_for_path(resolved, display_path=path)
+
+
+def product_health_source_fallback_evidence(dataset_name: str) -> DatasetFileEvidence | None:
+    candidates = PRODUCT_HEALTH_SOURCE_FALLBACKS.get(dataset_name)
+    if not candidates:
+        return None
+    for candidate in candidates:
+        resolved = resolve_path(str(candidate))
+        if resolved is not None:
+            return evidence_for_path(resolved, display_path=str(candidate))
+    return DatasetFileEvidence(
+        status="missing",
+        path=str(candidates[0]),
+        message=f"{dataset_name}에 연결된 Product Health demo fallback evidence를 찾지 못했습니다.",
+    )
 
 
 def silver_file_evidence(dataset_name: str) -> DatasetFileEvidence:

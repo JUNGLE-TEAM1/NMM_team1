@@ -440,6 +440,46 @@
 | Verification method | `backend/tests/test_product_health_preset_synthesis.py`, `/datasets/gold` Product Health preset panel, `npm --prefix frontend run build`로 확인한다. |
 | Related docs/interface/Phase | `docs/03`, C-41 |
 
+### Product Health runtime source가 local/prepared primary로 되돌아가는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | Product Health 원천 후보는 Kafka/PostgreSQL/MongoDB/S3 runtime source를 primary로 표시하고 local/prepared artifact는 fallback evidence로만 표시한다. |
+| Failure condition | Source inventory 카드나 API가 `reviews=prepared_dataset`, `product_catalog=local_file`처럼 fallback artifact를 primary connection type처럼 보여준다. |
+| Expected behavior | `/api/product-health/source-inventory`는 `binding_type=runtime_source`, `connection_type`은 `kafka/postgres/mongodb/s3`, fallback은 `fallback_binding_type`과 `fallback_path`에 담는다. |
+| Verification method | `backend/tests/test_product_health_source_inventory.py`, `/datasets/source` Product Health inventory panel, `npm --prefix frontend run build`로 확인한다. |
+| Related docs/interface/Phase | `docs/03`, C-42 |
+
+### Product Health runtime connection seed가 secret 값을 저장하거나 중복 생성하는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | Product Health runtime connection seed는 raw credential 값을 저장/응답하지 않고 connection name 기준으로 idempotent하게 동작한다. |
+| Failure condition | seed 응답이나 External Connection metadata에 password/access key/secret key/token/raw credential 값이 포함되거나, 버튼을 반복 실행할 때 같은 connection이 중복 생성된다. |
+| Expected behavior | `/api/product-health/runtime-connections/seed`는 Kafka/PostgreSQL/MongoDB/S3 metadata 4개를 생성/업데이트하고, readiness에는 `testable` 또는 `secret_ref_required` 상태만 표시한다. |
+| Verification method | `backend/tests/test_product_health_runtime_connection_seed.py`, `/connections` Product Health runtime connection panel, `npm --prefix frontend run build`로 확인한다. |
+| Related docs/interface/Phase | `docs/03`, C-43 |
+
+### Product Health Source Dataset 저장이 fallback path를 primary raw scope로 쓰는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | Product Health Source Dataset은 Kafka/PostgreSQL/MongoDB/S3 runtime scope를 primary `raw_scope`로 저장한다. |
+| Failure condition | `source_product_reviews`의 `raw_scope`가 prepared parquet path로 저장되거나, `source_user_events`의 `connection_type`이 `local_file`처럼 저장된다. |
+| Expected behavior | 저장 응답과 목록/상세 응답은 `runtime_source`에 connection type/scope를 담고, local/prepared path는 `fallback_evidence`로만 표시한다. |
+| Verification method | `backend/tests/test_product_health_source_save_alignment.py`, Source Dataset 상세 UI, `npm --prefix frontend run build`로 확인한다. |
+| Related docs/interface/Phase | `docs/03`, C-44 |
+
+### Product Health runtime seed loader가 secret 또는 잘못된 target에 적재하는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | 11GB 합성 데이터셋 적재는 role별 target mapping을 지키고, dry-run을 기본값으로 유지하며, secret 값을 evidence에 남기지 않는다. |
+| Failure condition | loader가 `behavior_events`를 Kafka 외 target에 넣거나, `product_catalog`/`reviews`/`delivery_trip_logs` target을 바꾸거나, MinIO access key 같은 raw secret을 `data/results` evidence에 기록한다. |
+| Expected behavior | `scripts/product_health_runtime_seed_loaders.py`는 manifest의 role/target을 검증 가능한 `ProductHealthRuntimeSeedLoadEvidence`로 남기고, `--execute`가 없으면 외부 runtime에 쓰지 않는다. |
+| Verification method | `python3 -m py_compile scripts/product_health_runtime_seed_loaders.py`, `python3 scripts/product_health_runtime_seed_loaders.py`, `python3 -m json.tool contracts/product_health_runtime_seed_manifest.sample.json`로 확인한다. |
+| Related docs/interface/Phase | `docs/03`, C-47 |
+
 ## 공통 인프라 실패 시나리오
 
 - 필수 environment variable 누락

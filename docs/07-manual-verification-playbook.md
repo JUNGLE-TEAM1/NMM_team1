@@ -269,6 +269,47 @@ PYTHONPATH=backend .venv/bin/python scripts/week2_m2_product_health_l6_evidence.
 2. `Product Health source inventory` 영역에 behavior, reviews, product catalog, delivery/trip 후보가 보이는지 확인한다.
 3. 각 후보가 `Raw file`, `Prepared dataset`, `Missing`, `Mismatch` 중 하나로 표시되는지 확인한다.
 
+### C-42 Product Health External Source Contract 점검
+
+1. `/datasets/source`에서 `Source Dataset 생성`을 연다.
+2. `Product Health source inventory` 영역의 4개 후보가 아래 runtime source로 보이는지 확인한다.
+   - `behavior_events`: Kafka topic
+   - `product_catalog`: PostgreSQL table
+   - `reviews`: MongoDB collection
+   - `delivery_trip_logs`: S3/MinIO prefix
+3. 각 후보 카드가 runtime resource와 fallback evidence를 분리해서 표시하는지 확인한다.
+4. ready 후보를 선택하면 Source Dataset name과 raw/source scope가 runtime resource로 채워지고 schema preview는 fallback evidence에서 온 것으로 보이는지 확인한다.
+5. 화면이 local file 또는 prepared dataset을 Product Health primary source처럼 표현하지 않는지 확인한다.
+
+### C-43 Product Health Runtime Connection Seed 점검
+
+1. `/connections` 또는 좌측 `연결` 화면을 연다.
+2. `Product Health runtime connections` panel에서 `Product Health 연결 준비`를 누른다.
+3. External Connections 목록에 아래 4개가 생기는지 확인한다.
+   - `conn_product_health_behavior_kafka`
+   - `conn_product_health_catalog_postgres`
+   - `conn_product_health_reviews_mongo`
+   - `conn_product_health_delivery_s3`
+4. Kafka는 `testable`, PostgreSQL/MongoDB/S3는 `secret_ref_required` boundary로 표시되는지 확인한다.
+5. 화면/응답에 raw password, access key, secret key, token 값이 표시되지 않는지 확인한다.
+6. 버튼을 한 번 더 눌러도 같은 connection이 중복 생성되지 않는지 확인한다.
+
+### C-44 Product Health Source Save Alignment 점검
+
+1. `/datasets/source`에서 Product Health source inventory를 연다.
+2. behavior/product catalog/reviews/delivery 후보를 하나씩 선택해 Source Dataset으로 저장한다.
+3. 저장된 Source Dataset 목록에서 connection type이 각각 `kafka`, `postgres`, `mongodb`, `s3`로 보이는지 확인한다.
+4. 상세 화면에서 `raw_scope`가 topic/table/collection/s3 prefix이고, local/prepared path는 `Demo fallback evidence`로만 표시되는지 확인한다.
+5. fallback path가 primary raw scope나 connection resource처럼 보이지 않는지 확인한다.
+
+### C-47 Product Health Runtime Seed Loaders 점검
+
+1. `python3 scripts/product_health_runtime_seed_loaders.py`를 실행해 기본 dry-run evidence를 만든다.
+2. 출력과 `data/results/product_health_runtime_seed_load/summary.json`에 `ProductHealthRuntimeSeedLoadEvidence`가 기록되는지 확인한다.
+3. target mapping이 `behavior_events -> Kafka`, `product_catalog -> PostgreSQL`, `reviews -> MongoDB`, `delivery_trip_logs -> MinIO/S3`인지 확인한다.
+4. `secret_values_recorded=false`이고 command preview에 password/access key/secret key/token 값이 없는지 확인한다.
+5. 실제 11GB 적재는 runtime 컨테이너와 env-referenced secret이 준비된 뒤 `--execute --manifest <manifest>`로만 수행한다.
+
 ### C-38 Product Health Silver/Gold Run Execution 점검
 
 1. `/datasets/gold`에서 `gold_output=dataset_product_health`인 Product Health Gold draft를 준비한다.

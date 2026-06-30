@@ -14,6 +14,7 @@ from app.domain.schemas import (
     ExternalConnectionUpdate,
     ProductHealthSourceInventory,
     ProductHealthPresetSynthesisResult,
+    ProductHealthRuntimeConnectionSeedResult,
     SourceCreate,
     SilverDatasetCreate,
     SilverDatasetMaterializationCreate,
@@ -38,13 +39,19 @@ from app.domain.schemas import (
 from app.domain.target_contracts import TrustGateResult
 from app.ports.metadata_store import MetadataStore
 from app.services.catalog_trust import CatalogTrustService
-from app.services.dataset_file_evidence import gold_file_evidence, silver_file_evidence, source_file_evidence
+from app.services.dataset_file_evidence import (
+    gold_file_evidence,
+    product_health_source_fallback_evidence,
+    silver_file_evidence,
+    source_file_evidence,
+)
 from app.services.external_connection_discovery import ExternalConnectionDiscoveryError, ExternalConnectionDiscoveryService
 from app.services.external_connection_runtime import (
     ExternalConnectionRuntimeCheckError,
     ExternalConnectionRuntimeCheckService,
 )
 from app.services.product_health_source_inventory import ProductHealthSourceInventoryService
+from app.services.product_health_runtime_connections import ProductHealthRuntimeConnectionSeedService
 from app.services.product_health_preset_synthesis import (
     ProductHealthPresetSynthesisError,
     ProductHealthPresetSynthesisService,
@@ -140,6 +147,13 @@ def create_source_catalog_router(
     @router.get("/product-health/source-inventory", response_model=ProductHealthSourceInventory)
     def get_product_health_source_inventory() -> ProductHealthSourceInventory:
         return ProductHealthSourceInventoryService().list_inventory()
+
+    @router.post("/product-health/runtime-connections/seed", response_model=ProductHealthRuntimeConnectionSeedResult)
+    def seed_product_health_runtime_connections() -> ProductHealthRuntimeConnectionSeedResult:
+        try:
+            return ProductHealthRuntimeConnectionSeedService(metadata_store).seed()
+        except sqlite3.IntegrityError as error:
+            raise HTTPException(status_code=409, detail="Product Health runtime connection seed conflict") from error
 
     @router.post("/product-health/preset-synthesis", response_model=ProductHealthPresetSynthesisResult)
     def run_product_health_preset_synthesis() -> ProductHealthPresetSynthesisResult:
@@ -482,6 +496,22 @@ def create_source_catalog_router(
 
 
 def with_source_file_evidence(dataset: SourceDatasetRecord) -> SourceDatasetRecord:
+    fallback_evidence = product_health_source_fallback_evidence(dataset.name)
+    if fallback_evidence is not None and dataset.connection_type in {"kafka", "postgres", "mongodb", "s3", "object_storage"}:
+        return dataset.model_copy(
+            update={
+                "file_evidence": fallback_evidence,
+                "fallback_evidence": fallback_evidence,
+                "runtime_source": {
+                    "connection_id": dataset.connection_id,
+                    "connection_name": dataset.connection_name,
+                    "connection_type": dataset.connection_type,
+                    "resource_label": dataset.resource_label,
+                    "resource": dataset.raw_scope,
+                    "fallback_evidence_status": fallback_evidence.status,
+                },
+            }
+        )
     return dataset.model_copy(update={"file_evidence": source_file_evidence(dataset.raw_scope)})
 
 

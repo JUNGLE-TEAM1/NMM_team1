@@ -1,0 +1,54 @@
+{
+  "scenario_id": "product_health",
+  "description": "Product Health synthetic source seed load mapping. Override source_path values for the 11GB local dataset split.",
+  "targets": [
+    {
+      "role": "behavior_events",
+      "source_path": "data/local_sources/product_health/silver/silver_user_events.parquet",
+      "target_type": "kafka",
+      "target": "product-health.behavior-events",
+      "options": {
+        "container": "kafka",
+        "broker": "localhost:9092",
+        "format": "parquet",
+        "batch_size": 1000
+      }
+    },
+    {
+      "role": "product_catalog",
+      "source_path": "data/local_sources/product_health/silver/silver_product_catalog.parquet",
+      "target_type": "postgres",
+      "target": "public.product_catalog",
+      "options": {
+        "container": "product-health-postgres",
+        "database": "asklake",
+        "user": "asklake",
+        "format": "parquet"
+      }
+    },
+    {
+      "role": "reviews",
+      "source_path": "data/local_sources/product_health/silver/silver_product_reviews.parquet",
+      "target_type": "mongodb",
+      "target": "asklake.product_reviews",
+      "options": {
+        "container": "product-health-mongo",
+        "uri": "mongodb://localhost:27017",
+        "format": "parquet"
+      }
+    },
+    {
+      "role": "delivery_trip_logs",
+      "source_path": "data/local_sources/product_health/silver/silver_delivery_trip_logs.parquet",
+      "target_type": "minio",
+      "target": "s3://asklake-demo/product_health/delivery_trip_logs/",
+      "options": {
+        "endpoint_env": "ASKLAKE_DEMO_MINIO_ENDPOINT",
+        "access_key_env": "ASKLAKE_DEMO_MINIO_ACCESS_KEY",
+        "secret_key_env": "ASKLAKE_DEMO_MINIO_SECRET_KEY",
+        "region": "us-east-1",
+        "auto_create_bucket": true
+      }
+    }
+  ]
+}

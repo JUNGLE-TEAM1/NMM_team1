@@ -349,6 +349,12 @@ External Connection은 외부 원천에 접속하기 위한 연결 설정이고,
 | C-39 | `feature/catalog-ai-query-clean-room-handoff` | 방금 실행한 Product Health Gold 결과를 Catalog에 등록하고 AI Query가 그 CatalogDataset을 읽게 한다 | C-38 완료 또는 사람 확인 | Catalog와 AI Query가 같은 run/catalog/local path를 가리키며 prepared/live 경로가 섞이지 않음 |
 | C-40 | `feature/full-browser-demo-smoke` | 연결부터 AI Query까지 전체 데모 클릭 흐름을 브라우저에서 검수한다 | C-39 완료 또는 사람 확인 | `연결 -> Source -> Silver -> Gold -> Run -> Catalog -> AI Query` 흐름이 console error 없이 진행되고 UI/문구/mock 흔적 gap이 분류됨 |
 | C-41 | `feature/product-health-preset-synthesis` | Product Health Demo preset을 적용해 사이트에서 `seed_product_mapping`, Silver datasets, Gold dataset을 재생성하는 synthesis run을 추가한다 | C-40 완료 또는 사람 확인 | 사용자가 Product Health preset을 적용하고 합성 실행을 누르면 `seed_product_mapping.parquet`, Silver parquet, `gold_product_health.parquet`, Catalog/Evidence 준비 파일이 갱신되고 후속 Run/Catalog/AI Query 흐름으로 이어질 수 있음 |
+| C-42 | `feature/product-health-external-source-contract` | Product Health 원천 후보를 Kafka/PostgreSQL/MongoDB/S3 기준으로 재정의한다 | C-41 완료 또는 사람 확인 | Source inventory가 `behavior_events=Kafka`, `product_catalog=PostgreSQL`, `reviews=MongoDB`, `delivery_trip_logs=S3/MinIO`로 보이고 local/prepared는 fallback evidence로만 표시됨 |
+| C-43 | `feature/product-health-runtime-connection-seed` | Product Health용 Kafka/PostgreSQL/MongoDB/S3 connection 후보와 runtime readiness를 UI/API에 맞춘다 | C-42 완료 또는 사람 확인 | 연결 화면에서 4개 runtime connection을 만들거나 seed할 수 있고 connection test/readiness와 secret boundary가 표시됨 |
+| C-44 | `feature/product-health-source-save-alignment` | Product Health Source Dataset 저장 payload를 외부 시스템 connection type과 fallback evidence로 정렬한다 | C-43 완료 또는 사람 확인 | Source Dataset 4개가 실제 connection type으로 저장되고 prepared/local artifact는 `demo_fallback` 또는 evidence로 분리 표시됨 |
+| C-45 | `feature/product-health-silver-lineage-fallback` | Silver Dataset을 외부 Source lineage와 prepared fallback parquet에 동시에 연결한다 | C-44 완료 또는 사람 확인 | Silver 4개가 Kafka/PostgreSQL/MongoDB/S3 Source를 lineage로 가리키고, row materialization은 demo prepared parquet fallback임을 명확히 표시함 |
+| C-46 | `feature/product-health-gold-lineage-preset` | Gold preset, Run, Catalog, AI Query evidence를 외부 시스템 lineage 기준으로 정렬한다 | C-45 완료 또는 사람 확인 | Product Health Gold가 4개 Silver를 입력으로 갖고 Catalog/AI Query evidence에서 Kafka/PostgreSQL/MongoDB/S3 lineage와 prepared Gold output 경계가 함께 보임 |
+| C-47 | `feature/product-health-runtime-seed-loaders` | 11GB Product Health 합성 데이터셋을 Kafka/PostgreSQL/MongoDB/MinIO runtime source에 나눠 적재하는 operator loader를 추가한다 | C-43 완료 또는 사람 확인 | loader manifest와 dry-run evidence가 있고, 실행 시 behavior events는 Kafka, product catalog는 PostgreSQL, reviews/VOC는 MongoDB, delivery logs는 MinIO/S3에 적재된다 |
 
 범위 원칙:
 
@@ -404,6 +410,8 @@ External Connection은 외부 원천에 접속하기 위한 연결 설정이고,
 - C-39는 Catalog publish와 AI Query handoff 정렬 Phase다. AI Query가 방금 publish된 CatalogDataset의 run id, local path, schema, metrics를 사용하게 하되, RAG/vector DB 또는 외부 LLM 추가는 포함하지 않는다.
 - C-40은 검증 Phase다. 문제 발견 시 코드 수정보다 gap 분류와 Hotfix/후속 Phase 생성을 우선하며, 대규모 UI 재설계나 runtime 기능 추가는 포함하지 않는다.
 - C-41은 Product Health 전용 preset synthesis Phase다. 범용 raw source 조합 빌더, 사용자가 임의 join/transform/risk rule을 설계하는 UI, Airflow/Spark production execution, 새 대용량 다운로드는 포함하지 않는다. 기존 Product Health synthesis logic을 backend service/API로 감싸거나 service-friendly하게 분리하고, 빠른 합성 실행과 5GB evidence 재측정은 분리한다.
+- C-42~C-46은 Product Health 데모의 기준을 local/prepared artifact 중심에서 외부 시스템 lineage 중심으로 재정렬하는 Phase 묶음이다. Kafka/PostgreSQL/MongoDB/S3 runtime이 떠 있어도 각 Phase는 full ingest, continuous Kafka consume, arbitrary SQL/Mongo query builder, S3 대용량 scan, production Airflow/Spark 실행을 포함하지 않는다. 실제 row 변환은 demo fallback artifact를 사용할 수 있지만 UI/API는 fallback과 runtime source를 분리해서 표시해야 한다.
+- C-47은 UI 기능이 아니라 operator-run loader다. 기본 실행은 dry-run evidence이고, 실제 `--execute`는 로컬 runtime 컨테이너, env-referenced secret, 11GB dataset split 경로가 준비된 경우에만 수행한다. loader는 secret 값을 evidence에 쓰지 않고, 적재 결과를 `ProductHealthRuntimeSeedLoadEvidence`로 남긴다.
 - C-4 이후 M5 실행 화면은 `M5 데모`가 아니라 `Job Runs` 또는 `실행 기록` 같은 사용자 언어로 재도입한다.
 - M2/M4/M3/M6는 독립 메뉴가 아니라 Dataset creation 이후의 runtime, evidence, catalog, query 소비자로 연결한다.
 
