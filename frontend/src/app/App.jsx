@@ -1045,6 +1045,7 @@ export function App() {
   const [notice, setNotice] = useState("");
   const [isNoticeLeaving, setIsNoticeLeaving] = useState(false);
   const [pendingDatasetEdit, setPendingDatasetEdit] = useState(null);
+  const [focusedCatalogDatasetId, setFocusedCatalogDatasetId] = useState("");
 
   useEffect(() => {
     refreshHealth();
@@ -1091,6 +1092,9 @@ export function App() {
     const displayPath = path.startsWith("/catalog/") ? path : routeToUrl(nextPath);
     if (options.pendingDatasetEdit) {
       setPendingDatasetEdit(options.pendingDatasetEdit);
+    }
+    if (options.focusCatalogDatasetId) {
+      setFocusedCatalogDatasetId(options.focusCatalogDatasetId);
     }
     window.history.pushState({}, "", displayPath);
     setActivePath(nextPath);
@@ -1287,7 +1291,7 @@ export function App() {
           ) : null}
           {activePath === "/etl-visual" ? <VisualEditorPage navigate={navigate} setNotice={setNotice} /> : null}
           {activePath === "/runs" ? <JobRunsPage setNotice={setNotice} /> : null}
-          {activePath === "/catalog" ? <CatalogPage navigate={navigate} /> : null}
+          {activePath === "/catalog" ? <CatalogPage navigate={navigate} focusedCatalogDatasetId={focusedCatalogDatasetId} /> : null}
           {activePath === "/catalog-detail" ? <CatalogDetailShell navigate={navigate} /> : null}
           {activePath === "/ask" ? <AiQueryPage navigate={navigate} setNotice={setNotice} /> : null}
           {activePath === "/dashboard" ? <DashboardPlaceholder /> : null}
@@ -7591,7 +7595,7 @@ function RawJsonBlock({ title, value }) {
   );
 }
 
-function CatalogPage({ navigate }) {
+function CatalogPage({ navigate, focusedCatalogDatasetId = "" }) {
   const [selectedTag, setSelectedTag] = useState("전체");
   const [catalogDatasets, setCatalogDatasets] = useState([]);
   const [catalogDatasetPolicyState, setCatalogDatasetPolicyState] = useState(null);
@@ -7612,7 +7616,12 @@ function CatalogPage({ navigate }) {
         if (!isMounted) return;
         setCatalogDatasets(datasets);
         setCatalogDatasetPolicyState(policy);
-        setSelectedCatalogDatasetId((current) => current || datasets[0]?.id || "");
+        setSelectedCatalogDatasetId((current) => {
+          if (focusedCatalogDatasetId && datasets.some((dataset) => dataset.id === focusedCatalogDatasetId)) {
+            return focusedCatalogDatasetId;
+          }
+          return current || datasets[0]?.id || "";
+        });
         setCatalogListState({ loading: false, error: "" });
       } catch (error) {
         if (!isMounted) return;
@@ -7640,7 +7649,12 @@ function CatalogPage({ navigate }) {
             const policy = await getCatalogDatasetManagementPolicy().catch(() => null);
             setCatalogDatasets(datasets);
             setCatalogDatasetPolicyState(policy);
-            setSelectedCatalogDatasetId((current) => current || datasets[0]?.id || "");
+            setSelectedCatalogDatasetId((current) => {
+              if (focusedCatalogDatasetId && datasets.some((dataset) => dataset.id === focusedCatalogDatasetId)) {
+                return focusedCatalogDatasetId;
+              }
+              return current || datasets[0]?.id || "";
+            });
             setCatalogListState({ loading: false, error: "" });
           } catch (error) {
             setCatalogListState({ loading: false, error: error.message });
@@ -7688,6 +7702,11 @@ function CatalogPage({ navigate }) {
           title="CatalogDataset 목록을 불러오지 못했습니다"
           body={catalogListState.error}
         />
+      ) : null}
+      {focusedCatalogDatasetId && !catalogListState.loading && !catalogListState.error && !catalogDatasets.some((dataset) => dataset.id === focusedCatalogDatasetId) ? (
+        <p className="runtime-warning">
+          AI Query evidence가 가리킨 CatalogDataset `{focusedCatalogDatasetId}`을 현재 카탈로그 목록에서 찾지 못했습니다.
+        </p>
       ) : null}
       {catalogListState.loading ? (
         <EmptyState icon={Loader2} title="CatalogDataset 조회 중" body="publish된 데이터셋 metadata를 확인하고 있습니다." />
@@ -7943,6 +7962,7 @@ function AiQueryPage({ navigate, setNotice }) {
     : [];
   const routeIsExecutableSql = route === "sql" && queryState.result?.status === "succeeded";
   const productHealthAnswer = productHealthAnswerSummary(queryState.result);
+  const selectedCatalogDatasetId = querySelectedCatalogDatasetId(queryState.result);
   const displaySql = queryState.result
     ? queryDisplaySql(queryResult?.sql ?? queryState.result.sql)
     : m1AiQueryPlaceholder.sql;
@@ -8126,7 +8146,12 @@ function AiQueryPage({ navigate, setNotice }) {
                 Run Status
                 <ListChecks size={16} />
               </button>
-              <button type="button" className="primary-action" onClick={() => navigate("/catalog-detail")}>
+              <button
+                type="button"
+                className="primary-action"
+                onClick={() => navigate("/catalog", { focusCatalogDatasetId: selectedCatalogDatasetId })}
+                disabled={!selectedCatalogDatasetId}
+              >
                 Catalog detail
                 <ArrowRight size={16} />
               </button>
@@ -8170,6 +8195,10 @@ function queryStatusBadgeClass(result) {
   if (result.status === "blocked" || result.guardrail?.validation_status === "blocked") return "orange";
   if (result.status === "failed" || result.guardrail?.validation_status === "failed") return "red";
   return "blue";
+}
+
+function querySelectedCatalogDatasetId(result) {
+  return result?.selected_datasets?.[0]?.dataset_id || result?.evidence?.[0]?.dataset_id || "";
 }
 
 function queryRouteBadgeClass(route) {

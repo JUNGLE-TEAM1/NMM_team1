@@ -7,6 +7,7 @@
 ## 상태
 
 - 2026-06-30: 계획 생성. `/connections`는 browser smoke를 통과했으나 전체 흐름 deep E2E는 아직 수행하지 않았다.
+- 2026-06-30: persisted 데이터 기준 deep browser E2E 수행. Gold Build 수동 실행, Run 성공, Catalog 등록, AI Query DuckDB 질의, Catalog detail handoff를 확인했다.
 
 ## 범위
 
@@ -35,6 +36,7 @@
 
 ## 구현 대상 파일 예상
 
+- `frontend/src/app/App.jsx`
 - `docs/reports/deep-browser-runtime-e2e.md`
 - 필요 시 `docs/07-manual-verification-playbook.md`
 - 필요 시 Hotfix Phase 문서
@@ -59,6 +61,17 @@
 2. `/connections`에서 시작한다.
 3. Source/Silver/Gold/Jobs/Runs/Catalog/AI Query를 순서대로 클릭한다.
 4. 화면과 API 상태가 일치하는지 기록한다.
+
+### 2026-06-30 결과
+
+- `/connections`: persisted External Connection 9개 확인.
+- `/datasets/source`: persisted Source Dataset과 file-backed/snapshot evidence 확인.
+- `/datasets/silver`: materialized/file-backed Silver Dataset 확인.
+- `/jobs/gold-build`: `dataset_lake_smoke_1782827819_82db2b` Gold Build Job 수동 실행.
+- `/runs`: `a1770602-b400-42c5-82ba-c7f440dfd667` run 실행 후 `succeeded` 확인.
+- `/catalog`: succeeded run을 CatalogDataset으로 등록하고 `64a99c83-4fbc-4c84-82b1-863eb4092a15` 선택/상세 확인.
+- `/query`: `위험 점수가 높은 상품 알려줘` 질의가 live CatalogDataset을 DuckDB SQL로 소비하는지 확인.
+- Hotfix: AI Query `Catalog detail`이 고정 Week2 CatalogMetadata 상세로 이동하던 문제를 live CatalogDataset 선택 동선으로 수정.
 
 ## Report 기준
 

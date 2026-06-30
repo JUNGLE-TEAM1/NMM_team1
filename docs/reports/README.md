@@ -131,6 +131,7 @@ report가 늘어나면 영역별 최신 report index를 작게 유지한다. 이
 | Data Lake storage alignment | [`data-lake-storage-alignment.md`](data-lake-storage-alignment.md) | Source/Silver/Gold runtime artifact 경로가 `data/lake/bronze|silver|gold`로 정렬됐는지 확인 |
 | Jobs Runs runtime integration | [`jobs-runs-runtime-integration.md`](jobs-runs-runtime-integration.md) | local runner는 execution evidence, Airflow/Spark는 readiness-only evidence로 공통 Run record에 정렬됐는지 확인 |
 | Catalog AI Query runtime E2E | [`catalog-ai-query-runtime-e2e.md`](catalog-ai-query-runtime-e2e.md) | runtime Gold output publish 뒤 live CatalogDataset을 AI Query가 DuckDB read-only SQL로 소비하는지 확인 |
+| Deep browser runtime E2E | [`deep-browser-runtime-e2e.md`](deep-browser-runtime-e2e.md) | persisted runtime 데이터 기준 Connection/Source/Silver/Gold/Run/Catalog/AI Query 전체 클릭 흐름과 Catalog handoff hotfix 확인 |
 | CatalogDataset management boundary | [`catalog-dataset-management-boundary.md`](catalog-dataset-management-boundary.md) | registered CatalogDataset의 상세/AI Query context와 metadata/file/cascade delete 경계를 분리했는지 확인 |
 | Credential secret connection design | [`credential-secret-connection-design.md`](credential-secret-connection-design.md) | DB/S3 credential 연결이 raw secret 값이 아니라 `secret_ref_only` boundary로 남았는지 확인 |
 | Demo flow final audit Hotfix | [`demo-flow-final-audit-hotfix.md`](demo-flow-final-audit-hotfix.md) | C-queue 후 데모 UI drift, registered CatalogDataset action, Vite proxy target 검수 결과 확인 |
