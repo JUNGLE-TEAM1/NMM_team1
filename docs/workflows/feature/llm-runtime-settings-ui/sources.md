@@ -7,3 +7,4 @@
 - `.gitignore`
 - `.env.example`
 - `docker-compose.yml`
+- `docs/workflows/feature/llm-runtime-settings-ui/decisions.md`

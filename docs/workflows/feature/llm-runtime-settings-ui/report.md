@@ -6,6 +6,10 @@
 
 - Type: feature
 - Date: 2026-06-30
+- Context Budget mode: Lite Read
+- Primary context read: `AGENTS.md`, `docs/00-layer-map.md`, `.gitignore`, `.env.example`, `.env.local`, `docker-compose.yml`, `docs/03-interface-reference.md`, `docs/04-development-guide.md`
+- Escalated context read: none
+- Context omitted intentionally: full repository audit
 - Changed: `.env.local` local-only 설정 파일, `.gitignore`, `.env.example`, `docker-compose.yml`, LLM env 관련 docs/03 및 docs/04. 이후 local demo CatalogMetadata를 backend container가 읽도록 `./data:/app/data` mount를 추가했다.
 - Verified: `.env.local` ignored 확인, Compose config 확인, backend/frontend container 재생성, backend env 적용 확인, frontend/backend HTTP smoke, Product Health catalog 로드, AI Query OpenAI adapter 경로 성공
 - Remaining: 없음. UI에 이전 `blocked` 결과가 남아 있으면 같은 질문을 다시 실행한다.
