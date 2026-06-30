@@ -64,6 +64,7 @@ import { createSourceDataset, listSourceDatasets } from "../api/sourceDatasetApi
 import {
   createTargetDataset,
   listTargetDatasetRuns,
+  listTargetDatasets,
   triggerTargetDatasetRun,
 } from "../api/targetDatasetApi";
 import asklakeLogo from "../assets/asklake-logo.png";
@@ -361,6 +362,32 @@ function mapExternalConnectionRecord(record, rankOffset = 100) {
     defaultSchema: record.default_schema,
     defaultTable: record.default_table,
     isPersisted: true,
+  };
+}
+
+function mapTargetDatasetRecord(record, rankOffset = 100) {
+  const schema = (record.output_schema || []).map((field) => ({
+    name: field.name,
+    type: field.type,
+    sample: "target field",
+  }));
+
+  return {
+    id: record.id,
+    name: record.name,
+    sourceType: record.source_type,
+    typeLabel: "Target Dataset",
+    status: record.status === "draft" ? "Draft" : record.status,
+    description: record.description || `${record.source_dataset_name} source를 가공하는 target dataset draft입니다.`,
+    resource: record.source_dataset_name || record.source_dataset_id,
+    updatedLabel: "방금",
+    updatedRank: rankOffset,
+    columns: schema.map((field) => field.name),
+    schema,
+    sourceName: record.source_dataset_name,
+    sourceDatasetId: record.source_dataset_id,
+    selectedFieldCount: (record.selected_fields || []).length,
+    scheduleMode: record.schedule?.mode || "manual",
   };
 }
 
@@ -763,6 +790,7 @@ function PageIntro({ icon: Icon, title, body, status }) {
 function SourcesPage({ navigate, setNotice }) {
   const [isDatasetTypeModalOpen, setIsDatasetTypeModalOpen] = useState(false);
   const [datasetCreationMode, setDatasetCreationMode] = useState(null);
+  const [datasetInventoryTab, setDatasetInventoryTab] = useState("target");
   const [isSourceModalOpen, setIsSourceModalOpen] = useState(false);
   const [sourceModalPurpose, setSourceModalPurpose] = useState("target");
   const [connectionWizardStepIndex, setConnectionWizardStepIndex] = useState(0);
@@ -798,6 +826,9 @@ function SourcesPage({ navigate, setNotice }) {
   const [targetDescription, setTargetDescription] = useState("제품 상태 분석용 gold dataset draft");
   const [targetScheduleMode, setTargetScheduleMode] = useState("manual");
   const [targetScheduleNote, setTargetScheduleNote] = useState("데모에서는 수동 실행으로만 준비합니다.");
+  const [apiTargetDatasets, setApiTargetDatasets] = useState([]);
+  const [isTargetDatasetsLoading, setIsTargetDatasetsLoading] = useState(false);
+  const [targetDatasetListError, setTargetDatasetListError] = useState("");
   const [isSavingTargetDraft, setIsSavingTargetDraft] = useState(false);
   const [targetDraftError, setTargetDraftError] = useState("");
   const [lastCreatedTargetDraft, setLastCreatedTargetDraft] = useState(null);
@@ -819,6 +850,10 @@ function SourcesPage({ navigate, setNotice }) {
   const savedExternalConnections = useMemo(
     () => apiExternalConnections.map((record, index) => mapExternalConnectionRecord(record, 100 + apiExternalConnections.length - index)),
     [apiExternalConnections],
+  );
+  const savedTargetDatasets = useMemo(
+    () => apiTargetDatasets.map((record, index) => mapTargetDatasetRecord(record, 100 + apiTargetDatasets.length - index)),
+    [apiTargetDatasets],
   );
   const sourceDatasets = savedSourceDatasets.length > 0 ? savedSourceDatasets : demoSourceDatasets;
   const externalConnections = savedExternalConnections.length > 0 ? savedExternalConnections : demoExternalConnections;
@@ -959,6 +994,7 @@ function SourcesPage({ navigate, setNotice }) {
   useEffect(() => {
     let isActive = true;
     setIsSourceDatasetsLoading(true);
+    setIsTargetDatasetsLoading(true);
     listSourceDatasets()
       .then((records) => {
         if (!isActive) return;
@@ -983,6 +1019,21 @@ function SourcesPage({ navigate, setNotice }) {
       .catch((error) => {
         if (!isActive) return;
         setExternalConnectionError(error.message);
+      });
+    listTargetDatasets()
+      .then((records) => {
+        if (!isActive) return;
+        setApiTargetDatasets(records);
+        setTargetDatasetListError("");
+      })
+      .catch((error) => {
+        if (!isActive) return;
+        setTargetDatasetListError(error.message);
+      })
+      .finally(() => {
+        if (isActive) {
+          setIsTargetDatasetsLoading(false);
+        }
       });
 
     return () => {
@@ -2330,6 +2381,169 @@ function SourcesPage({ navigate, setNotice }) {
     );
   }
 
+  function renderDatasetInventory() {
+    const inventoryTabs = [
+      {
+        id: "target",
+        label: "Target Datasets",
+        description: "카탈로그와 AI Query로 이어지는 분석 자산",
+        count: savedTargetDatasets.length,
+      },
+      {
+        id: "source",
+        label: "Source Datasets",
+        description: "External Connection에서 정의한 raw/source 자산",
+        count: savedSourceDatasets.length,
+      },
+      {
+        id: "connection",
+        label: "External Connections",
+        description: "외부 원천 접속 설정과 schema scope",
+        count: savedExternalConnections.length,
+      },
+    ];
+    const activeTab = inventoryTabs.find((tab) => tab.id === datasetInventoryTab) || inventoryTabs[0];
+    const activeItems =
+      datasetInventoryTab === "target"
+        ? savedTargetDatasets
+        : datasetInventoryTab === "source"
+          ? savedSourceDatasets
+          : savedExternalConnections;
+    const isLoading =
+      (datasetInventoryTab === "target" && isTargetDatasetsLoading) ||
+      (datasetInventoryTab === "source" && isSourceDatasetsLoading);
+    const error =
+      datasetInventoryTab === "target"
+        ? targetDatasetListError
+        : datasetInventoryTab === "source"
+          ? sourceDatasetError
+          : externalConnectionError;
+
+    return (
+      <section className="pipeline-table-card dataset-inventory-card">
+        <div className="table-card-header">
+          <div className="table-title-line">
+            <Database size={20} />
+            <div>
+              <strong>Dataset Inventory</strong>
+              <p>저장된 Target Dataset, Source Dataset, External Connection metadata를 확인합니다.</p>
+            </div>
+          </div>
+          <div className="table-card-actions">
+            <button type="button" className="ghost-action" onClick={() => startDatasetCreation("connection")}>
+              Connection 추가
+            </button>
+            <button type="button" className="ghost-action" onClick={() => startDatasetCreation("source")}>
+              Source 추가
+            </button>
+            <button type="button" className="primary-action" onClick={() => startDatasetCreation("target")}>
+              Target 생성
+              <ArrowRight size={16} />
+            </button>
+          </div>
+        </div>
+
+        <div className="dataset-inventory-body">
+          <div className="dataset-inventory-tabs" role="tablist" aria-label="Dataset inventory tabs">
+            {inventoryTabs.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={datasetInventoryTab === tab.id}
+                className={datasetInventoryTab === tab.id ? "active" : ""}
+                onClick={() => setDatasetInventoryTab(tab.id)}
+              >
+                <span>{tab.count}</span>
+                <strong>{tab.label}</strong>
+                <small>{tab.description}</small>
+              </button>
+            ))}
+          </div>
+
+          {isLoading ? (
+            <EmptyState icon={Loader2} title={`${activeTab.label} 목록을 불러오는 중입니다`} body="저장된 metadata를 확인하고 있습니다." />
+          ) : error && activeItems.length === 0 ? (
+            <EmptyState icon={AlertCircle} title={`${activeTab.label} 목록을 불러오지 못했습니다`} body={error} />
+          ) : activeItems.length > 0 ? (
+            <div className="source-card-grid dataset-card-grid">
+              {datasetInventoryTab === "target"
+                ? activeItems.map((dataset) => (
+                    <article className="source-card dataset-asset-card" key={dataset.id}>
+                      <div className="source-card-head">
+                        <span className="source-card-icon target">
+                          <Table2 size={18} aria-hidden="true" />
+                        </span>
+                        <span className="source-card-badge">{dataset.status}</span>
+                      </div>
+                      <strong>{dataset.name}</strong>
+                      <p>{dataset.description}</p>
+                      <div className="source-card-meta">
+                        <span>{dataset.selectedFieldCount || dataset.columns.length} fields</span>
+                        <span>{dataset.scheduleMode}</span>
+                      </div>
+                      <small>source: {dataset.sourceName}</small>
+                      <small>catalog: draft · AI Query: publish 대기</small>
+                    </article>
+                  ))
+                : null}
+
+              {datasetInventoryTab === "source"
+                ? activeItems.map((dataset) => (
+                    <article className="source-card dataset-asset-card" key={dataset.id}>
+                      <div className="source-card-head">
+                        <span className="source-card-icon source">
+                          <Database size={18} aria-hidden="true" />
+                        </span>
+                        <span className="source-card-badge">{dataset.typeLabel}</span>
+                      </div>
+                      <strong>{dataset.name}</strong>
+                      <p>{dataset.description}</p>
+                      <div className="source-card-meta">
+                        <span>{dataset.status}</span>
+                        <span>{dataset.columns.length} columns</span>
+                      </div>
+                      <small>{dataset.resource}</small>
+                      <small>Target Dataset input 후보</small>
+                    </article>
+                  ))
+                : null}
+
+              {datasetInventoryTab === "connection"
+                ? activeItems.map((connection) => (
+                    <article className="source-card dataset-asset-card" key={connection.id}>
+                      <div className="source-card-head">
+                        <span className="source-card-icon connection">
+                          <ServerCog size={18} aria-hidden="true" />
+                        </span>
+                        <span className="source-card-badge">{connection.typeLabel}</span>
+                      </div>
+                      <strong>{connection.name}</strong>
+                      <p>{connection.description}</p>
+                      <div className="source-card-meta">
+                        <span>{connection.status}</span>
+                        <span>{connection.resourceLabel}</span>
+                      </div>
+                      <small>{connection.resource}</small>
+                      <small>{connection.host ? `${connection.host}:${connection.port}/${connection.database}` : "connection metadata"}</small>
+                    </article>
+                  ))
+                : null}
+            </div>
+          ) : (
+            <section className="dataset-empty-panel">
+              <EmptyState
+                icon={datasetInventoryTab === "target" ? Table2 : datasetInventoryTab === "source" ? Database : ServerCog}
+                title={`저장된 ${activeTab.label}가 없습니다`}
+                body="우측 상단 생성 버튼으로 새 metadata를 등록합니다."
+              />
+            </section>
+          )}
+        </div>
+      </section>
+    );
+  }
+
   return (
     <div className="page-stack">
       <PageHeader
@@ -2360,23 +2574,7 @@ function SourcesPage({ navigate, setNotice }) {
       {datasetCreationMode === "connection" ? renderExternalConnectionWizard() : null}
       {datasetCreationMode === "source" ? renderSourceDatasetShell() : null}
       {datasetCreationMode === "target" ? renderTargetDatasetWizard() : null}
-      {!datasetCreationMode ? (
-        <section className="pipeline-table-card dataset-start-card">
-          <div className="dataset-placeholder-body">
-            <div className="dataset-placeholder-icon">
-              <Database size={28} />
-            </div>
-            <div>
-              <h3>먼저 만들 항목을 선택하세요</h3>
-              <p>External Connection을 등록한 뒤 Source Dataset을 만들고, Source Dataset에서 Target Dataset과 ETL job draft를 준비합니다.</p>
-            </div>
-            <button type="button" className="primary-action" onClick={() => setIsDatasetTypeModalOpen(true)}>
-              데이터셋 생성
-              <ArrowRight size={16} />
-            </button>
-          </div>
-        </section>
-      ) : null}
+      {!datasetCreationMode ? renderDatasetInventory() : null}
       {isDatasetTypeModalOpen ? (
         <DatasetTypeChoiceModal
           onClose={() => setIsDatasetTypeModalOpen(false)}
