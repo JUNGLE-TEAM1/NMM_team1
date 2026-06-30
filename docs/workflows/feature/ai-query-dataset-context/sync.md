@@ -22,4 +22,7 @@
 
 ## Push / PR
 
-- Pushed branch: missing
+- pushed branch: feature/ai-query-dataset-context
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/314
+- merge status: open
+- issue close status: n/a

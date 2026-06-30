@@ -6,7 +6,7 @@
 - Date: 2026-06-30
 - Changed: M6 AI Query가 fixture catalog나 추측한 output path 대신 저장된 Product Health `CatalogMetadata`를 읽어 DuckDB SQL context를 만들게 했다. Nested `query.*`/`storage.local_fallback_path`와 PR 5/6 top-level alias인 `query_table`, `allowed_columns`, `canonical_demo_query`, local `storage_uri`를 함께 지원한다.
 - Verified: focused M6 SQL/Catalog tests `37 passed`, M6 + LLM safety tests `42 passed`, Product Health contract tests `4 passed`, Python compile passed, frontend build passed, `git diff --check`, `scripts/validate-harness.sh`, `scripts/validate-harness.sh --strict`, local API smoke에서 `dataset_product_health_gold`, `engine=duckdb`, `route=sql`, first row `ph_000028` 확인.
-- Remaining: PR push/review. Full backend suite는 `144 passed`, 2 Taxi Spark tests failed because this local machine has no Java Runtime.
+- Remaining: PR #314 review/CI. Full backend suite는 `144 passed`, 2 Taxi Spark tests failed because this local machine has no Java Runtime.
 - Next context: PR 5/6이 remote/object-only `storage_uri`를 제공하면 M6는 직접 추측하거나 credential 없이 remote read하지 않고 M5 local fallback materialization 또는 DuckDB remote credential policy를 별도 결정해야 한다.
 - Risk: 이번 Phase는 CatalogMetadata 저장 자체를 구현하지 않는다. 저장된 catalog가 없거나 local readable path가 없으면 AI Query가 blocked를 반환하는 것이 정상이다.
 
