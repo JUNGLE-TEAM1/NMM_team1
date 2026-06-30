@@ -517,9 +517,26 @@ Week 2 draft API/UI route contract:
 | Kafka replay health | `GET /api/week2/kafka-replay/health` | M4 + M5 | `KafkaReplayEvidence` summary |
 | Kafka replay runs | `GET /api/week2/kafka-replay/runs`, `GET /api/week2/kafka-replay/runs/{run_id}` | M4 + M5 | `KafkaReplayEvidence` |
 | AI query | `POST /api/week2/ai/query` / `/ask` | M6 + M1 | `AIQueryResult` |
+| Dashboard cards | `POST /api/week2/dashboard/cards`, `GET /api/week2/dashboard/cards`, `GET /api/week2/dashboard/cards/{dashboard_card_id}` | M1 + M6 | `DashboardCard` |
 
 These are Week 2 draft routes, not final product API routes. If an implementation uses existing baseline `/api/sources`, `/api/pipelines`, or `/api/catalog/datasets` routes, it must either adapt to these fixture names at the boundary or update this section before module work continues.
 Locked for this contract pass: Source register and schema preview routes remain fixture-first until a later implementation PR adds them. The currently executable Week 2 routes are workflow run, run status, catalog detail, Kafka replay evidence, and AI query. M1 may replace placeholders with fixture/API state, but placeholder identifiers must converge on the shared Week 2 IDs in this section.
+
+Minimum DashboardCard storage boundary:
+
+Dashboard card storage is a serving metadata boundary for saved AI Query chart results. It stores the rendered query intent and chart configuration; it does not re-run SQL, refresh source data, edit cards, delete cards, or own dashboard layout composition.
+
+| Field | Required | Notes |
+| --- | --- | --- |
+| `dashboard_card_id` | yes | backend-generated card id |
+| `title` | yes | display title |
+| `question` | yes | original AI Query question |
+| `sql` | yes | SQL returned by `AIQueryResult.sql` / `query_result.sql` |
+| `chart_spec` | yes | JSON object with at least `type`, `x`, `y`, and `title` |
+| `dataset_id` | yes | selected dataset id used by the card |
+| `created_at` | yes | server timestamp |
+
+`POST /api/week2/dashboard/cards` accepts `title`, `question`, `sql`, `chart_spec`, and `dataset_id`, then returns the persisted `DashboardCard`. `GET /api/week2/dashboard/cards` returns cards ordered by `created_at DESC`. `GET /api/week2/dashboard/cards/{dashboard_card_id}` returns `404` when the card does not exist.
 
 M4 Kafka replay writes harness-readable evidence under `data/results/week2/_metadata/kafka_replay/`.
 Each replay run produces `<run_id>.json` plus `latest.json`. The minimum `KafkaReplayEvidence` shape is:

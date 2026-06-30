@@ -261,6 +261,36 @@ class PipelineRunRecord(BaseModel):
     updated_at: str
 
 
+class DashboardCardCreate(BaseModel):
+    title: str = Field(min_length=1, max_length=120)
+    question: str = Field(min_length=1, max_length=500)
+    sql: str = Field(min_length=1, max_length=5000)
+    chart_spec: dict[str, Any] = Field(min_length=1)
+    dataset_id: str = Field(min_length=1, max_length=120)
+
+    @model_validator(mode="after")
+    def validate_chart_spec(self) -> "DashboardCardCreate":
+        required_fields = ["type", "x", "y", "title"]
+        missing_fields = [
+            field
+            for field in required_fields
+            if not isinstance(self.chart_spec.get(field), str) or not self.chart_spec[field].strip()
+        ]
+        if missing_fields:
+            raise ValueError(f"chart_spec missing required fields: {', '.join(missing_fields)}")
+        return self
+
+
+class DashboardCardRecord(BaseModel):
+    dashboard_card_id: str
+    title: str
+    question: str
+    sql: str
+    chart_spec: dict[str, Any]
+    dataset_id: str
+    created_at: str
+
+
 class Week2WorkflowRunRequest(BaseModel):
     executor: Literal["airflow", "local_runner", "spark_runner"] = "local_runner"
     triggered_by: str = Field(default="demo_user", min_length=1, max_length=80)

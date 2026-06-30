@@ -3,6 +3,8 @@ from typing import Protocol
 from app.domain.schemas import (
     CatalogDataset,
     ColumnSchema,
+    DashboardCardCreate,
+    DashboardCardRecord,
     ExternalConnectionCreate,
     ExternalConnectionRecord,
     PipelineCreate,
@@ -106,3 +108,9 @@ class MetadataStore(Protocol):
         row_count: int,
         sample: list[dict[str, object]],
     ) -> CatalogDataset: ...
+
+    def create_dashboard_card(self, card: DashboardCardCreate) -> DashboardCardRecord: ...
+
+    def list_dashboard_cards(self) -> list[DashboardCardRecord]: ...
+
+    def get_dashboard_card(self, dashboard_card_id: str) -> DashboardCardRecord | None: ...

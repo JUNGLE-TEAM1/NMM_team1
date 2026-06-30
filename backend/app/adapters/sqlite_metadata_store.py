@@ -8,6 +8,8 @@ from pathlib import Path
 from app.domain.schemas import (
     CatalogDataset,
     ColumnSchema,
+    DashboardCardCreate,
+    DashboardCardRecord,
     ExternalConnectionCreate,
     ExternalConnectionRecord,
     PipelineCreate,
@@ -151,6 +153,16 @@ class SQLiteMetadataStore:
                     updated_at TEXT NOT NULL,
                     FOREIGN KEY(pipeline_id) REFERENCES pipelines(id),
                     FOREIGN KEY(result_dataset_id) REFERENCES catalog_datasets(id)
+                );
+
+                CREATE TABLE IF NOT EXISTS dashboard_cards (
+                    dashboard_card_id TEXT PRIMARY KEY,
+                    title TEXT NOT NULL,
+                    question TEXT NOT NULL,
+                    sql TEXT NOT NULL,
+                    chart_spec_json TEXT NOT NULL,
+                    dataset_id TEXT NOT NULL,
+                    created_at TEXT NOT NULL
                 );
                 """
             )
@@ -593,6 +605,44 @@ class SQLiteMetadataStore:
             )
         return self.get_catalog_dataset(dataset_id)  # type: ignore[return-value]
 
+    def create_dashboard_card(self, card: DashboardCardCreate) -> DashboardCardRecord:
+        dashboard_card_id = str(uuid.uuid4())
+        created_at = now_iso()
+
+        with self.connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO dashboard_cards (
+                    dashboard_card_id, title, question, sql, chart_spec_json, dataset_id, created_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    dashboard_card_id,
+                    card.title,
+                    card.question,
+                    card.sql,
+                    json.dumps(card.chart_spec, ensure_ascii=False),
+                    card.dataset_id,
+                    created_at,
+                ),
+            )
+
+        return self.get_dashboard_card(dashboard_card_id)  # type: ignore[return-value]
+
+    def list_dashboard_cards(self) -> list[DashboardCardRecord]:
+        with self.connect() as connection:
+            rows = connection.execute("SELECT * FROM dashboard_cards ORDER BY created_at DESC").fetchall()
+        return [dashboard_card_from_row(row) for row in rows]
+
+    def get_dashboard_card(self, dashboard_card_id: str) -> DashboardCardRecord | None:
+        with self.connect() as connection:
+            row = connection.execute(
+                "SELECT * FROM dashboard_cards WHERE dashboard_card_id = ?",
+                (dashboard_card_id,),
+            ).fetchone()
+        return dashboard_card_from_row(row) if row else None
+
     def connect(self) -> sqlite3.Connection:
         connection = sqlite3.connect(self.database_path)
         connection.row_factory = sqlite3.Row
@@ -757,4 +807,16 @@ def pipeline_run_from_row(row: sqlite3.Row) -> PipelineRunRecord:
         logs=json.loads(row["logs_json"]),
         created_at=row["created_at"],
         updated_at=row["updated_at"],
+    )
+
+
+def dashboard_card_from_row(row: sqlite3.Row) -> DashboardCardRecord:
+    return DashboardCardRecord(
+        dashboard_card_id=row["dashboard_card_id"],
+        title=row["title"],
+        question=row["question"],
+        sql=row["sql"],
+        chart_spec=json.loads(row["chart_spec_json"]),
+        dataset_id=row["dataset_id"],
+        created_at=row["created_at"],
     )
