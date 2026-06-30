@@ -29,7 +29,7 @@
 ## CI/CD Gate / CI-CD 게이트
 
 - CI required: yes
-- CI result: local pending, GitHub PR checks after push
+- CI result: passed on PR #305 after push (`container-smoke`, `harness`, `linked-issue`, `manifest-smoke`, `migration-schema-security`, `pr-size-hard-gate`, `pr-template-drift`, `risk-warning`)
 - Deploy/publish required: no
 - Deployment confirmation: n/a
 - Rollback/smoke notes: UI/metadata-only change. Revert branch to restore previous M3 step list view.
