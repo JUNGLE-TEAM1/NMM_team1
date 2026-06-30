@@ -133,6 +133,7 @@ report가 늘어나면 영역별 최신 report index를 작게 유지한다. 이
 | Catalog AI Query runtime E2E | [`catalog-ai-query-runtime-e2e.md`](catalog-ai-query-runtime-e2e.md) | runtime Gold output publish 뒤 live CatalogDataset을 AI Query가 DuckDB read-only SQL로 소비하는지 확인 |
 | Deep browser runtime E2E | [`deep-browser-runtime-e2e.md`](deep-browser-runtime-e2e.md) | persisted runtime 데이터 기준 Connection/Source/Silver/Gold/Run/Catalog/AI Query 전체 클릭 흐름과 Catalog handoff hotfix 확인 |
 | AI Query result persistence | [`ai-query-result-persistence.md`](ai-query-result-persistence.md) | AI Query 결과가 Catalog/Run 이동 후에도 browser session 안에서 복원되는지 확인 |
+| Gold input creation shortcuts | [`gold-input-creation-shortcuts.md`](gold-input-creation-shortcuts.md) | Gold Dataset 생성 중 입력 Source/Silver가 부족할 때 생성 wizard로 바로 이동하는 shortcut 확인 |
 | CatalogDataset management boundary | [`catalog-dataset-management-boundary.md`](catalog-dataset-management-boundary.md) | registered CatalogDataset의 상세/AI Query context와 metadata/file/cascade delete 경계를 분리했는지 확인 |
 | Credential secret connection design | [`credential-secret-connection-design.md`](credential-secret-connection-design.md) | DB/S3 credential 연결이 raw secret 값이 아니라 `secret_ref_only` boundary로 남았는지 확인 |
 | Demo flow final audit Hotfix | [`demo-flow-final-audit-hotfix.md`](demo-flow-final-audit-hotfix.md) | C-queue 후 데모 UI drift, registered CatalogDataset action, Vite proxy target 검수 결과 확인 |

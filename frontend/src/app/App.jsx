@@ -3714,6 +3714,16 @@ function SourcesPage({ navigate, setNotice, dataView = "datasets-source", pendin
               <h3>Silver 선택</h3>
               <p>Gold Dataset을 만들 여러 Silver Dataset을 선택하고 row 기준이 되는 Base silver를 정합니다.</p>
             </div>
+            <div className="handoff-actions">
+              <button type="button" className="ghost-action" onClick={() => startDatasetCreation("source")}>
+                Source Dataset 생성
+                <Database size={16} />
+              </button>
+              <button type="button" className="primary-action" onClick={() => startDatasetCreation("silver")}>
+                Silver Dataset 생성
+                <Layers3 size={16} />
+              </button>
+            </div>
           </div>
           <div className="wizard-source-layout">
             <div className="target-source-card-grid" aria-label="Target dataset silver choices">
@@ -4631,7 +4641,8 @@ function SourcesPage({ navigate, setNotice, dataView = "datasets-source", pendin
           onSelect={handleSourceSelect}
           onCreateNew={() => {
             setIsSourceModalOpen(false);
-            setNotice("새 source dataset 생성 화면은 다음 Phase에서 연결합니다.");
+            startDatasetCreation("source");
+            setNotice("Source Dataset 생성 화면으로 이동했습니다.");
           }}
         />
       ) : null}
@@ -6466,7 +6477,7 @@ function SourceStartModal({ sources, onClose, onSelect, onCreateNew }) {
             취소
           </button>
           <button type="button" className="primary-action" onClick={onCreateNew}>
-            새 source 연결
+            Source Dataset 생성
             <ArrowRight size={16} />
           </button>
         </footer>
