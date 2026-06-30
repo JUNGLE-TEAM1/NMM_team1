@@ -43,9 +43,10 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 - linked GitHub issue: #317
 - issue link: https://github.com/JUNGLE-TEAM1/NMM_team1/issues/317
 - issue creation result: created for PR readiness
-- issue project result: not requested
+- issue project result: set to Review in JUNGLE-TEAM1 project 3
 - PR closing keyword: Closes #317
-- pushed branch:
-- PR link:
-- merge status:
-- issue close status:
+- pushed branch: feature/harness-ci-fast-path
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/318
+- merge status: open
+- issue close status: open
+- issue reopen result: already open
