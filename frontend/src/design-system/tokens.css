@@ -1,0 +1,14 @@
+:root {
+  --color-text-primary: #111827;
+  --color-text-muted: #64748b;
+  --color-surface-page: #f9fafb;
+  --color-surface-card: #ffffff;
+  --color-border-subtle: #e5e7eb;
+  --color-action-primary: #2563eb;
+  --color-action-primary-strong: #1d4ed8;
+  --radius-control: 8px;
+  --radius-panel: 8px;
+  --shadow-panel: 0 1px 2px rgb(15 23 42 / 0.04);
+  --shadow-floating: 0 14px 40px rgb(15 23 42 / 0.18);
+  --space-page: 28px;
+}
