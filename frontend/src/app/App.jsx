@@ -108,6 +108,7 @@ import {
 import "./styles.css";
 
 const WEEK2_DEFAULT_CATALOG_DETAIL_URL = `/catalog/${WEEK2_DEFAULT_DATASET_ID}`;
+const AI_QUERY_SESSION_STORAGE_KEY = "asklake.ai_query.latest_result.v1";
 
 const navItems = [
   {
@@ -7943,13 +7944,16 @@ function LineageShell({ catalog }) {
 }
 
 function AiQueryPage({ navigate, setNotice }) {
-  const [queryText, setQueryText] = useState("리뷰가 나쁘고 구매 전환도 낮고 배송 지연까지 겹친 문제 상품군을 찾아줘");
+  const [restoredQuerySession] = useState(() => readStoredAiQuerySession());
+  const [queryText, setQueryText] = useState(
+    restoredQuerySession.question || "리뷰가 나쁘고 구매 전환도 낮고 배송 지연까지 겹친 문제 상품군을 찾아줘",
+  );
   const [queryState, setQueryState] = useState({
-    result: null,
+    result: restoredQuerySession.result || null,
     error: "",
     loading: false,
   });
-  const [viewMode, setViewMode] = useState("table");
+  const [viewMode, setViewMode] = useState(restoredQuerySession.viewMode || "table");
   const queryResult = queryState.result?.query_result;
   const rows = queryResult?.rows || queryState.result?.rows || [];
   const columns = queryResult?.columns?.length
@@ -7981,12 +7985,20 @@ function AiQueryPage({ navigate, setNotice }) {
     try {
       const result = await askWeek2AiQuery(question);
       setQueryState({ result, error: "", loading: false });
+      writeStoredAiQuerySession({ question, result, viewMode });
     } catch (error) {
       setQueryState((previous) => ({
         result: previous.result,
         error: error.message,
         loading: false,
       }));
+    }
+  }
+
+  function changeViewMode(nextViewMode) {
+    setViewMode(nextViewMode);
+    if (queryState.result) {
+      writeStoredAiQuerySession({ question: queryText, result: queryState.result, viewMode: nextViewMode });
     }
   }
 
@@ -8104,7 +8116,7 @@ function AiQueryPage({ navigate, setNotice }) {
                     key={mode}
                     type="button"
                     className={viewMode === mode ? "active" : ""}
-                    onClick={() => setViewMode(mode)}
+                    onClick={() => changeViewMode(mode)}
                   >
                     {mode === "table" ? <Table2 size={14} /> : <BarChart3 size={14} />}
                     {mode}
@@ -8199,6 +8211,39 @@ function queryStatusBadgeClass(result) {
 
 function querySelectedCatalogDatasetId(result) {
   return result?.selected_datasets?.[0]?.dataset_id || result?.evidence?.[0]?.dataset_id || "";
+}
+
+function readStoredAiQuerySession() {
+  if (typeof window === "undefined") return {};
+  try {
+    const stored = window.sessionStorage.getItem(AI_QUERY_SESSION_STORAGE_KEY);
+    if (!stored) return {};
+    const parsed = JSON.parse(stored);
+    if (!parsed || typeof parsed !== "object") return {};
+    return {
+      question: typeof parsed.question === "string" ? parsed.question : "",
+      result: parsed.result && typeof parsed.result === "object" ? parsed.result : null,
+      viewMode: parsed.viewMode === "chart" ? "chart" : "table",
+    };
+  } catch {
+    return {};
+  }
+}
+
+function writeStoredAiQuerySession({ question, result, viewMode }) {
+  if (typeof window === "undefined" || !result) return;
+  try {
+    window.sessionStorage.setItem(
+      AI_QUERY_SESSION_STORAGE_KEY,
+      JSON.stringify({
+        question,
+        result,
+        viewMode: viewMode === "chart" ? "chart" : "table",
+      }),
+    );
+  } catch {
+    // Session storage is a UX convenience only; query execution should never fail because of it.
+  }
 }
 
 function queryRouteBadgeClass(route) {

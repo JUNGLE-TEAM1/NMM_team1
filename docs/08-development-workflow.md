@@ -339,6 +339,7 @@ External Connection은 외부 원천에 접속하기 위한 연결 설정이고,
 | C-29 | `feature/jobs-runs-runtime-integration` | local runner/Airflow/Spark executor 결과를 공통 Run record로 정렬한다 | C-28A 완료 또는 사람 확인 | Jobs definition과 Runs execution evidence가 분리되고 executor별 result artifact가 조회됨 |
 | C-30 | `feature/catalog-ai-query-runtime-e2e` | runtime Gold output을 CatalogDataset에 등록하고 AI Query가 live catalog를 읽게 한다 | C-29 완료 또는 사람 확인 | Gold CatalogDataset이 schema/storage/lineage/evidence를 제공하고 AI Query가 read-only SQL 결과를 반환함 |
 | C-31 | `feature/deep-browser-runtime-e2e` | External Connection부터 AI Query까지 브라우저 deep E2E를 검수한다 | C-30 완료 또는 사람 확인 | 전체 데모 흐름이 console error 없이 진행되고 남은 UI/API mismatch가 Hotfix/후속 Phase로 분류됨 |
+| C-32 | `feature/ai-query-result-persistence` | AI Query 결과를 페이지 이동 후에도 유지해 review loop를 끊기지 않게 한다 | C-31 완료 또는 사람 확인 | Query 실행 후 Catalog/Run으로 이동했다가 돌아와도 질문, 답변, evidence가 복원됨 |
 
 범위 원칙:
 
@@ -384,6 +385,7 @@ External Connection은 외부 원천에 접속하기 위한 연결 설정이고,
 - C-29는 Jobs/Runs runtime record 정렬이다. `local_runner`는 실제 execution evidence로 남기고, Airflow/Spark는 trigger 없이 `ready_to_run`/`readiness_only` evidence로 남긴다. Airflow scheduler 운영화, retry/backfill, production orchestration은 제외한다.
 - C-30은 Catalog와 AI Query live dataset 소비를 닫는다. external LLM/RAG/vector DB 추가와 write SQL은 제외한다.
 - C-31은 구현 Phase가 아니라 deep browser verification Phase다. 문제 발견 시 독립 Hotfix 또는 후속 Phase로 분리한다.
+- C-32는 browser session 안의 UX 복원만 다룬다. 서버 저장, query history API, multi-user query log, 영구 audit trail은 포함하지 않는다.
 - C-4 이후 M5 실행 화면은 `M5 데모`가 아니라 `Job Runs` 또는 `실행 기록` 같은 사용자 언어로 재도입한다.
 - M2/M4/M3/M6는 독립 메뉴가 아니라 Dataset creation 이후의 runtime, evidence, catalog, query 소비자로 연결한다.
 
