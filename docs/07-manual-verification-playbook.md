@@ -216,8 +216,10 @@ docker exec nmm_team1-backend-1 python scripts/load_jsonl_to_mongodb.py \
 5. 성공 알림이 표시되고 실행 ID, executor, status, 실행 결과 dataset이 실행 기록 목록에 표시되는지 확인한다.
 6. 생성 직후 화면이 `GET /api/target-datasets/{dataset_id}/runs` 목록 결과를 반영하는지 확인한다.
 7. `GET /api/target-datasets/{dataset_id}/runs` 응답에 `week2_run_id`, `pipeline_id`, `status`, `execution_result.target_dataset_handoff.runtime_output_scope=week2_fixture_output`가 있는지 확인한다.
-8. `GET /api/week2/runs/{week2_run_id}`로 M5 `ExecutionResult`가 조회되는지 확인한다.
-9. 독립 `M5 데모` 메뉴를 되살리지 않았고, runtime evidence/CatalogMetadata 보강은 후속 Phase로 남아 있는지 확인한다.
+8. Product Health 추천 Target Dataset을 snapshot 없이 실행하면 `status=failed`, `execution_result.product_health_manual_run_contract.status=failed_product_health_execution`, `error.code=MISSING_SOURCE_SNAPSHOT`이 보이는지 확인한다.
+9. Product Health 추천 Target Dataset을 `source_snapshots[]` parquet artifact와 함께 실행하면 `status=succeeded`, `gold_output.local_fallback_path`, `gold_output.row_count`, passed `quality_results[]`, `catalog_payload.status=ready_for_catalog_registration`가 보이는지 확인한다.
+10. 일반 Target Dataset run이면 `GET /api/week2/runs/{week2_run_id}`로 M5 `ExecutionResult`가 조회되는지 확인한다. Product Health run은 `pipeline_product_health_e2e` run record 자체에 execution evidence를 저장한다.
+11. 독립 `M5 데모` 메뉴를 되살리지 않았고, CatalogMetadata 등록/AI Query 연결은 후속 Phase로 남아 있는지 확인한다.
 
 ### Modular Contract Baseline 점검
 

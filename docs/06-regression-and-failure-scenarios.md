@@ -118,6 +118,16 @@
 | Verification method | `backend/tests/test_target_dataset_run_handoff.py`, 데이터셋 화면 Target Dataset Review 저장 후 `Job Run 시작` smoke |
 | Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07`, C-4 `feature/target-dataset-run-handoff` |
 
+### Product Health Manual Run이 snapshot 없이 성공처럼 표시되는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | PR 5B의 Product Health Manual Run은 PR 4 snapshot artifact가 있을 때만 Gold output을 성공으로 저장한다. |
+| Failure condition | `source_snapshots[]`가 없거나 artifact를 읽지 못했는데 `gold_output.storage_uri`, `row_count`, `catalog_payload.status=ready_for_catalog_registration`가 채워져 Catalog/AI Query 완료처럼 보인다. |
+| Expected behavior | Product Health Target Dataset run은 snapshot이 없으면 `status=failed`, `product_health_manual_run_contract.status=failed_product_health_execution`, `source_snapshot_inputs[].snapshot_status=missing_source_snapshot`, `error.code=MISSING_SOURCE_SNAPSHOT`을 저장한다. snapshot parquet 실행이 성공한 경우에만 `gold_output.storage_uri`, `row_count`, passed `quality_results[]`, ready `catalog_payload`를 채운다. |
+| Verification method | `backend/tests/test_target_dataset_run_handoff.py::test_product_health_target_dataset_run_fails_without_source_snapshots`, `backend/tests/test_target_dataset_run_handoff.py::test_product_health_target_dataset_run_executes_from_source_snapshots`, `docs/03` Target Dataset Job Draft API 계약 확인 |
+| Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07`, PR 5B `feature/product-health-manual-run-execution` |
+
 ### Week 2 Airflow 실패가 local fallback 성공으로 가려지는 경우
 
 | 항목 | 내용 |
