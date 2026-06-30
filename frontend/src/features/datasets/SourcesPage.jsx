@@ -39,13 +39,10 @@ import {
   X,
 } from "lucide-react";
 
-import { getCatalogDatasetManagementPolicy, listCatalogDatasets } from "../../api/catalogApi";
 import {
   createExternalConnection,
   deleteExternalConnection,
-  getExternalConnectionCredentialPolicy,
   inspectExternalConnection,
-  listExternalConnections,
   testExternalConnection,
   updateExternalConnection,
 } from "../../api/externalConnectionApi";
@@ -53,7 +50,6 @@ import {
   createSilverDataset,
   createSilverDatasetMaterialization,
   deleteSilverDataset,
-  listSilverDatasets,
   listSilverDatasetMaterializations,
   updateSilverDataset,
   updateSilverDatasetSchedule,
@@ -62,8 +58,6 @@ import {
   createSourceDataset,
   createSourceDatasetSnapshot,
   deleteSourceDataset,
-  listProductHealthSourceInventory,
-  listSourceDatasets,
   listSourceDatasetSnapshots,
   runProductHealthPresetSynthesis,
   updateSourceDataset,
@@ -72,13 +66,12 @@ import {
   createTargetDatasetDraft,
   createTargetDatasetJobRun,
   deleteTargetDatasetDraft,
-  listTargetDatasetDrafts,
-  listTargetDatasetJobRuns,
   updateTargetDatasetDraft,
   updateTargetDatasetDraftSchedule,
 } from "../../api/targetDatasetDraftApi";
 import { DataTable, EmptyState, InfoCard, PageHeader } from "../../design-system";
 import { formatBytes, formatMetric } from "../../app/formatters";
+import { useDatasetDraftData } from "./useDatasetDraftData";
 
 const demoSourceDatasets = [
   {
@@ -855,17 +848,25 @@ export function SourcesPage({ navigate, setNotice, dataView = "datasets-source",
   const [connectionInspectState, setConnectionInspectState] = useState({ status: "idle", result: null, error: "" });
   const [connectionRuntimeCheckState, setConnectionRuntimeCheckState] = useState({ status: "idle", checkId: "", result: null, error: "" });
   const [connectionSaveState, setConnectionSaveState] = useState({ status: "idle", record: null, error: "" });
-  const [savedExternalConnections, setSavedExternalConnections] = useState([]);
-  const [credentialPolicy, setCredentialPolicy] = useState(null);
-  const [productHealthSourceInventory, setProductHealthSourceInventory] = useState(null);
   const [productHealthPresetState, setProductHealthPresetState] = useState({ status: "idle", result: null, error: "" });
-  const [savedSourceDatasets, setSavedSourceDatasets] = useState([]);
-  const [savedSilverDatasets, setSavedSilverDatasets] = useState([]);
-  const [savedTargetDatasetDrafts, setSavedTargetDatasetDrafts] = useState([]);
-  const [savedTargetJobRuns, setSavedTargetJobRuns] = useState([]);
-  const [publishedCatalogDatasets, setPublishedCatalogDatasets] = useState([]);
-  const [catalogDatasetPolicy, setCatalogDatasetPolicy] = useState(null);
-  const [datasetDraftListState, setDatasetDraftListState] = useState({ loading: true, error: "" });
+  const {
+    savedExternalConnections,
+    setSavedExternalConnections,
+    credentialPolicy,
+    productHealthSourceInventory,
+    savedSourceDatasets,
+    setSavedSourceDatasets,
+    savedSilverDatasets,
+    setSavedSilverDatasets,
+    savedTargetDatasetDrafts,
+    setSavedTargetDatasetDrafts,
+    savedTargetJobRuns,
+    setSavedTargetJobRuns,
+    publishedCatalogDatasets,
+    catalogDatasetPolicy,
+    datasetDraftListState,
+    refreshDatasetDraftLists,
+  } = useDatasetDraftData({ setNotice, mapExternalConnectionRecord });
   const [jobRunCreateState, setJobRunCreateState] = useState({ status: "idle", draftId: "", error: "" });
   const [sourceWizardStepIndex, setSourceWizardStepIndex] = useState(0);
   const [sourceDraft, setSourceDraft] = useState(null);
@@ -1146,43 +1147,6 @@ export function SourcesPage({ navigate, setNotice, dataView = "datasets-source",
     status: "ready to run",
   }));
 
-  async function refreshDatasetDraftLists() {
-    setDatasetDraftListState({ loading: true, error: "" });
-    try {
-      const [
-        connections,
-        sourceDatasets,
-        silverDatasets,
-        targetDrafts,
-        catalogDatasets,
-        catalogPolicy,
-        nextCredentialPolicy,
-        nextProductHealthInventory,
-      ] = await Promise.all([
-        listExternalConnections(),
-        listSourceDatasets(),
-        listSilverDatasets(),
-        listTargetDatasetDrafts(),
-        listCatalogDatasets(),
-        getCatalogDatasetManagementPolicy(),
-        getExternalConnectionCredentialPolicy(),
-        listProductHealthSourceInventory(),
-      ]);
-      setSavedExternalConnections(connections.map(mapExternalConnectionRecord));
-      setCredentialPolicy(nextCredentialPolicy);
-      setProductHealthSourceInventory(nextProductHealthInventory);
-      setSavedSourceDatasets(sourceDatasets);
-      setSavedSilverDatasets(silverDatasets);
-      setSavedTargetDatasetDrafts(targetDrafts);
-      setPublishedCatalogDatasets(catalogDatasets);
-      setCatalogDatasetPolicy(catalogPolicy);
-      setDatasetDraftListState({ loading: false, error: "" });
-    } catch (error) {
-      setDatasetDraftListState({ loading: false, error: error.message });
-      setNotice(`Dataset draft 목록 조회 실패: ${error.message}`);
-    }
-  }
-
   async function runProductHealthPreset() {
     setProductHealthPresetState({ status: "running", result: null, error: "" });
     try {
@@ -1195,20 +1159,6 @@ export function SourcesPage({ navigate, setNotice, dataView = "datasets-source",
       setNotice(`Product Health preset synthesis 실패: ${error.message}`);
     }
   }
-
-  async function refreshTargetJobRuns() {
-    try {
-      const jobRuns = await listTargetDatasetJobRuns();
-      setSavedTargetJobRuns(jobRuns);
-    } catch (error) {
-      setNotice(`Job Run 목록 조회 실패: ${error.message}`);
-    }
-  }
-
-  useEffect(() => {
-    refreshDatasetDraftLists();
-    refreshTargetJobRuns();
-  }, []);
 
   useEffect(() => {
     if (!pendingDatasetEdit || datasetDraftListState.loading) return;
