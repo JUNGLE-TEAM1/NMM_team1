@@ -26,6 +26,17 @@ def catalog_canonical_demo_query(catalog: dict[str, Any]) -> str | None:
     return str(value) if value else None
 
 
+def catalog_schema_fields(catalog: dict[str, Any]) -> list[dict[str, Any]]:
+    schema = catalog.get("schema", {})
+    if isinstance(schema, dict):
+        fields = schema.get("fields", [])
+    elif isinstance(schema, list):
+        fields = schema
+    else:
+        fields = []
+    return [field for field in fields if isinstance(field, dict)]
+
+
 def catalog_local_fallback_path(catalog: dict[str, Any]) -> str | None:
     storage = catalog.get("storage", {})
     if not isinstance(storage, dict):

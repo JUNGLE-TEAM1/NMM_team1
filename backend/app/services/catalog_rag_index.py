@@ -10,7 +10,7 @@ from typing import Any
 from app.adapters.local_embedding import LocalTokenEmbeddingAdapter, tokenize_text
 from app.domain.retrieval_index import RetrievalIndexChunk, RetrievalIndexHit, RetrievalIndexSnapshot
 from app.ports.embedding_adapter import EmbeddingAdapter
-from app.services.catalog_metadata import catalog_allowed_columns, catalog_query_table
+from app.services.catalog_metadata import catalog_allowed_columns, catalog_query_table, catalog_schema_fields
 
 
 class CatalogRetrievalIndex:
@@ -131,9 +131,8 @@ class CatalogRetrievalIndex:
     def _schema_chunks(self, catalog: dict[str, Any]) -> list[RetrievalIndexChunk]:
         dataset_id = str(catalog.get("dataset_id", ""))
         dataset_name = str(catalog.get("name", ""))
-        fields = catalog.get("schema", {}).get("fields", [])
         chunks: list[RetrievalIndexChunk] = []
-        for field in fields:
+        for field in catalog_schema_fields(catalog):
             field_name = str(field.get("name", ""))
             text = " ".join(
                 [

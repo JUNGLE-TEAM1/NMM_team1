@@ -26,6 +26,7 @@ from app.services.catalog_metadata import (
     catalog_canonical_demo_query,
     catalog_local_fallback_path,
     catalog_query_table,
+    catalog_schema_fields,
 )
 from app.services.query_router import QueryRouter
 from app.services.sql_planner import SqlPlanner
@@ -155,7 +156,7 @@ class Week2AIQueryService:
         )
 
     def _context_from_catalog(self, catalog: dict[str, Any]) -> SqlEngineContext:
-        fields = catalog["schema"]["fields"]
+        fields = catalog_schema_fields(catalog)
         return SqlEngineContext(
             table_name=catalog_query_table(catalog),
             allowed_columns=catalog_allowed_columns(catalog),
@@ -184,11 +185,12 @@ class Week2AIQueryService:
                 s3_uri=catalog.get("s3_uri"),
                 freshness=catalog.get("updated_at"),
                 table_name=catalog_query_table(catalog),
-                schema_fields=deepcopy(catalog.get("schema", {}).get("fields", [])),
+                schema_fields=deepcopy(catalog_schema_fields(catalog)),
                 metrics=deepcopy(
                     {
                         "row_count": metrics.get("row_count"),
                         "bytes": metrics.get("bytes"),
+                        "input_total_bytes": metrics.get("input_total_bytes"),
                         "quality": metrics.get("quality", {}),
                         "semantics": metrics.get("semantics", {}),
                     }
