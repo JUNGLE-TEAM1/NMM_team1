@@ -22,11 +22,11 @@ from app.domain.target_contracts import TrustGateResult
 from app.ports.metadata_store import MetadataStore
 from app.services.catalog_trust import CatalogTrustService
 from app.services.external_connections import (
+    ExternalSchemaInspector,
     ExternalConnectionDependencyError,
     ExternalConnectionError,
     ExternalConnectionSecretError,
     ExternalTableNotFoundError,
-    PostgresSchemaInspector,
     inspect_external_connection,
 )
 from app.services.product_health_processing_template import (
@@ -43,10 +43,10 @@ def create_source_catalog_router(
     metadata_store: MetadataStore,
     catalog_service: SourceCatalogService,
     catalog_trust_service: CatalogTrustService,
-    schema_inspector: PostgresSchemaInspector | None = None,
+    schema_inspector: ExternalSchemaInspector | None = None,
 ) -> APIRouter:
     router = APIRouter(prefix="/api")
-    postgres_schema_inspector = schema_inspector or PostgresSchemaInspector()
+    external_schema_inspector = schema_inspector or ExternalSchemaInspector()
     product_health_template_service = ProductHealthProcessingTemplateService()
 
     @router.post("/sources", response_model=SourceRegistration, status_code=status.HTTP_201_CREATED)
@@ -98,13 +98,12 @@ def create_source_catalog_router(
             updated_at="",
         )
         try:
-            if source_connection.connection_type == "postgres":
-                return postgres_schema_inspector.inspect_table(
-                    test_connection,
-                    source_connection.default_schema,
-                    source_connection.default_table,
-                )
-            return inspect_external_connection(test_connection, postgres_schema_inspector)
+            return inspect_external_resource(
+                external_schema_inspector,
+                test_connection,
+                source_connection.default_schema,
+                source_connection.default_table,
+            )
         except ExternalConnectionDependencyError as error:
             raise HTTPException(status_code=503, detail=str(error)) from error
         except ExternalConnectionSecretError as error:
@@ -134,7 +133,7 @@ def create_source_catalog_router(
         if source_connection is None:
             raise HTTPException(status_code=404, detail="External connection not found")
         try:
-            return postgres_schema_inspector.inspect_table(source_connection, schema_name, table_name)
+            return inspect_external_resource(external_schema_inspector, source_connection, schema_name, table_name)
         except ExternalConnectionDependencyError as error:
             raise HTTPException(status_code=503, detail=str(error)) from error
         except ExternalConnectionSecretError as error:
@@ -227,3 +226,16 @@ def create_source_catalog_router(
         return gate
 
     return router
+
+
+def inspect_external_resource(
+    schema_inspector: ExternalSchemaInspector,
+    source_connection: ExternalConnectionRecord,
+    schema_name: str,
+    table_name: str,
+) -> ExternalTableSchema:
+    if source_connection.connection_type == "mongodb":
+        return schema_inspector.inspect_collection(source_connection, schema_name, table_name)
+    if source_connection.connection_type == "postgres":
+        return schema_inspector.inspect_table(source_connection, schema_name, table_name)
+    return inspect_external_connection(source_connection, getattr(schema_inspector, "postgres_inspector", None))

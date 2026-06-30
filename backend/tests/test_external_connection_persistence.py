@@ -28,6 +28,27 @@ class FakeSchemaInspector:
             row_count_estimate=1000,
         )
 
+    def inspect_collection(
+        self,
+        connection: ExternalConnectionRecord,
+        database_name: str,
+        collection_name: str,
+    ) -> ExternalTableSchema:
+        return ExternalTableSchema(
+            connection_id=connection.id,
+            schema_name=database_name,
+            table_name=collection_name,
+            raw_scope=f"{database_name}.{collection_name}",
+            resource_label="collection",
+            schema_preview=[
+                ColumnSchema(name="event_id", type="string"),
+                ColumnSchema(name="event_time", type="string"),
+                ColumnSchema(name="product_id", type="string"),
+                ColumnSchema(name="metadata", type="object"),
+            ],
+            row_count_estimate=42,
+        )
+
 
 def make_client() -> TestClient:
     temp_dir = tempfile.TemporaryDirectory()
@@ -65,6 +86,20 @@ def kafka_connection_payload(csv_path: Path, name: str = "Realtime CSV Kafka Con
     }
 
 
+def mongodb_connection_payload(name: str = "AskLake MongoDB Events") -> dict:
+    return {
+        "name": name,
+        "connection_type": "mongodb",
+        "host": "localhost",
+        "port": 27017,
+        "database": "asklake_demo",
+        "username": "asklake",
+        "password_secret_ref": "ASKLAKE_MONGODB_PASSWORD",
+        "default_schema": "asklake_demo",
+        "default_table": "customer_events",
+    }
+
+
 def test_create_list_and_read_external_connection_metadata() -> None:
     client = make_client()
 
@@ -91,6 +126,30 @@ def test_create_list_and_read_external_connection_metadata() -> None:
     detail_response = client.get(f"/api/external-connections/{source_connection['id']}")
     assert detail_response.status_code == 200
     assert detail_response.json()["database"] == "taxi_postgre"
+
+
+def test_create_list_and_read_mongodb_external_connection_metadata() -> None:
+    client = make_client()
+
+    response = client.post("/api/external-connections", json=mongodb_connection_payload())
+
+    assert response.status_code == 201
+    source_connection = response.json()
+    assert source_connection["id"]
+    assert source_connection["name"] == "AskLake MongoDB Events"
+    assert source_connection["connection_type"] == "mongodb"
+    assert source_connection["host"] == "localhost"
+    assert source_connection["port"] == 27017
+    assert source_connection["database"] == "asklake_demo"
+    assert source_connection["username"] == "asklake"
+    assert source_connection["password_secret_ref"] == "ASKLAKE_MONGODB_PASSWORD"
+    assert source_connection["default_schema"] == "asklake_demo"
+    assert source_connection["default_table"] == "customer_events"
+    assert source_connection["status"] == "metadata_ready"
+
+    list_response = client.get("/api/external-connections")
+    assert list_response.status_code == 200
+    assert list_response.json()[0]["id"] == source_connection["id"]
 
 
 def test_external_connection_rejects_duplicate_name() -> None:
@@ -123,6 +182,28 @@ def test_external_connection_schema_preview_uses_saved_connection() -> None:
         {"name": "airport_fee", "type": "double precision"},
     ]
     assert schema["row_count_estimate"] == 1000
+
+
+def test_mongodb_external_connection_collection_preview_uses_saved_connection() -> None:
+    client = make_client()
+    source_connection = client.post("/api/external-connections", json=mongodb_connection_payload()).json()
+
+    response = client.get(
+        f"/api/external-connections/{source_connection['id']}/schemas/asklake_demo/tables/customer_events"
+    )
+
+    assert response.status_code == 200
+    schema = response.json()
+    assert schema["connection_id"] == source_connection["id"]
+    assert schema["raw_scope"] == "asklake_demo.customer_events"
+    assert schema["resource_label"] == "collection"
+    assert schema["schema_preview"] == [
+        {"name": "event_id", "type": "string"},
+        {"name": "event_time", "type": "string"},
+        {"name": "product_id", "type": "string"},
+        {"name": "metadata", "type": "object"},
+    ]
+    assert schema["row_count_estimate"] == 42
 
 
 def test_external_connection_test_reads_schema_without_saving_connection() -> None:
@@ -165,3 +246,20 @@ def test_kafka_connection_test_reads_replay_csv_schema(monkeypatch, tmp_path: Pa
         {"name": "price", "type": "decimal"},
         {"name": "is_synthetic", "type": "boolean"},
     ]
+
+
+def test_mongodb_external_connection_test_reads_collection_without_saving_connection() -> None:
+    client = make_client()
+
+    response = client.post("/api/external-connections/test", json=mongodb_connection_payload())
+
+    assert response.status_code == 200
+    schema = response.json()
+    assert schema["connection_id"] == "connection_test_preview"
+    assert schema["raw_scope"] == "asklake_demo.customer_events"
+    assert schema["resource_label"] == "collection"
+    assert schema["schema_preview"][0] == {"name": "event_id", "type": "string"}
+
+    list_response = client.get("/api/external-connections")
+    assert list_response.status_code == 200
+    assert list_response.json() == []
