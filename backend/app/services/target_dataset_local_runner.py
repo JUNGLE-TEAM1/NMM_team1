@@ -188,6 +188,7 @@ class TargetDatasetLocalRunner:
                 "gold_bytes": output_bytes,
                 "output_bytes": output_bytes,
                 "output_path": str(gold_path),
+                "catalog_publish_ready": True,
                 "object_storage": {
                     "status": "not_uploaded",
                     "reason": "object upload is opt-in and not configured for this local demo run",
@@ -247,7 +248,8 @@ class TargetDatasetLocalRunner:
             logs=[
                 "prepared Product Health Gold parquet referenced",
                 "local demo JSONL materializer skipped",
-                "Airflow/Spark execution not triggered in C-17",
+                "large Product Health ETL rerun skipped for C-38",
+                "Airflow/Spark execution not triggered in C-38",
             ],
             duration_ms=duration_ms,
             source_evidence=source_evidence,
@@ -264,6 +266,9 @@ class TargetDatasetLocalRunner:
                 "output_path": str(gold_path),
                 "row_count_status": "metadata",
                 "schema_fields": metadata["schema_fields"],
+                "large_etl_rerun": False,
+                "catalog_publish_ready": True,
+                "product_health_result_role": "gold_run_execution_evidence",
             },
         )
 

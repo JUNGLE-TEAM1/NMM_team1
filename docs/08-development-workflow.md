@@ -343,6 +343,12 @@ External Connection은 외부 원천에 접속하기 위한 연결 설정이고,
 | C-33 | `feature/gold-input-creation-shortcuts` | Gold 생성 중 입력 dataset이 부족하면 Source/Silver 생성으로 바로 이동한다 | C-32 완료 또는 사람 확인 | Gold wizard의 Silver 선택 단계에서 Source/Silver 생성 wizard로 전환 가능함 |
 | C-34 | `feature/gold-input-return-flow` | Gold 입력 shortcut으로 만든 Source/Silver를 다시 Gold 선택 단계로 이어준다 | C-33 완료 또는 사람 확인 | Silver 저장 후 Gold wizard의 Silver 선택 단계로 돌아오고 새 Silver가 선택됨 |
 | C-35 | `feature/source-silver-gold-chain-smoke` | Source 생성부터 Silver 생성, Gold 입력 복귀까지 clean-room chain을 브라우저에서 검증한다 | C-34 완료 또는 사람 확인 | 새 Source와 Silver metadata를 저장하고 새 Silver가 Gold 입력으로 자동 선택됨 |
+| C-36 | `feature/source-snapshot-large-data-readiness` | Source Snapshot의 bounded sample 성격과 대용량 처리 증거 경계를 명확히 표시한다 | C-35 완료 또는 사람 확인 | Snapshot 응답/UI가 sample/full ingest 차이를 표시하고 Product Health 5GB evidence와 혼동되지 않음 |
+| C-37 | `feature/product-health-source-inventory-binding` | 준비된 Product Health 원천 inventory를 Source Dataset 흐름에 묶고 raw/prepared 경계를 표시한다 | C-36 완료 또는 사람 확인 | behavior/review/product catalog/delivery 또는 taxi 원천이 Source Dataset 후보로 보이고 prepared dataset과 실제 raw file이 구분됨 |
+| C-38 | `feature/product-health-silver-gold-run-execution` | Product Health Gold 저장 후 Run 생성/실행이 prepared Gold reference 또는 materialized Gold evidence로 이어지게 한다 | C-37 완료 또는 사람 확인 | Gold Run 실행 결과가 `gold_product_health.parquet` reference 또는 생성 output, row/bytes/run evidence를 남김 |
+| C-39 | `feature/catalog-ai-query-clean-room-handoff` | 방금 실행한 Product Health Gold 결과를 Catalog에 등록하고 AI Query가 그 CatalogDataset을 읽게 한다 | C-38 완료 또는 사람 확인 | Catalog와 AI Query가 같은 run/catalog/local path를 가리키며 prepared/live 경로가 섞이지 않음 |
+| C-40 | `feature/full-browser-demo-smoke` | 연결부터 AI Query까지 전체 데모 클릭 흐름을 브라우저에서 검수한다 | C-39 완료 또는 사람 확인 | `연결 -> Source -> Silver -> Gold -> Run -> Catalog -> AI Query` 흐름이 console error 없이 진행되고 UI/문구/mock 흔적 gap이 분류됨 |
+| C-41 | `feature/product-health-preset-synthesis` | Product Health Demo preset을 적용해 사이트에서 `seed_product_mapping`, Silver datasets, Gold dataset을 재생성하는 synthesis run을 추가한다 | C-40 완료 또는 사람 확인 | 사용자가 Product Health preset을 적용하고 합성 실행을 누르면 `seed_product_mapping.parquet`, Silver parquet, `gold_product_health.parquet`, Catalog/Evidence 준비 파일이 갱신되고 후속 Run/Catalog/AI Query 흐름으로 이어질 수 있음 |
 
 범위 원칙:
 
@@ -392,6 +398,12 @@ External Connection은 외부 원천에 접속하기 위한 연결 설정이고,
 - C-33은 clean-room demo flow의 짧은 UX 보정이다. 새 생성 runner나 자동 recipe 추천은 포함하지 않고, 이미 있는 Source/Silver wizard로 이어지는 CTA만 연결한다.
 - C-34는 C-33 shortcut의 왕복 UX만 다룬다. Gold draft 임시 저장, 다중 단계 undo, full clean-room E2E 완료 선언은 포함하지 않는다.
 - C-35는 검증 Phase다. Source/Silver metadata 생성 chain을 브라우저로 확인하되 Gold 저장, run 실행, catalog publish, AI Query까지의 full clean-room E2E 완료 선언은 후속으로 둔다.
+- C-36은 Source Snapshot의 readiness hardening이다. 현재 endpoint는 bounded sample snapshot이며 full 5GB ingest, retry/backfill, Spark/Airflow 실행은 포함하지 않는다. Product Health 5GB evidence는 processed input evidence로 별도 표시하고, Source Snapshot row count/output bytes와 섞지 않는다.
+- C-37은 Product Health 원천 inventory를 Source Dataset creation에 연결하는 Phase다. 새 대용량 다운로드나 full ingest는 포함하지 않고, 이미 준비된 local/prepared evidence의 상태를 `raw_file`, `prepared_dataset`, `missing`, `mismatch`처럼 구분한다.
+- C-38은 Run execution handoff를 닫는 Phase다. prepared `gold_product_health.parquet`가 있으면 `prepared_gold_reference`로 실행 증거에 연결하고, 새 materialization은 기존 local runner 범위에서만 수행한다. Spark/Airflow 운영 실행은 포함하지 않는다.
+- C-39는 Catalog publish와 AI Query handoff 정렬 Phase다. AI Query가 방금 publish된 CatalogDataset의 run id, local path, schema, metrics를 사용하게 하되, RAG/vector DB 또는 외부 LLM 추가는 포함하지 않는다.
+- C-40은 검증 Phase다. 문제 발견 시 코드 수정보다 gap 분류와 Hotfix/후속 Phase 생성을 우선하며, 대규모 UI 재설계나 runtime 기능 추가는 포함하지 않는다.
+- C-41은 Product Health 전용 preset synthesis Phase다. 범용 raw source 조합 빌더, 사용자가 임의 join/transform/risk rule을 설계하는 UI, Airflow/Spark production execution, 새 대용량 다운로드는 포함하지 않는다. 기존 Product Health synthesis logic을 backend service/API로 감싸거나 service-friendly하게 분리하고, 빠른 합성 실행과 5GB evidence 재측정은 분리한다.
 - C-4 이후 M5 실행 화면은 `M5 데모`가 아니라 `Job Runs` 또는 `실행 기록` 같은 사용자 언어로 재도입한다.
 - M2/M4/M3/M6는 독립 메뉴가 아니라 Dataset creation 이후의 runtime, evidence, catalog, query 소비자로 연결한다.
 

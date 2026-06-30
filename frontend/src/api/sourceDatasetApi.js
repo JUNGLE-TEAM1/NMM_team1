@@ -4,6 +4,10 @@ export function listSourceDatasets() {
   return request("/api/source-datasets");
 }
 
+export function listProductHealthSourceInventory() {
+  return request("/api/product-health/source-inventory");
+}
+
 export function createSourceDataset(dataset) {
   return request("/api/source-datasets", {
     method: "POST",

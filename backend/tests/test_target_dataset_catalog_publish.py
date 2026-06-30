@@ -90,6 +90,11 @@ def test_publish_prepared_gold_reference_to_catalog() -> None:
     query_payload = query_response.json()
     assert query_payload["status"] == "succeeded"
     assert query_payload["sql"].startswith("SELECT internal_product_id, risk_score")
+    assert query_payload["selected_datasets"][0]["dataset_id"] == dataset["id"]
+    assert query_payload["evidence"][0]["dataset_id"] == dataset["id"]
+    assert query_payload["evidence"][0]["run_id"] == run["id"]
+    assert query_payload["evidence"][0]["storage"]["local_fallback_path"] == executed["output_path"]
+    assert query_payload["retrieval_trace"][0]["source_id"] == dataset["id"]
     assert query_payload["query_result"]["rows"]
 
 

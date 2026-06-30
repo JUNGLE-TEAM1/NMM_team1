@@ -213,6 +213,13 @@ def test_create_source_dataset_snapshot_materializes_local_rows() -> None:
     assert snapshot["status"] == "succeeded"
     assert snapshot["row_count"] == 2
     assert snapshot["output_bytes"] > 0
+    assert snapshot["snapshot_mode"] == "bounded_sample"
+    assert snapshot["requested_sample_size"] == 2
+    assert snapshot["row_limit"] == 2
+    assert snapshot["coverage_status"] == "bounded_sample_limit_reached"
+    assert snapshot["input_bytes_semantics"] == "available_input_bytes"
+    assert snapshot["large_data_status"] == "not_full_large_data_ingest"
+    assert "bounded raw snapshot" in snapshot["message"]
     assert "data/lake/bronze/source_snapshots" in snapshot["output_path"]
     assert Path(snapshot["output_path"]).exists()
 

@@ -44,6 +44,7 @@ def test_execute_target_dataset_job_run_materializes_gold_from_silver_parquet() 
     assert executed["runtime_evidence"]["materialization_mode"] == "silver_parquet_to_gold"
     assert executed["runtime_evidence"]["output_format"] == "parquet"
     assert executed["runtime_evidence"]["output_bytes"] == executed["output_bytes"]
+    assert executed["runtime_evidence"]["catalog_publish_ready"] is True
     assert executed["runtime_evidence"]["object_storage"]["status"] == "not_uploaded"
     assert executed["runtime_evidence"]["object_storage"]["object_uri"].startswith("s3://asklake-demo/product_health/gold/")
     assert len(executed["source_evidence"]) == 2
@@ -81,10 +82,13 @@ def test_execute_target_dataset_job_run_references_prepared_gold_when_available(
     assert executed["output_path"] == "data/local_sources/product_health/gold/gold_product_health.parquet"
     assert executed["output_bytes"] > 1000
     assert len(executed["silver_output_paths"]) == 2
-    assert executed["run_note"] == "Prepared Product Health Gold parquet referenced in C-17."
+    assert executed["run_note"] == "Prepared Product Health Gold parquet referenced for Product Health run execution."
     assert executed["runtime_evidence"]["materialization_mode"] == "prepared_gold_reference"
     assert executed["runtime_evidence"]["output_format"] == "parquet"
     assert executed["runtime_evidence"]["prepared_output"] is True
+    assert executed["runtime_evidence"]["large_etl_rerun"] is False
+    assert executed["runtime_evidence"]["catalog_publish_ready"] is True
+    assert executed["runtime_evidence"]["product_health_result_role"] == "gold_run_execution_evidence"
     assert executed["runtime_evidence"]["schema_fields"] > 0
     assert executed["source_evidence"][0]["status"] == "referenced_prepared_silver"
     assert executed["source_evidence"][0]["format"] == "parquet"

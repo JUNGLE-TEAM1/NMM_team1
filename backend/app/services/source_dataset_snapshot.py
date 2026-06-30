@@ -58,9 +58,15 @@ class SourceDatasetSnapshotService:
             row_count=len(rows),
             output_bytes=output_path.stat().st_size,
             input_bytes=input_bytes,
+            snapshot_mode="bounded_sample",
+            requested_sample_size=request.sample_size,
+            row_limit=request.sample_size,
+            coverage_status=coverage_status(len(rows), request.sample_size),
+            input_bytes_semantics="available_input_bytes",
+            large_data_status="not_full_large_data_ingest",
             status="succeeded",
             duration_ms=duration_ms,
-            message=f"{len(rows)}개 row/message를 raw snapshot으로 저장했습니다.",
+            message=f"{len(rows)}개 row/message를 bounded raw snapshot으로 저장했습니다.",
             created_at=created_at,
         )
 
@@ -155,3 +161,9 @@ def read_local_file_rows(path: Path, sample_size: int) -> list[dict[str, object]
 
 def now_iso() -> str:
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+
+
+def coverage_status(row_count: int, sample_size: int) -> str:
+    if row_count < sample_size:
+        return "input_exhausted_before_limit"
+    return "bounded_sample_limit_reached"

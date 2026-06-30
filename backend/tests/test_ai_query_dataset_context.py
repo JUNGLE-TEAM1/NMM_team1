@@ -65,6 +65,7 @@ def test_ai_query_uses_published_target_dataset_catalog_context() -> None:
     assert payload["evidence"][0]["run_id"] == run["id"]
     assert payload["evidence"][0]["metrics"]["row_count"] == executed["row_count"]
     assert payload["evidence"][0]["metrics"]["bytes"] == executed["output_bytes"]
+    assert payload["evidence"][0]["storage"]["local_fallback_path"] == catalog["path"]
     assert payload["retrieval_trace"][0]["source_id"] == catalog["id"]
     assert "FROM dataset_ai_query_context_gold" in payload["sql"]
     assert payload["query_result"]["rows"][0]["risk_score"] == 0.92
@@ -97,6 +98,7 @@ def test_ai_query_duckdb_reads_runtime_gold_catalog_dataset() -> None:
     assert payload["selected_datasets"][0]["dataset_id"] == catalog["id"]
     assert payload["evidence"][0]["run_id"] == run["id"]
     assert payload["evidence"][0]["metrics"]["row_count"] == executed["row_count"]
+    assert payload["evidence"][0]["storage"]["local_fallback_path"] == executed["output_path"]
     assert "FROM dataset_ai_query_runtime_gold" in payload["sql"]
     assert payload["query_result"]["rows"]
     assert payload["query_result"]["rows"][0]["product_id"].startswith("gold_prod_")

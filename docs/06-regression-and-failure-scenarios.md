@@ -283,10 +283,10 @@
 | 항목 | 내용 |
 | --- | --- |
 | Must not break | publish된 Gold CatalogDataset이 AI Query 후보로 들어갈 때 schema/storage/metrics/lineage가 다른 fixture catalog와 섞이지 않는다. |
-| Failure condition | `selected_datasets`, `evidence.dataset_id`, `retrieval_trace.source_id`, SQL `FROM` table이 서로 다른 dataset/run을 가리키거나, publish된 catalog가 있어도 fixture만 선택된다. |
+| Failure condition | `selected_datasets`, `evidence.dataset_id`, `retrieval_trace.source_id`, SQL `FROM` table, `evidence.storage.local_fallback_path`가 서로 다른 dataset/run/path를 가리키거나, publish된 catalog가 있어도 fixture만 선택된다. |
 | Expected behavior | AI Query는 published CatalogDataset을 CatalogMetadata shape로 변환해 선택하고, evidence와 SQL context가 같은 catalog id/run id/local path를 사용한다. |
-| Verification method | C-7 backend test와 `/api/week2/ai/query` HTTP smoke에서 publish된 target dataset context를 확인한다. |
-| Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07`, C-7 |
+| Verification method | C-39 backend focused test와 `/api/week2/ai/query` HTTP smoke에서 publish된 target dataset context를 확인한다. |
+| Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07`, C-39 |
 
 ### 처리 증거 없이 대용량/복합 Dataset 조작이 완료된 것처럼 보이는 경우
 
@@ -298,6 +298,16 @@
 | Verification method | schema inference/transform/load 후 `ExecutionResult`, `CatalogMetadata`, `QueryResult` evidence를 확인한다. |
 | Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07`, Week 2 M2~M6 |
 
+### Source Snapshot sample을 full ingest로 오해하는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | Source Snapshot은 bounded sample evidence로 표시되고, full 대용량 ingest 또는 Product Health 5GB 처리 증거처럼 보이지 않는다. |
+| Failure condition | `row_count=100`, snapshot output bytes, 또는 local available input bytes가 전체 ingest 완료나 5GB processed input success로 표시된다. |
+| Expected behavior | Snapshot 응답/UI는 `snapshot_mode=bounded_sample`, requested sample size, coverage status, `large_data_status=not_full_large_data_ingest`를 표시한다. full ingest/retry/backfill/Spark/Airflow 실행은 후속 Phase로 남긴다. |
+| Verification method | Source Dataset 상세에서 Raw snapshot 생성 후 bounded/sample label과 input/output bytes 의미를 확인하고, `docs/03` snapshot contract와 일치하는지 본다. |
+| Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07`, C-36 |
+
 ### Week 2 상품 리스크 5GB input이 Gold pipeline과 분리되는 경우
 
 | 항목 | 내용 |
@@ -307,6 +317,16 @@
 | Expected behavior | `ExecutionResult`는 `input_total_bytes >= 5GB`와 source별 `row_count`, `bytes`, `duration_ms`, `input_path`, bronze/silver/gold `output_path`를 남기고, M5 Catalog는 같은 `run_id`로 `gold_product_health` output을 가리킨다. |
 | Verification method | `pipeline_product_health_e2e` 5GB run의 `ExecutionResult`, `CatalogMetadata`, M6 `QueryResult`, M1 evidence display를 확인한다. |
 | Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07`, `pm/docs/week2-product-risk-demo-scenario.md` |
+
+### Product Health prepared dataset을 외부 raw source처럼 표시하는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | Product Health Source Inventory는 raw file, prepared dataset, missing, mismatch 상태를 분리해 표시한다. |
+| Failure condition | prepared parquet가 실제 외부 raw source처럼 표시되거나, missing source가 Source Dataset 저장 가능한 ready 후보처럼 보인다. |
+| Expected behavior | `GET /api/product-health/source-inventory`와 Source Dataset UI는 `binding_type`과 `status`를 표시하고, `can_create_source_dataset=false` 후보는 선택/저장을 차단한다. |
+| Verification method | C-37 focused API test와 Source Dataset wizard에서 후보 카드의 label/status/path/schema를 확인한다. |
+| Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07`, C-37 |
 
 ### Gold output 크기를 5GB input 처리 증거로 오해하는 경우
 
@@ -399,6 +419,16 @@
 | Expected behavior | 최소 CI job과 container smoke 결과 또는 명확한 deferral reason을 `quality.md`와 report에 기록한다. |
 | Verification method | workspace `quality.md`, GitHub Actions 결과 또는 local 동등 명령 확인 |
 | Related docs/interface/Phase | `docs/04`, `docs/05`, `docs/08`, workspace `quality.md` |
+
+### Product Health prepared Gold reference가 새 대용량 ETL처럼 보이는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | Product Health Gold Run은 prepared parquet reference와 새 local materialization을 구분한다. |
+| Failure condition | `gold_product_health.parquet`를 참조했는데 UI/API가 full 5GB ETL 재실행처럼 표현하거나 output path/row/bytes 없이 succeeded로 표시한다. |
+| Expected behavior | prepared mode는 `runtime_evidence.materialization_mode=prepared_gold_reference`, `large_etl_rerun=false`, `catalog_publish_ready=true`, 실제 parquet path/row/bytes/schema evidence를 남긴다. |
+| Verification method | `backend/tests/test_target_dataset_local_materialization.py`와 `/runs` 실행 기록에서 Mode, Output, Rows, Bytes를 확인한다. |
+| Related docs/interface/Phase | `docs/03`, C-38 |
 
 ## 공통 인프라 실패 시나리오
 

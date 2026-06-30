@@ -73,6 +73,7 @@ import {
   createSourceDataset,
   createSourceDatasetSnapshot,
   deleteSourceDataset,
+  listProductHealthSourceInventory,
   listSourceDatasets,
   listSourceDatasetSnapshots,
   updateSourceDataset,
@@ -820,6 +821,55 @@ function mapExternalConnectionRecord(record) {
   };
 }
 
+function mapProductHealthInventoryItemToConnection(item) {
+  const schema = (item.schema_preview || []).map((field) => ({
+    name: field.name,
+    type: field.type,
+    sample: item.binding_type === "prepared_dataset" ? "prepared metadata" : "source inventory",
+  }));
+
+  return {
+    id: `product-health:${item.role}`,
+    name: item.connection_name,
+    connectorId: item.connection_type || "local_file",
+    typeLabel: item.binding_type === "prepared_dataset" ? "Prepared Dataset" : "Local File",
+    status: item.status === "ready" ? "inventory ready" : item.status,
+    description: `${item.label} Product Health source inventory입니다.`,
+    resourceLabel: item.resource_label,
+    resource: item.path,
+    authMode: "No credential",
+    modeLabel: productHealthBindingLabel(item.binding_type),
+    contractHint: "ProductHealthSourceInventory",
+    detectedFormat: item.binding_type === "prepared_dataset" ? "Parquet" : "Local source",
+    detectedDataset: item.label,
+    confidence: item.status === "ready" ? "High" : "Missing",
+    recommendedRole: "Source Dataset",
+    syncMode: "manual",
+    syncSchedule: "manual on demand",
+    updatedLabel: "inventory",
+    columns: schema.map((field) => field.name),
+    schema,
+    productHealthInventory: item,
+  };
+}
+
+function productHealthBindingLabel(bindingType) {
+  const labels = {
+    raw_file: "Raw file",
+    prepared_dataset: "Prepared dataset",
+    missing: "Missing",
+    mismatch: "Mismatch",
+  };
+  return labels[bindingType] || bindingType || "Source";
+}
+
+function productHealthStatusLabel(item) {
+  if (!item) return "unknown";
+  if (item.status === "ready" && item.binding_type === "prepared_dataset") return "prepared ready";
+  if (item.status === "ready") return "raw ready";
+  return item.status;
+}
+
 function formatConnectionResourceLabel(label) {
   const labels = {
     file_path: "파일 경로",
@@ -1345,6 +1395,7 @@ function SourcesPage({ navigate, setNotice, dataView = "datasets-source", pendin
   const [connectionSaveState, setConnectionSaveState] = useState({ status: "idle", record: null, error: "" });
   const [savedExternalConnections, setSavedExternalConnections] = useState([]);
   const [credentialPolicy, setCredentialPolicy] = useState(null);
+  const [productHealthSourceInventory, setProductHealthSourceInventory] = useState(null);
   const [savedSourceDatasets, setSavedSourceDatasets] = useState([]);
   const [savedSilverDatasets, setSavedSilverDatasets] = useState([]);
   const [savedTargetDatasetDrafts, setSavedTargetDatasetDrafts] = useState([]);
@@ -1635,7 +1686,16 @@ function SourcesPage({ navigate, setNotice, dataView = "datasets-source", pendin
   async function refreshDatasetDraftLists() {
     setDatasetDraftListState({ loading: true, error: "" });
     try {
-      const [connections, sourceDatasets, silverDatasets, targetDrafts, catalogDatasets, catalogPolicy, nextCredentialPolicy] = await Promise.all([
+      const [
+        connections,
+        sourceDatasets,
+        silverDatasets,
+        targetDrafts,
+        catalogDatasets,
+        catalogPolicy,
+        nextCredentialPolicy,
+        nextProductHealthInventory,
+      ] = await Promise.all([
         listExternalConnections(),
         listSourceDatasets(),
         listSilverDatasets(),
@@ -1643,9 +1703,11 @@ function SourcesPage({ navigate, setNotice, dataView = "datasets-source", pendin
         listCatalogDatasets(),
         getCatalogDatasetManagementPolicy(),
         getExternalConnectionCredentialPolicy(),
+        listProductHealthSourceInventory(),
       ]);
       setSavedExternalConnections(connections.map(mapExternalConnectionRecord));
       setCredentialPolicy(nextCredentialPolicy);
+      setProductHealthSourceInventory(nextProductHealthInventory);
       setSavedSourceDatasets(sourceDatasets);
       setSavedSilverDatasets(silverDatasets);
       setSavedTargetDatasetDrafts(targetDrafts);
@@ -1704,6 +1766,35 @@ function SourcesPage({ navigate, setNotice, dataView = "datasets-source", pendin
     setSourceRawScope(defaultSourceScopeForConnection(connection));
     setSourceDatasetSaveState({ status: "idle", record: null, error: "" });
     setNotice(`${connection.name} external connection을 선택했습니다.`);
+  }
+
+  function selectProductHealthInventorySource(item) {
+    if (!item.can_create_source_dataset) {
+      setNotice(`${item.label} source는 아직 Source Dataset으로 저장할 수 없습니다: ${item.message}`);
+      return;
+    }
+    const connection = mapProductHealthInventoryItemToConnection(item);
+    setSourceDraft(connection);
+    setSourceDatasetName(item.source_dataset_name);
+    setSourceRawScope(item.path);
+    setSourceDiscoveryState({
+      status: "discovered",
+      result: {
+        detected_format: connection.detectedFormat,
+        detected_dataset: item.label,
+        confidence: connection.confidence,
+        recommended_role: "Source Dataset",
+        schema_preview: item.schema_preview || [],
+        bytes: item.bytes || 0,
+        file_count: 1,
+        row_count: item.row_count,
+        row_count_status: item.row_count_status,
+        message: item.message,
+      },
+      error: "",
+    });
+    setSourceDatasetSaveState({ status: "idle", record: null, error: "" });
+    setNotice(`${item.label} Product Health source 후보를 선택했습니다.`);
   }
 
   async function discoverSelectedSourceConnection(connection = sourceDraft) {
@@ -3120,29 +3211,63 @@ function SourcesPage({ navigate, setNotice, dataView = "datasets-source", pendin
               <p>저장된 External Connection 중 raw/source dataset 입력으로 사용할 연결을 고릅니다.</p>
             </div>
           </div>
-          {sourceConnectionOptions.length > 0 ? (
-            <div className="connection-type-grid source-connection-grid" aria-label="External connection choices for source dataset">
-              {sourceConnectionOptions.map((connection) => (
-                <button
-                  key={connection.id}
-                  type="button"
-                  className={sourceDraft?.id === connection.id ? "selected" : ""}
-                  onClick={() => selectSourceConnection(connection)}
-                >
-                  <span className="connection-card-icon">
-                    <ServerCog size={18} />
-                  </span>
-                  <strong>{connection.name}</strong>
-                  <p>{connection.description}</p>
-                  <small>{connection.typeLabel} · {formatConnectionResourceLabel(connection.resourceLabel)}</small>
-                  <small>
-                    {isLocalDiscoveryConnection(connection)
-                      ? `${connection.columns.length} schema fields ready`
-                      : "connection tested · schema discovery pending"}
-                  </small>
-                </button>
-              ))}
-            </div>
+          {sourceConnectionOptions.length > 0 || productHealthSourceInventory?.sources?.length ? (
+            <>
+              {productHealthSourceInventory?.sources?.length ? (
+                <section className="wizard-inline-panel product-health-inventory-panel">
+                  <div className="table-title-line">
+                    <Sparkles size={18} />
+                    <div>
+                      <strong>Product Health source inventory</strong>
+                      <p>준비된 복합 데이터셋 원천을 raw file과 prepared dataset으로 구분해서 Source Dataset 후보로 표시합니다.</p>
+                    </div>
+                  </div>
+                  <div className="connection-type-grid source-connection-grid product-health-source-grid">
+                    {productHealthSourceInventory.sources.map((item) => (
+                      <button
+                        key={item.role}
+                        type="button"
+                        className={`${sourceDraft?.id === `product-health:${item.role}` ? "selected" : ""} ${!item.can_create_source_dataset ? "disabled" : ""}`}
+                        disabled={!item.can_create_source_dataset}
+                        onClick={() => selectProductHealthInventorySource(item)}
+                      >
+                        <span className="connection-card-icon">
+                          {item.binding_type === "prepared_dataset" ? <Archive size={18} /> : <FileJson size={18} />}
+                        </span>
+                        <strong>{item.label}</strong>
+                        <p>{item.source_dataset_name}</p>
+                        <small>{productHealthBindingLabel(item.binding_type)} · {productHealthStatusLabel(item)}</small>
+                        <small>{formatBytes(item.bytes)} · {item.row_count ?? "row 미측정"} rows · {item.schema_preview?.length || 0} fields</small>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
+              {sourceConnectionOptions.length > 0 ? (
+                <div className="connection-type-grid source-connection-grid" aria-label="External connection choices for source dataset">
+                  {sourceConnectionOptions.map((connection) => (
+                    <button
+                      key={connection.id}
+                      type="button"
+                      className={sourceDraft?.id === connection.id ? "selected" : ""}
+                      onClick={() => selectSourceConnection(connection)}
+                    >
+                      <span className="connection-card-icon">
+                        <ServerCog size={18} />
+                      </span>
+                      <strong>{connection.name}</strong>
+                      <p>{connection.description}</p>
+                      <small>{connection.typeLabel} · {formatConnectionResourceLabel(connection.resourceLabel)}</small>
+                      <small>
+                        {isLocalDiscoveryConnection(connection)
+                          ? `${connection.columns.length} schema fields ready`
+                          : "connection tested · schema discovery pending"}
+                      </small>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </>
           ) : (
             <EmptyState
               icon={ServerCog}
@@ -5405,7 +5530,12 @@ function SourceDatasetManageModal({
                 <article>
                   <span>Rows</span>
                   <strong>{latestSnapshot.row_count}</strong>
-                  <p>{latestSnapshot.duration_ms}ms</p>
+                  <p>{latestSnapshot.duration_ms}ms · limit {formatMetric(latestSnapshot.row_limit || latestSnapshot.requested_sample_size)}</p>
+                </article>
+                <article>
+                  <span>Coverage</span>
+                  <strong>{formatSnapshotCoverage(latestSnapshot)}</strong>
+                  <p>{formatBytes(latestSnapshot.input_bytes)} input · {latestSnapshot.input_bytes_semantics || "available_input_bytes"}</p>
                 </article>
                 <article className="snapshot-path-card">
                   <span>Output path</span>
@@ -5648,6 +5778,7 @@ function JobRunsPage({ setNotice }) {
           ["Type", "Gold Build"],
           ["Status", runStatusLabel(run.status)],
           ["Executor", executorLabel(run.executor_handoff)],
+          ["Mode", runOutputModeLabel(run)],
           ["Run Role", run.runtime_evidence?.run_record_role || "definition handoff"],
           ["Output", outputFileName(run.output_path)],
           ["Rows", formatMetric(run.row_count)],
@@ -8442,6 +8573,13 @@ function formatBytes(value) {
   return `${value} B`;
 }
 
+function formatSnapshotCoverage(snapshot) {
+  if (!snapshot) return "not created";
+  if (snapshot.coverage_status === "input_exhausted_before_limit") return "source exhausted";
+  if (snapshot.coverage_status === "bounded_sample_limit_reached") return "bounded sample";
+  return snapshot.coverage_status || snapshot.snapshot_mode || "bounded sample";
+}
+
 function RetrievalTracePanel({ trace, route }) {
   return (
     <section className="retrieval-trace-panel">
@@ -8564,6 +8702,7 @@ function EvidenceCard({ evidence }) {
     key,
     formatEvidenceValue(value),
   ]);
+  const evidenceStoragePath = evidence.storage?.local_fallback_path || evidence.storage?.local_path || "";
 
   return (
     <article className="evidence-card">
@@ -8579,6 +8718,7 @@ function EvidenceCard({ evidence }) {
         <span>freshness: {formatMetric(evidence.freshness)}</span>
         <span>terms: {(evidence.retrieval_terms || []).join(", ") || "-"}</span>
       </div>
+      {evidenceStoragePath ? <code>{evidenceStoragePath}</code> : null}
       {evidence.s3_uri ? <code>{evidence.s3_uri}</code> : null}
       {schemaRows.length ? <DataTable columns={["field", "type", "nullable"]} rows={schemaRows} /> : null}
       {metricRows.length || lineageRows.length ? (

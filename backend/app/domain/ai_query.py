@@ -26,6 +26,7 @@ class QueryEvidence(BaseModel):
     s3_uri: str | None = None
     freshness: str | None = None
     table_name: str | None = None
+    storage: dict[str, Any] = Field(default_factory=dict)
     schema_fields: list[dict[str, Any]] = Field(default_factory=list)
     metrics: dict[str, Any] = Field(default_factory=dict)
     lineage: dict[str, Any] = Field(default_factory=dict)

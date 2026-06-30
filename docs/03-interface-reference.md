@@ -214,6 +214,8 @@ C-16 adds optional read-side `file_evidence` to Source/Silver/Target Dataset res
 
 C-26C adds Source Dataset raw snapshot execution. `POST /api/source-datasets/{dataset_id}/snapshots` is a manual bounded ingest action that is separate from Source Dataset metadata creation. Local file/folder datasets write JSONL snapshot output under `data/lake/bronze/source_snapshots/`; PostgreSQL/MongoDB/S3/Kafka snapshot requests may pass `secret_refs` and `options` again at execution time because raw credential values are not persisted.
 
+C-36 makes this boundary explicit for large-data demos. A Source snapshot is `snapshot_mode=bounded_sample` unless a later Phase adds a full ingest runner. `input_bytes` means available input bytes for the inspected scope, while `row_count` is the number of rows/messages written to the bounded snapshot. It must not be presented as full 5GB processing evidence.
+
 Minimum request:
 
 ```json
@@ -238,14 +240,53 @@ Minimum response:
   "row_count": 100,
   "output_bytes": 40124,
   "input_bytes": 540000,
+  "snapshot_mode": "bounded_sample",
+  "requested_sample_size": 100,
+  "row_limit": 100,
+  "coverage_status": "bounded_sample_limit_reached",
+  "input_bytes_semantics": "available_input_bytes",
+  "large_data_status": "not_full_large_data_ingest",
   "status": "succeeded",
   "duration_ms": 4,
-  "message": "100개 row/message를 raw snapshot으로 저장했습니다.",
+  "message": "100개 row/message를 bounded raw snapshot으로 저장했습니다.",
   "created_at": "2026-06-30T13:35:08Z"
 }
 ```
 
 `GET /api/source-datasets/{dataset_id}/snapshots` returns latest snapshots first. Snapshot success updates the Source Dataset status to `snapshot_ready`; failure returns an error and must not make metadata appear successfully ingested.
+
+C-37 adds a read-only Product Health source inventory endpoint for the clean-room demo source binding step. It does not download data, run full ingest, create Source Dataset rows, or materialize Silver/Gold outputs. It only exposes already prepared local/raw evidence as Source Dataset candidates.
+
+`GET /api/product-health/source-inventory` minimum response:
+
+```json
+{
+  "scenario_id": "product_health",
+  "status": "ready",
+  "message": "4/4 Product Health source candidates are ready.",
+  "sources": [
+    {
+      "role": "behavior_events",
+      "label": "Commerce behavior events",
+      "source_dataset_name": "source_user_events",
+      "connection_name": "conn_product_health_behavior_events",
+      "connection_type": "local_file",
+      "resource_label": "file_path",
+      "path": "data/local_sources/product_health/raw/kaggle_ecommerce_behavior/2019-Oct.csv",
+      "binding_type": "raw_file",
+      "status": "ready",
+      "can_create_source_dataset": true,
+      "bytes": 5668612855,
+      "row_count": null,
+      "row_count_status": "not_measured",
+      "schema_preview": [{"name": "event_time", "type": "string"}],
+      "message": "Local CSV file discovered."
+    }
+  ]
+}
+```
+
+`binding_type` is one of `raw_file`, `prepared_dataset`, `missing`, or `mismatch`. `prepared_dataset` can be used as a demo-safe Source Dataset candidate, but it must not be presented as an original external raw file. `missing` and `mismatch` candidates are display-only and must not be saved as ready Source Datasets.
 
 - `POST /api/silver-datasets` minimum request:
 
@@ -379,7 +420,7 @@ Target dataset draft persistence stores job definition metadata only. From C-11,
 
 Target dataset job run handoff creates a queued run record from a saved Target Dataset draft. C-4 does not trigger Airflow, run local/spark runner, materialize Silver/Gold files, or publish CatalogMetadata.
 
-`POST /api/target-dataset-job-runs/{run_id}/execute` updates a common Target Dataset Job Run record by executor. `executor_handoff=local_runner` has three demo-safe modes. If a prepared Product Health Gold parquet matches `gold_output`, it references that parquet as `runtime_evidence.materialization_mode=prepared_gold_reference` without rerunning large ETL. If no prepared Gold exists but all declared Silver outputs have local parquet files, it reads those Silver parquet files and writes Gold parquet under `data/lake/gold/run_id=<run_id>/` as `runtime_evidence.materialization_mode=silver_parquet_to_gold`. The run also includes `runtime_evidence.object_storage.status=not_uploaded` and an expected S3-compatible `object_uri` so local materialization success is not confused with MinIO upload success. Legacy fallback may still write planned JSONL evidence as `local_demo_jsonl` when Silver parquet inputs are unavailable. Local runner execution updates the run with `status=succeeded`, `output_path`, `row_count`, `output_bytes`, `silver_output_paths`, `logs`, `duration_ms`, `source_evidence[]`, and `runtime_evidence.executor_status=executed`.
+`POST /api/target-dataset-job-runs/{run_id}/execute` updates a common Target Dataset Job Run record by executor. `executor_handoff=local_runner` has three demo-safe modes. If a prepared Product Health Gold parquet matches `gold_output`, it references that parquet as `runtime_evidence.materialization_mode=prepared_gold_reference` without rerunning large ETL and records `runtime_evidence.large_etl_rerun=false`, `catalog_publish_ready=true`, and `product_health_result_role=gold_run_execution_evidence`. If no prepared Gold exists but all declared Silver outputs have local parquet files, it reads those Silver parquet files and writes Gold parquet under `data/lake/gold/run_id=<run_id>/` as `runtime_evidence.materialization_mode=silver_parquet_to_gold` with `catalog_publish_ready=true`. The run also includes `runtime_evidence.object_storage.status=not_uploaded` and an expected S3-compatible `object_uri` so local materialization success is not confused with MinIO upload success. Legacy fallback may still write planned JSONL evidence as `local_demo_jsonl` when Silver parquet inputs are unavailable. Local runner execution updates the run with `status=succeeded`, `output_path`, `row_count`, `output_bytes`, `silver_output_paths`, `logs`, `duration_ms`, `source_evidence[]`, and `runtime_evidence.executor_status=executed`.
 
 C-29 keeps Airflow and Spark in the same Run record shape without falsely marking them succeeded. If `executor_handoff=airflow` or `spark_runner`, execute records `status=ready_to_run`, no `output_path`, no `row_count`, no `output_bytes`, and `runtime_evidence.executor_status=readiness_only`, `trigger_attempted=false`, `result_artifact_status=not_connected`, and `blocked_until[]`. It does not trigger Airflow/Spark, run distributed jobs, or publish CatalogMetadata.
 
@@ -387,7 +428,7 @@ C-29 keeps Airflow and Spark in the same Run record shape without falsely markin
 
 `GET /api/catalog/datasets/management-policy` returns the current registered `CatalogDataset` management boundary. C-21 keeps registered CatalogDataset rows read-only for product UI management: allowed actions are `detail` and `ai_query_context`; disabled actions are `metadata_update`, `metadata_delete`, `file_delete`, and `cascade_delete`. Metadata-only delete, actual output file delete, and cascade delete must remain separate future flows with 409 reference checks and explicit human confirmation before any file removal.
 
-M6 AI Query consumes published `CatalogDataset` rows through the `CatalogSource` adapter. `source_type=target_dataset_job_run` and `status=ready` rows are converted to `CatalogMetadata` shape with `schema.fields`, `storage.local_fallback_path`, `metrics`, `lineage`, and `query.allowed_columns`; Week2 stored/fixture catalogs remain fallback candidates when no published target dataset matches.
+M6 AI Query consumes published `CatalogDataset` rows through the `CatalogSource` adapter. `source_type=target_dataset_job_run` and `status=ready` rows are converted to `CatalogMetadata` shape with `schema.fields`, `storage.local_fallback_path`, `metrics`, `lineage`, and `query.allowed_columns`; Week2 stored/fixture catalogs remain fallback candidates when no published target dataset matches. C-39 requires the selected dataset, evidence item, retrieval trace, SQL table name, and `evidence[].storage.local_fallback_path` to point to the same published CatalogDataset/run/path when a live Product Health Gold run was published.
 
 ```json
 {
@@ -794,12 +835,13 @@ Minimum `AIQueryResult.evidence[]` grounding shape:
 | `s3_uri` | no | CatalogMetadata output URI |
 | `freshness` | no | CatalogMetadata update timestamp |
 | `table_name` | no | SQL table allowlist context from CatalogMetadata query section |
+| `storage` | no | CatalogMetadata storage facts used by SQL context, including `local_fallback_path` for local/DuckDB handoff |
 | `schema_fields` | no | CatalogMetadata schema fields, preserving nullable/type facts for M1 evidence display |
 | `metrics` | no | CatalogMetadata metric facts such as output `row_count`, `bytes`, quality, and semantics |
 | `lineage` | no | CatalogMetadata source, pipeline, run, and upstream dataset lineage |
 | `retrieval_terms` | no | M6 retrieval/scoring terms that explain why the dataset was selected |
 
-The grounding fields are additive. Existing M1 consumers may continue reading `dataset_id`, `run_id`, `s3_uri`, and `freshness`, while richer Week 2 displays can show schema, metric, lineage, and retrieval evidence without recomputing M6 scoring.
+The grounding fields are additive. Existing M1 consumers may continue reading `dataset_id`, `run_id`, `s3_uri`, and `freshness`, while richer Week 2 displays can show storage, schema, metric, lineage, and retrieval evidence without recomputing M6 scoring.
 
 Minimum SQL guardrail failure shape:
 

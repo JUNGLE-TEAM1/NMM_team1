@@ -255,6 +255,32 @@ PYTHONPATH=backend .venv/bin/python scripts/week2_m2_product_health_l6_evidence.
 5. `/api/week2/ai/query`에 위험 점수 질문을 보내 `SELECT internal_product_id, risk_score ...` SQL과 succeeded status가 반환되는지 확인한다.
 6. 기존 `gold_output=dataset_product_health_gold` demo path는 `local_demo_jsonl`과 `data/dataset_runs/<run_id>/...jsonl`을 유지하는지 확인한다.
 
+### C-36 Source Snapshot 대용량 경계 점검
+
+1. `/datasets/source`에서 local file 또는 Product Health 관련 Source Dataset 상세를 연다.
+2. `Raw snapshot 생성`을 누른다.
+3. 결과 카드가 `bounded sample` 또는 `source exhausted`처럼 sample/full ingest 경계를 표시하는지 확인한다.
+4. `Rows`는 snapshot에 쓴 row/message 수이고, `input bytes`는 inspected scope의 available input bytes로 표시되는지 확인한다.
+5. UI가 Source Snapshot을 full 5GB ingest, Spark/Airflow 실행, Product Health processed input evidence 완료로 표현하지 않는지 확인한다.
+
+### C-37 Product Health Source Inventory Binding 점검
+
+1. `/datasets/source`에서 `Source Dataset 생성`을 연다.
+2. `Product Health source inventory` 영역에 behavior, reviews, product catalog, delivery/trip 후보가 보이는지 확인한다.
+3. 각 후보가 `Raw file`, `Prepared dataset`, `Missing`, `Mismatch` 중 하나로 표시되는지 확인한다.
+
+### C-38 Product Health Silver/Gold Run Execution 점검
+
+1. `/datasets/gold`에서 `gold_output=dataset_product_health`인 Product Health Gold draft를 준비한다.
+2. `Run 준비`로 queued Gold Build Run을 만든다.
+3. `/runs`에서 해당 Run의 `실행`을 누른다.
+4. 실행 결과가 `prepared parquet reference`, `rows 1000`, `data/local_sources/product_health/gold/gold_product_health.parquet`로 표시되는지 확인한다.
+5. API 응답 또는 상세 evidence에서 `runtime_evidence.materialization_mode=prepared_gold_reference`, `large_etl_rerun=false`, `catalog_publish_ready=true`가 남는지 확인한다.
+6. 같은 화면이 Airflow/Spark 실행 또는 full 5GB ETL 재실행으로 오해되지 않는지 확인한다.
+4. missing/mismatch 후보는 선택할 수 없거나 Source Dataset 저장으로 이어지지 않는지 확인한다.
+5. ready 후보를 선택하면 Source Dataset 이름, raw scope/path, schema preview가 자동 채워지는지 확인한다.
+6. 저장 후 Source Dataset 목록/상세에서 같은 name/path/schema가 표시되는지 확인한다.
+
 ### C-18 Kafka replay evidence UI 점검
 
 1. `/runs`를 연다.
@@ -292,6 +318,15 @@ PYTHONPATH=backend .venv/bin/python scripts/week2_m2_product_health_l6_evidence.
 4. readiness panel이 `Live catalog readiness`로 표시되고 같은 published catalog id, local path, schema columns, run_id를 보여주는지 확인한다.
 5. row 결과가 없거나 storage path가 없으면 성공처럼 표시하지 않고 blocked/error로 보이는지 확인한다.
 6. publish된 target catalog가 없을 때 기존 Week2 fixture fallback query가 유지되는지 확인한다.
+
+### C-39 Catalog AI Query Clean-room Handoff 점검
+
+1. C-38 Product Health Gold Run을 성공시킨 뒤 `Catalog 등록`을 실행한다.
+2. `/catalog`에서 등록된 CatalogDataset의 `source_id`, `lineage.run_id`, `storage.local_path`, schema가 C-38 run evidence와 같은지 확인한다.
+3. `/query`에서 Product Health 위험 점수 질문을 실행한다.
+4. `selected_datasets[0].dataset_id`, `evidence[0].dataset_id`, `retrieval_trace[0].source_id`가 같은 CatalogDataset id인지 확인한다.
+5. `evidence[0].run_id`가 C-38 run id이고 `evidence[0].storage.local_fallback_path`가 CatalogDataset `storage.local_path`와 같은지 확인한다.
+6. 화면의 evidence 카드가 local path를 보여주고, 오래된 fixture/fallback 결과를 최신 run처럼 표시하지 않는지 확인한다.
 
 ### Query / Access 점검
 

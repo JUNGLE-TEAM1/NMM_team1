@@ -12,6 +12,7 @@ from app.domain.schemas import (
     ExternalConnectionTestRequest,
     ExternalConnectionTestResult,
     ExternalConnectionUpdate,
+    ProductHealthSourceInventory,
     SourceCreate,
     SilverDatasetCreate,
     SilverDatasetMaterializationCreate,
@@ -42,6 +43,7 @@ from app.services.external_connection_runtime import (
     ExternalConnectionRuntimeCheckError,
     ExternalConnectionRuntimeCheckService,
 )
+from app.services.product_health_source_inventory import ProductHealthSourceInventoryService
 from app.services.source_catalog import SourceCatalogService
 from app.services.source_dataset_snapshot import SourceDatasetSnapshotError, SourceDatasetSnapshotService
 from app.services.silver_dataset_materialization import (
@@ -129,6 +131,10 @@ def create_source_catalog_router(
             "response_redaction": "return configured/missing booleans and reference names only",
             "local_env_policy": "local development may use env var names as secret_ref values; env values must not be committed or echoed",
         }
+
+    @router.get("/product-health/source-inventory", response_model=ProductHealthSourceInventory)
+    def get_product_health_source_inventory() -> ProductHealthSourceInventory:
+        return ProductHealthSourceInventoryService().list_inventory()
 
     @router.get("/external-connections/{connection_id}", response_model=ExternalConnectionRecord)
     def get_external_connection(connection_id: str) -> ExternalConnectionRecord:

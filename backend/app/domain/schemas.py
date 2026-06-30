@@ -219,6 +219,31 @@ class SourceDatasetRecord(BaseModel):
     file_evidence: DatasetFileEvidence | None = None
 
 
+class ProductHealthSourceInventoryItem(BaseModel):
+    role: str
+    label: str
+    source_dataset_name: str
+    connection_name: str
+    connection_type: ConnectionType
+    resource_label: str
+    path: str
+    binding_type: Literal["raw_file", "prepared_dataset", "missing", "mismatch"]
+    status: Literal["ready", "missing", "mismatch"]
+    can_create_source_dataset: bool
+    bytes: int | None = None
+    row_count: int | None = None
+    row_count_status: str = "not_measured"
+    schema_preview: list[ColumnSchema] = Field(default_factory=list)
+    message: str
+
+
+class ProductHealthSourceInventory(BaseModel):
+    scenario_id: str = "product_health"
+    status: Literal["ready", "partial", "missing"]
+    sources: list[ProductHealthSourceInventoryItem]
+    message: str
+
+
 class SourceDatasetSnapshotCreate(BaseModel):
     sample_size: int = Field(default=100, ge=1, le=10000)
     secret_refs: dict[str, str] = Field(default_factory=dict)
@@ -236,6 +261,12 @@ class SourceDatasetSnapshotRecord(BaseModel):
     row_count: int
     output_bytes: int
     input_bytes: int | None = None
+    snapshot_mode: str = "bounded_sample"
+    requested_sample_size: int | None = None
+    row_limit: int | None = None
+    coverage_status: str = "bounded_sample_not_full_ingest"
+    input_bytes_semantics: str = "available_input_bytes"
+    large_data_status: str = "not_full_large_data_ingest"
     status: Literal["succeeded", "failed"]
     duration_ms: int
     message: str

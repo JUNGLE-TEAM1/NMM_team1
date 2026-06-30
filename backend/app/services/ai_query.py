@@ -134,6 +134,7 @@ class Week2AIQueryService:
                 s3_uri=catalog.get("s3_uri"),
                 freshness=catalog.get("updated_at"),
                 table_name=query.get("table_name"),
+                storage=deepcopy(catalog.get("storage", {})),
                 schema_fields=deepcopy(catalog.get("schema", {}).get("fields", [])),
                 metrics=deepcopy(
                     {

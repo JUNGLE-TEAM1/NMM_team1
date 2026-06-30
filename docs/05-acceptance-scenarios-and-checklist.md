@@ -55,6 +55,8 @@ AskLake의 Target MVP 대표 성공 시나리오는 `Trusted Dataset -> Query/As
 - [ ] AI Query 화면 readiness panel은 publish된 Gold CatalogDataset이 있을 때 fixed Product Health catalog가 아니라 live catalog id, local path, schema columns, lineage를 표시한다.
 - [ ] registered CatalogDataset은 Gold Dataset 화면에서 read-only management boundary로 표시되고, metadata update/delete, file delete, cascade delete가 같은 액션으로 제공되지 않는다.
 - [ ] Source/Silver/Gold Dataset 상세는 실제 local file이 있으면 `file-backed` evidence를, 없거나 metadata-only이면 성공처럼 보이지 않는 상태를 표시한다.
+- [ ] Source Snapshot은 `bounded_sample` evidence로 표시되고, snapshot `row_count`/`output_bytes`가 full 5GB ingest 또는 processed input evidence처럼 보이지 않는다.
+- [ ] Product Health Source Inventory는 behavior/reviews/product catalog/delivery 후보를 Source Dataset 후보로 표시하고, `raw_file`과 `prepared_dataset` 및 missing/mismatch 상태를 구분한다.
 - [ ] Gold Build local execution은 prepared Gold parquet reference와 1-row local demo JSONL materialization을 구분하고, Catalog publish/AI Query가 실제 output schema/path를 사용한다.
 - [ ] Kafka replay evidence는 실행 기록 UI에서 read-only health/run receipt로 보이고, evidence가 없어도 broker failure처럼 표시하지 않는다.
 - [ ] Airflow readiness는 실행 기록 UI에서 env missing/configured, DAG id, result root, local fallback 여부를 read-only로 보여주며 DAG trigger나 credential 값을 제공하지 않는다.
@@ -154,3 +156,10 @@ R1~R7은 아래 workstream alias로 유지한다.
 | R5 | Ask / Evidence | Ask 결과가 evidence 또는 보류 사유를 제공하고 권한 거부를 통과한다. |
 | R6 | Recovery / Operate | schema drift 또는 quality failure 후 영향 분석과 복구 상태 전이가 검증된다. |
 | R7 | Packaging | local/container 또는 dev-lite packaging smoke와 secret/config 검증이 통과한다. |
+
+## 8) Product Health Demo Runtime 체크포인트
+
+| Checkpoint | 수용 체크포인트 |
+| --- | --- |
+| C-38 Product Health Gold Run Execution | Product Health Gold Run 실행 결과가 prepared Gold reference 또는 Silver parquet materialization evidence로 남고, output path, row count, bytes, materialization mode, `catalog_publish_ready`를 포함한다. |
+| C-39 Catalog AI Query Clean-room Handoff | C-38 Run을 publish한 CatalogDataset과 AI Query의 selected dataset, evidence, retrieval trace, SQL table, `evidence.storage.local_fallback_path`가 같은 catalog/run/path를 가리킨다. |

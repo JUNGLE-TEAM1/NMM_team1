@@ -127,7 +127,7 @@ def readiness_only_result(
 
 def run_note_for_runtime_evidence(runtime_evidence: dict[str, object]) -> str:
     if runtime_evidence.get("materialization_mode") == "prepared_gold_reference":
-        return "Prepared Product Health Gold parquet referenced in C-17."
+        return "Prepared Product Health Gold parquet referenced for Product Health run execution."
     if runtime_evidence.get("materialization_mode") == "silver_parquet_to_gold":
         return "Silver parquet inputs materialized into local Gold parquet."
     return "Local runner materialization completed."
