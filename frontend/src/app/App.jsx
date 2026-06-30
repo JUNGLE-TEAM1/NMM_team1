@@ -445,8 +445,9 @@ function mapTargetDatasetRecord(record, rankOffset = 100) {
     sourceDatasetId: record.source_dataset_id,
     sourceMappingCount: (record.source_mappings || []).length,
     selectedFieldCount: (record.selected_fields || []).length,
-    processingLabel:
-      processRule.type === "product_health_recommended_template" ? "Product Health template" : "Select Fields",
+    processingLabel: ["product_health_gold_pipeline", "product_health_recommended_template"].includes(processRule.type)
+      ? "Product Health Gold pipeline"
+      : "Select Fields",
     qualityRuleCount: (processRule.quality_rules || []).length,
     scheduleMode: record.schedule?.mode || "manual",
   };
@@ -1065,6 +1066,7 @@ function SourcesPage({ navigate, setNotice }) {
   const [sourceColumnMappings, setSourceColumnMappings] = useState({});
   const [castTypeOverrides, setCastTypeOverrides] = useState({});
   const [nullPolicyOverrides, setNullPolicyOverrides] = useState({});
+  const [isTransformBuilderAdvancedOpen, setIsTransformBuilderAdvancedOpen] = useState(false);
   const [targetName, setTargetName] = useState("dataset_product_health_gold");
   const [targetDescription, setTargetDescription] = useState("제품 상태 분석용 gold dataset draft");
   const [targetScheduleMode, setTargetScheduleMode] = useState("manual");
@@ -1152,7 +1154,7 @@ function SourcesPage({ navigate, setNotice }) {
   const processSummary =
     processingMode === "recommended_template"
       ? hasRecommendedTemplateReady
-        ? `Product Health template · ${recommendedTemplateSteps.length} steps · ${mappedProductHealthSourceCount}/${productHealthSourceRequirements.length} sources`
+        ? `Gold pipeline · ${recommendedTemplateSteps.length} steps · ${mappedProductHealthSourceCount}/${productHealthSourceRequirements.length} raw sources`
         : "Product Health 추천 템플릿을 불러옵니다."
       : selectedFields.length > 0
         ? `Select Fields · ${selectedFields.length} fields`
@@ -1192,20 +1194,20 @@ function SourcesPage({ navigate, setNotice }) {
     },
     {
       id: "source",
-      title: "Source 선택",
+      title: "Sources",
       summary: sourceStepSummary,
       isComplete: currentStepIndex > 1 && Boolean(primaryTargetSource),
     },
     {
       id: "process",
-      title: "Process",
+      title: "Pipeline Plan",
       summary: processSummary,
       isComplete: currentStepIndex > 3 && processIsReady,
     },
     {
       id: "scheduling",
-      title: "Scheduling",
-      summary: targetScheduleMode === "manual" ? "Job manual trigger" : "Job schedule placeholder",
+      title: "Run Mode",
+      summary: targetScheduleMode === "manual" ? "Manual run" : "Schedule placeholder",
       isComplete: currentStepIndex > 4,
     },
     {
@@ -1700,13 +1702,22 @@ function SourcesPage({ navigate, setNotice }) {
     const processRule =
       processingMode === "recommended_template" && productHealthTemplate
         ? {
-            type: "product_health_recommended_template",
+            type: "product_health_gold_pipeline",
             mode: "recommended_template",
+            input_kind: "raw_sources",
             template_id: productHealthTemplate.id,
             template_label: productHealthTemplate.label,
             template_version: productHealthTemplate.template_version,
             target_dataset: productHealthTemplate.target_dataset,
             query_table: productHealthTemplate.query_table,
+            final_output: {
+              dataset_id: productHealthTemplate.target_dataset,
+              query_table: productHealthTemplate.query_table,
+              layer: "gold",
+              user_facing: true,
+            },
+            internal_stages: productHealthTemplate.flow,
+            internal_artifacts_visible: false,
             flow: productHealthTemplate.flow,
             source_contracts: productHealthTemplate.source_contracts,
             source_requirements: productHealthTemplate.source_requirements,
@@ -1764,10 +1775,10 @@ function SourcesPage({ navigate, setNotice }) {
       });
       const runRecords = await listTargetDatasetRuns(lastCreatedTargetDraft.id);
       setTargetRuns(runRecords.length > 0 ? runRecords : [runRecord]);
-      setNotice(`${runRecord.target_dataset_name} Job Run을 시작했습니다.`);
+      setNotice(`${runRecord.target_dataset_name} Manual Run smoke를 시작했습니다.`);
     } catch (error) {
       setTargetRunError(error.message);
-      setNotice(`Job Run 시작 실패: ${error.message}`);
+      setNotice(`Manual Run smoke 시작 실패: ${error.message}`);
     } finally {
       setIsStartingTargetRun(false);
     }
@@ -2459,7 +2470,7 @@ function SourcesPage({ navigate, setNotice }) {
             <Workflow size={20} />
             <div>
               <strong>Create Target Dataset</strong>
-              <p>Source Dataset을 가공해 target dataset과 ETL job definition을 준비합니다.</p>
+              <p>여러 Raw Source를 입력으로 받아 최종 Gold Target Dataset을 준비합니다.</p>
             </div>
           </div>
           <div className="table-card-actions">
@@ -2523,7 +2534,7 @@ function SourcesPage({ navigate, setNotice }) {
             <span>1단계</span>
             <div>
               <h3>Overview</h3>
-              <p>ETL job이 갱신할 target dataset의 이름과 목적을 먼저 정합니다.</p>
+              <p>사용자가 Catalog와 AI Query에서 쓸 최종 Gold Target Dataset의 이름과 목적을 정합니다.</p>
             </div>
           </div>
           <section className="wizard-inline-panel target-setup-panel">
@@ -2581,7 +2592,7 @@ function SourcesPage({ navigate, setNotice }) {
             <span>2단계</span>
             <div>
               <h3>Source 선택</h3>
-              <p>ETL job input으로 사용할 등록된 Source Dataset을 고릅니다.</p>
+              <p>Gold Target Pipeline의 raw input으로 사용할 Source Dataset들을 고릅니다.</p>
             </div>
           </div>
           <div className="wizard-source-layout">
@@ -2637,7 +2648,7 @@ function SourcesPage({ navigate, setNotice }) {
                 <FileJson size={18} />
                 <div>
                   <strong>Schema preview</strong>
-                  <p>{primaryTargetSource ? "Process 단계의 primary input schema로 사용됩니다." : "Source Dataset 선택 후 컬럼 미리보기가 표시됩니다."}</p>
+                  <p>{primaryTargetSource ? "Pipeline Plan 단계의 primary input schema로 사용됩니다." : "Source Dataset 선택 후 컬럼 미리보기가 표시됩니다."}</p>
                 </div>
               </div>
               {primaryTargetSource ? (
@@ -2674,21 +2685,21 @@ function SourcesPage({ navigate, setNotice }) {
           <div className="wizard-step-heading">
             <span>3단계</span>
             <div>
-              <h3>Process</h3>
-              <p>{selectedSource ? `${selectedSource.name}에서 target dataset을 만들 처리 규칙을 설정합니다.` : "Source Dataset을 먼저 선택합니다."}</p>
+              <h3>Pipeline Plan</h3>
+              <p>{selectedSource ? "Raw source들을 내부 처리 단계로 묶어 최종 Gold Target을 만드는 계획입니다." : "Source Dataset을 먼저 선택합니다."}</p>
             </div>
           </div>
           <section className={`transform-panel wizard-inline-panel ${selectedSource ? "" : "disabled"}`}>
             <div className="table-title-line">
               <GitBranch size={18} />
               <div>
-                <strong>ETL processing rule</strong>
-                <p>추천 템플릿 또는 직접 설정한 draft rule을 Target Dataset metadata에 저장합니다.</p>
+                <strong>Gold Target pipeline plan</strong>
+                <p>추천 템플릿 또는 직접 설정한 계획을 Target Dataset metadata에 저장합니다.</p>
               </div>
             </div>
             {selectedSource ? (
               <>
-                <div className="processing-mode-grid" role="radiogroup" aria-label="Target Dataset Processing mode">
+                <div className="processing-mode-grid" role="radiogroup" aria-label="Target Dataset Pipeline Plan mode">
                   <label className={processingMode === "recommended_template" ? "selected" : ""}>
                     <input
                       type="radio"
@@ -2697,6 +2708,7 @@ function SourcesPage({ navigate, setNotice }) {
                       checked={processingMode === "recommended_template"}
                       onChange={() => {
                         setProcessingMode("recommended_template");
+                        setIsTransformBuilderAdvancedOpen(false);
                         setLastCreatedTargetDraft(null);
                         setTargetDraftError("");
                         setTargetRuns([]);
@@ -2705,7 +2717,7 @@ function SourcesPage({ navigate, setNotice }) {
                     />
                     <span>
                       <strong>추천 템플릿 사용</strong>
-                      <small>Product Health · M3 TransformSpec</small>
+                      <small>Raw sources to Gold Target</small>
                     </span>
                   </label>
                   <label className={processingMode === "manual" ? "selected" : ""}>
@@ -2724,7 +2736,7 @@ function SourcesPage({ navigate, setNotice }) {
                     />
                     <span>
                       <strong>직접 설정</strong>
-                      <small>Select Fields draft</small>
+                      <small>Single-source field draft</small>
                     </span>
                   </label>
                 </div>
@@ -2734,16 +2746,26 @@ function SourcesPage({ navigate, setNotice }) {
                     <div className="template-summary-strip">
                       <Sparkles size={18} />
                       <div>
-                        <strong>{productHealthTemplate?.label || "Product Health 추천 템플릿"}</strong>
+                        <strong>{productHealthTemplate ? "Gold Target Pipeline 자동 설정 완료" : "Product Health 추천 템플릿"}</strong>
                         <p>
                           {isProcessingTemplateLoading
                             ? "template loading"
                             : productHealthTemplate
-                              ? `${productHealthTemplate.target_dataset} -> ${productHealthTemplate.query_table}`
+                              ? `Raw sources -> internal transform -> ${productHealthTemplate.query_table} · ${recommendedTemplateSteps.length} steps`
                               : processingTemplateError || "template unavailable"}
                         </p>
                       </div>
-                      <span>{productHealthTemplate?.template_version || "loading"}</span>
+                      {productHealthTemplate ? (
+                        <button
+                          type="button"
+                          className="ghost-action"
+                          onClick={() => setIsTransformBuilderAdvancedOpen((current) => !current)}
+                        >
+                          {isTransformBuilderAdvancedOpen ? "고급 설정 접기" : "고급 설정 보기"}
+                        </button>
+                      ) : (
+                        <span>loading</span>
+                      )}
                     </div>
 
                     {processingTemplateError ? (
@@ -2759,7 +2781,7 @@ function SourcesPage({ navigate, setNotice }) {
                           <div className="table-title-line">
                             <Database size={18} />
                             <div>
-                              <strong>M3 source_id mapping</strong>
+                              <strong>Raw source role mapping</strong>
                               <p>
                                 {mappedProductHealthSourceCount}/{productHealthSourceMappings.length} mapped · reviews, behavior, delivery, product_master
                               </p>
@@ -2781,7 +2803,8 @@ function SourcesPage({ navigate, setNotice }) {
                           </div>
                         </div>
 
-                        <div className="transform-builder-shell" aria-label="Product Health transform builder">
+                        {isTransformBuilderAdvancedOpen ? (
+                          <div className="transform-builder-shell" aria-label="Product Health transform builder">
                           <div className="builder-stage-strip">
                             {productHealthTemplate.flow.map((phase) => (
                               <span key={phase}>{phase}</span>
@@ -2841,7 +2864,7 @@ function SourcesPage({ navigate, setNotice }) {
                           <section className="builder-section">
                             <div className="builder-section-head">
                               <div>
-                                <strong>2. Silver normalize rules</strong>
+                                <strong>2. Internal normalize rules</strong>
                                 <p>cast type과 null/quarantine policy만 수정할 수 있습니다.</p>
                               </div>
                               <span>{productHealthBuilderSteps.filter((step) => step.operation_type === "normalize").length} steps</span>
@@ -2934,7 +2957,8 @@ function SourcesPage({ navigate, setNotice }) {
                               </div>
                             </section>
                           </div>
-                        </div>
+                          </div>
+                        ) : null}
 
                         <div className="template-contract-grid">
                           <section>
@@ -3012,7 +3036,7 @@ function SourcesPage({ navigate, setNotice }) {
                     <Table2 size={18} />
                     <div>
                       <strong>Target schema preview</strong>
-                      <p>ETL job이 target dataset에 남길 output schema입니다.</p>
+                      <p>Gold Target Dataset에 남길 output schema입니다.</p>
                     </div>
                   </div>
                   {targetOutputSchema.length > 0 ? (
@@ -3042,14 +3066,14 @@ function SourcesPage({ navigate, setNotice }) {
             ) : (
               <EmptyState
                 icon={GitBranch}
-                title="Process 설정 대기"
+                title="Pipeline Plan 설정 대기"
                 body="뒤로가기로 돌아가 Source Dataset을 먼저 선택합니다."
               />
             )}
           </section>
           <div className="wizard-placeholder compact">
             <CheckCircle2 size={22} />
-            <strong>다음 단계에서 ETL job schedule 기본값을 확인합니다</strong>
+            <strong>다음 단계에서 Manual Run 기본값을 확인합니다</strong>
           </div>
         </section>
       );
@@ -3061,16 +3085,16 @@ function SourcesPage({ navigate, setNotice }) {
           <div className="wizard-step-heading">
             <span>4단계</span>
             <div>
-              <h3>Scheduling</h3>
-              <p>Target Dataset을 갱신할 ETL job의 실행 계획을 정합니다.</p>
+              <h3>Run Mode</h3>
+              <p>Gold Target Dataset을 갱신할 실행 방식을 정합니다.</p>
             </div>
           </div>
           <section className="wizard-inline-panel target-schedule-panel">
             <div className="table-title-line">
               <Clock3 size={18} />
               <div>
-                <strong>ETL job schedule</strong>
-                <p>실제 cron 저장, timezone persistence, job API는 후속 backend Phase에서 다룹니다.</p>
+                <strong>Manual run mode</strong>
+                <p>내일 데모는 수동 실행 경계만 확인하며 cron/scheduler는 후속 범위입니다.</p>
               </div>
             </div>
             <div className="schedule-choice-grid" aria-label="Target dataset schedule mode">
@@ -3090,7 +3114,7 @@ function SourcesPage({ navigate, setNotice }) {
                 />
                 <span>
                   <strong>Manual</strong>
-                  <small>데모 기본값. target dataset 갱신 job을 수동 실행 대상으로 표시합니다.</small>
+                  <small>데모 기본값. Gold Target 갱신을 수동 실행 대상으로 표시합니다.</small>
                 </span>
               </label>
               <label className={targetScheduleMode === "placeholder" ? "selected" : ""}>
@@ -3129,7 +3153,7 @@ function SourcesPage({ navigate, setNotice }) {
               />
             </label>
             <div className="target-summary-strip">
-              <span>Job schedule summary</span>
+              <span>Run mode summary</span>
               <strong>{targetScheduleMode === "manual" ? "Manual" : "Placeholder"}</strong>
               <p>{targetScheduleNote.trim() || "schedule note 없음"}</p>
             </div>
@@ -3145,7 +3169,7 @@ function SourcesPage({ navigate, setNotice }) {
             <span>5단계</span>
             <div>
               <h3>Review</h3>
-              <p>Target Dataset draft와 ETL job definition을 최종 확인합니다.</p>
+              <p>Gold Target Dataset과 Pipeline Plan draft를 최종 확인합니다.</p>
             </div>
           </div>
           <div className="review-summary-grid target-review-grid">
@@ -3155,7 +3179,7 @@ function SourcesPage({ navigate, setNotice }) {
               <p>{normalizedTargetDescription || "purpose 없음"}</p>
             </article>
             <article>
-              <span>Job input</span>
+              <span>Raw inputs</span>
               <strong>
                 {processingMode === "recommended_template"
                   ? `${mappedProductHealthSourceCount}/${productHealthSourceMappings.length} source roles`
@@ -3174,13 +3198,13 @@ function SourcesPage({ navigate, setNotice }) {
               </p>
             </article>
             <article>
-              <span>ETL process</span>
+              <span>Pipeline Plan</span>
               <strong>
                 {processingMode === "recommended_template"
-                  ? `Product Health template · ${recommendedTemplateSteps.length} steps`
+                  ? `Raw sources -> Gold · ${recommendedTemplateSteps.length} steps`
                   : `Select Fields rule · ${selectedFields.length} fields`}
               </strong>
-              <p>{processingMode === "recommended_template" ? "M3 recommended template" : `${selectedFieldSummary}${selectedFields.length > 3 ? "..." : ""}`}</p>
+              <p>{processingMode === "recommended_template" ? "internal transform stages, user-facing Gold output only" : `${selectedFieldSummary}${selectedFields.length > 3 ? "..." : ""}`}</p>
             </article>
             <article>
               <span>Target schema</span>
@@ -3188,8 +3212,8 @@ function SourcesPage({ navigate, setNotice }) {
               <p>{targetOutputSchemaSummary}</p>
             </article>
             <article>
-              <span>ETL job definition</span>
-              <strong>{targetScheduleMode === "manual" ? "Manual trigger" : "Schedule placeholder"}</strong>
+              <span>Run mode</span>
+              <strong>{targetScheduleMode === "manual" ? "Manual Run" : "Schedule placeholder"}</strong>
               <p>{targetScheduleNote.trim() || "schedule note 없음"}</p>
             </article>
           </div>
@@ -3198,8 +3222,8 @@ function SourcesPage({ navigate, setNotice }) {
               <div className="table-title-line">
                 <ListChecks size={18} />
                 <div>
-                  <strong>Saved process_rule preview</strong>
-                  <p>{productHealthTemplate.flow.join(" -> ")} · {recommendedTemplateQualityRules.length} quality rules</p>
+                  <strong>Saved Pipeline Plan preview</strong>
+                  <p>Raw sources to internal stages to {productHealthTemplate.query_table} · {recommendedTemplateQualityRules.length} quality rules</p>
                 </div>
               </div>
               <div className="review-step-strip">
@@ -3218,7 +3242,7 @@ function SourcesPage({ navigate, setNotice }) {
           ) : null}
           <div className="wizard-placeholder compact">
             <CheckCircle2 size={22} />
-            <strong>저장 시 Target Dataset metadata와 ETL job definition draft만 생성하며 실행은 호출하지 않습니다.</strong>
+            <strong>저장 시 Gold Target Dataset metadata와 Pipeline Plan draft만 생성하며 실행은 호출하지 않습니다.</strong>
           </div>
           {lastCreatedTargetDraft ? (
             <div className="wizard-placeholder compact success">
@@ -3231,18 +3255,18 @@ function SourcesPage({ navigate, setNotice }) {
               <div className="table-title-line">
                 <Play size={18} />
                 <div>
-                  <strong>Job Runs</strong>
-                  <p>저장된 ETL job definition draft를 M5 handoff smoke로 넘겨 상태를 확인합니다.</p>
+                  <strong>Manual Run smoke</strong>
+                  <p>저장된 Pipeline Plan draft를 실행 경계로 넘겨 run evidence handoff를 확인합니다.</p>
                 </div>
               </div>
               <div className="target-run-actions">
                 <div>
                   <span>executor</span>
                   <strong>local_runner</strong>
-                  <p>이번 Phase는 M5 workflow/run API handoff만 확인하며 runtime output은 Week2 fixture입니다.</p>
+                  <p>이번 Phase는 run API handoff만 확인하며 runtime output은 Week2 fixture입니다.</p>
                 </div>
                 <button type="button" className="primary-action" onClick={startTargetDatasetRun} disabled={!canStartTargetRun}>
-                  {isStartingTargetRun ? "Run 생성 중..." : "Job Run 시작"}
+                  {isStartingTargetRun ? "Run 생성 중..." : "Manual Run smoke"}
                   {isStartingTargetRun ? <Loader2 size={16} className="spin" /> : <Play size={16} />}
                 </button>
               </div>
@@ -3266,8 +3290,8 @@ function SourcesPage({ navigate, setNotice }) {
               ) : (
                 <EmptyState
                   icon={Clock3}
-                  title="아직 생성된 Job Run이 없습니다"
-                  body="Job Run 시작을 누르면 저장된 draft와 Week2 ExecutionResult가 연결됩니다."
+                  title="아직 생성된 Manual Run smoke가 없습니다"
+                  body="Manual Run smoke를 누르면 저장된 draft와 Week2 ExecutionResult가 연결됩니다."
                 />
               )}
               {targetRunError ? (
@@ -3484,7 +3508,7 @@ function SourcesPage({ navigate, setNotice }) {
               ? "CSV, Kafka, DB, API, S3 같은 외부 원천 연결 설정을 준비하는 흐름입니다."
               : datasetCreationMode === "source"
                 ? "등록된 External Connection에서 raw/source dataset을 만드는 흐름입니다."
-                : "Source Dataset을 가공해 target dataset과 ETL job definition을 준비하는 흐름입니다."}
+                : "Raw Source들을 입력으로 받아 최종 Gold Target Dataset을 준비하는 흐름입니다."}
           </p>
         </div>
       ) : null}
@@ -3551,8 +3575,8 @@ function DatasetTypeChoiceModal({ onClose, onSelect }) {
               <Table2 size={22} />
             </span>
             <strong>Target Dataset</strong>
-            <p>Source Dataset을 가공해 target dataset과 ETL job definition을 준비합니다.</p>
-            <small>{"Overview -> Source -> Process -> Scheduling -> Review"}</small>
+            <p>Raw Source들을 입력으로 받아 최종 Gold Target Dataset을 준비합니다.</p>
+            <small>{"Overview -> Sources -> Pipeline Plan -> Run Mode -> Review"}</small>
           </button>
         </div>
       </section>

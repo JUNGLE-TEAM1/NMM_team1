@@ -82,12 +82,21 @@ def test_target_dataset_can_store_product_health_recommended_process_rule() -> N
             "source_type": source_dataset["connection_type"],
             "selected_fields": ["product_id", "rating", "sentiment"],
             "process_rule": {
-                "type": "product_health_recommended_template",
+                "type": "product_health_gold_pipeline",
                 "mode": "recommended_template",
+                "input_kind": "raw_sources",
                 "template_id": template["id"],
                 "template_version": template["template_version"],
                 "target_dataset": template["target_dataset"],
                 "query_table": template["query_table"],
+                "final_output": {
+                    "dataset_id": template["target_dataset"],
+                    "query_table": template["query_table"],
+                    "layer": "gold",
+                    "user_facing": True,
+                },
+                "internal_stages": template["flow"],
+                "internal_artifacts_visible": False,
                 "steps": template["steps"],
                 "quality_rules": template["quality_rules"],
             },
@@ -98,7 +107,9 @@ def test_target_dataset_can_store_product_health_recommended_process_rule() -> N
 
     assert response.status_code == 201
     dataset = response.json()
-    assert dataset["process_rule"]["type"] == "product_health_recommended_template"
+    assert dataset["process_rule"]["type"] == "product_health_gold_pipeline"
+    assert dataset["process_rule"]["final_output"]["query_table"] == "gold_product_health"
+    assert dataset["process_rule"]["internal_artifacts_visible"] is False
     assert dataset["process_rule"]["steps"][0]["phase"] == "bronze"
     assert any(rule["id"] == "zero_denominator_policy" for rule in dataset["process_rule"]["quality_rules"])
     assert dataset["job_definition"]["process_rule"]["query_table"] == "gold_product_health"

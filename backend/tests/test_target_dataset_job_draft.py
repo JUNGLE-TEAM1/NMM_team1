@@ -204,10 +204,19 @@ def test_create_target_dataset_stores_multi_source_role_mappings() -> None:
     payload = target_dataset_payload(reviews)
     payload["source_mappings"] = source_mappings
     payload["process_rule"] = {
-        "type": "product_health_recommended_template",
+        "type": "product_health_gold_pipeline",
         "mode": "recommended_template",
+        "input_kind": "raw_sources",
         "template_id": "product_health_recommended_v1",
         "template_version": "transform_product_health_gold_v1",
+        "final_output": {
+            "dataset_id": "dataset_product_health_gold",
+            "query_table": "gold_product_health",
+            "layer": "gold",
+            "user_facing": True,
+        },
+        "internal_stages": ["bronze", "silver", "aggregate", "join", "derive", "load"],
+        "internal_artifacts_visible": False,
     }
 
     response = client.post("/api/target-datasets", json=payload)
@@ -223,6 +232,9 @@ def test_create_target_dataset_stores_multi_source_role_mappings() -> None:
     assert dataset["source_mappings"][1]["source_id"] == "source_behavior_events_seed"
     assert dataset["job_definition"]["source_mappings"] == dataset["source_mappings"]
     assert dataset["process_rule"]["source_mappings"] == dataset["source_mappings"]
+    assert dataset["process_rule"]["type"] == "product_health_gold_pipeline"
+    assert dataset["process_rule"]["final_output"]["query_table"] == "gold_product_health"
+    assert dataset["process_rule"]["internal_artifacts_visible"] is False
 
     detail_response = client.get(f"/api/target-datasets/{dataset['id']}")
     assert detail_response.status_code == 200

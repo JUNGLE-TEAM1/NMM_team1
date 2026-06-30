@@ -10,7 +10,7 @@
 - Reason: backend API/schema는 자유 dict `process_rule` 저장 경계를 유지하고, 이번 변경은 frontend builder UI와 저장 payload 조립이 중심이다. 기존 backend focused tests로 regression을 보호하고 frontend build로 JSX/CSS를 검증했다.
 - Failing test first: not applied
 - Expected failure command/result: n/a
-- Pass command/result: `PYTHONPATH=backend pytest backend/tests/test_target_dataset_job_draft.py backend/tests/test_product_health_processing_template.py` passed, `npm run build` passed
+- Pass command/result: `PYTHONPATH=backend pytest backend/tests/test_target_dataset_job_draft.py backend/tests/test_product_health_processing_template.py` passed, `npm run build` passed, local browser Pipeline Plan smoke passed
 - Refactor notes: M3 template 원본은 유지하고, 사용자 편집 상태는 `builder_config`와 적용된 `steps[]`에 분리 저장한다.
 
 ## Branch Checks / 브랜치 검증
@@ -20,6 +20,7 @@
 | frontend build | `cd frontend && npm run build` | passed | Vite production build succeeded |
 | backend focused test | `PYTHONPATH=backend pytest backend/tests/test_target_dataset_job_draft.py backend/tests/test_product_health_processing_template.py` | passed | 7 passed |
 | local frontend smoke | `curl -I -fsS http://127.0.0.1:13000/dataset \| head -n 1` | passed | `HTTP/1.1 200 OK` |
+| local browser Pipeline Plan smoke | in-app browser `http://127.0.0.1:13000/dataset` Target wizard | passed | recommended template shows auto-configured Gold Target Pipeline, `고급 설정 보기`, quality rules, locked Gold schema; `Source column mapping` editor is hidden by default |
 | diff whitespace | `git diff --check` | passed | no output |
 | harness validation | `scripts/validate-harness.sh` | passed | Harness validation passed |
 | strict harness validation | `scripts/validate-harness.sh --strict` | passed | Harness validation passed |
@@ -37,4 +38,4 @@
 | Check | Reason | Human Confirmed |
 | --- | --- | --- |
 | full backend test | focused Target Dataset/Product Health template tests cover impacted backend path; full suite left to CI for speed | no |
-| browser click-through save | local source data state may vary; build, API tests, and dev-server smoke completed | no |
+| browser click-through save | Pipeline Plan screen was verified locally, but save was skipped because local source data uses one temporary taxi source for four Product Health roles | no |
