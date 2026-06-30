@@ -15,18 +15,25 @@ def make_client() -> TestClient:
     return TestClient(app)
 
 
-def create_source_dataset(client: TestClient) -> dict:
+def create_source_dataset(
+    client: TestClient,
+    name: str = "source_product_health_reviews",
+    raw_scope: str = "/data/incoming/product_health_reviews.csv",
+    schema_preview: list[dict[str, str]] | None = None,
+) -> dict:
     response = client.post(
         "/api/source-datasets",
         json={
             "connection_id": "conn_product_health_csv",
             "connection_name": "Product Health CSV Connection",
             "connection_type": "csv",
-            "name": "source_product_health_reviews",
-            "raw_scope": "/data/incoming/product_health_reviews.csv",
+            "name": name,
+            "raw_scope": raw_scope,
             "resource_label": "file_path",
-            "schema_preview": [
+            "schema_preview": schema_preview
+            or [
                 {"name": "review_id", "type": "string"},
+                {"name": "product_id", "type": "string"},
                 {"name": "rating", "type": "number"},
                 {"name": "sentiment", "type": "string"},
             ],
@@ -118,3 +125,125 @@ def test_create_target_dataset_requires_existing_source_dataset() -> None:
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Source dataset not found"
+
+
+def test_create_target_dataset_stores_multi_source_role_mappings() -> None:
+    client = make_client()
+    reviews = create_source_dataset(client, name="source_product_health_reviews")
+    behavior = create_source_dataset(
+        client,
+        name="source_product_health_behavior",
+        raw_scope="/data/incoming/product_health_behavior.jsonl",
+        schema_preview=[
+            {"name": "product_id", "type": "string"},
+            {"name": "event_type", "type": "string"},
+            {"name": "event_time", "type": "timestamp"},
+        ],
+    )
+    delivery = create_source_dataset(
+        client,
+        name="source_product_health_delivery",
+        raw_scope="/data/incoming/product_health_delivery.parquet",
+        schema_preview=[
+            {"name": "product_id", "type": "string"},
+            {"name": "late_flag", "type": "boolean"},
+        ],
+    )
+    product_master = create_source_dataset(
+        client,
+        name="source_product_master",
+        raw_scope="/data/incoming/product_master.csv",
+        schema_preview=[
+            {"name": "product_id", "type": "string"},
+            {"name": "product_name", "type": "string"},
+            {"name": "category_l1", "type": "string"},
+        ],
+    )
+    source_mappings = [
+        {
+            "role": "reviews",
+            "source_id": "source_reviews_seed",
+            "source_dataset_id": reviews["id"],
+            "source_dataset_name": reviews["name"],
+            "source_type": reviews["connection_type"],
+            "required_fields": ["product_id", "rating"],
+            "optional_fields": ["review_id", "sentiment"],
+            "produces_metrics": ["review_count", "average_rating", "negative_review_rate"],
+        },
+        {
+            "role": "behavior",
+            "source_id": "source_behavior_events_seed",
+            "source_dataset_id": behavior["id"],
+            "source_dataset_name": behavior["name"],
+            "source_type": behavior["connection_type"],
+            "required_fields": ["product_id", "event_type"],
+            "optional_fields": ["event_time"],
+            "produces_metrics": ["view_count", "purchase_count", "conversion_rate"],
+        },
+        {
+            "role": "delivery",
+            "source_id": "source_delivery_trips_seed",
+            "source_dataset_id": delivery["id"],
+            "source_dataset_name": delivery["name"],
+            "source_type": delivery["connection_type"],
+            "required_fields": ["product_id"],
+            "optional_fields": ["late_flag"],
+            "produces_metrics": ["delivery_count", "late_delivery_rate"],
+        },
+        {
+            "role": "product_master",
+            "source_id": "source_product_master_seed",
+            "source_dataset_id": product_master["id"],
+            "source_dataset_name": product_master["name"],
+            "source_type": product_master["connection_type"],
+            "required_fields": ["product_id"],
+            "optional_fields": ["product_name", "category_l1"],
+            "produces_metrics": [],
+        },
+    ]
+    payload = target_dataset_payload(reviews)
+    payload["source_mappings"] = source_mappings
+    payload["process_rule"] = {
+        "type": "product_health_recommended_template",
+        "mode": "recommended_template",
+        "template_id": "product_health_recommended_v1",
+        "template_version": "transform_product_health_gold_v1",
+    }
+
+    response = client.post("/api/target-datasets", json=payload)
+
+    assert response.status_code == 201
+    dataset = response.json()
+    assert [mapping["role"] for mapping in dataset["source_mappings"]] == [
+        "reviews",
+        "behavior",
+        "delivery",
+        "product_master",
+    ]
+    assert dataset["source_mappings"][1]["source_id"] == "source_behavior_events_seed"
+    assert dataset["job_definition"]["source_mappings"] == dataset["source_mappings"]
+    assert dataset["process_rule"]["source_mappings"] == dataset["source_mappings"]
+
+    detail_response = client.get(f"/api/target-datasets/{dataset['id']}")
+    assert detail_response.status_code == 200
+    assert detail_response.json()["source_mappings"][3]["source_dataset_id"] == product_master["id"]
+
+
+def test_create_target_dataset_rejects_missing_source_mapping_dataset() -> None:
+    client = make_client()
+    reviews = create_source_dataset(client)
+    payload = target_dataset_payload(reviews)
+    payload["source_mappings"] = [
+        {
+            "role": "behavior",
+            "source_id": "source_behavior_events_seed",
+            "source_dataset_id": "missing-source-dataset",
+            "source_dataset_name": "source_missing_behavior",
+            "source_type": "csv",
+        },
+    ]
+
+    response = client.post("/api/target-datasets", json=payload)
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Source dataset not found for role behavior"

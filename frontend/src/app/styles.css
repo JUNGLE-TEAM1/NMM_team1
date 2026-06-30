@@ -1460,6 +1460,80 @@ code {
   gap: 14px;
 }
 
+.source-role-panel,
+.template-source-map {
+  display: grid;
+  gap: 12px;
+}
+
+.source-role-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.source-role-grid.compact {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.source-role-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 12px;
+  min-width: 0;
+}
+
+.source-role-card.mapped {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.source-role-card span {
+  display: block;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.source-role-card strong {
+  display: block;
+  margin-top: 3px;
+  color: #111827;
+  font-size: 13px;
+  font-weight: 850;
+  overflow-wrap: anywhere;
+}
+
+.source-role-card p {
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.review-source-map {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.review-source-map span {
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  background: #ffffff;
+  padding: 6px 9px;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 750;
+}
+
 .template-summary-strip {
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr) auto;
@@ -4688,6 +4762,8 @@ tbody tr:hover {
   .schema-preview-head,
   .schema-preview-row,
   .schedule-choice-grid,
+  .source-role-grid,
+  .source-role-grid.compact,
   .template-contract-grid,
   .template-flow-grid,
   .target-run-row,

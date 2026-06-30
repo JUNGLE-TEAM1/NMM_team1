@@ -111,6 +111,7 @@ class SQLiteMetadataStore:
                     source_dataset_id TEXT NOT NULL,
                     source_dataset_name TEXT NOT NULL,
                     source_type TEXT NOT NULL,
+                    source_mappings_json TEXT NOT NULL DEFAULT '[]',
                     selected_fields_json TEXT NOT NULL,
                     process_rule_json TEXT NOT NULL,
                     schedule_json TEXT NOT NULL,
@@ -156,6 +157,7 @@ class SQLiteMetadataStore:
             ensure_column(connection, "catalog_datasets", "owner", "TEXT NOT NULL DEFAULT 'unassigned'")
             ensure_column(connection, "catalog_datasets", "trust_status", "TEXT NOT NULL DEFAULT 'Draft'")
             ensure_column(connection, "catalog_datasets", "trust_gate_result_json", "TEXT")
+            ensure_column(connection, "target_datasets", "source_mappings_json", "TEXT NOT NULL DEFAULT '[]'")
 
     def create_source_with_dataset(
         self,
@@ -306,10 +308,13 @@ class SQLiteMetadataStore:
         created_at = now_iso()
         selected_fields = list(dict.fromkeys(dataset.selected_fields))
         output_schema = [column.model_dump() for column in dataset.output_schema]
+        source_mappings = [mapping.model_dump() for mapping in dataset.source_mappings]
         process_rule = {
             **dataset.process_rule,
             "selected_fields": selected_fields,
         }
+        if source_mappings:
+            process_rule["source_mappings"] = source_mappings
         schedule = dataset.schedule
         job_definition = {
             "job_type": "target_dataset_etl_draft",
@@ -318,6 +323,7 @@ class SQLiteMetadataStore:
             "source_dataset_id": dataset.source_dataset_id,
             "source_dataset_name": dataset.source_dataset_name,
             "source_type": dataset.source_type,
+            "source_mappings": source_mappings,
             "process_rule": process_rule,
             "selected_fields": selected_fields,
             "schedule": schedule,
@@ -330,10 +336,10 @@ class SQLiteMetadataStore:
                 """
                 INSERT INTO target_datasets (
                     id, name, description, source_dataset_id, source_dataset_name, source_type,
-                    selected_fields_json, process_rule_json, schedule_json, output_schema_json,
+                    source_mappings_json, selected_fields_json, process_rule_json, schedule_json, output_schema_json,
                     job_definition_json, status, created_at, updated_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     dataset_id,
@@ -342,6 +348,7 @@ class SQLiteMetadataStore:
                     dataset.source_dataset_id,
                     dataset.source_dataset_name,
                     dataset.source_type,
+                    json.dumps(source_mappings, ensure_ascii=False),
                     json.dumps(selected_fields, ensure_ascii=False),
                     json.dumps(process_rule, ensure_ascii=False),
                     json.dumps(schedule, ensure_ascii=False),
@@ -694,6 +701,7 @@ def target_dataset_from_row(row: sqlite3.Row) -> TargetDatasetRecord:
         source_dataset_id=row["source_dataset_id"],
         source_dataset_name=row["source_dataset_name"],
         source_type=row["source_type"],
+        source_mappings=json.loads(row["source_mappings_json"] or "[]"),
         selected_fields=json.loads(row["selected_fields_json"]),
         process_rule=json.loads(row["process_rule_json"]),
         schedule=json.loads(row["schedule_json"]),

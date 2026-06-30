@@ -49,6 +49,7 @@ report가 늘어나면 영역별 최신 report index를 작게 유지한다. 이
 | Target Dataset run handoff | [`target-dataset-run-handoff.md`](target-dataset-run-handoff.md) | 저장된 Target Dataset draft가 `Job Runs`에서 Week2 `ExecutionResult`와 연결되는지 확인 |
 | Taxi PostgreSQL Source Dataset 등록 | [`taxi-postgres-source-dataset.md`](taxi-postgres-source-dataset.md) | 로컬 Taxi PostgreSQL table을 실제 External Connection schema preview로 읽어 Source Dataset metadata로 저장하는지 확인 |
 | Product Health Processing Template | [`product-health-processing-template.md`](product-health-processing-template.md) | M3 Product Health TransformSpec 기반 추천 Processing Template을 Target Dataset UI에서 review/save 가능한 draft metadata로 받는지 확인 |
+| Multi-source Target Dataset | [`multi-source-target-dataset.md`](multi-source-target-dataset.md) | Product Health `reviews`, `behavior`, `delivery`, `product_master` source role mapping을 Target Dataset metadata/UI에 저장하는지 확인 |
 | M5 Day 3 Catalog Persistence Handoff | [`m5-day3-catalog-persistence-handoff.md`](m5-day3-catalog-persistence-handoff.md) | Week 2 M5 run/catalog metadata가 service restart 이후에도 조회되는 local JSON handoff persistence 확인 |
 | M5 Day 2 Smoke Evidence | [`m5-day2-smoke-evidence.md`](m5-day2-smoke-evidence.md) | Week 2 M5 Workflow/Catalog local runner 실행 증거와 `ExecutionResult`/`CatalogMetadata` metric 의미 확인 |
 | Local Tool Runtime Readiness | [`local-tool-runtime-readiness.md`](local-tool-runtime-readiness.md) | Docker 같은 local runtime이 설치되어 있으나 꺼져 있을 때 agent가 safe start/readiness/fallback을 먼저 시도하는 규칙 확인 |

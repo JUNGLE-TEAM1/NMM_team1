@@ -94,6 +94,7 @@ def test_target_dataset_run_handoff_creates_week2_run_link() -> None:
         "target_dataset_name": "dataset_product_health_gold",
         "job_definition_status": "draft",
         "source_dataset_id": target_dataset["source_dataset_id"],
+        "source_mappings": [],
         "selected_fields": ["review_id", "product_id", "rating"],
         "process_rule": {
             "type": "select_fields",

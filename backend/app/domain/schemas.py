@@ -1,6 +1,6 @@
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class ColumnSchema(BaseModel):
@@ -131,16 +131,35 @@ class ProcessingTemplateRecord(BaseModel):
     contract_claims: dict[str, Any]
 
 
+class TargetSourceMapping(BaseModel):
+    role: Literal["reviews", "behavior", "delivery", "product_master"]
+    source_id: str = Field(min_length=1, max_length=120)
+    source_dataset_id: str = Field(min_length=1, max_length=120)
+    source_dataset_name: str = Field(min_length=1, max_length=120)
+    source_type: str = Field(min_length=1, max_length=80)
+    required_fields: list[str] = Field(default_factory=list)
+    optional_fields: list[str] = Field(default_factory=list)
+    produces_metrics: list[str] = Field(default_factory=list)
+
+
 class TargetDatasetCreate(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     description: str = Field(default="", max_length=500)
     source_dataset_id: str = Field(min_length=1, max_length=120)
     source_dataset_name: str = Field(min_length=1, max_length=120)
     source_type: str = Field(min_length=1, max_length=80)
+    source_mappings: list[TargetSourceMapping] = Field(default_factory=list)
     selected_fields: list[str] = Field(min_length=1)
     process_rule: dict[str, Any]
     schedule: dict[str, Any]
     output_schema: list[ColumnSchema] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def validate_source_mapping_roles(self) -> "TargetDatasetCreate":
+        roles = [mapping.role for mapping in self.source_mappings]
+        if len(roles) != len(set(roles)):
+            raise ValueError("source_mappings roles must be unique")
+        return self
 
 
 class TargetDatasetRecord(BaseModel):
@@ -150,6 +169,7 @@ class TargetDatasetRecord(BaseModel):
     source_dataset_id: str
     source_dataset_name: str
     source_type: str
+    source_mappings: list[TargetSourceMapping] = Field(default_factory=list)
     selected_fields: list[str]
     process_rule: dict[str, Any]
     schedule: dict[str, Any]

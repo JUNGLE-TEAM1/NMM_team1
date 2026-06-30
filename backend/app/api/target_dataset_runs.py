@@ -77,6 +77,7 @@ def execution_result_with_target_handoff(
         "target_dataset_name": target_dataset["name"],
         "job_definition_status": job_definition["status"],
         "source_dataset_id": target_dataset["source_dataset_id"],
+        "source_mappings": target_dataset.get("source_mappings", []),
         "selected_fields": target_dataset["selected_fields"],
         "process_rule": target_dataset["process_rule"],
         "schedule": target_dataset["schedule"],

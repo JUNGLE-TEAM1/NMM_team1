@@ -171,6 +171,10 @@ def create_source_catalog_router(
         source_dataset = metadata_store.get_source_dataset(dataset.source_dataset_id)
         if source_dataset is None:
             raise HTTPException(status_code=404, detail="Source dataset not found")
+        for mapping in dataset.source_mappings:
+            mapped_source_dataset = metadata_store.get_source_dataset(mapping.source_dataset_id)
+            if mapped_source_dataset is None:
+                raise HTTPException(status_code=404, detail=f"Source dataset not found for role {mapping.role}")
         try:
             return metadata_store.create_target_dataset(dataset)
         except sqlite3.IntegrityError as error:
