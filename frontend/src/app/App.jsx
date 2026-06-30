@@ -167,6 +167,61 @@ const demoSourceDatasets = [
     ],
   },
   {
+    id: "source_product_health_behavior",
+    name: "Product Health Behavior Events",
+    sourceType: "kafka",
+    typeLabel: "Kafka",
+    status: "Demo source",
+    description: "상품 조회와 구매 이벤트를 제품 상태 metric으로 집계하는 행동 이벤트 source입니다.",
+    resource: "product.health.behavior.events",
+    updatedLabel: "오늘 10:12",
+    updatedRank: 8,
+    columns: ["product_id", "event_type", "event_time", "session_id", "user_id"],
+    schema: [
+      { name: "product_id", type: "string", sample: "sku_8842" },
+      { name: "event_type", type: "string", sample: "product_view" },
+      { name: "event_time", type: "datetime", sample: "2026-06-28 09:44" },
+      { name: "session_id", type: "string", sample: "sess_5012" },
+      { name: "user_id", type: "string", sample: "usr_2048" },
+    ],
+  },
+  {
+    id: "source_product_health_delivery",
+    name: "Product Health Delivery Trips",
+    sourceType: "postgres",
+    typeLabel: "PostgreSQL",
+    status: "Demo source",
+    description: "상품별 배송 완료와 지연 여부를 late delivery metric으로 집계하는 delivery source입니다.",
+    resource: "logistics.product_delivery_trips",
+    updatedLabel: "오늘 10:10",
+    updatedRank: 7,
+    columns: ["product_id", "delivery_id", "promised_at", "delivered_at", "late_flag"],
+    schema: [
+      { name: "product_id", type: "varchar", sample: "sku_8842" },
+      { name: "delivery_id", type: "varchar", sample: "dlv_8121" },
+      { name: "promised_at", type: "timestamp", sample: "2026-06-28 18:00" },
+      { name: "delivered_at", type: "timestamp", sample: "2026-06-28 18:32" },
+      { name: "late_flag", type: "boolean", sample: "true" },
+    ],
+  },
+  {
+    id: "source_product_master",
+    name: "Product Master",
+    sourceType: "api",
+    typeLabel: "API",
+    status: "Demo source",
+    description: "상품명과 카테고리 차원을 Gold output에 보강하는 product dimension source입니다.",
+    resource: "GET /partner/product-master",
+    updatedLabel: "오늘 10:08",
+    updatedRank: 6,
+    columns: ["product_id", "product_name", "category_l1"],
+    schema: [
+      { name: "product_id", type: "string", sample: "sku_8842" },
+      { name: "product_name", type: "string", sample: "Air Flow Desk Fan" },
+      { name: "category_l1", type: "string", sample: "home_appliance" },
+    ],
+  },
+  {
     id: "source_orders_csv",
     name: "Sample Orders CSV",
     sourceType: "csv",
@@ -388,6 +443,7 @@ function mapTargetDatasetRecord(record, rankOffset = 100) {
     schema,
     sourceName: record.source_dataset_name,
     sourceDatasetId: record.source_dataset_id,
+    sourceMappingCount: (record.source_mappings || []).length,
     selectedFieldCount: (record.selected_fields || []).length,
     processingLabel:
       processRule.type === "product_health_recommended_template" ? "Product Health template" : "Select Fields",
@@ -401,6 +457,53 @@ function mapTemplateSchemaField(field) {
     name: field.name || field.path,
     type: field.type || "unknown",
     sample: field.semantic_role || (field.nullable ? "nullable" : "required"),
+  };
+}
+
+const productHealthRoleLabels = {
+  reviews: "reviews",
+  behavior: "behavior",
+  delivery: "delivery",
+  product_master: "product_master",
+};
+
+function productHealthRoleFromRequirement(requirement) {
+  const signature = `${requirement.source_id || ""} ${requirement.role || ""}`.toLowerCase();
+  if (signature.includes("behavior")) return "behavior";
+  if (signature.includes("delivery")) return "delivery";
+  if (signature.includes("product_master") || signature.includes("product_dimension")) return "product_master";
+  return "reviews";
+}
+
+function productHealthSourceHint(role) {
+  if (role === "behavior") return "event_type";
+  if (role === "delivery") return "late_flag";
+  if (role === "product_master") return "product_name";
+  return "rating";
+}
+
+function sourceMatchesProductHealthRole(source, role) {
+  const signature = [source.id, source.name, source.description, source.resource, source.columns.join(" ")]
+    .join(" ")
+    .toLowerCase();
+
+  if (role === "behavior") return signature.includes("behavior") || signature.includes("event_type");
+  if (role === "delivery") return signature.includes("delivery") || signature.includes("late_flag");
+  if (role === "product_master") return signature.includes("master") || signature.includes("catalog") || signature.includes("product_name");
+  return signature.includes("review") || signature.includes("rating");
+}
+
+function buildSourceMappingPayload(requirement, source) {
+  const role = productHealthRoleFromRequirement(requirement);
+  return {
+    role,
+    source_id: requirement.source_id,
+    source_dataset_id: source.id,
+    source_dataset_name: source.name,
+    source_type: source.sourceType,
+    required_fields: requirement.required_fields || [],
+    optional_fields: requirement.optional_fields || [],
+    produces_metrics: requirement.produces_metrics || [],
   };
 }
 
@@ -857,6 +960,7 @@ function SourcesPage({ navigate, setNotice }) {
   const [isSavingSourceDataset, setIsSavingSourceDataset] = useState(false);
   const [lastCreatedSourceDatasetId, setLastCreatedSourceDatasetId] = useState("");
   const [selectedSource, setSelectedSource] = useState(null);
+  const [targetSourceMappings, setTargetSourceMappings] = useState({});
   const [selectedFields, setSelectedFields] = useState([]);
   const [processingMode, setProcessingMode] = useState("recommended_template");
   const [productHealthTemplate, setProductHealthTemplate] = useState(null);
@@ -878,18 +982,46 @@ function SourcesPage({ navigate, setNotice }) {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const normalizedTargetName = targetName.trim();
   const normalizedTargetDescription = targetDescription.trim();
+  const productHealthOutputSchema = useMemo(
+    () => (productHealthTemplate?.output_schema || []).map(mapTemplateSchemaField).filter((field) => field.name),
+    [productHealthTemplate],
+  );
+  const productHealthSourceRequirements = useMemo(
+    () =>
+      (productHealthTemplate?.source_requirements || []).map((requirement) => ({
+        ...requirement,
+        roleKey: productHealthRoleFromRequirement(requirement),
+      })),
+    [productHealthTemplate],
+  );
+  const productHealthSourceMappings = useMemo(
+    () =>
+      productHealthSourceRequirements.map((requirement) => ({
+        requirement,
+        role: requirement.roleKey,
+        label: productHealthRoleLabels[requirement.roleKey],
+        source: targetSourceMappings[requirement.roleKey] || null,
+      })),
+    [productHealthSourceRequirements, targetSourceMappings],
+  );
+  const productHealthSourceMappingPayload = productHealthSourceMappings
+    .filter((mapping) => mapping.source)
+    .map((mapping) => buildSourceMappingPayload(mapping.requirement, mapping.source));
+  const mappedProductHealthSourceCount = productHealthSourceMappings.filter((mapping) => mapping.source).length;
+  const hasRecommendedSourceMappings =
+    productHealthSourceRequirements.length > 0 && mappedProductHealthSourceCount === productHealthSourceRequirements.length;
+  const primaryTargetSource =
+    productHealthSourceMappings.find((mapping) => mapping.role === "reviews" && mapping.source)?.source ||
+    productHealthSourceMappings.find((mapping) => mapping.source)?.source ||
+    selectedSource;
   const selectedFieldSummary =
     selectedFields.length > 0 ? selectedFields.slice(0, 3).join(", ") : "선택된 필드가 없습니다.";
   const selectedOutputSchema = selectedSource
     ? selectedSource.schema.filter((field) => selectedFields.includes(field.name))
     : [];
-  const productHealthOutputSchema = useMemo(
-    () => (productHealthTemplate?.output_schema || []).map(mapTemplateSchemaField).filter((field) => field.name),
-    [productHealthTemplate],
-  );
   const targetOutputSchema =
     processingMode === "recommended_template" && productHealthTemplate ? productHealthOutputSchema : selectedOutputSchema;
-  const effectiveSelectedFields = selectedFields.length > 0 ? selectedFields : selectedSource?.columns || [];
+  const effectiveSelectedFields = selectedFields.length > 0 ? selectedFields : primaryTargetSource?.columns || selectedSource?.columns || [];
   const recommendedTemplateSteps = productHealthTemplate?.steps || [];
   const recommendedTemplateQualityRules = productHealthTemplate?.quality_rules || [];
   const hasRecommendedTemplateReady =
@@ -898,13 +1030,21 @@ function SourcesPage({ navigate, setNotice }) {
   const processSummary =
     processingMode === "recommended_template"
       ? hasRecommendedTemplateReady
-        ? `Product Health template · ${recommendedTemplateSteps.length} steps`
+        ? `Product Health template · ${recommendedTemplateSteps.length} steps · ${mappedProductHealthSourceCount}/${productHealthSourceRequirements.length} sources`
         : "Product Health 추천 템플릿을 불러옵니다."
       : selectedFields.length > 0
         ? `Select Fields · ${selectedFields.length} fields`
         : "직접 설정할 필드를 선택합니다.";
   const processIsReady =
-    processingMode === "recommended_template" ? hasRecommendedTemplateReady && Boolean(selectedSource) : selectedFields.length > 0;
+    processingMode === "recommended_template"
+      ? hasRecommendedTemplateReady && hasRecommendedSourceMappings
+      : selectedFields.length > 0;
+  const sourceStepSummary =
+    processingMode === "recommended_template" && productHealthSourceRequirements.length > 0
+      ? `${mappedProductHealthSourceCount}/${productHealthSourceRequirements.length} source roles mapped`
+      : selectedSource
+        ? selectedSource.name
+        : "등록된 Source Dataset을 선택합니다.";
   const targetOutputSchemaSummary =
     targetOutputSchema.length > 0 ? targetOutputSchema.map((field) => field.name).slice(0, 4).join(", ") : "schema 없음";
   const savedSourceDatasets = useMemo(
@@ -931,8 +1071,8 @@ function SourcesPage({ navigate, setNotice }) {
     {
       id: "source",
       title: "Source 선택",
-      summary: selectedSource ? selectedSource.name : "등록된 Source Dataset을 선택합니다.",
-      isComplete: currentStepIndex > 1 && Boolean(selectedSource),
+      summary: sourceStepSummary,
+      isComplete: currentStepIndex > 1 && Boolean(primaryTargetSource),
     },
     {
       id: "process",
@@ -995,7 +1135,7 @@ function SourcesPage({ navigate, setNotice }) {
   const currentConnectionStep = connectionWizardSteps[connectionWizardStepIndex];
   const canGoNext =
     (currentStep.id === "overview" && Boolean(normalizedTargetName)) ||
-    (currentStep.id === "source" && Boolean(selectedSource)) ||
+    (currentStep.id === "source" && Boolean(primaryTargetSource)) ||
     (currentStep.id === "process" && processIsReady) ||
     currentStep.id === "scheduling";
   const canGoNextSource =
@@ -1006,7 +1146,7 @@ function SourcesPage({ navigate, setNotice }) {
     Boolean(sourceDraft && sourceDatasetName.trim() && sourceRawScope.trim() && sourceDraft.schema?.length) &&
     !isSavingSourceDataset;
   const canCreateTargetDraft =
-    Boolean(normalizedTargetName && selectedSource && effectiveSelectedFields.length > 0 && targetOutputSchema.length > 0 && processIsReady) &&
+    Boolean(normalizedTargetName && primaryTargetSource && effectiveSelectedFields.length > 0 && targetOutputSchema.length > 0 && processIsReady) &&
     !isSavingTargetDraft;
   const canStartTargetRun = Boolean(lastCreatedTargetDraft) && !isStartingTargetRun;
   const { schemaName: connectionSchemaName, tableName: connectionTableName } = splitSchemaTable(connectionResource.trim());
@@ -1121,7 +1261,47 @@ function SourcesPage({ navigate, setNotice }) {
     };
   }, []);
 
+  useEffect(() => {
+    if (productHealthSourceRequirements.length === 0 || sourceDatasets.length === 0) return;
+
+    setTargetSourceMappings((currentMappings) => {
+      let hasChange = false;
+      const nextMappings = { ...currentMappings };
+
+      productHealthSourceRequirements.forEach((requirement) => {
+        const role = requirement.roleKey;
+        if (nextMappings[role]) return;
+        const suggestedSource = sourceDatasets.find((source) => sourceMatchesProductHealthRole(source, role));
+        if (suggestedSource) {
+          nextMappings[role] = suggestedSource;
+          hasChange = true;
+        }
+      });
+
+      return hasChange ? nextMappings : currentMappings;
+    });
+  }, [productHealthSourceRequirements, sourceDatasets]);
+
+  useEffect(() => {
+    if (processingMode !== "recommended_template" || !primaryTargetSource) return;
+    if (selectedSource?.id === primaryTargetSource.id) return;
+    setSelectedSource(primaryTargetSource);
+    setSelectedFields(primaryTargetSource.columns);
+  }, [primaryTargetSource, processingMode, selectedSource?.id]);
+
   function handleSourceSelect(source) {
+    if (sourceModalPurpose.startsWith("target-role:")) {
+      assignTargetSourceRole(sourceModalPurpose.replace("target-role:", ""), source);
+      setIsSourceModalOpen(false);
+      return;
+    }
+
+    if (sourceModalPurpose === "target" && processingMode === "recommended_template" && productHealthSourceMappings.length > 0) {
+      assignTargetSourceRole("reviews", source);
+      setIsSourceModalOpen(false);
+      return;
+    }
+
     setSelectedSource(source);
     setSelectedFields(source.columns);
     setLastCreatedTargetDraft(null);
@@ -1130,6 +1310,22 @@ function SourcesPage({ navigate, setNotice }) {
     setTargetRunError("");
     setNotice(`${source.name} source를 선택했습니다.`);
     setIsSourceModalOpen(false);
+  }
+
+  function assignTargetSourceRole(role, source) {
+    setTargetSourceMappings((currentMappings) => ({
+      ...currentMappings,
+      [role]: source,
+    }));
+    if (role === "reviews" || !selectedSource) {
+      setSelectedSource(source);
+      setSelectedFields(source.columns);
+    }
+    setLastCreatedTargetDraft(null);
+    setTargetDraftError("");
+    setTargetRuns([]);
+    setTargetRunError("");
+    setNotice(`${productHealthRoleLabels[role] || role} role에 ${source.name} source를 매핑했습니다.`);
   }
 
   async function selectSourceConnection(connection) {
@@ -1232,8 +1428,14 @@ function SourcesPage({ navigate, setNotice }) {
       });
       setApiSourceDatasets((records) => [record, ...records.filter((item) => item.id !== record.id)]);
       const mappedSource = mapSourceDatasetRecord(record);
-      setSelectedSource(mappedSource);
-      setSelectedFields(mappedSource.columns);
+      if (sourceModalPurpose.startsWith("target-role:")) {
+        assignTargetSourceRole(sourceModalPurpose.replace("target-role:", ""), mappedSource);
+      } else if (sourceModalPurpose === "target" && processingMode === "recommended_template" && productHealthSourceMappings.length > 0) {
+        assignTargetSourceRole("reviews", mappedSource);
+      } else {
+        setSelectedSource(mappedSource);
+        setSelectedFields(mappedSource.columns);
+      }
       setLastCreatedSourceDatasetId(record.id);
       setNotice(`${record.name} Source Dataset metadata를 저장했습니다.`);
     } catch (error) {
@@ -1266,6 +1468,7 @@ function SourcesPage({ navigate, setNotice }) {
             flow: productHealthTemplate.flow,
             source_contracts: productHealthTemplate.source_contracts,
             source_requirements: productHealthTemplate.source_requirements,
+            source_mappings: productHealthSourceMappingPayload,
             steps: recommendedTemplateSteps,
             quality_rules: recommendedTemplateQualityRules,
             output_schema: productHealthTemplate.output_schema,
@@ -1284,9 +1487,10 @@ function SourcesPage({ navigate, setNotice }) {
       const record = await createTargetDataset({
         name: normalizedTargetName,
         description: normalizedTargetDescription,
-        source_dataset_id: selectedSource.id,
-        source_dataset_name: selectedSource.name,
-        source_type: selectedSource.sourceType,
+        source_dataset_id: primaryTargetSource.id,
+        source_dataset_name: primaryTargetSource.name,
+        source_type: primaryTargetSource.sourceType,
+        source_mappings: processingMode === "recommended_template" ? productHealthSourceMappingPayload : [],
         selected_fields: effectiveSelectedFields,
         process_rule: processRule,
         schedule,
@@ -2143,34 +2347,64 @@ function SourcesPage({ navigate, setNotice }) {
                 <Database size={18} aria-hidden="true" />
               </span>
               <div>
-                <strong>{selectedSource ? selectedSource.name : "등록된 Source Dataset을 선택하세요"}</strong>
+                <strong>{primaryTargetSource ? primaryTargetSource.name : "등록된 Source Dataset을 선택하세요"}</strong>
                 <p>
-                  {selectedSource
-                    ? `${selectedSource.typeLabel} · ${selectedSource.columns.length} columns · ${selectedSource.resource}`
+                  {primaryTargetSource
+                    ? `${primaryTargetSource.typeLabel} · ${primaryTargetSource.columns.length} columns · ${primaryTargetSource.resource}`
                     : "등록된 Source Dataset card 목록에서 target dataset의 입력을 고릅니다."}
                 </p>
               </div>
               <button type="button" className="primary-action" onClick={() => openSourcePicker("target")}>
-                {selectedSource ? "Source 변경" : "Source 선택"}
+                {primaryTargetSource ? "Primary Source 변경" : "Source 선택"}
                 <ArrowRight size={16} />
               </button>
             </div>
+            {productHealthSourceMappings.length > 0 ? (
+              <section className="wizard-inline-panel source-role-panel">
+                <div className="table-title-line">
+                  <GitBranch size={18} />
+                  <div>
+                    <strong>Product Health source roles</strong>
+                    <p>
+                      {mappedProductHealthSourceCount}/{productHealthSourceMappings.length} roles mapped · M3 source_id 연결
+                    </p>
+                  </div>
+                </div>
+                <div className="source-role-grid">
+                  {productHealthSourceMappings.map((mapping) => (
+                    <article className={`source-role-card ${mapping.source ? "mapped" : ""}`} key={mapping.role}>
+                      <div>
+                        <span>{mapping.label}</span>
+                        <strong>{mapping.source ? mapping.source.name : "Source Dataset 선택"}</strong>
+                        <p>
+                          {mapping.requirement.source_id} · required:{" "}
+                          {(mapping.requirement.required_fields || []).join(", ") || productHealthSourceHint(mapping.role)}
+                        </p>
+                      </div>
+                      <button type="button" className="ghost-action" onClick={() => openSourcePicker(`target-role:${mapping.role}`)}>
+                        {mapping.source ? "변경" : "매핑"}
+                      </button>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            ) : null}
             <section className="wizard-inline-panel">
               <div className="table-title-line">
                 <FileJson size={18} />
                 <div>
                   <strong>Schema preview</strong>
-                  <p>{selectedSource ? "Process 단계의 입력 schema로 사용됩니다." : "Source Dataset 선택 후 컬럼 미리보기가 표시됩니다."}</p>
+                  <p>{primaryTargetSource ? "Process 단계의 primary input schema로 사용됩니다." : "Source Dataset 선택 후 컬럼 미리보기가 표시됩니다."}</p>
                 </div>
               </div>
-              {selectedSource ? (
+              {primaryTargetSource ? (
                 <div className="schema-preview-table" aria-label="Selected source schema preview">
                   <div className="schema-preview-head">
                     <span>Field</span>
                     <span>Type</span>
                     <span>Sample</span>
                   </div>
-                  {selectedSource.schema.map((field) => (
+                  {primaryTargetSource.schema.map((field) => (
                     <div className="schema-preview-row" key={field.name}>
                       <strong>{field.name}</strong>
                       <span>{field.type}</span>
@@ -2278,6 +2512,32 @@ function SourcesPage({ navigate, setNotice }) {
 
                     {productHealthTemplate ? (
                       <>
+                        <div className="template-source-map">
+                          <div className="table-title-line">
+                            <Database size={18} />
+                            <div>
+                              <strong>M3 source_id mapping</strong>
+                              <p>
+                                {mappedProductHealthSourceCount}/{productHealthSourceMappings.length} mapped · reviews, behavior, delivery, product_master
+                              </p>
+                            </div>
+                          </div>
+                          <div className="source-role-grid compact">
+                            {productHealthSourceMappings.map((mapping) => (
+                              <article className={`source-role-card ${mapping.source ? "mapped" : ""}`} key={mapping.role}>
+                                <div>
+                                  <span>{mapping.label}</span>
+                                  <strong>{mapping.source ? mapping.source.name : "Source Dataset 필요"}</strong>
+                                  <p>{mapping.requirement.source_id}</p>
+                                </div>
+                                <button type="button" className="ghost-action" onClick={() => openSourcePicker(`target-role:${mapping.role}`)}>
+                                  {mapping.source ? "변경" : "매핑"}
+                                </button>
+                              </article>
+                            ))}
+                          </div>
+                        </div>
+
                         <div className="template-flow-grid" aria-label="Product Health recommended processing steps">
                           {productHealthTemplate.flow.map((phase) => {
                             const steps = recommendedTemplateSteps.filter((step) => step.phase === phase);
@@ -2521,8 +2781,22 @@ function SourcesPage({ navigate, setNotice }) {
             </article>
             <article>
               <span>Job input</span>
-              <strong>{selectedSource ? selectedSource.name : "선택 전"}</strong>
-              <p>{selectedSource ? `Source Dataset · ${selectedSource.typeLabel} · ${selectedSource.resource}` : "Source 선택 단계에서 고릅니다."}</p>
+              <strong>
+                {processingMode === "recommended_template"
+                  ? `${mappedProductHealthSourceCount}/${productHealthSourceMappings.length} source roles`
+                  : selectedSource
+                    ? selectedSource.name
+                    : "선택 전"}
+              </strong>
+              <p>
+                {processingMode === "recommended_template"
+                  ? hasRecommendedSourceMappings
+                    ? "M3 source_id가 실제 Source Dataset에 연결되었습니다."
+                    : "Source role mapping이 더 필요합니다."
+                  : selectedSource
+                    ? `Source Dataset · ${selectedSource.typeLabel} · ${selectedSource.resource}`
+                    : "Source 선택 단계에서 고릅니다."}
+              </p>
             </article>
             <article>
               <span>ETL process</span>
@@ -2556,6 +2830,13 @@ function SourcesPage({ navigate, setNotice }) {
               <div className="review-step-strip">
                 {productHealthTemplate.flow.map((phase) => (
                   <span key={phase}>{phase}</span>
+                ))}
+              </div>
+              <div className="review-source-map">
+                {productHealthSourceMappings.map((mapping) => (
+                  <span key={mapping.role}>
+                    {mapping.label}: {mapping.source ? mapping.source.name : "미매핑"}
+                  </span>
                 ))}
               </div>
             </section>
@@ -2742,6 +3023,7 @@ function SourcesPage({ navigate, setNotice }) {
                       </div>
                       <small>process: {dataset.processingLabel}</small>
                       {dataset.qualityRuleCount ? <small>quality rules: {dataset.qualityRuleCount}</small> : null}
+                      {dataset.sourceMappingCount ? <small>source roles: {dataset.sourceMappingCount}</small> : null}
                       <small>source: {dataset.sourceName}</small>
                       <small>catalog: draft · AI Query: publish 대기</small>
                     </article>
