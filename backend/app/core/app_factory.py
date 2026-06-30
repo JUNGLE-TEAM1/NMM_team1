@@ -11,9 +11,14 @@ from app.api.week2_workflow import create_week2_workflow_router
 from app.core.container import AppContainer
 from app.core.settings import Settings, get_settings
 from app.ports.metadata_store import MetadataStore
+from app.services.external_connections import PostgresSchemaInspector
 
 
-def create_app(store: MetadataStore | None = None, settings: Settings | None = None) -> FastAPI:
+def create_app(
+    store: MetadataStore | None = None,
+    settings: Settings | None = None,
+    schema_inspector: PostgresSchemaInspector | None = None,
+) -> FastAPI:
     app_settings = settings or get_settings()
     app = FastAPI(title=app_settings.app_name)
     container = AppContainer(app_settings, metadata_store=store)
@@ -33,6 +38,7 @@ def create_app(store: MetadataStore | None = None, settings: Settings | None = N
             container.metadata_store,
             container.source_catalog_service,
             container.catalog_trust_service,
+            schema_inspector=schema_inspector,
         )
     )
     app.include_router(

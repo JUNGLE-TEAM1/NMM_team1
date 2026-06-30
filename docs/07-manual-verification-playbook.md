@@ -131,6 +131,38 @@ Target MVP 기능이 구현될 때 아래 경로를 단계별로 실제 manual v
 9. `데이터셋 생성 -> Target Dataset -> Source 선택`에서 저장된 Source Dataset이 후보로 표시되는지 확인한다.
 10. 화면 어디에서도 ingest job, raw table creation, ETL 실행 완료처럼 보이지 않는지 확인한다.
 
+### Taxi PostgreSQL Source Dataset 등록 점검
+
+이 경로는 사용자가 가진 TLC Yellow Taxi Parquet을 로컬 PostgreSQL `taxi_postgre`에 먼저 넣고, AskLake에서 실제 PostgreSQL schema preview를 읽어 Source Dataset metadata를 저장하는지 확인한다.
+Target Dataset 실행, Catalog 등록, AI Query 연결은 후속 Phase로 남긴다.
+
+1. 로컬 PostgreSQL 컨테이너를 실행한다. 예: `docker run --name asklake-taxi-postgres -e POSTGRES_DB=taxi_postgre -e POSTGRES_USER=asklake -e POSTGRES_PASSWORD=asklake -p 55432:5432 -d postgres:16-alpine`.
+2. 실제 password 값은 local env에만 둔다. 예: `ASKLAKE_TAXI_POSTGRES_PASSWORD=asklake`.
+3. 쓰기 전 계획만 확인한다.
+
+```bash
+.venv/bin/python scripts/load_taxi_parquet_to_postgres.py \
+  --input '<LOCAL_TAXI_PARQUET_DIR>' \
+  --limit-files 1 \
+  --dry-run
+```
+
+4. 1차 smoke 파일 하나를 적재한다. 반복 smoke에서는 중복 방지를 위해 `--truncate`를 명시한다.
+
+```bash
+ASKLAKE_TAXI_POSTGRES_PASSWORD=asklake .venv/bin/python scripts/load_taxi_parquet_to_postgres.py \
+  --input '<LOCAL_TAXI_PARQUET_DIR>' \
+  --limit-files 1 \
+  --truncate
+```
+
+5. backend를 `ASKLAKE_TAXI_POSTGRES_PASSWORD` env와 함께 실행한다.
+6. `/sources`에서 `데이터셋 생성 -> External Connection -> PostgreSQL`을 선택한다.
+7. `host=localhost`, `port=55432`, `database=taxi_postgre`, `username=asklake`, `password_env=ASKLAKE_TAXI_POSTGRES_PASSWORD`, `schema_table=public.yellow_taxi_trips`를 입력하고 `Test Connection`으로 schema preview를 확인한 뒤 저장한다.
+8. `데이터셋 생성 -> Source Dataset`에서 저장된 Taxi PostgreSQL connection을 선택한다.
+9. schema preview에 lowercase/canonical Taxi columns와 `airport_fee`가 보이고 `cbd_congestion_fee`가 없음을 확인한다.
+10. Source Dataset을 저장하고 `GET /api/source-datasets`에서 `connection_type=postgres`, `raw_scope=public.yellow_taxi_trips`, `schema_preview`, `layer=source`, `status=metadata_ready`를 확인한다.
+
 ### Dataset Module Target Dataset C-3 점검
 
 1. backend와 frontend를 실행한다.
