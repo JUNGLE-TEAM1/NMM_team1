@@ -17,6 +17,10 @@
 - `service_year_month`: 월별 검증/필터/재적재와 partition-like 운영에 유리하다.
 - 둘 다 분석 필수 컬럼은 아니므로 승인 전에는 table schema에 넣지 않는다.
 
+## Decision Option Briefs / 결정 옵션 브리프
+
+- 별도 option brief는 작성하지 않았다. 이번 slice의 고영향 결정은 사용자가 직접 지시한 Taxi smoke 범위, fee normalization, password 저장 방식에 한정된다.
+
 ## Accepted Decisions / 확정된 결정
 
 | Decision | Selected Option | Reason | Confirmed By / At |
@@ -32,3 +36,10 @@
 | --- | --- | --- | --- |
 | Target Run/Catalog/AI Query | 이번 목표는 Source Dataset 저장 | Taxi Source Dataset 저장 후 target 실행 요구 | follow-up |
 | `source_file`, `service_year_month` | 사용자 승인 필요 | 사용자가 추가 승인 | current or follow-up |
+
+## Revisit / Rollback Conditions / 재검토 또는 롤백 조건
+
+| Decision | Condition | Action |
+| --- | --- | --- |
+| 저장 전 연결 테스트 | CI 또는 운영 환경에서 env secret ref 처리 방식이 맞지 않을 때 | secret vault 연동 PR로 분리하고 현재 test endpoint는 metadata-only preview로 제한한다. |
+| Taxi smoke table schema | full load에서 월별 추적/재적재가 필요해질 때 | `source_file`, `service_year_month` 추가 여부를 사용자에게 재확인한다. |

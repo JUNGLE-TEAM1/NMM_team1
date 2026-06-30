@@ -6,12 +6,16 @@
 - Manual verification: TestClient actual PostgreSQL schema preview + Source Dataset API smoke completed.
 - Regression focus: password 원문 저장 금지, 빈 schema preview 저장 방지.
 
-## TDD
+## TDD Plan / TDD 계획
 
 - Applies: yes
 - Reason: External Connection API와 schema preview 계약이 추가된다.
+- Failing test first: `backend/tests/test_external_connection_persistence.py` 추가 전 관련 API가 없어서 실패하는 상태에서 시작했다.
+- Expected failure command/result: External Connection endpoint 부재로 API test failure.
+- Pass command/result: focused backend tests passed.
+- Refactor notes: shared metadata store interface에 External Connection persistence method를 추가했다.
 
-## 검증
+## Branch Checks / 브랜치 검증
 
 | Command | Result | Notes |
 | --- | --- | --- |
@@ -29,6 +33,13 @@
 
 - Full 2019~2026 Taxi load: skipped because first Source Dataset registration smoke only needs one-file table.
 - Target Dataset run/Catalog/AI Query: intentionally deferred.
+
+## Skipped Checks / 생략한 검증
+
+| Check | Reason | Human Confirmed |
+| --- | --- | --- |
+| Full 2019~2026 Taxi load | Source Dataset registration smoke는 one-file table로 충분하다. | yes |
+| Target Dataset run/Catalog/AI Query | 이번 PR 목표는 Source Dataset metadata 저장까지다. | yes |
 
 ## CI/CD Gate / CI-CD 게이트
 
