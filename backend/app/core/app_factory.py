@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.dashboard_cards import create_dashboard_card_router
 from app.api.health import router as health_router
 from app.api.pipelines import create_pipeline_router
 from app.api.source_catalog import create_source_catalog_router
@@ -56,5 +57,6 @@ def create_app(
     app.include_router(create_week2_workflow_router(container.week2_workflow_service))
     app.include_router(create_week2_kafka_replay_router(container.week2_kafka_replay_evidence_service))
     app.include_router(create_week2_ai_query_router(container.ai_query_service))
+    app.include_router(create_dashboard_card_router(container.metadata_store))
 
     return app
