@@ -9,3 +9,11 @@ demo-output/
 node_modules/
 frontend/node_modules/
 frontend/dist/
+
+# Local AI collaboration drafts. Existing tracked docs still show when modified;
+# use git add -f to promote an ignored draft into repository evidence.
+docs/workflows/docs/*/
+docs/reports/*.md
+!docs/reports/README.md
+!docs/reports/_template.md
+docs/project-context/**/m*-overview-demo-guide.md

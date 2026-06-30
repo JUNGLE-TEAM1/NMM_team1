@@ -32,6 +32,33 @@ Each workspace contains:
 - `next-actions.md`: current conversational menu for the human's next choice
 - `sync.md`: main/base commit, mid-phase upstream checks, pre-merge sync, and PR status
 
+## Current Status Entry Points
+
+처음 현황을 볼 때는 모든 workspace나 report를 열지 않는다.
+아래 순서로 보면 active work와 historical evidence를 빠르게 분리할 수 있다.
+
+| Need | Start Here | What It Tells You |
+| --- | --- | --- |
+| 전체 branch queue | `scripts/list-active-branches.sh` | local/remote branch, workspace 유무, state, issue/PR/merge/cleanup 후보 |
+| 현재 branch workspace | `scripts/status-workflow.sh` | 현재 branch에서 추론한 workspace의 state, pending gate, quality/sync/PR readiness |
+| 특정 workspace | `scripts/status-workflow.sh docs/workflows/<type>/<slug>` | 해당 workspace의 품질, sync, Source of Truth proposal, next action |
+| 최신 evidence 탐색 | `docs/reports/README.md`의 Latest Report Index | 영역별 최신 report와 읽는 이유 |
+| 시스템 guardrail 상태 | `docs/system-guardrails.md` | GitHub/CI/repository가 실제로 막는 것과 warning-only 항목 |
+| 완료 전 local gate | `scripts/validate-harness.sh --strict` | ready/complete workspace의 필수 evidence 누락 여부 |
+| 하네스 규칙 변경 검증 | `scripts/test-harness.sh` | workflow/script/CI harness rule의 fixture regression 결과 |
+
+10분 운영 루트:
+
+1. `AGENTS.md`에서 금지/확인 gate를 확인한다.
+2. `docs/00-layer-map.md`에서 요청이 어느 layer를 건드리는지 찾는다.
+3. `scripts/list-active-branches.sh`로 active branch queue를 본다.
+4. 현재 branch를 계속 다룰 때는 `scripts/status-workflow.sh`를 먼저 실행한다.
+5. 특정 완료 증거가 필요할 때만 `docs/reports/README.md`의 관련 최신 report를 연다.
+6. PR-ready 또는 완료 판단 전에는 `scripts/validate-harness.sh --strict`를 실행한다.
+
+`docs/reports/`는 증거 계층이고, `docs/workflows/`는 현재/branch별 작업 상태다.
+둘이 충돌하면 Source of Truth layer가 우선하며, 과거 report만 고쳐서 현재 규칙을 바꾸지 않는다.
+
 ## Workspace State
 
 `report.md` records `Workspace state`.

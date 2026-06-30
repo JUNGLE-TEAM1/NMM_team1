@@ -26,6 +26,26 @@
 4. changed, verified, remaining, next context는 반드시 남긴다.
 5. Source of Truth drift를 고치기 위해 과거 report만 수정하지 않는다.
 
+## Evidence Reading Ladder
+
+report는 현재 작업 상태를 직접 결정하지 않는다.
+현황을 물어보면 active workspace를 먼저 보고, report는 필요한 증거만 좁혀서 읽는다.
+
+| Step | Read | Purpose |
+| --- | --- | --- |
+| 1 | `scripts/list-active-branches.sh` | 남아 있는 local/remote branch와 cleanup 후보를 먼저 분리 |
+| 2 | `scripts/status-workflow.sh [workspace]` | 현재 또는 지정 workspace의 state, pending gate, PR readiness 확인 |
+| 3 | 이 README의 Latest Report Index | 관련 영역의 최신 report 후보 선택 |
+| 4 | 직전 Phase report 또는 관련 최신 report 1개 | 변경/검증/남은 위험/다음 문맥 확인 |
+| 5 | 필요한 Source of Truth file | report와 기준 문서가 충돌할 때 기준 문서를 우선 확인 |
+
+기본 원칙:
+
+- active branch 판단은 `docs/workflows/<type>/<slug>/`와 status script를 우선한다.
+- historical evidence 판단은 `docs/reports/`와 Latest Report Index를 사용한다.
+- audit이나 retrospective가 아니면 report를 대량으로 읽지 않는다.
+- report가 Source of Truth보다 최신처럼 보이면 과거 report를 고치기보다 Change Propagation Rule에 따라 가장 이른 Source of Truth layer를 업데이트한다.
+
 ## Latest Report Index
 
 AskLake에 하네스를 적용한 뒤 생성된 최신 Phase report를 아래 index에 유지한다.
