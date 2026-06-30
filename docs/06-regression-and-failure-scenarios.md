@@ -343,10 +343,10 @@
 | 항목 | 내용 |
 | --- | --- |
 | Must not break | External Connection API는 password 원문을 저장/응답하지 않고, Source Dataset은 실제 schema preview가 있을 때만 저장 흐름을 완료한다. |
-| Failure condition | `password` 값이 SQLite metadata/API response/log에 남거나, PostgreSQL schema discovery 실패 후에도 빈 schema로 Source Dataset 저장이 성공한다. |
+| Failure condition | `password` 값이 SQLite metadata/API response/log에 남거나, PostgreSQL 또는 MongoDB schema discovery 실패 후에도 빈 schema로 Source Dataset 저장이 성공한다. |
 | Expected behavior | API는 `password_secret_ref`만 저장하고, schema discovery 실패는 4xx/5xx error로 표시된다. UI는 schema preview가 비어 있으면 Source Dataset 저장을 막는다. |
 | Verification method | `backend/tests/test_external_connection_persistence.py`, Source Dataset UI/API smoke |
-| Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07`, Taxi PostgreSQL Source Dataset registration |
+| Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07`, Taxi PostgreSQL Source Dataset registration, MongoDB Source Dataset seed |
 
 ## 기능 실패 시나리오
 

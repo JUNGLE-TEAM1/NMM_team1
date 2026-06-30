@@ -1,0 +1,33 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: asklake-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${ASKLAKE_MONGODB_USERNAME:-asklake}
+      MONGO_INITDB_ROOT_PASSWORD: ${ASKLAKE_MONGODB_PASSWORD:-asklake}
+      MONGO_INITDB_DATABASE: ${ASKLAKE_MONGODB_DATABASE:-asklake_demo}
+    ports:
+      - "${ASKLAKE_MONGODB_PORT:-27017}:27017"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mongosh --quiet --username \"$${MONGO_INITDB_ROOT_USERNAME}\" --password \"$${MONGO_INITDB_ROOT_PASSWORD}\" --authenticationDatabase admin --eval 'db.adminCommand({ ping: 1 }).ok' | grep 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    volumes:
+      - asklake-mongodb-data:/data/db
+
+  backend:
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      ASKLAKE_MONGODB_PASSWORD: ${ASKLAKE_MONGODB_PASSWORD:-asklake}
+
+volumes:
+  asklake-mongodb-data:
