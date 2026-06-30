@@ -170,11 +170,11 @@ ASKLAKE_TAXI_POSTGRES_PASSWORD=asklake .venv/bin/python scripts/load_taxi_parque
 3. `Target Dataset`을 선택한다.
 4. 1단계 Overview에서 target dataset 이름과 목적을 확인 또는 수정한다.
 5. 2단계 Source 선택에서 저장된 Source Dataset을 고른다.
-6. 3단계 Process에서 Select Fields 규칙과 target schema preview를 확인한다.
+6. 3단계 Process에서 `추천 템플릿 사용`과 `직접 설정` mode가 보이는지 확인한다. Product Health 추천 템플릿을 선택하면 `bronze -> silver -> aggregate -> join -> derive -> load` step list, quality rules, Gold schema preview가 표시되는지 확인한다.
 7. 4단계 Scheduling에서 manual 또는 placeholder schedule note를 확인한다.
 8. 5단계 Review에서 `Target draft 저장`을 누른다.
 9. 성공 알림과 저장된 draft id가 표시되는지 확인한다.
-10. `GET /api/target-datasets` 응답에 `source_dataset_id`, `process_rule`, `selected_fields`, `schedule`, `job_definition`, `status=draft`가 있는지 확인한다.
+10. `GET /api/target-datasets` 응답에 `source_dataset_id`, `process_rule`, `selected_fields`, `schedule`, `job_definition`, `status=draft`가 있는지 확인한다. 추천 템플릿 저장 시 `process_rule.steps[]`와 `process_rule.quality_rules[]`가 포함되는지 확인한다.
 11. 화면과 API 어디에서도 pipeline run, M5 orchestration, CatalogMetadata 등록이 완료된 것처럼 보이지 않는지 확인한다.
 
 ### Dataset Module Target Dataset C-4 점검

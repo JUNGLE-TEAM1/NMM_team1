@@ -112,6 +112,25 @@ class ExternalTableSchema(BaseModel):
     row_count_estimate: int | None = None
 
 
+class ProcessingTemplateRecord(BaseModel):
+    id: str
+    label: str
+    description: str
+    mode: Literal["recommended_template"]
+    template_version: str
+    target_dataset: str
+    query_table: str
+    flow: list[str]
+    source_contracts: dict[str, str]
+    source_requirements: list[dict[str, Any]]
+    steps: list[dict[str, Any]]
+    quality_rules: list[dict[str, Any]]
+    output_schema: list[dict[str, Any]]
+    metric_definitions: list[dict[str, Any]]
+    locked_fields: list[str]
+    contract_claims: dict[str, Any]
+
+
 class TargetDatasetCreate(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     description: str = Field(default="", max_length=500)

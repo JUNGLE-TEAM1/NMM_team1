@@ -1410,6 +1410,234 @@ code {
   gap: 8px;
 }
 
+.processing-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.processing-mode-grid label {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 10px;
+  align-items: flex-start;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 12px;
+}
+
+.processing-mode-grid label.selected {
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+
+.processing-mode-grid input {
+  margin-top: 3px;
+  accent-color: #2563eb;
+}
+
+.processing-mode-grid strong,
+.processing-mode-grid small {
+  display: block;
+}
+
+.processing-mode-grid strong {
+  color: #111827;
+  font-size: 14px;
+  font-weight: 850;
+}
+
+.processing-mode-grid small {
+  margin-top: 4px;
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.processing-template-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.template-summary-strip {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  background: #eff6ff;
+  padding: 12px;
+  color: #1d4ed8;
+}
+
+.template-summary-strip strong {
+  display: block;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 850;
+}
+
+.template-summary-strip p {
+  margin-top: 3px;
+  color: #475569;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.template-summary-strip > span {
+  border-radius: 999px;
+  background: #ffffff;
+  padding: 5px 8px;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.template-flow-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.template-flow-phase {
+  display: grid;
+  min-width: 0;
+  gap: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 12px;
+}
+
+.template-flow-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.template-flow-head span {
+  border-radius: 999px;
+  background: #f1f5f9;
+  padding: 5px 8px;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.template-flow-head strong {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.template-step-list {
+  display: grid;
+  gap: 8px;
+}
+
+.template-step-item {
+  display: grid;
+  gap: 5px;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 8px;
+}
+
+.template-step-item:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.template-step-item strong {
+  color: #111827;
+  font-size: 13px;
+  font-weight: 850;
+  overflow-wrap: anywhere;
+}
+
+.template-step-item p {
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.template-step-item code {
+  border-radius: 6px;
+  background: #f8fafc;
+  padding: 5px 6px;
+  color: #334155;
+  font-size: 11px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.template-contract-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 12px;
+}
+
+.template-contract-grid > section {
+  display: grid;
+  gap: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 12px;
+}
+
+.quality-rule-list {
+  display: grid;
+  gap: 8px;
+}
+
+.quality-rule-list article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 8px;
+  align-items: center;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 8px 10px;
+}
+
+.quality-rule-list strong {
+  color: #111827;
+  font-size: 12px;
+  font-weight: 850;
+  overflow-wrap: anywhere;
+}
+
+.quality-rule-list span,
+.quality-rule-list small {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.review-template-panel {
+  max-width: 980px;
+}
+
+.review-step-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.review-step-strip span {
+  border-radius: 999px;
+  background: #eef2ff;
+  padding: 6px 10px;
+  color: #3730a3;
+  font-size: 12px;
+  font-weight: 850;
+}
+
 .field-choice-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -4455,10 +4683,13 @@ tbody tr:hover {
   .data-wizard-layout,
   .integration-flow,
   .field-choice-grid,
+  .processing-mode-grid,
   .review-summary-grid,
   .schema-preview-head,
   .schema-preview-row,
   .schedule-choice-grid,
+  .template-contract-grid,
+  .template-flow-grid,
   .target-run-row,
   .source-config-grid,
   .source-config-summary,

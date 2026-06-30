@@ -61,6 +61,7 @@ import {
   testExternalConnection,
 } from "../api/externalConnectionApi";
 import { createSourceDataset, listSourceDatasets } from "../api/sourceDatasetApi";
+import { getProductHealthProcessingTemplate } from "../api/processingTemplateApi";
 import {
   createTargetDataset,
   listTargetDatasetRuns,
@@ -371,6 +372,7 @@ function mapTargetDatasetRecord(record, rankOffset = 100) {
     type: field.type,
     sample: "target field",
   }));
+  const processRule = record.process_rule || {};
 
   return {
     id: record.id,
@@ -387,8 +389,42 @@ function mapTargetDatasetRecord(record, rankOffset = 100) {
     sourceName: record.source_dataset_name,
     sourceDatasetId: record.source_dataset_id,
     selectedFieldCount: (record.selected_fields || []).length,
+    processingLabel:
+      processRule.type === "product_health_recommended_template" ? "Product Health template" : "Select Fields",
+    qualityRuleCount: (processRule.quality_rules || []).length,
     scheduleMode: record.schedule?.mode || "manual",
   };
+}
+
+function mapTemplateSchemaField(field) {
+  return {
+    name: field.name || field.path,
+    type: field.type || "unknown",
+    sample: field.semantic_role || (field.nullable ? "nullable" : "required"),
+  };
+}
+
+function stepDetailSummary(step) {
+  const details = step.details || {};
+  if (Array.isArray(details.metrics) && details.metrics.length > 0) {
+    return details.metrics.map((metric) => metric.name).join(", ");
+  }
+  if (Array.isArray(details.casts) && details.casts.length > 0) {
+    return details.casts.map((cast) => `${cast.field}:${cast.target_type}`).join(", ");
+  }
+  if (Array.isArray(details.keys) && details.keys.length > 0) {
+    return `keys: ${details.keys.join(", ")}`;
+  }
+  if (Array.isArray(details.select_columns) && details.select_columns.length > 0) {
+    return details.select_columns.join(", ");
+  }
+  if (Array.isArray(details.required_columns) && details.required_columns.length > 0) {
+    return `required: ${details.required_columns.join(", ")}`;
+  }
+  if (details.query_table) {
+    return details.query_table;
+  }
+  return step.output_artifact || step.operation_type;
 }
 
 function targetRunTone(status) {
@@ -822,6 +858,10 @@ function SourcesPage({ navigate, setNotice }) {
   const [lastCreatedSourceDatasetId, setLastCreatedSourceDatasetId] = useState("");
   const [selectedSource, setSelectedSource] = useState(null);
   const [selectedFields, setSelectedFields] = useState([]);
+  const [processingMode, setProcessingMode] = useState("recommended_template");
+  const [productHealthTemplate, setProductHealthTemplate] = useState(null);
+  const [isProcessingTemplateLoading, setIsProcessingTemplateLoading] = useState(false);
+  const [processingTemplateError, setProcessingTemplateError] = useState("");
   const [targetName, setTargetName] = useState("dataset_product_health_gold");
   const [targetDescription, setTargetDescription] = useState("제품 상태 분석용 gold dataset draft");
   const [targetScheduleMode, setTargetScheduleMode] = useState("manual");
@@ -843,6 +883,30 @@ function SourcesPage({ navigate, setNotice }) {
   const selectedOutputSchema = selectedSource
     ? selectedSource.schema.filter((field) => selectedFields.includes(field.name))
     : [];
+  const productHealthOutputSchema = useMemo(
+    () => (productHealthTemplate?.output_schema || []).map(mapTemplateSchemaField).filter((field) => field.name),
+    [productHealthTemplate],
+  );
+  const targetOutputSchema =
+    processingMode === "recommended_template" && productHealthTemplate ? productHealthOutputSchema : selectedOutputSchema;
+  const effectiveSelectedFields = selectedFields.length > 0 ? selectedFields : selectedSource?.columns || [];
+  const recommendedTemplateSteps = productHealthTemplate?.steps || [];
+  const recommendedTemplateQualityRules = productHealthTemplate?.quality_rules || [];
+  const hasRecommendedTemplateReady =
+    processingMode === "recommended_template" &&
+    Boolean(productHealthTemplate && recommendedTemplateSteps.length > 0 && productHealthOutputSchema.length > 0);
+  const processSummary =
+    processingMode === "recommended_template"
+      ? hasRecommendedTemplateReady
+        ? `Product Health template · ${recommendedTemplateSteps.length} steps`
+        : "Product Health 추천 템플릿을 불러옵니다."
+      : selectedFields.length > 0
+        ? `Select Fields · ${selectedFields.length} fields`
+        : "직접 설정할 필드를 선택합니다.";
+  const processIsReady =
+    processingMode === "recommended_template" ? hasRecommendedTemplateReady && Boolean(selectedSource) : selectedFields.length > 0;
+  const targetOutputSchemaSummary =
+    targetOutputSchema.length > 0 ? targetOutputSchema.map((field) => field.name).slice(0, 4).join(", ") : "schema 없음";
   const savedSourceDatasets = useMemo(
     () => apiSourceDatasets.map((record, index) => mapSourceDatasetRecord(record, 100 + apiSourceDatasets.length - index)),
     [apiSourceDatasets],
@@ -873,8 +937,8 @@ function SourcesPage({ navigate, setNotice }) {
     {
       id: "process",
       title: "Process",
-      summary: selectedFields.length > 0 ? `ETL rule · ${selectedFields.length} fields` : "target 갱신 처리 규칙을 설정합니다.",
-      isComplete: currentStepIndex > 3 && selectedFields.length > 0,
+      summary: processSummary,
+      isComplete: currentStepIndex > 3 && processIsReady,
     },
     {
       id: "scheduling",
@@ -932,7 +996,7 @@ function SourcesPage({ navigate, setNotice }) {
   const canGoNext =
     (currentStep.id === "overview" && Boolean(normalizedTargetName)) ||
     (currentStep.id === "source" && Boolean(selectedSource)) ||
-    (currentStep.id === "process" && selectedFields.length > 0) ||
+    (currentStep.id === "process" && processIsReady) ||
     currentStep.id === "scheduling";
   const canGoNextSource =
     (currentSourceStep.id === "connection" && Boolean(sourceDraft)) ||
@@ -942,7 +1006,7 @@ function SourcesPage({ navigate, setNotice }) {
     Boolean(sourceDraft && sourceDatasetName.trim() && sourceRawScope.trim() && sourceDraft.schema?.length) &&
     !isSavingSourceDataset;
   const canCreateTargetDraft =
-    Boolean(normalizedTargetName && selectedSource && selectedFields.length > 0 && selectedOutputSchema.length > 0) &&
+    Boolean(normalizedTargetName && selectedSource && effectiveSelectedFields.length > 0 && targetOutputSchema.length > 0 && processIsReady) &&
     !isSavingTargetDraft;
   const canStartTargetRun = Boolean(lastCreatedTargetDraft) && !isStartingTargetRun;
   const { schemaName: connectionSchemaName, tableName: connectionTableName } = splitSchemaTable(connectionResource.trim());
@@ -1033,6 +1097,22 @@ function SourcesPage({ navigate, setNotice }) {
       .finally(() => {
         if (isActive) {
           setIsTargetDatasetsLoading(false);
+        }
+      });
+    setIsProcessingTemplateLoading(true);
+    getProductHealthProcessingTemplate()
+      .then((template) => {
+        if (!isActive) return;
+        setProductHealthTemplate(template);
+        setProcessingTemplateError("");
+      })
+      .catch((error) => {
+        if (!isActive) return;
+        setProcessingTemplateError(error.message);
+      })
+      .finally(() => {
+        if (isActive) {
+          setIsProcessingTemplateLoading(false);
         }
       });
 
@@ -1173,10 +1253,32 @@ function SourcesPage({ navigate, setNotice }) {
       mode: targetScheduleMode,
       note: targetScheduleNote.trim(),
     };
-    const processRule = {
-      type: "select_fields",
-      selected_fields: selectedFields,
-    };
+    const processRule =
+      processingMode === "recommended_template" && productHealthTemplate
+        ? {
+            type: "product_health_recommended_template",
+            mode: "recommended_template",
+            template_id: productHealthTemplate.id,
+            template_label: productHealthTemplate.label,
+            template_version: productHealthTemplate.template_version,
+            target_dataset: productHealthTemplate.target_dataset,
+            query_table: productHealthTemplate.query_table,
+            flow: productHealthTemplate.flow,
+            source_contracts: productHealthTemplate.source_contracts,
+            source_requirements: productHealthTemplate.source_requirements,
+            steps: recommendedTemplateSteps,
+            quality_rules: recommendedTemplateQualityRules,
+            output_schema: productHealthTemplate.output_schema,
+            metric_definitions: productHealthTemplate.metric_definitions,
+            locked_fields: productHealthTemplate.locked_fields,
+            contract_claims: productHealthTemplate.contract_claims,
+            selected_fields: effectiveSelectedFields,
+          }
+        : {
+            type: "select_fields",
+            mode: "manual",
+            selected_fields: effectiveSelectedFields,
+          };
 
     try {
       const record = await createTargetDataset({
@@ -1185,10 +1287,10 @@ function SourcesPage({ navigate, setNotice }) {
         source_dataset_id: selectedSource.id,
         source_dataset_name: selectedSource.name,
         source_type: selectedSource.sourceType,
-        selected_fields: selectedFields,
+        selected_fields: effectiveSelectedFields,
         process_rule: processRule,
         schedule,
-        output_schema: selectedOutputSchema.map(({ name, type }) => ({ name, type })),
+        output_schema: targetOutputSchema.map(({ name, type }) => ({ name, type })),
       });
       setApiTargetDatasets((records) => [record, ...records.filter((item) => item.id !== record.id)]);
       setLastCreatedTargetDraft(record);
@@ -2104,36 +2206,172 @@ function SourcesPage({ navigate, setNotice }) {
               <GitBranch size={18} />
               <div>
                 <strong>ETL processing rule</strong>
-                <p>이번 demo job definition에서는 Select Fields 규칙만 다룹니다.</p>
+                <p>추천 템플릿 또는 직접 설정한 draft rule을 Target Dataset metadata에 저장합니다.</p>
               </div>
             </div>
             {selectedSource ? (
               <>
-                <div className="transform-toolbar">
-                  <span>
-                    Select Fields · {selectedFields.length}/{selectedSource.columns.length}
-                  </span>
-                  <div>
-                    <button type="button" className="ghost-action" onClick={selectAllFields}>
-                      전체 선택
-                    </button>
-                    <button type="button" className="ghost-action" onClick={clearFields}>
-                      선택 해제
-                    </button>
+                <div className="processing-mode-grid" role="radiogroup" aria-label="Target Dataset Processing mode">
+                  <label className={processingMode === "recommended_template" ? "selected" : ""}>
+                    <input
+                      type="radio"
+                      name="target-processing-mode"
+                      value="recommended_template"
+                      checked={processingMode === "recommended_template"}
+                      onChange={() => {
+                        setProcessingMode("recommended_template");
+                        setLastCreatedTargetDraft(null);
+                        setTargetDraftError("");
+                        setTargetRuns([]);
+                        setTargetRunError("");
+                      }}
+                    />
+                    <span>
+                      <strong>추천 템플릿 사용</strong>
+                      <small>Product Health · M3 TransformSpec</small>
+                    </span>
+                  </label>
+                  <label className={processingMode === "manual" ? "selected" : ""}>
+                    <input
+                      type="radio"
+                      name="target-processing-mode"
+                      value="manual"
+                      checked={processingMode === "manual"}
+                      onChange={() => {
+                        setProcessingMode("manual");
+                        setLastCreatedTargetDraft(null);
+                        setTargetDraftError("");
+                        setTargetRuns([]);
+                        setTargetRunError("");
+                      }}
+                    />
+                    <span>
+                      <strong>직접 설정</strong>
+                      <small>Select Fields draft</small>
+                    </span>
+                  </label>
+                </div>
+
+                {processingMode === "recommended_template" ? (
+                  <div className="processing-template-panel">
+                    <div className="template-summary-strip">
+                      <Sparkles size={18} />
+                      <div>
+                        <strong>{productHealthTemplate?.label || "Product Health 추천 템플릿"}</strong>
+                        <p>
+                          {isProcessingTemplateLoading
+                            ? "template loading"
+                            : productHealthTemplate
+                              ? `${productHealthTemplate.target_dataset} -> ${productHealthTemplate.query_table}`
+                              : processingTemplateError || "template unavailable"}
+                        </p>
+                      </div>
+                      <span>{productHealthTemplate?.template_version || "loading"}</span>
+                    </div>
+
+                    {processingTemplateError ? (
+                      <div className="wizard-placeholder compact warning">
+                        <AlertCircle size={22} />
+                        <strong>{processingTemplateError}</strong>
+                      </div>
+                    ) : null}
+
+                    {productHealthTemplate ? (
+                      <>
+                        <div className="template-flow-grid" aria-label="Product Health recommended processing steps">
+                          {productHealthTemplate.flow.map((phase) => {
+                            const steps = recommendedTemplateSteps.filter((step) => step.phase === phase);
+                            return (
+                              <article className="template-flow-phase" key={phase}>
+                                <div className="template-flow-head">
+                                  <span>{phase}</span>
+                                  <strong>{steps.length} steps</strong>
+                                </div>
+                                <div className="template-step-list">
+                                  {steps.map((step) => (
+                                    <div className="template-step-item" key={step.id}>
+                                      <strong>{step.title}</strong>
+                                      <p>{step.description}</p>
+                                      <code>{stepDetailSummary(step)}</code>
+                                    </div>
+                                  ))}
+                                </div>
+                              </article>
+                            );
+                          })}
+                        </div>
+
+                        <div className="template-contract-grid">
+                          <section>
+                            <div className="table-title-line">
+                              <ShieldCheck size={18} />
+                              <div>
+                                <strong>Quality rules</strong>
+                                <p>{recommendedTemplateQualityRules.length} blocking checks from M3 contract</p>
+                              </div>
+                            </div>
+                            <div className="quality-rule-list">
+                              {recommendedTemplateQualityRules.map((rule) => (
+                                <article key={rule.id}>
+                                  <strong>{rule.id}</strong>
+                                  <span>{rule.type}</span>
+                                  <small>{rule.severity}</small>
+                                </article>
+                              ))}
+                            </div>
+                          </section>
+                          <section>
+                            <div className="table-title-line">
+                              <Table2 size={18} />
+                              <div>
+                                <strong>Gold schema</strong>
+                                <p>{productHealthOutputSchema.length} locked output fields</p>
+                              </div>
+                            </div>
+                            <div className="schema-chip-list">
+                              {productHealthOutputSchema.map((field) => (
+                                <span className="schema-chip" key={field.name}>
+                                  {field.name}
+                                </span>
+                              ))}
+                            </div>
+                          </section>
+                        </div>
+                      </>
+                    ) : (
+                      <EmptyState icon={Loader2} title="추천 템플릿을 불러오는 중입니다" body="M3 Product Health 계약을 확인하고 있습니다." />
+                    )}
                   </div>
-                </div>
-                <div className="field-choice-grid" aria-label="Select Fields columns">
-                  {selectedSource.columns.map((column) => (
-                    <label className="field-choice" key={column}>
-                      <input
-                        type="checkbox"
-                        checked={selectedFields.includes(column)}
-                        onChange={() => toggleField(column)}
-                      />
-                      <span>{column}</span>
-                    </label>
-                  ))}
-                </div>
+                ) : (
+                  <>
+                    <div className="transform-toolbar">
+                      <span>
+                        Select Fields · {selectedFields.length}/{selectedSource.columns.length}
+                      </span>
+                      <div>
+                        <button type="button" className="ghost-action" onClick={selectAllFields}>
+                          전체 선택
+                        </button>
+                        <button type="button" className="ghost-action" onClick={clearFields}>
+                          선택 해제
+                        </button>
+                      </div>
+                    </div>
+                    <div className="field-choice-grid" aria-label="Select Fields columns">
+                      {selectedSource.columns.map((column) => (
+                        <label className="field-choice" key={column}>
+                          <input
+                            type="checkbox"
+                            checked={selectedFields.includes(column)}
+                            onChange={() => toggleField(column)}
+                          />
+                          <span>{column}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </>
+                )}
+
                 <div className="transform-output-preview">
                   <div className="table-title-line">
                     <Table2 size={18} />
@@ -2142,14 +2380,14 @@ function SourcesPage({ navigate, setNotice }) {
                       <p>ETL job이 target dataset에 남길 output schema입니다.</p>
                     </div>
                   </div>
-                  {selectedOutputSchema.length > 0 ? (
+                  {targetOutputSchema.length > 0 ? (
                     <div className="schema-preview-table" aria-label="Transform output schema preview">
                       <div className="schema-preview-head">
                         <span>Field</span>
                         <span>Type</span>
                         <span>Sample</span>
                       </div>
-                      {selectedOutputSchema.map((field) => (
+                      {targetOutputSchema.map((field) => (
                         <div className="schema-preview-row" key={field.name}>
                           <strong>{field.name}</strong>
                           <span>{field.type}</span>
@@ -2288,13 +2526,17 @@ function SourcesPage({ navigate, setNotice }) {
             </article>
             <article>
               <span>ETL process</span>
-              <strong>Select Fields rule · {selectedFields.length} fields</strong>
-              <p>{selectedFieldSummary}{selectedFields.length > 3 ? "..." : ""}</p>
+              <strong>
+                {processingMode === "recommended_template"
+                  ? `Product Health template · ${recommendedTemplateSteps.length} steps`
+                  : `Select Fields rule · ${selectedFields.length} fields`}
+              </strong>
+              <p>{processingMode === "recommended_template" ? "M3 recommended template" : `${selectedFieldSummary}${selectedFields.length > 3 ? "..." : ""}`}</p>
             </article>
             <article>
               <span>Target schema</span>
-              <strong>{selectedOutputSchema.length} fields</strong>
-              <p>{selectedOutputSchema.map((field) => field.name).slice(0, 4).join(", ") || "schema 없음"}</p>
+              <strong>{targetOutputSchema.length} fields</strong>
+              <p>{targetOutputSchemaSummary}</p>
             </article>
             <article>
               <span>ETL job definition</span>
@@ -2302,6 +2544,22 @@ function SourcesPage({ navigate, setNotice }) {
               <p>{targetScheduleNote.trim() || "schedule note 없음"}</p>
             </article>
           </div>
+          {processingMode === "recommended_template" && productHealthTemplate ? (
+            <section className="wizard-inline-panel review-template-panel">
+              <div className="table-title-line">
+                <ListChecks size={18} />
+                <div>
+                  <strong>Saved process_rule preview</strong>
+                  <p>{productHealthTemplate.flow.join(" -> ")} · {recommendedTemplateQualityRules.length} quality rules</p>
+                </div>
+              </div>
+              <div className="review-step-strip">
+                {productHealthTemplate.flow.map((phase) => (
+                  <span key={phase}>{phase}</span>
+                ))}
+              </div>
+            </section>
+          ) : null}
           <div className="wizard-placeholder compact">
             <CheckCircle2 size={22} />
             <strong>저장 시 Target Dataset metadata와 ETL job definition draft만 생성하며 실행은 호출하지 않습니다.</strong>
@@ -2482,6 +2740,8 @@ function SourcesPage({ navigate, setNotice }) {
                         <span>{dataset.selectedFieldCount || dataset.columns.length} fields</span>
                         <span>{dataset.scheduleMode}</span>
                       </div>
+                      <small>process: {dataset.processingLabel}</small>
+                      {dataset.qualityRuleCount ? <small>quality rules: {dataset.qualityRuleCount}</small> : null}
                       <small>source: {dataset.sourceName}</small>
                       <small>catalog: draft · AI Query: publish 대기</small>
                     </article>
