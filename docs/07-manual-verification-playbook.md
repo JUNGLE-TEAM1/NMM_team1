@@ -281,6 +281,14 @@ PYTHONPATH=backend .venv/bin/python scripts/week2_m2_product_health_l6_evidence.
 5. ready 후보를 선택하면 Source Dataset 이름, raw scope/path, schema preview가 자동 채워지는지 확인한다.
 6. 저장 후 Source Dataset 목록/상세에서 같은 name/path/schema가 표시되는지 확인한다.
 
+### C-41 Product Health Preset Synthesis 점검
+
+1. `/datasets/gold`를 연다.
+2. `Product Health Demo preset` panel에서 `Product Health preset 실행`을 누른다.
+3. 실행 중 버튼이 disabled 상태로 바뀌고 완료 후 Gold output, row count, artifact count, seed mapping path가 표시되는지 확인한다.
+4. API 응답 또는 UI evidence에서 `seed_product_mapping.parquet`, Silver parquet, `gold_product_health.parquet`, Catalog handoff, run summary artifact가 `ready`로 보이는지 확인한다.
+5. 화면이 이 기능을 범용 ETL builder, Airflow/Spark production run, 새 대용량 다운로드, 5GB evidence 재측정으로 표현하지 않는지 확인한다.
+
 ### C-18 Kafka replay evidence UI 점검
 
 1. `/runs`를 연다.

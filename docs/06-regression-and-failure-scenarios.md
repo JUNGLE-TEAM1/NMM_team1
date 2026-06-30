@@ -430,6 +430,16 @@
 | Verification method | `backend/tests/test_target_dataset_local_materialization.py`와 `/runs` 실행 기록에서 Mode, Output, Rows, Bytes를 확인한다. |
 | Related docs/interface/Phase | `docs/03`, C-38 |
 
+### Product Health preset synthesis가 범용 ETL 실행처럼 보이는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | Product Health preset 합성은 이미 정의된 demo-only synthesis run으로 제한된다. |
+| Failure condition | UI/API가 임의 Source 조합, 사용자 정의 join/risk rule 편집, Airflow/Spark production 실행, 새 5GB 다운로드 또는 processed evidence 재측정처럼 표현한다. |
+| Expected behavior | `/api/product-health/preset-synthesis`는 기존 local synthesis script를 실행하고 `seed_product_mapping`, Silver parquet, Gold parquet, Catalog/Evidence 준비 artifact path/row/status만 반환한다. |
+| Verification method | `backend/tests/test_product_health_preset_synthesis.py`, `/datasets/gold` Product Health preset panel, `npm --prefix frontend run build`로 확인한다. |
+| Related docs/interface/Phase | `docs/03`, C-41 |
+
 ## 공통 인프라 실패 시나리오
 
 - 필수 environment variable 누락

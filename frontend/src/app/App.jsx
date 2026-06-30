@@ -76,6 +76,7 @@ import {
   listProductHealthSourceInventory,
   listSourceDatasets,
   listSourceDatasetSnapshots,
+  runProductHealthPresetSynthesis,
   updateSourceDataset,
 } from "../api/sourceDatasetApi";
 import {
@@ -1396,6 +1397,7 @@ function SourcesPage({ navigate, setNotice, dataView = "datasets-source", pendin
   const [savedExternalConnections, setSavedExternalConnections] = useState([]);
   const [credentialPolicy, setCredentialPolicy] = useState(null);
   const [productHealthSourceInventory, setProductHealthSourceInventory] = useState(null);
+  const [productHealthPresetState, setProductHealthPresetState] = useState({ status: "idle", result: null, error: "" });
   const [savedSourceDatasets, setSavedSourceDatasets] = useState([]);
   const [savedSilverDatasets, setSavedSilverDatasets] = useState([]);
   const [savedTargetDatasetDrafts, setSavedTargetDatasetDrafts] = useState([]);
@@ -1717,6 +1719,19 @@ function SourcesPage({ navigate, setNotice, dataView = "datasets-source", pendin
     } catch (error) {
       setDatasetDraftListState({ loading: false, error: error.message });
       setNotice(`Dataset draft 목록 조회 실패: ${error.message}`);
+    }
+  }
+
+  async function runProductHealthPreset() {
+    setProductHealthPresetState({ status: "running", result: null, error: "" });
+    try {
+      const result = await runProductHealthPresetSynthesis();
+      setProductHealthPresetState({ status: "succeeded", result, error: "" });
+      setNotice(`${result.gold_output?.path || "Product Health Gold"} preset synthesis가 완료됐습니다.`);
+      await refreshDatasetDraftLists();
+    } catch (error) {
+      setProductHealthPresetState({ status: "error", result: null, error: error.message });
+      setNotice(`Product Health preset synthesis 실패: ${error.message}`);
     }
   }
 
@@ -4541,6 +4556,10 @@ function SourcesPage({ navigate, setNotice, dataView = "datasets-source", pendin
             actionLabel="Gold Dataset 생성"
             onAction={() => startDatasetCreation("target")}
           />
+          <ProductHealthPresetPanel
+            state={productHealthPresetState}
+            onRun={runProductHealthPreset}
+          />
           <OperationalList
             icon={Table2}
             title="Gold Dataset"
@@ -5711,6 +5730,55 @@ function isWideFact(label, value) {
   if (["path", "raw scope", "run id"].includes(normalizedLabel)) return true;
   if (["input", "output"].includes(normalizedLabel)) return isPathValue;
   return isPathValue;
+}
+
+function ProductHealthPresetPanel({ state, onRun }) {
+  const result = state.result;
+  const artifactCount = result?.artifacts?.filter((artifact) => artifact.status === "ready").length || 0;
+  const seedArtifact = result?.artifacts?.find((artifact) => artifact.role === "seed_product_mapping");
+  const isRunning = state.status === "running";
+
+  return (
+    <section className="wizard-inline-panel product-health-preset-panel">
+      <div className="table-title-line">
+        <Sparkles size={18} />
+        <div>
+          <strong>Product Health Demo preset</strong>
+          <p>기존 합성 로직으로 seed mapping, Silver parquet, Gold parquet, catalog/evidence 준비 파일을 재생성합니다.</p>
+        </div>
+      </div>
+      <div className="fact-card-grid preset-fact-grid">
+        <div className="fact-card-item wide">
+          <span>Gold output</span>
+          <strong>{result?.gold_output?.path || "data/local_sources/product_health/gold/gold_product_health.parquet"}</strong>
+        </div>
+        <div className="fact-card-item">
+          <span>Rows</span>
+          <strong>{formatMetric(result?.gold_output?.row_count || "ready after run")}</strong>
+        </div>
+        <div className="fact-card-item">
+          <span>Artifacts</span>
+          <strong>{artifactCount ? `${artifactCount} ready` : "not run"}</strong>
+        </div>
+        <div className="fact-card-item wide">
+          <span>Seed mapping</span>
+          <strong>{seedArtifact?.path || "data/local_sources/product_health/silver/seed_product_mapping.parquet"}</strong>
+        </div>
+      </div>
+      {state.error ? <p className="form-error">{state.error}</p> : null}
+      {result ? (
+        <p className="runtime-note">
+          {result.run_id} · {result.mode} · SQL smoke {formatMetric(result.sql_smoke?.row_count)} rows
+        </p>
+      ) : null}
+      <div className="operational-list-actions">
+        <button type="button" className="primary-action" onClick={onRun} disabled={isRunning}>
+          {isRunning ? <Loader2 size={16} className="spin" /> : <PlayCircle size={16} />}
+          {isRunning ? "합성 실행 중" : "Product Health preset 실행"}
+        </button>
+      </div>
+    </section>
+  );
 }
 
 function JobRunsPage({ setNotice }) {

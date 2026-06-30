@@ -244,6 +244,27 @@ class ProductHealthSourceInventory(BaseModel):
     message: str
 
 
+class ProductHealthPresetArtifact(BaseModel):
+    role: str
+    path: str
+    row_count: int | None = None
+    bytes: int | None = None
+    format: str
+    status: Literal["ready", "missing"] = "ready"
+
+
+class ProductHealthPresetSynthesisResult(BaseModel):
+    scenario_id: str = "product_health"
+    status: Literal["succeeded", "failed"]
+    mode: str
+    run_id: str
+    generated_at: str | None = None
+    gold_output: ProductHealthPresetArtifact
+    artifacts: list[ProductHealthPresetArtifact]
+    sql_smoke: dict[str, object] = Field(default_factory=dict)
+    message: str
+
+
 class SourceDatasetSnapshotCreate(BaseModel):
     sample_size: int = Field(default=100, ge=1, le=10000)
     secret_refs: dict[str, str] = Field(default_factory=dict)

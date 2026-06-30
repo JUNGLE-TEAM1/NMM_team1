@@ -13,6 +13,7 @@ from app.domain.schemas import (
     ExternalConnectionTestResult,
     ExternalConnectionUpdate,
     ProductHealthSourceInventory,
+    ProductHealthPresetSynthesisResult,
     SourceCreate,
     SilverDatasetCreate,
     SilverDatasetMaterializationCreate,
@@ -44,6 +45,10 @@ from app.services.external_connection_runtime import (
     ExternalConnectionRuntimeCheckService,
 )
 from app.services.product_health_source_inventory import ProductHealthSourceInventoryService
+from app.services.product_health_preset_synthesis import (
+    ProductHealthPresetSynthesisError,
+    ProductHealthPresetSynthesisService,
+)
 from app.services.source_catalog import SourceCatalogService
 from app.services.source_dataset_snapshot import SourceDatasetSnapshotError, SourceDatasetSnapshotService
 from app.services.silver_dataset_materialization import (
@@ -135,6 +140,13 @@ def create_source_catalog_router(
     @router.get("/product-health/source-inventory", response_model=ProductHealthSourceInventory)
     def get_product_health_source_inventory() -> ProductHealthSourceInventory:
         return ProductHealthSourceInventoryService().list_inventory()
+
+    @router.post("/product-health/preset-synthesis", response_model=ProductHealthPresetSynthesisResult)
+    def run_product_health_preset_synthesis() -> ProductHealthPresetSynthesisResult:
+        try:
+            return ProductHealthPresetSynthesisService().run()
+        except ProductHealthPresetSynthesisError as error:
+            raise HTTPException(status_code=500, detail=str(error)) from error
 
     @router.get("/external-connections/{connection_id}", response_model=ExternalConnectionRecord)
     def get_external_connection(connection_id: str) -> ExternalConnectionRecord:

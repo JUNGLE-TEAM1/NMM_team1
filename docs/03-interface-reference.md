@@ -288,6 +288,44 @@ C-37 adds a read-only Product Health source inventory endpoint for the clean-roo
 
 `binding_type` is one of `raw_file`, `prepared_dataset`, `missing`, or `mismatch`. `prepared_dataset` can be used as a demo-safe Source Dataset candidate, but it must not be presented as an original external raw file. `missing` and `mismatch` candidates are display-only and must not be saved as ready Source Datasets.
 
+C-41 adds a Product Health-only preset synthesis endpoint. It wraps the existing local synthesis script so the site can regenerate demo-ready `seed_product_mapping`, Silver parquet, Gold parquet, Catalog handoff, and run summary artifacts. It is not a generic transform builder, Airflow/Spark production execution, new raw download, or 5GB evidence remeasurement.
+
+`POST /api/product-health/preset-synthesis` minimum response:
+
+```json
+{
+  "scenario_id": "product_health",
+  "status": "succeeded",
+  "mode": "source_inventory_and_row_limited_smoke_transform",
+  "run_id": "run_product_health_smoke_001",
+  "generated_at": "2026-07-01T00:00:00Z",
+  "gold_output": {
+    "role": "gold_product_health",
+    "path": "data/local_sources/product_health/gold/gold_product_health.parquet",
+    "row_count": 1000,
+    "bytes": 12345,
+    "format": "parquet",
+    "status": "ready"
+  },
+  "artifacts": [
+    {
+      "role": "seed_product_mapping",
+      "path": "data/local_sources/product_health/silver/seed_product_mapping.parquet",
+      "row_count": 1000,
+      "bytes": 12345,
+      "format": "parquet",
+      "status": "ready"
+    }
+  ],
+  "sql_smoke": {
+    "row_count": 10
+  },
+  "message": "Product Health preset synthesis completed. Prepared Silver/Gold/Catalog evidence was regenerated."
+}
+```
+
+The response must expose artifact paths and measured parquet row counts when available. Missing artifacts must be reported as `status=missing` rather than hidden as success. Follow-up Run/Catalog/AI Query phases may consume these artifacts, but this endpoint itself does not create user-defined jobs or schedule recurring execution.
+
 - `POST /api/silver-datasets` minimum request:
 
 ```json

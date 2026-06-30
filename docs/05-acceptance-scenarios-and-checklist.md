@@ -163,3 +163,4 @@ R1~R7은 아래 workstream alias로 유지한다.
 | --- | --- |
 | C-38 Product Health Gold Run Execution | Product Health Gold Run 실행 결과가 prepared Gold reference 또는 Silver parquet materialization evidence로 남고, output path, row count, bytes, materialization mode, `catalog_publish_ready`를 포함한다. |
 | C-39 Catalog AI Query Clean-room Handoff | C-38 Run을 publish한 CatalogDataset과 AI Query의 selected dataset, evidence, retrieval trace, SQL table, `evidence.storage.local_fallback_path`가 같은 catalog/run/path를 가리킨다. |
+| C-41 Product Health Preset Synthesis | 사이트에서 Product Health preset 합성을 실행하면 `seed_product_mapping`, Silver parquet, `gold_product_health.parquet`, Catalog handoff, run summary artifact가 갱신되고 응답/UI가 row/path/status evidence를 표시한다. |

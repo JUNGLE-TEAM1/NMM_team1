@@ -8,6 +8,12 @@ export function listProductHealthSourceInventory() {
   return request("/api/product-health/source-inventory");
 }
 
+export function runProductHealthPresetSynthesis() {
+  return request("/api/product-health/preset-synthesis", {
+    method: "POST",
+  });
+}
+
 export function createSourceDataset(dataset) {
   return request("/api/source-datasets", {
     method: "POST",
