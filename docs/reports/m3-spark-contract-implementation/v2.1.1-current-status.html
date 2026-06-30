@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="refresh" content="15">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>M3 v2.1.1 weighted window parallel status</title>
+  <style>
+    body { margin:0; background:#f4f6f8; color:#17202a; font-family:Arial,'Malgun Gothic',sans-serif; }
+    main { max-width:1500px; margin:0 auto; padding:24px; }
+    header, section { background:#fff; border:1px solid #d8dee8; border-radius:8px; padding:18px; margin-bottom:14px; }
+    h1, h2 { margin-top:0; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:10px; }
+    .metric { border:1px solid #d8dee8; border-radius:8px; padding:12px; background:#fbfcfe; }
+    .metric strong { display:block; font-size:24px; margin-bottom:4px; }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    th, td { border:1px solid #d8dee8; padding:7px 8px; vertical-align:top; }
+    th { background:#eef2f6; position:sticky; top:0; }
+    code { background:#eef2f6; padding:2px 4px; border-radius:4px; }
+    .ok { color:#146c43; font-weight:700; }
+    .warn { color:#9a6700; font-weight:700; }
+    .bad { color:#b42318; font-weight:700; }
+    .note { color:#52606d; }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>M3 v2.1.1 weighted window parallel validation</h1>
+    <p>상태: <span class="warn">running</span> / run: <code>m3_v211_l0_l10_weighted_window_parallel_100gb_20260627_220435</code></p>
+    <p class="note">이 화면은 검증/오케스트레이션 보드다. Docker Spark, notebook worker, local Spark 정보는 L0-L10 계약 artifact 안에 넣지 않고 여기에서만 추적한다.</p>
+    <p>출력 위치: <code>D:\NMM_team1\docs\reports\m3-spark-contract-implementation\v2.1.1-weighted-window-parallel-100gb\run_20260627_220435</code></p>
+  </header>
+  <section>
+    <h2>핵심 수치</h2>
+    <div class="grid">
+      <div class="metric"><strong>99,672,268,861</strong>distinct raw bytes</div>
+      <div class="metric"><strong>24</strong>weighted source windows</div>
+      <div class="metric"><strong>0/0</strong>completed/failed</div>
+      <div class="metric"><strong>91.748</strong>wall seconds</div>
+      <div class="metric"><strong>458.192</strong>sum task seconds</div>
+      <div class="metric"><strong>4.99</strong>observed speedup</div>
+      <div class="metric"><strong>0</strong>Spark sample rows</div>
+      <div class="metric"><strong>0</strong>sample input bytes</div>
+    </div>
+  </section>
+  <section>
+    <h2>L0-L10에서 지금 하는 일</h2>
+    <table><thead><tr><th>Layer</th><th>Title</th><th>M3 contract scope</th><th>Boundary</th></tr></thead><tbody><tr><td>L0</td><td>Raw preservation contract</td><td>raw object manifest, source_unit_id, checksum, replay window reference</td><td>contract artifact generation/validation only</td></tr><tr><td>L1</td><td>Bronze envelope contract</td><td>bounded sample envelope, source locator, rescue lane, parse evidence</td><td>contract artifact generation/validation only</td></tr><tr><td>L2</td><td>Profile and schema snapshot</td><td>CSV/JSON/Parquet profile, schema fingerprint, type/path statistics</td><td>contract artifact generation/validation only</td></tr><tr><td>L3</td><td>AI-assisted recommendation</td><td>bounded AI input pack, cleaning policy recommendation, Silver/Gold recommendation draft</td><td>contract artifact generation/validation only</td></tr><tr><td>L4</td><td>Deterministic transform spec</td><td>editable Silver transform spec, Gold generation spec, preview-only validation result</td><td>contract artifact generation/validation only</td></tr><tr><td>L5</td><td>Quality and approval gate</td><td>quality scorecard, drift/quarantine checks, approval_state, recommendation diff</td><td>contract artifact generation/validation only</td></tr><tr><td>L6</td><td>Compiler and handoff contract</td><td>deterministic compiler package, operation params schema, unsupported action report, PII/query validator</td><td>contract artifact generation/validation only</td></tr><tr><td>L7</td><td>Silver preview readiness</td><td>Silver structural axis and imported preview-result contract for M2 handoff validation</td><td>contract artifact generation/validation only</td></tr><tr><td>L8</td><td>Gold semantic readiness</td><td>Gold preview contract, grain/metric readiness, owner-review caveats</td><td>contract artifact generation/validation only</td></tr><tr><td>L9</td><td>Three-axis gate</td><td>processing_quality, catalog_safety, gold_readiness precedence and M6 context status</td><td>contract artifact generation/validation only</td></tr><tr><td>L10</td><td>Catalog sync package</td><td>artifact reference resolution, catalog sync package, M1/M2/M5/M6 payload contracts</td><td>contract artifact generation/validation only</td></tr></tbody></table>
+  </section>
+  <section>
+    <h2>데이터별 병렬 분할 결과</h2>
+    <table><thead><tr><th>Dataset</th><th>Name</th><th>Windows</th><th>Done</th><th>Failed</th><th>Raw bytes</th><th>Sample rows</th><th>Sample bytes</th><th>Avg quality</th><th>Status counts</th></tr></thead><tbody><tr><td>nyc_taxi_yellow_parquet</td><td>NYC Taxi Yellow Parquet Mirror</td><td>3</td><td>0</td><td>0</td><td>21266702576</td><td>0</td><td>0</td><td></td><td>{}</td></tr><tr><td>amazon_clothing_reviews_jsonl</td><td>Amazon Clothing Shoes and Jewelry Reviews</td><td>6</td><td>0</td><td>0</td><td>27810080533</td><td>0</td><td>0</td><td></td><td>{}</td></tr><tr><td>taobao_user_events_jsonl</td><td>Taobao User Events JSONL</td><td>6</td><td>0</td><td>0</td><td>26966339994</td><td>0</td><td>0</td><td></td><td>{}</td></tr><tr><td>nyc_taxi_2019_oct_csv</td><td>NYC Taxi 2019 October CSV</td><td>1</td><td>0</td><td>0</td><td>5668612855</td><td>0</td><td>0</td><td></td><td>{}</td></tr><tr><td>amazon_clothing_metadata_jsonl</td><td>Amazon Clothing Shoes and Jewelry Metadata</td><td>8</td><td>0</td><td>0</td><td>17960532903</td><td>0</td><td>0</td><td></td><td>{}</td></tr></tbody></table>
+  </section>
+  <section>
+    <h2>작업별 상태</h2>
+    <table><thead><tr><th>State</th><th>Dataset</th><th>Window</th><th>Current L</th><th>Current work</th><th>Seconds</th><th>Rows</th><th>Quality</th><th>Validation</th><th>Spark app id</th></tr></thead><tbody><tr><td>running</td><td>nyc_taxi_yellow_parquet</td><td>1/3</td><td>L4</td><td>Deterministic Silver transform spec, Gold generation spec, and bounded preview validation</td><td>91.656</td><td></td><td></td><td></td><td></td></tr><tr><td>running</td><td>nyc_taxi_yellow_parquet</td><td>2/3</td><td>L1</td><td>Bronze envelope sampling, source locator capture, and rescue lane preparation</td><td>91.647</td><td></td><td></td><td></td><td></td></tr><tr><td>running</td><td>nyc_taxi_yellow_parquet</td><td>3/3</td><td>L1</td><td>Bronze envelope sampling, source locator capture, and rescue lane preparation</td><td>91.635</td><td></td><td></td><td></td><td></td></tr><tr><td>running</td><td>amazon_clothing_reviews_jsonl</td><td>1/6</td><td>L1</td><td>Bronze envelope sampling, source locator capture, and rescue lane preparation</td><td>91.622</td><td></td><td></td><td></td><td></td></tr><tr><td>running</td><td>amazon_clothing_reviews_jsonl</td><td>2/6</td><td>L2</td><td>CSV/JSON/Parquet profile snapshot, schema fingerprint, type and path evidence</td><td>91.632</td><td></td><td></td><td></td><td></td></tr><tr><td>queued</td><td>amazon_clothing_reviews_jsonl</td><td>3/6</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>queued</td><td>amazon_clothing_reviews_jsonl</td><td>4/6</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>queued</td><td>amazon_clothing_reviews_jsonl</td><td>5/6</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>queued</td><td>amazon_clothing_reviews_jsonl</td><td>6/6</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>queued</td><td>taobao_user_events_jsonl</td><td>1/6</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>queued</td><td>taobao_user_events_jsonl</td><td>2/6</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>queued</td><td>taobao_user_events_jsonl</td><td>3/6</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>queued</td><td>taobao_user_events_jsonl</td><td>4/6</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>queued</td><td>taobao_user_events_jsonl</td><td>5/6</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>queued</td><td>taobao_user_events_jsonl</td><td>6/6</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>queued</td><td>nyc_taxi_2019_oct_csv</td><td>1/1</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>queued</td><td>amazon_clothing_metadata_jsonl</td><td>1/8</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>queued</td><td>amazon_clothing_metadata_jsonl</td><td>2/8</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>queued</td><td>amazon_clothing_metadata_jsonl</td><td>3/8</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>queued</td><td>amazon_clothing_metadata_jsonl</td><td>4/8</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>queued</td><td>amazon_clothing_metadata_jsonl</td><td>5/8</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>queued</td><td>amazon_clothing_metadata_jsonl</td><td>6/8</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>queued</td><td>amazon_clothing_metadata_jsonl</td><td>7/8</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>queued</td><td>amazon_clothing_metadata_jsonl</td><td>8/8</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr></tbody></table>
+  </section>
+</main>
+</body>
+</html>

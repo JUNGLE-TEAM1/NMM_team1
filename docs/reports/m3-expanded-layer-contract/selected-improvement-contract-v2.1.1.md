@@ -1,4 +1,8 @@
-# M3 L0-L10 Selected Improvement Contract v2.1.1
+# Legacy Physical l0-l10 Reference: M3 Selected Improvement Contract v2.1.1
+
+> 최신 canonical 문서는 [M3 Logical L0-L16 Selected Improvement Contract v2.1.1](selected-improvement-contract-v2.1.1-l0-l16.md)이다. 이 파일은 기존 physical `l0`~`l10` artifact layout과 상세 schema 설명을 보존하는 reference다.
+
+> 2026-06-28 addendum: v2.1.1의 물리 artifact layout은 기존 `l0`~`l10`을 유지하지만, 발표/검증/실행 의미 기준은 `docs/reports/m3-expanded-layer-contract/l0-l16-split-layer-map.md`의 logical `L0`~`L16`으로 해석한다. 특히 기존 `L3`은 `L3/L4/L5`, 기존 `L4`는 `L6/L7/L8`, 기존 `L6`은 `L10/L11/L12`로 분리한다. 기존 `_ref`와 artifact id는 깨지지 않도록 물리 위치 기준을 유지하고, 새 JSON artifact는 `logical_layer`와 `logical_layer_version`으로 canonical 의미를 표시한다.
 
 ## 0. 판정
 
@@ -495,6 +499,82 @@ L3-B는 AI 입력 전에 PII, secret, raw text examples를 줄이고 가린다. 
 }
 ```
 
+### 6.5 `unknown_data_recommendation_pack.json`
+
+L3는 추천을 확정하지 않지만, L4가 unknown source를 일반적으로 해석할 수 있는 bounded signal pack을 만들어야 한다. 이 artifact는 product/entity key, review feedback, free text, time series, conversion event, delivery event 같은 신호가 관찰됐는지와 어떤 field가 그 신호를 뒷받침하는지를 기록한다.
+
+```json
+{
+  "artifact_header": {
+    "artifact_name": "unknown_data_recommendation_pack",
+    "schema_version": "m3.l3.unknown_data_recommendation_pack.v2_1_2",
+    "producer": "M3",
+    "access_class": "ai_safe"
+  },
+  "recommendation_mode": "unknown_data_general",
+  "input_pack_ref": "string",
+  "profile_ref": "string",
+  "source_shape": {
+    "field_count": 0,
+    "pii_candidate_count": 0,
+    "text_candidate_count": 0,
+    "measure_candidate_count": 0,
+    "identifier_candidate_count": 0,
+    "time_candidate_count": 0
+  },
+  "domain_signal_summary": [
+    {
+      "signal": "product_or_entity_key|review_feedback|free_text|time_series|commercial_measure|conversion_event|delivery_event",
+      "status": "observed|not_observed",
+      "field_ids": ["string"],
+      "source_paths": ["string"],
+      "confidence": 0.0
+    }
+  ],
+  "generic_recommendation_targets": [
+    "silver_cleaning_policy",
+    "general_gold_aggregate_candidate",
+    "presentation_product_health_template",
+    "vector_embedding_handoff_template"
+  ],
+  "blocked_claims": [
+    "L3 does not prove semantic product health correctness.",
+    "L3 does not build embeddings, vector indexes, or retrieval chunks in core."
+  ]
+}
+```
+
+이 artifact의 목적은 L4가 근거 있는 템플릿을 만들게 하는 것이다. review-only source에서 conversion event나 delivery event가 `not_observed`이면 L4는 `conversion_rate`, `late_delivery_rate`를 candidate로 확정하면 안 된다.
+
+### 6.6 L3A/L3B/L3C metadata retrieval and grounding
+
+vectorDB를 쓰는 위치는 data-plane이 아니라 L3 control-plane이다. raw row 전체를 embedding하지 않는다. L2 profile, L3 field role hints, schema/profile document, catalog/metric/template metadata만 index 대상으로 둔다.
+
+```text
+L2 profile/schema
+-> L3A metadata_retrieval_index_plan
+-> L3B gold_template_candidate_retrieval
+-> L3C candidate_grounding_report
+-> L4 strict recommendation draft
+-> L5 approval
+-> L6 deterministic spec
+```
+
+`metadata_retrieval_index_plan.json`은 vectorDB에 넣을 document와 payload filter key를 정의한다. `gold_template_candidate_retrieval.json`은 현재 source profile과 유사한 Gold template top-k를 찾는다. `candidate_grounding_report.json`은 retrieval 결과를 그대로 믿지 않고 아래 조건을 다시 확인한다.
+
+| Grounding Check | Purpose |
+| --- | --- |
+| `embedding_similarity` | template 후보를 shortlist하는 데만 사용 |
+| `exact_name_type_compatibility` | `asin`, `parent_asin`, `product_id`, `item_id` 같은 후보가 실제 grain에 맞는지 확인 |
+| `value_range_check` | rating 1~5, boolean late flag, timestamp 같은 값 범위를 preview/stat pass에서 확인 |
+| `join_overlap_check` | multi-source product_id overlap이 실제로 있는지 확인 |
+| `denominator_rule` | `conversion_rate`, `late_delivery_rate`, `negative_review_rate` denominator가 없으면 `null` 또는 `needs_source_evidence` 유지 |
+| `PII/query exposure rule` | user/customer/email/text PII 후보가 query/vector metadata로 노출되지 않도록 차단 |
+| `Spark preview validation` | L6/L7/L8 preview에서 실제 생성 가능성을 확인 |
+| `user approval` | L5 승인 전에는 L6 compile로 가지 않음 |
+
+정확성이 올라가는 지점은 Gold 후보 검색과 field-role matching이다. `rating`, `score`, `stars`, `review_rating`을 같은 rating 후보로 묶거나 `asin`, `product_id`, `item_id`를 product key 후보로 찾는 데 도움이 된다. 하지만 vectorDB는 metric 값을 계산하지 않는다. Gold 값의 정확성은 deterministic transform과 preview validation으로만 주장할 수 있다.
+
 ## 7. L4 Strict Recommendation Draft
 
 ### 7.1 선택 이유
@@ -535,6 +615,217 @@ L4-A는 AI 출력이 자유 텍스트가 아니라 strict draft schema를 따르
   ]
 }
 ```
+
+### 7.6 `product_health_gold_template_draft.json`
+
+Week 2 발표에서 쓰는 `gold_product_health`는 L4에서 별도 template draft로 표현한다. 이 템플릿은 의미 기반 Gold가 완성됐다는 증거가 아니라, owner가 보고 선택/수정/승인할 수 있는 presentation-oriented semantic template이다.
+
+```json
+{
+  "artifact_header": {
+    "artifact_name": "product_health_gold_template_draft",
+    "schema_version": "m3.l4.product_health_gold_template.v2_1_2",
+    "producer": "M3",
+    "access_class": "catalog_internal"
+  },
+  "template_id": "gold_product_health",
+  "template_status": "conditional_template",
+  "input_pack_ref": "string",
+  "unknown_data_pack_ref": "string",
+  "risk_score_policy_recommendation_ref": "string",
+  "presentation_use": {
+    "allowed": true,
+    "claim_boundary": "Template recommendation only; not proof that semantic Gold has already been correctly implemented."
+  },
+  "default_l5_decision_status": "deferred",
+  "compile_allowed_by_default": false,
+  "gold_model": {
+    "gold_model_id": "gold_product_health",
+    "gold_model_type": "semantic_metric_table",
+    "recommended_action": "needs_review",
+    "entity_grain": ["product_id"],
+    "metric_templates": [
+      {
+        "metric_id": "negative_review_rate",
+        "status": "candidate|needs_source_evidence",
+        "formula_template": "negative_review_count / review_count",
+        "owner_review_required": true
+      },
+      {
+        "metric_id": "risk_score",
+        "status": "policy_recommendation_ready|needs_source_evidence",
+        "formula_template": "selected_risk_score_policy(risk_score_policy_recommendation_ref)",
+        "owner_review_required": true
+      },
+      {
+        "metric_id": "conversion_rate",
+        "status": "candidate|needs_source_evidence",
+        "formula_template": "conversion_event_count / eligible_visit_or_impression_count",
+        "owner_review_required": true
+      },
+      {
+        "metric_id": "late_delivery_rate",
+        "status": "candidate|needs_source_evidence",
+        "formula_template": "late_delivery_count / delivered_order_count",
+        "owner_review_required": true
+      }
+    ],
+    "risk_score_policy": {
+      "status": "draft_recommended|needs_source_evidence",
+      "recommended_policy_id": "string",
+      "selected_by_default": false,
+      "requires_l5_approval": true
+    }
+  },
+  "blocked_runtime_claims": [
+    "M3 does not invent conversion_rate from review-only data.",
+    "M3 does not invent late_delivery_rate from review-only data.",
+    "M3 does not compute production Gold; M2 executes approved L6 specs only."
+  ]
+}
+```
+
+Metric별 기본 판정은 다음과 같다.
+
+| Metric | 기본 판정 |
+| --- | --- |
+| `negative_review_rate` | product key와 rating/review text가 있으면 candidate. threshold는 owner review 필요 |
+| `risk_score` | L4가 source evidence 기반 policy를 추천하고, L5가 승인/수정해야 신뢰 metric 후보가 됨 |
+| `conversion_rate` | conversion numerator와 visit/session/impression denominator가 모두 있을 때만 candidate |
+| `late_delivery_rate` | delivery timestamp/late flag와 delivered denominator가 있을 때만 candidate |
+
+#### 7.6.1 `risk_score_policy_recommendation_draft.json`
+
+`risk_score`는 Gold output schema에 포함되지만 계산식은 전역 고정값이 아니다. L4는 L3 evidence, retrieved metric template, grounding result를 보고 source별 policy draft를 추천한다. local test에서 AI model을 실제 호출하지 못하는 경우에는 default prior hint를 재정규화하는 deterministic fallback을 쓸 수 있지만, 이 fallback은 운영 공식이 아니라 테스트용 대체 경로다.
+
+```json
+{
+  "artifact_header": {
+    "artifact_name": "risk_score_policy_recommendation_draft",
+    "schema_version": "m3.l4.risk_score_policy_recommendation.v2_1_2",
+    "producer": "M3",
+    "access_class": "catalog_internal"
+  },
+  "policy_target": "gold_product_health.risk_score",
+  "recommendation_source": {
+    "model_slot": "gpt-5.3-codex-spark|deterministic",
+    "mode": "ai_recommended_from_l3_evidence|deterministic_fallback_for_unit_tests",
+    "row_level_ai_calls": 0,
+    "raw_payload_seen_by_ai": false
+  },
+  "recommended_policy": {
+    "policy_id": "string",
+    "policy_status": "draft_recommended|needs_source_evidence",
+    "weight_recommendation_mode": "source_evidence_adaptive",
+    "formula_template": "string|null",
+    "score_range": {"min": 0, "max": 100},
+    "candidate_components": [
+      {
+        "component_id": "negative_review_rate|low_rating_score|low_conversion_score|late_delivery_rate|owner_defined",
+        "metric_dependency": "string",
+        "direction": "higher_is_riskier|lower_is_riskier",
+        "source_fields": []
+      }
+    ],
+    "recommended_weights": {},
+    "weight_guardrails": {
+      "sum_must_equal": 1.0,
+      "min_weight": 0.0,
+      "max_single_component_weight": 0.65,
+      "normalization": "renormalize_over_available_approved_components"
+    },
+    "missing_or_deferred_components": [],
+    "missing_component_handling": "exclude_from_weight_and_record_in_risk_score_coverage",
+    "approval": {
+      "l5_required": true,
+      "compile_allowed_before_approval": false,
+      "owner_may_edit_weights": true,
+      "owner_may_drop_components": true
+    }
+  }
+}
+```
+
+실행 의미는 명확하다. L6/M2는 `risk_score`를 직접 inline formula로 계산하지 않고, L5가 승인한 `risk_score_policy`를 로드해 `apply_risk_score_policy` operation으로 실행한다. 승인된 policy가 없으면 Gold compile은 block이다. component가 없는 source에서 `risk_score=0`을 만들면 안 되고 `null`과 `risk_score_coverage`로 표현해야 한다.
+
+### 7.7 `vector_embedding_handoff_template.json`
+
+Vector/embedding은 M3 core 실행이 아니다. L4는 downstream M6 또는 vector extension이 사용할 후보 field와 safety policy만 넘긴다.
+
+```json
+{
+  "artifact_header": {
+    "artifact_name": "vector_embedding_handoff_template",
+    "schema_version": "m3.l4.vector_embedding_handoff_template.v2_1_2",
+    "producer": "M3",
+    "access_class": "catalog_internal"
+  },
+  "handoff_id": "vector_embedding_handoff",
+  "handoff_status": "draft",
+  "input_pack_ref": "string",
+  "unknown_data_pack_ref": "string",
+  "m3_role": "Recommend candidate text/entity/metadata fields and safety policy only.",
+  "execution_owner": "M6_or_vector_extension",
+  "m3_embedding_execution": false,
+  "embedding_job_allowed_by_default": false,
+  "candidate_text_fields": [],
+  "candidate_entity_keys": [],
+  "candidate_metadata_fields": [],
+  "privacy_and_policy": {
+    "exclude_pii_candidates_by_default": true,
+    "blocked_inputs": ["raw rescue payload", "unredacted PII", "full realtime stream"]
+  },
+  "extension_hook": {
+    "hook_name": "vector_index_build_request",
+    "core_contract_status": "handoff_template_only"
+  }
+}
+```
+
+이 파일이 있다고 해서 retrieval/RAG가 구현됐다고 말하면 안 된다. 정확한 표현은 “M3가 embedding 후보와 policy를 넘기는 handoff template을 만든다”이다.
+
+### 7.8 발표 대표 경로 contract freeze
+
+`product_health_gold_template_draft.json`는 unknown source별 추천 artifact이고, 발표 대표 경로는 별도 공유 fixture로 고정한다. M1~M6가 각자 다른 컬럼명과 계산식을 만들지 않도록 M3는 아래 파일을 함께 유지한다.
+
+| File | Purpose |
+| --- | --- |
+| `contracts/product_health_gold_contract.sample.json` | `gold_product_health` output schema, metric semantics, zero denominator policy, risk score policy reference, claim boundary |
+| `contracts/product_health_risk_score_policy.sample.json` | 데이터 근거에 따라 추천되는 `risk_score` component/weight/formula policy와 L5 approval contract |
+| `contracts/product_health_transform_spec.sample.json` | reviews, behavior, delivery, product master를 읽어 `dataset_product_health_gold`를 만드는 deterministic transform intent |
+| `contracts/product_health_schema_definition.sample.json` | M1/M5/M6가 공유할 frozen Gold schema |
+| `contracts/product_health_catalog_metadata.sample.json` | M5/M6/M1 smoke 연결을 위한 dataset/table/query metadata fixture |
+| `contracts/product_health_vector_index_handoff.sample.json` | schema/metric/catalog 문서를 vectorDB에 넣어 M6 semantic routing을 보강하기 위한 handoff fixture |
+
+이 freeze가 있어도 M3가 Spark 실행을 완료했다는 뜻은 아니다. M3가 하는 일은 네 source와 metric 의미를 고정해서 M2가 같은 transform을 small smoke와 5GB+ run에 적용할 수 있게 하는 것이다.
+
+실제 Gold로 완성 가능한 계약이 되려면 transform 안의 custom operation도 해석 가능해야 한다. 따라서 `contracts/product_health_transform_spec.sample.json`는 `risk_score`를 아래처럼 표현한다.
+
+```json
+{
+  "name": "risk_score",
+  "operation": "apply_risk_score_policy",
+  "risk_score_policy_ref": "contracts/product_health_risk_score_policy.sample.json",
+  "operation_contract_ref": "contracts/product_health_risk_score_policy.sample.json#/operation_contract",
+  "approved_policy_required": true,
+  "missing_component_handling": "exclude_from_weight_and_record_in_risk_score_coverage",
+  "output_range": {"min": 0, "max": 100}
+}
+```
+
+`apply_risk_score_policy`의 block 조건은 `policy is not L5-approved`, approved weight normalization 실패, component가 없는 metric을 missing rule 없이 참조하는 경우, `risk_score`가 0~100 범위를 벗어나는 경우, `risk_score_coverage`를 만들지 않는 경우다. 이 조건이 있어야 M2가 Spark로 구현할 때도 임의의 inline 가중합을 넣지 않고 M3 계약을 그대로 따를 수 있다.
+
+Gold Data 생성은 raw fact를 바로 조인하지 않는다. reviews, behavior, delivery를 각각 `product_id` grain으로 먼저 aggregate한 뒤 product master와 join한다. 그래야 review row와 event row가 곱해져 count/rate가 부풀어 오르는 문제를 피할 수 있다.
+
+기본 생성 순서는 `bronze_preserve -> silver_normalize_each_source -> source_level_aggregate -> product_join -> metric_derivation -> gold_product_health`다. `conversion_rate`는 behavior event의 purchase numerator와 view/session/impression denominator가 모두 있어야 계산한다. `late_delivery_rate`는 delivery fact의 late flag 또는 promised/delivered timestamp가 있어야 계산한다. review-only input에서는 이 둘을 invented metric으로 만들지 않는다.
+
+schema/metric/catalog 정보를 vectorDB에 넣는 것은 좋다. M6가 “위험 상품”, “전환율”, “배송 지연”, “부정 리뷰” 같은 자연어 질문을 받았을 때 `dataset_product_health_gold`, `gold_product_health`, `risk_score`, `negative_review_rate`, `conversion_rate`, `late_delivery_rate`를 더 잘 찾을 수 있다. 다만 vector similarity는 검색 후보를 고르는 장치다. Gold 값의 정확성은 deterministic transform, zero denominator rule, M2 execution evidence, L9 readiness gate, M6 SQL guardrail로 검증해야 한다.
+
+`risk_score` 출력 컬럼은 고정하지만 계산식은 전역 고정하지 않는다. L4는 현재 source evidence를 보고 사용 가능한 component와 weight를 추천한다. 예를 들어 review-only source면 review/low-rating component만 추천하고, behavior와 delivery evidence가 있으면 conversion/delivery component를 추가할 수 있다. L5가 승인하거나 수정한 policy만 L6/M2 deterministic execution으로 넘어간다.
+
+component가 없는 경우 0으로 대체하지 않는다. 승인된 policy 안에서 존재하는 component만 weight를 재정규화해 계산하고, 어떤 component가 사용됐는지는 `risk_score_coverage` internal metadata로 남긴다. `low_conversion_score` 같은 component는 behavior denominator와 baseline이 없으면 추천에서 제외하거나 `needs_source_evidence`로 남긴다.
+
+100GB local corpus는 정확성/속도/생성 스트레스 검증용이다. 발표 중 실제 테스트나 demo dataset으로 쓰지 않는다. 발표는 고정된 product-health E2E evidence를 보여주고, 100GB는 별도 benchmark track으로 보고한다.
 
 `keep`은 쓰지 않는다. `select`를 쓴다.
 `flatten`은 쓰지 않는다. `flatten_struct`를 쓴다.
@@ -628,6 +919,25 @@ L5-A는 Silver approval과 Gold approval을 분리한다. Silver가 승인돼도
     "approver": "string|null",
     "approved_at": "ISO-8601 string|null",
     "comment": "string|null"
+  },
+  "product_health_gold_template": {
+    "template_ref": "string",
+    "decision_status": "deferred|needs_owner_review|approved|rejected",
+    "compile_allowed": false,
+    "reason": "string"
+  },
+  "risk_score_policy": {
+    "policy_ref": "string",
+    "decision_status": "deferred|needs_owner_review|approved|rejected",
+    "compile_allowed": false,
+    "reason": "string"
+  },
+  "vector_embedding_handoff": {
+    "template_ref": "string",
+    "decision_status": "deferred|approved|rejected",
+    "handoff_allowed": false,
+    "compile_allowed": false,
+    "reason": "string"
   },
   "can_compile_silver": true,
   "can_compile_gold": false,
@@ -1153,7 +1463,10 @@ L10-C는 M5 저장 상태, artifact version, schema version, decision version, g
     "rescue_lane_ref": "string",
     "profile_snapshot_ref": "string",
     "redaction_map_ref": "string",
+    "unknown_data_recommendation_pack_ref": "string",
     "gold_draft_ref": "string",
+    "product_health_gold_template_ref": "string",
+    "vector_embedding_handoff_template_ref": "string",
     "approval_state_ref": "string",
     "silver_decision_ref": "string",
     "gold_decision_ref": "string",

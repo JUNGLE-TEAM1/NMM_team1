@@ -1,0 +1,64 @@
+{
+  "capacity": {
+    "aliveworkers": 5,
+    "cores": 20,
+    "coresused": 0,
+    "memory": 20480,
+    "memoryused": 0,
+    "reachable": true,
+    "workers": [
+      {
+        "cores": 4,
+        "host": "172.21.0.3",
+        "id": "worker-20260627073516-172.21.0.3-34813",
+        "memory": 4096,
+        "state": "ALIVE"
+      },
+      {
+        "cores": 4,
+        "host": "172.21.0.5",
+        "id": "worker-20260627073514-172.21.0.5-38359",
+        "memory": 4096,
+        "state": "ALIVE"
+      },
+      {
+        "cores": 4,
+        "host": "172.21.100.174",
+        "id": "worker-20260627164255-172.21.100.174-13067",
+        "memory": 4096,
+        "state": "ALIVE"
+      },
+      {
+        "cores": 4,
+        "host": "172.21.100.174",
+        "id": "worker-20260627164255-172.21.100.174-13066",
+        "memory": 4096,
+        "state": "ALIVE"
+      },
+      {
+        "cores": 4,
+        "host": "172.21.0.6",
+        "id": "worker-20260627073508-172.21.0.6-41365",
+        "memory": 4096,
+        "state": "ALIVE"
+      }
+    ]
+  },
+  "completed_count": 0,
+  "completed_order": [],
+  "dataset_summary": {
+    "amazon_clothing_reviews_jsonl": {
+      "display_name": "Amazon Clothing Shoes and Jewelry Reviews",
+      "estimated_work": 40324616772.85,
+      "format_family": "jsonl",
+      "source_bytes": 27810080533,
+      "window_count": 2
+    }
+  },
+  "failed_count": 0,
+  "queued_count": 2,
+  "running": [],
+  "started_at": "2026-06-27T17:27:35.396018+09:00",
+  "status": "running",
+  "updated_at": "2026-06-30T01:29:45.436874+09:00"
+}

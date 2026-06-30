@@ -434,6 +434,12 @@ The fixture package lives in `contracts/` and is a thin consumer/producer contra
 | `contracts/execution_result.sample.json` | M2, M3, M4, M5 | M1, M5, M6 | Airflow, local runner, and spark runner compatible execution result shape |
 | `contracts/catalog_metadata.sample.json` | M2, M3, M4, M5 | M1, M6 | Dataset metadata, location, schema, metrics, lineage, and SQL allowlist context |
 | `contracts/ai_query_result.sample.json` | M6 | M1 | Dataset selection, evidence, SELECT-only SQL, rows, summary, and chart result shape |
+| `contracts/product_health_gold_contract.sample.json` | M3 | M1, M2, M5, M6 | Week 2 representative `gold_product_health` schema, metric semantics, zero-denominator policy, and claim boundary |
+| `contracts/product_health_risk_score_policy.sample.json` | M3 | M1, M2, M5, M6 | Source-evidence-adaptive `risk_score` policy recommendation, weight guardrails, approval requirement, and `apply_risk_score_policy` operation contract |
+| `contracts/product_health_transform_spec.sample.json` | M3 | M2, M5 | Four-source product health transform intent from reviews, behavior, delivery, and product master into `dataset_product_health_gold` |
+| `contracts/product_health_schema_definition.sample.json` | M3 | M1, M5, M6 | Frozen Gold output schema for `gold_product_health` |
+| `contracts/product_health_catalog_metadata.sample.json` | M3, M5 | M1, M6 | Catalog/query fixture for `dataset_product_health_gold` and the canonical risk ranking SQL |
+| `contracts/product_health_vector_index_handoff.sample.json` | M3 | M6 | Schema/metric/catalog documents and payload filters for optional vectorDB-backed semantic dataset/metric retrieval |
 
 Locked Week 2 contract decisions:
 
@@ -449,6 +455,10 @@ Locked Week 2 contract decisions:
 - `KafkaTopicContract` is evidence and raw-event handoff for Week 2. Kafka is not a blocker for the 1st-stage `gold_product_health` main E2E path unless a later Phase explicitly changes the main path.
 - `ExecutionResult.duration_ms` is part of the locked execution evidence and comes from `Week2RunnerResult.duration_ms`.
 - Week 2 product risk MVP uses `pipeline_product_health_e2e`, `dataset_product_health_gold`, and `gold_product_health` as the representative E2E identifiers. Amazon Reviews remains the reviews fact input, not the whole final analysis path.
+- M3 owns the `gold_product_health` recommendation/template contract, not the claim that every semantic metric has already been correctly executed. The L4 product health template must distinguish metric candidates from missing-evidence metrics before M2 executes any approved spec.
+- The representative product-health contract is frozen in `contracts/product_health_gold_contract.sample.json`, `contracts/product_health_risk_score_policy.sample.json`, `contracts/product_health_transform_spec.sample.json`, and `contracts/product_health_schema_definition.sample.json`. M1~M6 should use these files instead of deriving new column names, risk score policies, or formulas independently.
+- Optional vectorDB search may index schema, metric, lineage, and catalog documents from `contracts/product_health_vector_index_handoff.sample.json`. This can improve M6's dataset/metric retrieval accuracy, but it must not be treated as evidence that the Gold metric values are correct.
+- The local 100GB corpus is a stress/accuracy/speed validation track only. It is useful to prove the contract can generate outputs at scale, but the presentation path should use the fixed `pipeline_product_health_e2e` evidence and should not depend on live 100GB execution.
 - 5GB processing evidence is measured on main pipeline input, not Gold output size. `ExecutionResult.bytes` records primary or total input bytes for the run; multi-source product health runs should also expose source-level rows/bytes/duration in `task_results[]` or metrics. `CatalogMetadata.metrics.bytes` remains Gold output bytes.
 - M5 Airflow local smoke uses a shared result artifact. `Week2AirflowAdapter` triggers DAG `asklake_week2_reviews` with `conf.airflow_result_file=<run_id>.json`; the DAG writes `data/week2/_airflow_results/<run_id>.json`; the artifact contains `week2_result` with the `Week2RunnerResult`-compatible fields `status`, `task_results`, `logs`, `row_count`, `bytes`, `duration_ms`, `output_path`, `output_row_count`, and `output_bytes`.
 - M2 Airflow SparkRunner handoff CLI is `scripts/week2_m2_airflow_sparkrunner_handoff.py`. An Airflow DAG task can call it with `--run-id`, optional `--runtime-config-path` / `--runtime-profile`, optional `--output-root`, and `--result-path`; it writes the same `week2_result` artifact shape that `Week2AirflowAdapter` already consumes. This is an execution handoff only: M5 still owns the Airflow service, DAG scheduling, polling, and Catalog persistence.
@@ -494,6 +504,18 @@ Week 2 product risk representative IDs:
 | `source_behavior_events_seed` | Behavior fact input source |
 | `source_delivery_trips_seed` | Delivery fact input source |
 | `source_product_master_seed` | Product dimension source |
+
+Week 2 product health semantic metric contract:
+
+| Metric | M3 contract status | Required source evidence |
+| --- | --- | --- |
+| `negative_review_rate` | L4 candidate when product key and rating or review text exist; owner threshold review required | reviews fact with product/entity key and negative review definition |
+| `risk_score` | L4 recommends a source-specific risk score policy; L5 approval freezes formula/weights/components | approved component metrics and weighting policy |
+| `conversion_rate` | L4 candidate only when conversion numerator and visit/session/impression denominator fields exist | behavior events fact such as purchase/order plus exposure denominator |
+| `late_delivery_rate` | L4 candidate only when delivery lateness signal and delivered denominator exist | delivery/shipping fact with timestamp/late flag and delivered order count |
+
+Amazon Reviews alone can support review-side candidates such as `negative_review_rate`, `review_volume`, or `average_rating`. It must not be presented as sufficient evidence for `conversion_rate` or `late_delivery_rate` unless behavior and delivery sources are also present.
+Zero-denominator rates are `null`, not `0`: `review_count=0` makes `negative_review_rate=null`, `view_count=0` makes `conversion_rate=null`, and `delivery_count=0` makes `late_delivery_rate=null`. `risk_score` keeps the output column fixed, but its formula is not globally fixed. M3 recommends a `risk_score_policy` from available evidence, L5 approves or edits it, and only then M2 can execute it. The output must carry internal `risk_score_coverage` metadata so review-only scores are distinguishable from review+behavior+delivery scores.
 
 Week 2 draft API/UI route contract:
 

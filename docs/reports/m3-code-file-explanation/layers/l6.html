@@ -1,0 +1,26 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="icon" href="data:,"><link rel="stylesheet" href="layer-detail.css"><title>L6 Silver Recommendation Draft</title></head>
+<body><div class="topbar"><div class="topbar-inner"><a class="brand" href="../index.html">M3 Code Atlas</a><div class="top-actions"><a href="index.html">L목록</a><a href="../index.html#flow">전체 흐름</a><a href="../index.html#matrix">책임표</a></div></div></div>
+<main>
+  <header class="hero"><p class="eyebrow">Logical L6</p><h1>Silver Recommendation Draft</h1><p class="lead">Bronze를 Silver로 정제하기 위한 field별 action draft를 만든다. 이 단계의 결과는 실행 spec이 아니라 사용자가 수정할 수 있는 추천이다.</p><div class="meta"><span class="pill">code: l4_recommendation.py</span><span class="pill">physical: l4</span><span class="pill">draft: Silver</span></div></header>
+  <div class="content-grid">
+    <section><h2>이 단계가 하는 일</h2><ul><li>field별 target name, target type, action을 추천한다.</li><li>PII는 mask/hash/hide/query forbidden 정책 후보를 붙인다.</li><li>timestamp, numeric, bool, json, null normalization action을 분리한다.</li></ul></section>
+    <section><h2>코드와 산출물</h2><table><tr><th>코드</th><td><a href="../../../../tools/m3_contract/l4_recommendation.py">tools/m3_contract/l4_recommendation.py</a></td></tr><tr><th>주요 산출물</th><td><code>silver_policy_recommendation_draft.json</code></td></tr><tr><th>다음 입력</th><td>L9 approval state, L10 Silver spec compiler</td></tr></table></section>
+  </div>
+  <section><h2>판단 기준</h2><div class="note ok">Silver draft는 구조 안정화와 안전한 query/catalog exposure가 목적이다. Gold semantic 판단과 섞지 않는다.</div></section>
+  <section><h2>함수/코드 블록별 상세 해설</h2><div class="code-detail">
+    <div class="code-block"><b><code>build_l4()</code> Silver branch</b><span>L3 evidence를 받아 Silver field recommendation을 계산하고 <code>silver_policy_recommendation_draft</code> artifact로 저장한다.</span></div>
+    <div class="code-block"><b><code>_silver_field_recommendation()</code></b><span>field별 target name/type/action을 결정한다. PII면 mask, timestamp면 parse, numeric/bool이면 cast, json이면 json_string 계열 action을 추천한다.</span></div>
+    <div class="code-block"><b><code>ALLOWED_ACTIONS</code></b><span>AI draft가 사용할 수 있는 action vocabulary다. compiler가 처리 가능한 action으로 제한해 L12에서 block될 위험을 줄인다.</span></div>
+    <div class="code-block"><b>PII handling / exposure fields</b><span><code>pii_handling</code>, <code>catalog_exposure</code>, <code>query_context_exposure</code>를 분리해 숨김 여부와 처리 방식을 혼동하지 않게 한다.</span></div>
+    <div class="code-block"><b>decision handoff</b><span>L6 결과는 곧바로 실행되지 않고 L9 approval state로 넘어간다. 사용자가 수정할 수 있는 초안이다.</span></div>
+  </div></section>
+  <section><h2>라인/함수 단위 코드 해설</h2><table><thead><tr><th style="width:18%">Line</th><th style="width:24%">코드 단위</th><th>상세 설명</th></tr></thead><tbody>
+    <tr><td>10-25</td><td><code>ALLOWED_ACTIONS</code></td><td>AI recommendation draft가 사용할 수 있는 action vocabulary다. compiler가 처리할 수 있는 범위 안으로 추천을 제한한다.</td></tr>
+    <tr><td>28-43</td><td><code>build_l4()</code> preparation</td><td>L3 result를 받아 Silver field recommendation, Gold model recommendation, risk policy, product-health template, vector template을 계산한다.</td></tr>
+    <tr><td>61-77</td><td><code>silver_policy_recommendation_draft</code></td><td>allowed actions, field별 recommendation, needs_user_decision status를 담는다. 실행 spec이 아니라 editable draft다.</td></tr>
+    <tr><td>140-171</td><td><code>_silver_field_recommendation()</code></td><td>field별 target name/type/action, PII handling, catalog/query exposure를 추천한다.</td></tr>
+    <tr><td>140-171</td><td>action selection</td><td>PII면 mask, timestamp면 parse, numeric/bool이면 cast, json이면 json_string, null ratio가 있으면 normalize_null을 추천한다.</td></tr>
+  </tbody></table></section>
+  <section><h2>앞뒤 연결</h2><div class="visual"><div class="step ai"><b>L3-L5</b><span>evidence</span></div><div class="step active ai"><b>L6</b><span>Silver draft</span></div><div class="step"><b>L9</b><span>approval</span></div><div class="step spec"><b>L10</b><span>Silver spec</span></div><div class="step gate"><b>L13</b><span>Silver evidence</span></div></div></section>
+  <div class="prev-next"><a href="l5.html"><- 이전 L5</a><a href="l7.html">다음 L7 -></a></div>
+</main><script src="source-snippets.js"></script><script src="source-analysis.js"></script><script src="source-glossary.js"></script><script src="source-plain.js"></script><script src="layer-detail.js"></script></body></html>

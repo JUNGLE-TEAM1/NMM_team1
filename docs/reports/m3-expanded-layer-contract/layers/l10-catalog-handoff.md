@@ -27,7 +27,10 @@ M5는 workflow/catalog 저장 상태를 관리하고, M6는 query context를 소
 | `l10/catalog_metadata_draft.json` | M5 catalog 저장용 dataset/layer/quality/caveat metadata다. |
 | `l10/sql_context_pack.json` | M6 SQL/AI query에 허용되는 table, column, metric, caveat를 담는다. |
 | `l10/field_level_lineage.json` | source path에서 Silver/Gold field까지의 lineage를 기록한다. |
+| `l10/semantic_catalog_vector_index_template.json` | schema, field, metric, semantic template 문서를 vectorDB에 넣기 위한 document/payload/filter template이다. |
 | `l10/catalog_validation_result.json` | PII/query context validator와 ref resolver 결과를 기록한다. |
+
+`catalog_sync_contract_package.json`은 L4의 `product_health_gold_template_draft.json`, `risk_score_policy_recommendation_draft.json`, `vector_embedding_handoff_template.json`도 artifact ref로 포함한다. 단 이 ref가 있다고 해서 M6가 해당 metric을 신뢰 metric으로 질의할 수 있다는 뜻은 아니다. L5에서 product health template과 risk score policy가 승인되고 L9에서 Gold readiness가 ready 계열이 되기 전에는 `sql_context_pack.metrics`는 비어 있거나 caveat를 포함해야 한다.
 
 ## 5. 장점
 
@@ -51,17 +54,25 @@ L10은 Bronze/Silver/Gold layer status, dataset metadata, field lineage, quality
 
 Gold 상태는 `available`, `deferred`, `needs_owner_review`, `blocked`, `not_requested`로 표현한다. M6 context도 `ready`, `ready_with_caveat`, `not_ready`, `blocked`, `not_requested`를 구분한다.
 
+semantic template 상태는 별도로 표현한다. `gold_product_health`는 `draft_deferred`, `needs_owner_review`, `approved`, `available` 같은 상태를 가질 수 있지만, 이 상태가 Silver readiness를 오염시키면 안 된다. vector/embedding handoff도 `draft_deferred`로 시작하며, 실제 embedding/index build 여부는 M6 또는 extension hook의 별도 승인과 실행 evidence가 있어야 한다.
+
 ## 8. 한계
 
 L10은 M5 catalog API에 실제 저장하는 runtime 자체가 아니다. L10은 저장할 package를 만든다. M5가 API 저장, transaction, permission, UI state를 책임진다.
 
 L10은 retrieval/RAG context를 core로 만들지 않는다. SQL/AI query context는 structured table/metric 중심이다. unstructured retrieval은 extension hook이다.
 
+따라서 `vector_embedding_handoff_template_ref`는 retrieval 구현 완료 증거가 아니다. 이 ref는 어떤 field를 embedding 후보로 볼지와 어떤 privacy 조건을 지켜야 하는지를 downstream에 넘기는 계약이다.
+
+`semantic_catalog_vector_index_template.json`도 같은 경계에 있다. 이 파일은 vectorDB에 넣을 schema/metric/catalog 문서와 metadata filter key를 정의한다. M6가 자연어 질의에서 올바른 dataset, table, metric 후보를 찾는 정확도는 올라갈 수 있지만, Gold output 값의 정확도는 올라가지 않는다. 값의 정확도는 L6 deterministic spec, M2 실행, L8/L9 validation, SQL guardrail로 확인해야 한다.
+
 ## 9. 검증 기준
 
 모든 `*_ref`는 `artifact_reference_manifest.json`에서 정확히 하나로 resolve되어야 한다. checksum mismatch는 block이다. access class가 consumer와 맞지 않으면 block이다. forbidden field가 `sql_context_pack.allowed_columns`에 있으면 block이다.
 
 Gold not_requested 상태에서는 `sql_context_pack.metrics`가 비어 있거나 Gold not requested caveat를 포함해야 한다. processing/catalog safety block인데 M6 context가 ready이면 block이다.
+
+`product_health_gold_template_ref`가 있어도 L5 approval과 L9 gold readiness가 준비되지 않았으면 `risk_score`, `negative_review_rate`, `conversion_rate`, `late_delivery_rate`를 trusted metric으로 노출하면 안 된다. 특히 `risk_score_policy_recommendation_ref`만 있고 L5 approval state의 `risk_score_policy.compile_allowed=false`이면 `risk_score`는 trusted metric이 아니라 draft/caveat metric이다. `conversion_rate`나 `late_delivery_rate`가 source evidence 부족 상태인데 `sql_context_pack.metrics`에 들어가면 block이다.
 
 ## 10. Handoff
 

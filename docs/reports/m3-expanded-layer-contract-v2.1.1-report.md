@@ -25,7 +25,7 @@
 
 ## Goal / 목표
 
-v2.1에서 남은 P0/P1 충돌을 반영해 M3 L0-L10 core 계약을 v2.1.1로 보강한다. 특히 L10 M6 context handoff, L9 Silver/Gold context 분리, Gold readiness axis nullability, source_unit consistency, preview_scope 정렬, aggregate params, `_ref` naming, replay locator, PII exposure 분리를 명확하게 닫는다.
+v2.1에서 남은 P0/P1 충돌을 반영해 M3 logical L0-L16 core 계약을 v2.1.1로 보강한다. 물리 artifact 폴더는 compatibility 때문에 `l0`~`l10`을 유지하지만, 발표/구현/판단 기준은 `logical_layer=L0`~`L16`이다. 특히 L16 M6 context handoff, L15 Silver/Gold context 분리, Gold readiness axis nullability, source_unit consistency, preview_scope 정렬, aggregate params, `_ref` naming, replay locator, PII exposure 분리를 명확하게 닫는다.
 
 ## Changed Files / 변경 파일
 

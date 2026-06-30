@@ -1,0 +1,33 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="icon" href="data:,"><link rel="stylesheet" href="layer-detail.css"><title>L3 AI-Safe Evidence</title></head>
+<body><div class="topbar"><div class="topbar-inner"><a class="brand" href="../index.html">M3 Code Atlas</a><div class="top-actions"><a href="index.html">L목록</a><a href="../index.html#flow">전체 흐름</a><a href="../index.html#matrix">책임표</a></div></div></div>
+<main>
+  <header class="hero"><p class="eyebrow">Logical L3</p><h1>AI-Safe Evidence Reduction</h1><p class="lead">AI가 볼 수 있는 입력을 bounded, redacted, field-evidence 중심으로 줄인다. raw full payload와 row-level AI는 이 단계에서 차단된다.</p><div class="meta"><span class="pill">code: l3_recommend.py</span><span class="pill">physical: l3</span><span class="pill">type: AI control-plane</span></div></header>
+  <div class="content-grid">
+    <section><h2>이 단계가 하는 일</h2><ul><li>L2 field summary에서 AI 입력에 필요한 근거만 추린다.</li><li>PII 후보 examples를 redaction한다.</li><li>AI evidence budget과 raw payload 금지 규칙을 artifact에 적는다.</li></ul></section>
+    <section><h2>코드와 산출물</h2><table><tr><th>코드</th><td><a href="../../../../tools/m3_contract/l3_recommend.py">tools/m3_contract/l3_recommend.py</a></td></tr><tr><th>주요 산출물</th><td><code>ai_recommendation_input_pack.json</code>, <code>field_evidence_reducer.json</code>, <code>redaction_map.json</code>, <code>policy_context_pack.json</code></td></tr><tr><th>다음 입력</th><td>L4 template retrieval, L6-L8 draft recommendation</td></tr></table></section>
+  </div>
+  <section><h2>판단 기준</h2><div class="note danger">L3에 raw full text, unbounded sample, per-row AI call 전제가 들어가면 실패다. AI는 data-plane이 아니라 control-plane 추천 입력만 본다.</div></section>
+  <section><h2>함수/코드 블록별 상세 해설</h2><div class="code-detail">
+    <div class="code-block"><b><code>build_l3()</code> field loop</b><span>L2 fields를 순회하며 field_evidence와 redaction_map을 만든다. PII 후보 field는 example을 <code>[REDACTED_PII]</code>로 바꾼다.</span></div>
+    <div class="code-block"><b><code>ai_recommendation_input_pack</code></b><span>AI가 보는 유일한 입력 package다. profile ref, redaction map ref, field evidence, evidence budget, raw payload 금지 조건을 포함한다.</span></div>
+    <div class="code-block"><b><code>field_evidence_reducer</code></b><span>L2 profile에서 L3 evidence로 줄이는 규칙을 기록한다. full raw payload drop, example cap, PII redaction이 핵심이다.</span></div>
+    <div class="code-block"><b><code>_unknown_data_recommendation_pack()</code></b><span>unknown source에서 가능한 Silver cleaning, generic Gold aggregate, product-health, vector handoff 후보를 큰 범주로 정리한다.</span></div>
+    <div class="code-block"><b><code>_domain_signals()</code></b><span>field token과 semantic hint로 product key, review, time series, conversion, delivery 신호를 감지한다.</span></div>
+    <div class="code-block"><b><code>_source_processing_contract()</code></b><span>대용량/실시간/비정형 처리는 M3 data-plane이 아니라 M2/M6/extension boundary로 넘긴다는 계약을 남긴다.</span></div>
+  </div></section>
+  <section><h2>라인/함수 단위 코드 해설</h2><table><thead><tr><th style="width:18%">Line</th><th style="width:24%">코드 단위</th><th>상세 설명</th></tr></thead><tbody>
+    <tr><td>1-13</td><td>import + <code>_dominant_type()</code></td><td>regex/path/type helper를 가져오고 type count에서 dominant type을 뽑는 작은 helper를 정의한다.</td></tr>
+    <tr><td>16-20</td><td><code>build_l3()</code> signature</td><td>L2 profile을 받아 AI-safe evidence pack으로 줄인다. 실행 가능한 recommendation을 만드는 단계가 아니다.</td></tr>
+    <tr><td>21-51</td><td>field evidence loop</td><td>L2 fields를 순회하며 source path, target candidate, dominant type, examples, PII 여부를 정리한다. PII examples는 redaction한다.</td></tr>
+    <tr><td>52-53</td><td>shape contract</td><td>L2 data shape contract를 꺼내 source processing contract와 연결한다.</td></tr>
+    <tr><td>55-82</td><td><code>ai_recommendation_input_pack</code></td><td>AI가 볼 수 있는 bounded package다. raw payload 금지, row-level AI call 0, evidence budget이 여기에 들어간다.</td></tr>
+    <tr><td>83-102</td><td><code>field_evidence_reducer</code></td><td>L2에서 L3로 줄이면서 무엇을 버리고 무엇을 보존했는지 기록한다.</td></tr>
+    <tr><td>103-127</td><td><code>redaction_map</code> / policy context</td><td>field별 redaction 여부와 Silver/Gold objective, M3 scope boundary를 artifact로 만든다.</td></tr>
+    <tr><td>128-150</td><td>write + return</td><td>unknown data pack, metadata index plan, template retrieval, grounding report까지 저장하고 L4/L6/L7에서 쓸 dict를 반환한다.</td></tr>
+    <tr><td>153-217</td><td><code>_unknown_data_recommendation_pack()</code></td><td>unknown source에 대한 Silver cleaning, generic Gold, product-health, vector handoff 후보와 금지 claim을 기록한다.</td></tr>
+    <tr><td>219-267</td><td><code>_domain_signals()</code> / source contract</td><td>field token/hint로 product/review/time/commercial/conversion/delivery signal을 찾고 M3 runtime boundary를 명시한다.</td></tr>
+    <tr><td>269-301</td><td>vector + projection helpers</td><td>vector 후보 field와 field projection을 만든다. PII 후보는 vector 대상에서 기본 제외한다.</td></tr>
+  </tbody></table></section>
+  <section><h2>앞뒤 연결</h2><div class="visual"><div class="step"><b>L2</b><span>profile</span></div><div class="step active ai"><b>L3</b><span>safe evidence</span></div><div class="step ai"><b>L4</b><span>retrieval</span></div><div class="step ai"><b>L6</b><span>Silver draft</span></div><div class="step ai"><b>L7</b><span>Gold draft</span></div></div></section>
+  <div class="prev-next"><a href="l2.html"><- 이전 L2</a><a href="l4.html">다음 L4 -></a></div>
+</main><script src="source-snippets.js"></script><script src="source-analysis.js"></script><script src="source-glossary.js"></script><script src="source-plain.js"></script><script src="layer-detail.js"></script></body></html>

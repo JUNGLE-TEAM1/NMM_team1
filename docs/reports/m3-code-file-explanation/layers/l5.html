@@ -1,0 +1,26 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="icon" href="data:,"><link rel="stylesheet" href="layer-detail.css"><title>L5 Candidate Grounding Gate</title></head>
+<body><div class="topbar"><div class="topbar-inner"><a class="brand" href="../index.html">M3 Code Atlas</a><div class="top-actions"><a href="index.html">L목록</a><a href="../index.html#flow">전체 흐름</a><a href="../index.html#matrix">책임표</a></div></div></div>
+<main>
+  <header class="hero"><p class="eyebrow">Logical L5</p><h1>Candidate Grounding Gate</h1><p class="lead">Gold/product-health/risk/vector 후보가 실제 source evidence를 갖췄는지 검사한다. 후보를 추천하는 것과 실행 가능한 모델로 확정하는 것을 분리한다.</p><div class="meta"><span class="pill">code: l3_recommend.py</span><span class="pill">physical: l3</span><span class="pill">gate: source evidence</span></div></header>
+  <div class="content-grid">
+    <section><h2>이 단계가 하는 일</h2><ul><li>product key, rating, review, conversion, delivery evidence 존재를 확인한다.</li><li>missing evidence와 blocking reason을 기록한다.</li><li>PII/query exposure, Spark preview, user approval 필요 여부를 분리한다.</li></ul></section>
+    <section><h2>코드와 산출물</h2><table><tr><th>코드</th><td><a href="../../../../tools/m3_contract/l3_recommend.py">tools/m3_contract/l3_recommend.py</a></td></tr><tr><th>주요 산출물</th><td><code>candidate_grounding_report.json</code>, domain signal summaries</td></tr><tr><th>다음 입력</th><td>L6 Silver draft, L7 Gold draft</td></tr></table></section>
+  </div>
+  <section><h2>판단 기준</h2><div class="note danger">데이터에 없는 지표를 Gold schema에 억지로 넣으면 안 된다. missing component는 risk_score에서 제외하거나 사용자 review로 넘겨야 한다.</div></section>
+  <section><h2>함수/코드 블록별 상세 해설</h2><div class="code-detail">
+    <div class="code-block"><b><code>_candidate_grounding_report()</code></b><span>retrieved Gold template 후보가 실제 source field evidence를 갖췄는지 검사한다. exact name/type compatibility, denominator, PII exposure, Spark preview, user approval check를 분리한다.</span></div>
+    <div class="code-block"><b>product-health classifier helpers</b><span><code>_product_id_fields()</code>, rating/review/conversion/delivery helper가 field token과 semantic hint를 이용해 후보 field를 찾는다.</span></div>
+    <div class="code-block"><b><code>_product_health_missing_evidence()</code></b><span>product id, rating/review, conversion numerator/denominator, delivery signal 부족분을 label로 만든다.</span></div>
+    <div class="code-block"><b><code>_matched_field_ids()</code></b><span>matched field group에서 field id set을 뽑아 PII/query exposure validation에 연결한다.</span></div>
+    <div class="code-block"><b>gate outcome</b><span>근거가 충분하면 L7 Gold draft로 넘어가고, 부족하면 <code>needs_source_evidence</code>나 owner review caveat로 남는다.</span></div>
+  </div></section>
+  <section><h2>라인/함수 단위 코드 해설</h2><table><thead><tr><th style="width:18%">Line</th><th style="width:24%">코드 단위</th><th>상세 설명</th></tr></thead><tbody>
+    <tr><td>494-580</td><td><code>_candidate_grounding_report()</code></td><td>template 후보가 draft로 넘어갈 수 있는지 검사한다. exact name/type compatibility, denominator, PII exposure, Spark preview, user approval check를 분리한다.</td></tr>
+    <tr><td>611-655</td><td>product/review/delivery classifiers</td><td>product id와 user/order/review id를 구분하려는 조건을 포함한다. product-health grain이 잘못 잡히지 않게 하는 부분이다.</td></tr>
+    <tr><td>658-674</td><td><code>_product_health_missing_evidence()</code></td><td>product key, review/rating, conversion numerator/denominator, delivery signal 부족분을 label list로 만든다.</td></tr>
+    <tr><td>677-686</td><td>conversion evidence helpers</td><td>구매 이벤트와 조회 이벤트를 나누어 conversion_rate가 계산 가능한지 판단한다.</td></tr>
+    <tr><td>689-696</td><td><code>_matched_field_ids()</code></td><td>matched field group에서 field id set을 추출한다. 이후 PII/query exposure check와 연결된다.</td></tr>
+  </tbody></table></section>
+  <section><h2>앞뒤 연결</h2><div class="visual"><div class="step ai"><b>L4</b><span>candidate</span></div><div class="step active ai"><b>L5</b><span>grounding</span></div><div class="step ai"><b>L6</b><span>Silver draft</span></div><div class="step ai"><b>L7</b><span>Gold draft</span></div><div class="step"><b>L9</b><span>user decision</span></div></div></section>
+  <div class="prev-next"><a href="l4.html"><- 이전 L4</a><a href="l6.html">다음 L6 -></a></div>
+</main><script src="source-snippets.js"></script><script src="source-analysis.js"></script><script src="source-glossary.js"></script><script src="source-plain.js"></script><script src="layer-detail.js"></script></body></html>

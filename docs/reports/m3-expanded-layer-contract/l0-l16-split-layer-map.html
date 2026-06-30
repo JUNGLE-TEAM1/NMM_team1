@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>M3 Logical L0-L16 Split Layer Map</title>
+  <style>
+    :root {
+      --ink: #152033;
+      --muted: #5c6678;
+      --line: #d9e2ee;
+      --bg: #f4f7fb;
+      --panel: #ffffff;
+      --blue: #1d62d1;
+      --green: #17745f;
+      --amber: #a45b00;
+      --red: #b42318;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Arial, "Malgun Gothic", sans-serif; color: var(--ink); background: var(--bg); }
+    main { max-width: 1480px; margin: 0 auto; padding: 28px; }
+    header { background: #16233b; color: #fff; border-radius: 10px; padding: 24px; margin-bottom: 16px; }
+    header p { color: #dbe6f8; max-width: 1120px; line-height: 1.65; }
+    h1, h2, h3 { margin-top: 0; }
+    p, li { line-height: 1.65; }
+    code { background: #edf3fb; border-radius: 4px; padding: 2px 5px; }
+    section { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 18px; margin-bottom: 16px; }
+    .nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .nav a { color: var(--ink); text-decoration: none; background: #fff; border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; }
+    .split-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+    .split-card { border: 1px solid var(--line); border-radius: 8px; padding: 12px; background: #fbfdff; min-height: 150px; }
+    .split-card strong { display: block; margin-bottom: 8px; font-size: 18px; }
+    .badge { display: inline-block; min-width: 42px; text-align: center; border-radius: 4px; color: #fff; background: var(--blue); padding: 3px 6px; font-weight: 700; margin-right: 6px; }
+    .ai .badge { background: var(--amber); }
+    .spec .badge { background: var(--green); }
+    .gate .badge { background: var(--red); }
+    .muted { color: var(--muted); }
+    .flow { display: grid; grid-template-columns: repeat(17, minmax(112px, 1fr)); gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+    .flow div { border: 1px solid var(--line); border-radius: 7px; padding: 9px; background: #fbfdff; min-height: 112px; }
+    .flow b { display: block; margin-bottom: 4px; color: var(--blue); }
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    th, td { border-bottom: 1px solid #e7edf5; padding: 9px; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+    th { background: #eaf1fb; }
+    .scroll { overflow-x: auto; }
+    .callout { border-left: 5px solid var(--amber); }
+    .ok { border-left: 5px solid var(--green); }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>M3 Logical L0-L16 Split Layer Map</h1>
+    <p>기존 물리 artifact 폴더는 <code>l0</code>~<code>l10</code>으로 유지하고, 발표/계약/검증 기준은 <code>L0</code>~<code>L16</code> 논리 단계로 분리한다. 이 페이지는 “어느 단계가 무엇을 판단하고, 어느 M으로 넘기며, 실제 어떤 파일을 만드는지”를 한눈에 보기 위한 보드다.</p>
+  </header>
+
+  <nav class="nav">
+    <a href="index.html">Index</a>
+    <a href="l0-l16-split-layer-map.md">Markdown Contract</a>
+    <a href="selected-improvement-contract-v2.1.1.md">v2.1.1 Contract</a>
+    <a href="semantic-gold-vector-research-note.md">Semantic Gold / VectorDB</a>
+  </nav>
+
+  <section class="callout">
+    <h2>Split Decision</h2>
+    <p><code>L3</code>은 <code>L3 AI-safe evidence</code>, <code>L4 metadata/template retrieval</code>, <code>L5 candidate grounding</code>으로 분리한다. AI 입력 생성, 후보 검색, 후보 검증은 실패 원인과 수정자가 다르기 때문이다.</p>
+    <p><code>L4</code>는 <code>L6 Silver draft</code>, <code>L7 Gold draft</code>, <code>L8 vector/semantic draft</code>로 분리한다. Silver 정제, Gold 의미 모델, vectorDB handoff는 사용자가 따로 수정하고 승인해야 한다.</p>
+    <p><code>L6</code>은 <code>L10 Silver spec</code>, <code>L11 Gold spec</code>, <code>L12 compiler gate</code>로 분리한다. Silver 실행 계획, Gold 실행 계획, 안전성 검사는 서로 다른 block 조건을 갖는다.</p>
+  </section>
+
+  <section>
+    <h2>End-to-End Flow</h2>
+    <div class="flow">
+      <div><b>L0</b>Raw identity</div>
+      <div><b>L1</b>Bronze envelope</div>
+      <div><b>L2</b>Profile snapshot</div>
+      <div><b>L3</b>AI-safe evidence</div>
+      <div><b>L4</b>Template retrieval</div>
+      <div><b>L5</b>Grounding gate</div>
+      <div><b>L6</b>Silver draft</div>
+      <div><b>L7</b>Gold draft</div>
+      <div><b>L8</b>Vector draft</div>
+      <div><b>L9</b>User approval</div>
+      <div><b>L10</b>Silver spec</div>
+      <div><b>L11</b>Gold spec</div>
+      <div><b>L12</b>Compiler gate</div>
+      <div><b>L13</b>Silver evidence</div>
+      <div><b>L14</b>Gold evidence</div>
+      <div><b>L15</b>Readiness gate</div>
+      <div><b>L16</b>Catalog/query handoff</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Layer Cards</h2>
+    <div class="split-grid">
+      <div class="split-card"><strong><span class="badge">L0</span>Raw Source Unit</strong><p>source_unit_id, object_id, checksum, replay locator를 만든다.</p><p class="muted">From M1 source registration -> L1</p></div>
+      <div class="split-card"><strong><span class="badge">L1</span>Bronze Envelope</strong><p>bounded sample과 rescue lane을 보존한다.</p><p class="muted">L0 -> L2</p></div>
+      <div class="split-card"><strong><span class="badge">L2</span>Profile Snapshot</strong><p>CSV/JSON/JSONL field profile, data shape, parser stats를 만든다.</p><p class="muted">L1 -> L3</p></div>
+      <div class="split-card ai"><strong><span class="badge">L3</span>AI-Safe Evidence</strong><p>raw 없이 redacted bounded evidence만 AI 입력으로 만든다.</p><p class="muted">L2 -> L4</p></div>
+      <div class="split-card ai"><strong><span class="badge">L4</span>Template Retrieval</strong><p>schema/profile/catalog evidence로 Gold template 후보를 찾는다.</p><p class="muted">L3 -> L5</p></div>
+      <div class="split-card ai"><strong><span class="badge">L5</span>Grounding Gate</strong><p>후보가 source evidence를 갖췄는지 검증한다.</p><p class="muted">L4 -> L6/L7/L8</p></div>
+      <div class="split-card ai"><strong><span class="badge">L6</span>Silver Draft</strong><p>Bronze -> Silver 정제 추천을 만든다.</p><p class="muted">L5 -> L9</p></div>
+      <div class="split-card ai"><strong><span class="badge">L7</span>Gold Draft</strong><p>Gold model, product health, risk policy 추천을 만든다.</p><p class="muted">L5 -> L9</p></div>
+      <div class="split-card ai"><strong><span class="badge">L8</span>Vector Draft</strong><p>vectorDB/semantic handoff 후보를 만든다.</p><p class="muted">L3/L5 -> L9 or M6 extension</p></div>
+      <div class="split-card"><strong><span class="badge">L9</span>User Approval</strong><p>Silver, Gold, Gold-to-Gold, risk, vector 결정을 고정한다.</p><p class="muted">M1/M5 -> L10/L11/L12</p></div>
+      <div class="split-card spec"><strong><span class="badge">L10</span>Silver Spec</strong><p>승인된 Silver 결정을 preview-only spec으로 컴파일한다.</p><p class="muted">L9 -> M2/L13</p></div>
+      <div class="split-card spec"><strong><span class="badge">L11</span>Gold Spec</strong><p>승인된 Gold 결정을 preview-only spec으로 컴파일한다.</p><p class="muted">L9 -> M2/L14</p></div>
+      <div class="split-card gate"><strong><span class="badge">L12</span>Compiler Gate</strong><p>row AI, generated code, collect-all, production write를 block한다.</p><p class="muted">L10/L11 -> M2 or L9 repair</p></div>
+      <div class="split-card gate"><strong><span class="badge">L13</span>Silver Evidence</strong><p>M2/local preview 결과의 Silver 품질과 노출 안전성을 검증한다.</p><p class="muted">M2 -> L15</p></div>
+      <div class="split-card gate"><strong><span class="badge">L14</span>Gold Evidence</strong><p>Gold readiness, metric definition, semantic caveat를 검증한다.</p><p class="muted">M2 -> L15</p></div>
+      <div class="split-card gate"><strong><span class="badge">L15</span>Readiness Gate</strong><p>processing, catalog safety, gold readiness를 3축으로 판정한다.</p><p class="muted">L13/L14 -> L16</p></div>
+      <div class="split-card"><strong><span class="badge">L16</span>Catalog Handoff</strong><p>M5/M6 catalog, SQL context, vector handoff package를 만든다.</p><p class="muted">L15 -> M5/M6</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Physical File Mapping</h2>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Logical Layer</th><th>Physical Artifacts</th><th>주요 판단</th></tr></thead>
+        <tbody>
+          <tr><td><code>L3</code></td><td><code>l3/ai_recommendation_input_pack.json</code>, <code>l3/unknown_data_recommendation_pack.json</code></td><td>AI가 raw data-plane을 보지 않는지, PII가 redacted 되었는지.</td></tr>
+          <tr><td><code>L4</code></td><td><code>l3/metadata_retrieval_index_plan.json</code>, <code>l3/gold_template_candidate_retrieval.json</code></td><td>template 후보 검색은 가능하지만 numeric correctness 증거는 아님.</td></tr>
+          <tr><td><code>L5</code></td><td><code>l3/candidate_grounding_report.json</code></td><td>product health, conversion, delivery, risk score 후보가 source evidence를 갖췄는지.</td></tr>
+          <tr><td><code>L6</code></td><td><code>l4/silver_policy_recommendation_draft.json</code></td><td>Silver 정제/마스킹/타입/쿼리 노출 추천.</td></tr>
+          <tr><td><code>L7</code></td><td><code>l4/gold_model_recommendation_draft.json</code>, <code>l4/product_health_gold_template_draft.json</code>, <code>l4/risk_score_policy_recommendation_draft.json</code></td><td>Gold는 승인 전 draft이며 risk_score는 source evidence에 맞춰 추천된다.</td></tr>
+          <tr><td><code>L8</code></td><td><code>l4/vector_embedding_handoff_template.json</code></td><td>vectorDB는 검색 보조이고 Gold 값 정확도 증거가 아니다.</td></tr>
+          <tr><td><code>L9</code></td><td><code>l5/approval_state.json</code>, <code>l5/*_policy_decision.json</code></td><td>사용자가 승인한 것만 L10/L11로 컴파일한다.</td></tr>
+          <tr><td><code>L10</code></td><td><code>l6/silver_transform_spec.json</code></td><td>Silver preview-only deterministic spec.</td></tr>
+          <tr><td><code>L11</code></td><td><code>l6/gold_generation_spec.json</code></td><td>Gold not_requested/deferred면 비실행 상태를 유지한다.</td></tr>
+          <tr><td><code>L12</code></td><td><code>l6/compiler_validation_result.json</code>, <code>l6/unsupported_action_report.json</code></td><td>unsafe action과 legacy window_id를 block한다.</td></tr>
+          <tr><td><code>L13-L16</code></td><td><code>l7/*</code>, <code>l8/*</code>, <code>l9/*</code>, <code>l10/*</code>, <code>exports/*</code></td><td>preview evidence, readiness, catalog/query/vector handoff.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="ok">
+    <h2>Implementation Marker</h2>
+    <p>모든 새 JSON artifact는 <code>artifact_header.logical_layer</code>, top-level <code>logical_layer</code>, <code>logical_layer_version</code>을 가진다. 전체 실행 결과의 <code>run_summary.json</code>에는 <code>layer_contract_version</code>, <code>split_summary</code>, <code>logical_layers</code>가 들어간다.</p>
+  </section>
+</main>
+</body>
+</html>

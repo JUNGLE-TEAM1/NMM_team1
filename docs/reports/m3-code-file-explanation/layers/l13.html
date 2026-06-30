@@ -1,0 +1,28 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="icon" href="data:,"><link rel="stylesheet" href="layer-detail.css"><title>L13 Silver Preview Evidence Gate</title></head>
+<body><div class="topbar"><div class="topbar-inner"><a class="brand" href="../index.html">M3 Code Atlas</a><div class="top-actions"><a href="index.html">L목록</a><a href="../index.html#flow">전체 흐름</a><a href="../index.html#matrix">책임표</a></div></div></div>
+<main>
+  <header class="hero"><p class="eyebrow">Logical L13</p><h1>Silver Preview Evidence Gate</h1><p class="lead">M3가 직접 Silver preview를 실행하지 않는다는 ref와, M2/local preview evidence를 검증할 기준을 만든다.</p><div class="meta"><span class="pill">code: l7_silver_preview.py</span><span class="pill">physical: l7</span><span class="pill">gate: Silver evidence</span></div></header>
+  <div class="content-grid">
+    <section><h2>이 단계가 하는 일</h2><ul><li>Silver preview execution owner를 M2로 명시한다.</li><li>compiler status, preview-only write mode, PII/query exposure를 검증한다.</li><li>PII exposure report와 Silver quality axis를 만든다.</li></ul></section>
+    <section><h2>코드와 산출물</h2><table><tr><th>코드</th><td><a href="../../../../tools/m3_contract/l7_silver_preview.py">tools/m3_contract/l7_silver_preview.py</a></td></tr><tr><th>주요 산출물</th><td><code>silver_preview_ref.json</code>, <code>silver_preview_validation_result.json</code>, <code>pii_exposure_report.json</code>, <code>silver_quality_axis.json</code></td></tr><tr><th>다음 입력</th><td>L15 processing/catalog axes</td></tr></table></section>
+  </div>
+  <section><h2>판단 기준</h2><div class="note ok">Silver readiness는 구조/PII/query exposure 중심이다. Gold가 보류되어도 L13 Silver evidence는 독립적으로 평가한다.</div></section>
+  <section><h2>함수/코드 블록별 상세 해설</h2><div class="code-detail">
+    <div class="code-block"><b><code>build_l7()</code></b><span>physical l7 builder지만 logical L13 Silver preview evidence를 만든다. 실제 Spark 실행은 하지 않고 M2 execution ref와 validation artifact를 만든다.</span></div>
+    <div class="code-block"><b><code>silver_preview_ref</code></b><span>execution owner는 M2, M3 execution status는 <code>not_executed_by_m3</code>, write mode는 preview_only로 둔다.</span></div>
+    <div class="code-block"><b><code>silver_preview_validation_result</code></b><span>compiler pass 여부, preview-only write mode, PII exposure declared, query forbidden exclusion을 검증한다.</span></div>
+    <div class="code-block"><b><code>pii_exposure_report</code></b><span>PII field의 source/target, pii handling, catalog exposure, query context exposure를 기록한다.</span></div>
+    <div class="code-block"><b><code>silver_quality_axis</code></b><span>Silver preview validation과 PII report를 L15 processing/catalog axis가 읽을 수 있는 형태로 묶는다.</span></div>
+  </div></section>
+  <section><h2>라인/함수 단위 코드 해설</h2><table><thead><tr><th style="width:18%">Line</th><th style="width:24%">코드 단위</th><th>상세 설명</th></tr></thead><tbody>
+    <tr><td>9-18</td><td><code>build_l7()</code> 시작</td><td>L5 Silver fields에서 PII fields와 query forbidden fields를 분리하고 compiler status가 block이면 structural status도 block으로 둔다.</td></tr>
+    <tr><td>19-35</td><td><code>silver_preview_ref</code></td><td>execution owner는 M2, M3 execution status는 not_executed_by_m3, write mode는 preview_only로 둔다.</td></tr>
+    <tr><td>36-58</td><td><code>silver_preview_validation_result</code></td><td>compiler passed, preview-only write mode, PII exposure declared, query forbidden fields excluded check를 담는다.</td></tr>
+    <tr><td>59-81</td><td><code>pii_exposure_report</code></td><td>PII field의 source/target, pii handling, catalog exposure, query context exposure를 기록한다.</td></tr>
+    <tr><td>82-96</td><td><code>silver_quality_axis</code></td><td>validation result와 PII report를 묶어 L15 axis가 읽을 수 있게 한다.</td></tr>
+    <tr><td>97-111</td><td><code>silver_quarantine_report</code></td><td>실제 row quarantine count는 M2 preview execution에서 import될 값이라고 명시한다.</td></tr>
+    <tr><td>112-123</td><td>write + return</td><td>L13 산출물을 저장하고 L15가 읽을 validation/axis 결과를 반환한다.</td></tr>
+  </tbody></table></section>
+  <section><h2>앞뒤 연결</h2><div class="visual"><div class="step spec"><b>L10</b><span>Silver spec</span></div><div class="step spec"><b>L12</b><span>compiler gate</span></div><div class="step active gate"><b>L13</b><span>Silver evidence</span></div><div class="step gate"><b>L15</b><span>quality axis</span></div><div class="step handoff"><b>L16</b><span>catalog safety</span></div></div></section>
+  <div class="prev-next"><a href="l12.html"><- 이전 L12</a><a href="l14.html">다음 L14 -></a></div>
+</main><script src="source-snippets.js"></script><script src="source-analysis.js"></script><script src="source-glossary.js"></script><script src="source-plain.js"></script><script src="layer-detail.js"></script></body></html>

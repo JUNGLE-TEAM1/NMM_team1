@@ -1,0 +1,33 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="icon" href="data:,"><link rel="stylesheet" href="layer-detail.css"><title>L0 Raw Source Unit Manifest</title></head>
+<body><div class="topbar"><div class="topbar-inner"><a class="brand" href="../index.html">M3 Code Atlas</a><div class="top-actions"><a href="index.html">L목록</a><a href="../index.html#flow">전체 흐름</a><a href="../index.html#matrix">책임표</a></div></div></div>
+<main>
+  <header class="hero"><p class="eyebrow">Logical L0</p><h1>Raw Source Unit Manifest</h1><p class="lead">원본 데이터를 복제하거나 변형하지 않고, replay 가능한 source 단위와 object identity를 고정하는 시작 단계다.</p><div class="meta"><span class="pill">code: l0_raw.py</span><span class="pill">physical: l0</span><span class="pill">owner: M3 contract</span></div></header>
+  <div class="content-grid">
+    <section><h2>이 단계가 하는 일</h2><ul><li>source root 아래 file/object를 탐색하고 object id와 source_unit_id를 만든다.</li><li>checksum, size, modified_at, URI를 manifest에 기록한다.</li><li>raw payload는 copy/mutate하지 않는다는 정책을 artifact로 고정한다.</li></ul></section>
+    <section><h2>코드와 산출물</h2><table><tr><th>코드</th><td><a href="../../../../tools/m3_contract/l0_raw.py">tools/m3_contract/l0_raw.py</a></td></tr><tr><th>주요 산출물</th><td><code>object_stream_manifest.json</code>, <code>source_manifest.json</code>, <code>raw_replay_pointer.json</code>, <code>raw_manifest.json</code></td></tr><tr><th>다음 입력</th><td>L1 Bronze sample과 L2 profile의 replay 기준</td></tr></table></section>
+  </div>
+  <section><h2>판단 기준</h2><div class="note ok">L0가 통과하려면 source_unit_id, object_id, checksum/size/URI, replay pointer가 사라지면 안 된다. raw copy나 raw mutation을 M3 책임처럼 쓰면 실패다.</div></section>
+  <section><h2>함수/코드 블록별 상세 해설</h2><div class="code-detail">
+    <div class="code-block"><b><code>build_l0()</code> signature</b><span>source path, output dir, source_id, run_id, checksum mode를 받는다. 이 함수 하나가 L0의 모든 artifact를 만든다.</span><ul><li>source가 파일인지 디렉터리인지 확인한다.</li><li>후속 L1/L2가 재사용할 files, objects, source_units를 반환한다.</li></ul></div>
+    <div class="code-block"><b><code>iter_source_files()</code> + file loop</b><span>source 아래 파일을 안정적으로 순회하고 각 파일에 object id와 source_unit_id를 붙인다.</span><ul><li>현재 lightweight core는 파일 하나를 object_batch source unit 하나로 본다.</li><li>stream window는 core schema에 자리를 남기되 빈 배열로 둔다.</li></ul></div>
+    <div class="code-block"><b><code>file_fingerprint()</code></b><span>URI, path, size, modified_at, checksum을 만든다. checksum은 <code>none</code>, <code>prefix</code>, <code>full</code> mode로 비용을 조절한다.</span></div>
+    <div class="code-block"><b><code>object_stream_manifest</code> body</b><span>source_units, objects, stream_windows, raw_policy를 담는다. 여기의 raw_policy가 M3는 원본을 복제/변형하지 않는다는 계약이다.</span></div>
+    <div class="code-block"><b><code>raw_replay_pointer</code></b><span>M2나 검증 하네스가 원본을 다시 찾을 때 필요한 object URI, source_unit_id, replay contract를 제공한다.</span></div>
+  </div></section>
+  <section><h2>라인/함수 단위 코드 해설</h2><table><thead><tr><th style="width:18%">Line</th><th style="width:24%">코드 단위</th><th>상세 설명</th></tr></thead><tbody>
+    <tr><td>1-6</td><td>import</td><td><code>Path</code>, <code>Any</code>, common helper를 가져온다. L0는 parser가 아니라 manifest builder라서 파일 탐색, fingerprint, JSON write helper만 필요하다.</td></tr>
+    <tr><td>9-16</td><td><code>build_l0()</code> signature</td><td>source, output dir, source/run id, checksum mode/bytes를 받는다. 이 인자가 L0 artifact id, source_unit_id, checksum 비용을 결정한다.</td></tr>
+    <tr><td>19-23</td><td>초기화</td><td><code>l0</code> output directory를 만들고 source file list를 수집한다. <code>objects</code>와 <code>source_units</code> 배열은 이후 모든 layer의 identity 기준이 된다.</td></tr>
+    <tr><td>25-28</td><td>file loop</td><td>각 source file을 순회하며 <code>object_id</code>와 <code>source_unit_id</code>를 만든다. 여기서 만든 id가 L1 replay locator, L10 preview scope, L16 lineage까지 이어진다.</td></tr>
+    <tr><td>29-44</td><td>object entry</td><td>URI, local path, checksum, size, compression, partition, modified_at을 담는다. 원본 payload가 아니라 원본을 다시 찾을 수 있는 주소와 fingerprint만 보존한다.</td></tr>
+    <tr><td>45-53</td><td>source unit entry</td><td>현재 core는 파일 하나를 <code>object_batch</code> source unit으로 둔다. stream window는 빈 배열로 남겨 schema 확장을 막지 않는다.</td></tr>
+    <tr><td>55-74</td><td>manifest body</td><td>source root, source kind, format hint, object count, total bytes, raw policy를 만든다. <code>copy_raw_payload=false</code>, <code>mutate_raw_payload=false</code>가 M3 scope 경계다.</td></tr>
+    <tr><td>75</td><td>manifest hash</td><td>manifest body를 stable hash로 묶어 같은 source inventory인지 비교할 수 있게 한다.</td></tr>
+    <tr><td>76-84</td><td><code>object_stream_manifest</code></td><td>body를 artifact header와 함께 감싼다. access class는 catalog_internal이고 logical layer는 L0로 매핑된다.</td></tr>
+    <tr><td>85-102</td><td><code>source_manifest</code></td><td>source unit id 목록과 object manifest ref를 제공한다. downstream은 raw object list 전체보다 이 manifest ref를 중심으로 연결된다.</td></tr>
+    <tr><td>103-120</td><td><code>raw_replay_pointer</code></td><td>raw restricted artifact다. object URI와 source unit id를 통해 M2/materialization 쪽이 원본을 다시 찾을 수 있게 한다.</td></tr>
+    <tr><td>122-133</td><td>write + return</td><td>JSON artifact를 저장하고 L1/L2가 쓸 files, manifest, replay, objects, source_units를 반환한다.</td></tr>
+  </tbody></table></section>
+  <section><h2>앞뒤 연결</h2><div class="visual"><div class="step active"><b>L0</b><span>raw identity 고정</span></div><div class="step"><b>L1</b><span>Bronze envelope</span></div><div class="step"><b>L2</b><span>profile snapshot</span></div><div class="step ai"><b>L3</b><span>AI-safe evidence</span></div><div class="step handoff"><b>L16</b><span>lineage로 재참조</span></div></div></section>
+  <div class="prev-next"><span></span><a href="l1.html">다음 L1 -></a></div>
+</main><script src="source-snippets.js"></script><script src="source-analysis.js"></script><script src="source-glossary.js"></script><script src="source-plain.js"></script><script src="layer-detail.js"></script></body></html>

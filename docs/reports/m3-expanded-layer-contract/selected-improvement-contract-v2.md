@@ -1,4 +1,6 @@
-# M3 L0-L10 Selected Improvement Contract v2
+# Legacy Reference: M3 L0-L10 Selected Improvement Contract v2
+
+> 이 문서는 과거 L0-L10 v2 계약이다. 최신 canonical 기준은 [M3 Logical L0-L16 Selected Improvement Contract v2.1.1](selected-improvement-contract-v2.1.1-l0-l16.md)이다.
 
 ## 0. 목적과 판정
 

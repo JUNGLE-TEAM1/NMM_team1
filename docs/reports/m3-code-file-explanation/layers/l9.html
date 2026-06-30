@@ -1,0 +1,31 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="icon" href="data:,"><link rel="stylesheet" href="layer-detail.css"><title>L9 User Decision and Approval State</title></head>
+<body><div class="topbar"><div class="topbar-inner"><a class="brand" href="../index.html">M3 Code Atlas</a><div class="top-actions"><a href="index.html">L목록</a><a href="../index.html#flow">전체 흐름</a><a href="../index.html#matrix">책임표</a></div></div></div>
+<main>
+  <header class="hero"><p class="eyebrow">Logical L9</p><h1>User Decision and Approval State</h1><p class="lead">L6-L8 추천 draft를 사용자가 수정/승인/보류/거절한 상태로 고정한다. Gold는 approved일 때만 compile 가능하다.</p><div class="meta"><span class="pill">code: l5_decision.py</span><span class="pill">physical: l5</span><span class="pill">owner: M1/M5 decision state</span></div></header>
+  <div class="content-grid">
+    <section><h2>이 단계가 하는 일</h2><ul><li>Silver policy decision을 preview 가능 상태로 고정한다.</li><li>Gold decision은 not_requested, deferred, needs_owner_review, approved, rejected로 분리한다.</li><li>Gold-to-Gold, product-health, risk, vector handoff를 별도 승인 대상으로 남긴다.</li></ul></section>
+    <section><h2>코드와 산출물</h2><table><tr><th>코드</th><td><a href="../../../../tools/m3_contract/l5_decision.py">tools/m3_contract/l5_decision.py</a></td></tr><tr><th>주요 산출물</th><td><code>approval_state.json</code>, <code>silver_policy_decision.json</code>, <code>gold_policy_decision.json</code>, <code>gold_to_gold_policy_decision.json</code>, <code>recommendation_diff.json</code></td></tr><tr><th>다음 입력</th><td>L10/L11 deterministic compiler</td></tr></table></section>
+  </div>
+  <section><h2>판단 기준</h2><div class="note ok">Gold가 deferred/not_requested여도 Silver preview는 진행될 수 있다. Gold readiness가 Silver readiness를 오염시키면 L9 설계 실패다.</div></section>
+  <section><h2>함수/코드 블록별 상세 해설</h2><div class="code-detail">
+    <div class="code-block"><b><code>build_l5()</code></b><span>physical l5 builder지만 logical L9 decision layer를 만든다. L4 draft와 gold_decision CLI 값을 받아 approval state를 고정한다.</span></div>
+    <div class="code-block"><b><code>VALID_GOLD_DECISIONS</code></b><span>Gold 상태를 <code>not_requested</code>, <code>deferred</code>, <code>needs_owner_review</code>, <code>approved</code>, <code>rejected</code>로 제한한다.</span></div>
+    <div class="code-block"><b><code>silver_policy_decision</code></b><span>Silver draft ref, approval status, selected fields, decision_trace_id, review_id를 담는다. 현재 Silver는 preview를 위해 기본 승인된다.</span></div>
+    <div class="code-block"><b><code>gold_policy_decision</code></b><span>Gold가 approved일 때만 selected_models를 채운다. 그 외에는 draft는 보존하지만 compile 대상은 비워 둔다.</span></div>
+    <div class="code-block"><b><code>approval_state</code></b><span>Silver compile allowed와 Gold compile allowed를 분리한다. product-health, risk score, vector handoff는 별도 승인이 필요하다고 남긴다.</span></div>
+    <div class="code-block"><b><code>_gold_decision_reason()</code></b><span>Gold 상태별 사람이 읽는 reason을 만들어 UI와 report에서 decision 의미가 사라지지 않게 한다.</span></div>
+  </div></section>
+  <section><h2>라인/함수 단위 코드 해설</h2><table><thead><tr><th style="width:18%">Line</th><th style="width:24%">코드 단위</th><th>상세 설명</th></tr></thead><tbody>
+    <tr><td>1-9</td><td>import + valid states</td><td>artifact/write helper를 가져오고 Gold decision enum을 제한한다. 허용되지 않은 Gold 상태는 build 초기에 실패한다.</td></tr>
+    <tr><td>12-24</td><td><code>build_l5()</code> 시작</td><td>L4 result와 gold_decision을 받아 validation하고 physical <code>l5</code> output folder를 만든다.</td></tr>
+    <tr><td>25-42</td><td><code>silver_policy_decision</code></td><td>Silver draft ref, approval status, field 목록, decision_trace_id, review_id를 담는다. Silver compile allowed의 근거가 된다.</td></tr>
+    <tr><td>43-62</td><td><code>gold_policy_decision</code></td><td>Gold approved일 때만 selected_models를 채운다. not_requested/deferred/rejected면 모델을 실행 대상으로 넘기지 않는다.</td></tr>
+    <tr><td>63-78</td><td><code>gold_to_gold_policy_decision</code></td><td>Gold-to-Gold는 optional이라 not_requested, user_selectable, selected_models empty로 시작한다.</td></tr>
+    <tr><td>79-124</td><td><code>approval_state</code></td><td>Silver compile allowed, Gold compile allowed, product-health/risk/vector separate approval requirement를 고정한다.</td></tr>
+    <tr><td>125-138</td><td><code>recommendation_diff</code></td><td>Gold가 승인되지 않았으면 draft는 보존되지만 compile 승인되지 않았다는 diff를 남긴다.</td></tr>
+    <tr><td>139-150</td><td>write + return</td><td>L9 decision artifact 5개를 저장하고 L10-L15가 읽을 결과 dict를 반환한다.</td></tr>
+    <tr><td>153-162</td><td><code>_gold_decision_reason()</code></td><td>Gold 상태별 설명 문구를 만든다. UI에서 보류/거절/승인 의미를 잃지 않게 하는 작은 helper다.</td></tr>
+  </tbody></table></section>
+  <section><h2>앞뒤 연결</h2><div class="visual"><div class="step ai"><b>L6-L8</b><span>drafts</span></div><div class="step active"><b>L9</b><span>approval</span></div><div class="step spec"><b>L10</b><span>Silver spec</span></div><div class="step spec"><b>L11</b><span>Gold spec</span></div><div class="step gate"><b>L15</b><span>readiness</span></div></div></section>
+  <div class="prev-next"><a href="l8.html"><- 이전 L8</a><a href="l10.html">다음 L10 -></a></div>
+</main><script src="source-snippets.js"></script><script src="source-analysis.js"></script><script src="source-glossary.js"></script><script src="source-plain.js"></script><script src="layer-detail.js"></script></body></html>

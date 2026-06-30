@@ -24,7 +24,7 @@ def build_l7(l5: dict[str, Any], l6: dict[str, Any], out_dir: Path, source_id: s
         schema_version="m3.l7.silver_preview_ref.v2_1_1",
         access_class="catalog_internal",
         body={
-            "layer": "L7",
+            "layer": "L13",
             "artifact_type": "silver_preview_ref",
             "execution_owner": "M2",
             "execution_status": "not_executed_by_m3",
@@ -41,7 +41,7 @@ def build_l7(l5: dict[str, Any], l6: dict[str, Any], out_dir: Path, source_id: s
         schema_version="m3.l7.silver_preview_validation_result.v2_1_1",
         access_class="catalog_internal",
         body={
-            "layer": "L7",
+            "layer": "L13",
             "artifact_type": "silver_preview_validation_result",
             "silver_spec_ref": artifact_ref("l6", "silver_transform_spec", source_id, run_id),
             "silver_preview_ref": artifact_ref("l7", "silver_preview", source_id, run_id),
@@ -64,7 +64,7 @@ def build_l7(l5: dict[str, Any], l6: dict[str, Any], out_dir: Path, source_id: s
         schema_version="m3.l7.pii_exposure_report.v2_1_1",
         access_class="catalog_internal",
         body={
-            "layer": "L7",
+            "layer": "L13",
             "artifact_type": "pii_exposure_report",
             "fields": [
                 {
@@ -87,7 +87,7 @@ def build_l7(l5: dict[str, Any], l6: dict[str, Any], out_dir: Path, source_id: s
         schema_version="m3.l7.silver_quality_axis.v2_1_1",
         access_class="catalog_internal",
         body={
-            "layer": "L7",
+            "layer": "L13",
             "artifact_type": "silver_quality_axis",
             "axis_status": structural_status,
             "validation_result_ref": artifact_ref("l7", "silver_preview_validation_result", source_id, run_id),
@@ -102,7 +102,7 @@ def build_l7(l5: dict[str, Any], l6: dict[str, Any], out_dir: Path, source_id: s
         schema_version="m3.l7.silver_quarantine_report.v2_1_1",
         access_class="catalog_internal",
         body={
-            "layer": "L7",
+            "layer": "L13",
             "artifact_type": "silver_quarantine_report",
             "quarantine_required": False,
             "quarantine_lanes": [],

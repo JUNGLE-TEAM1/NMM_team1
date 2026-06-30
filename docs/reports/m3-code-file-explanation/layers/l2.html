@@ -1,0 +1,35 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="icon" href="data:,"><link rel="stylesheet" href="layer-detail.css"><title>L2 Profile Snapshot</title></head>
+<body><div class="topbar"><div class="topbar-inner"><a class="brand" href="../index.html">M3 Code Atlas</a><div class="top-actions"><a href="index.html">L목록</a><a href="../index.html#flow">전체 흐름</a><a href="../index.html#matrix">책임표</a></div></div></div>
+<main>
+  <header class="hero"><p class="eyebrow">Logical L2</p><h1>Profile and Data Shape Snapshot</h1><p class="lead">unknown CSV/JSON/JSONL/Parquet/text source를 format detection, field summary, schema fingerprint, data shape contract로 요약한다.</p><div class="meta"><span class="pill">code: l2_profile.py</span><span class="pill">physical: l2</span><span class="pill">input: L1 bounded sample</span></div></header>
+  <div class="content-grid">
+    <section><h2>이 단계가 하는 일</h2><ul><li>format hint와 sample로 CSV/JSON/JSONL/text를 감지한다.</li><li>field별 type count, null ratio, examples, PII hint를 만든다.</li><li>대용량/streaming claim을 위해 profile이 bounded evidence임을 명시한다.</li></ul></section>
+    <section><h2>코드와 산출물</h2><table><tr><th>코드</th><td><a href="../../../../tools/m3_contract/l2_profile.py">tools/m3_contract/l2_profile.py</a></td></tr><tr><th>주요 산출물</th><td><code>profile_snapshot.json</code>, <code>format_detection.json</code>, <code>schema_fingerprint.json</code>, <code>*_profile.json</code></td></tr><tr><th>다음 입력</th><td>L3 AI-safe evidence reduction</td></tr></table></section>
+  </div>
+  <section><h2>판단 기준</h2><div class="note ok">모르는 구조여도 field/type/null/example 근거가 남아야 한다. Parquet처럼 core parser 한계를 넘는 source는 extension required로 정직하게 표시한다.</div></section>
+  <section><h2>함수/코드 블록별 상세 해설</h2><div class="code-detail">
+    <div class="code-block"><b><code>build_l2()</code></b><span>L1 sample과 L0 file metadata를 받아 format detection, profile snapshot, schema fingerprint를 만든다.</span></div>
+    <div class="code-block"><b><code>detect_format()</code></b><span>format hint가 있으면 따르고, <code>auto</code>면 확장자와 sample으로 JSONL/CSV/text를 판정한다. Parquet은 core parser가 직접 파싱하지 않고 extension required로 넘긴다.</span></div>
+    <div class="code-block"><b><code>_profile_jsonl()</code> / <code>_profile_json_document()</code></b><span>JSONL row 또는 pretty JSON document를 flatten해서 field stats로 만든다. parse 실패는 error count로 남긴다.</span></div>
+    <div class="code-block"><b><code>_profile_csv()</code></b><span>CSV dialect/header/width conflict를 추정하고 field별 type/example/null ratio를 만든다.</span></div>
+    <div class="code-block"><b><code>_data_shape_contract()</code></b><span>structured/semi-structured/extension-required 판단, large source claim boundary, M2/M5/M6 handoff 전제를 기록한다.</span></div>
+    <div class="code-block"><b><code>schema_fingerprint</code></b><span>field summary와 parser stats를 stable hash로 묶어 같은 source 구조인지 비교할 수 있게 한다.</span></div>
+  </div></section>
+  <section><h2>라인/함수 단위 코드 해설</h2><table><thead><tr><th style="width:18%">Line</th><th style="width:24%">코드 단위</th><th>상세 설명</th></tr></thead><tbody>
+    <tr><td>1-9</td><td>import</td><td>CSV/JSON parser, Counter/defaultdict, format detection, JSON flatten, PII hint, type inference helper를 가져온다.</td></tr>
+    <tr><td>12-27</td><td><code>_field_summary()</code></td><td>field별 raw stats를 type counts, observed count, null ratio, examples, PII hint가 있는 summary list로 변환한다.</td></tr>
+    <tr><td>30-39</td><td><code>_record_field()</code></td><td>field 값의 type count와 example을 누적한다. example은 최대 5개, 200자까지만 보존해 AI 입력 과다 노출을 막는다.</td></tr>
+    <tr><td>41-57</td><td><code>_profile_jsonl()</code></td><td>sample line을 JSON parse하고 flatten한다. parse 실패는 error count로 남기고 성공 row만 field stats에 반영한다.</td></tr>
+    <tr><td>60-85</td><td><code>_profile_json_document()</code></td><td>pretty JSON document를 하나로 parse한다. list는 <code>$[]</code>, dict는 <code>$</code> 기준 path로 flatten한다.</td></tr>
+    <tr><td>88-105</td><td><code>_profile_csv()</code></td><td>CSV dialect/header를 추정하고 data rows의 width conflict와 field stats를 만든다.</td></tr>
+    <tr><td>108-169</td><td><code>_data_shape_contract()</code></td><td>format별 structure class와 core support status를 정한다. streaming/bigdata claim, M2/M5/M6 handoff, claim boundary를 명시한다.</td></tr>
+    <tr><td>172-184</td><td><code>build_l2()</code> 시작</td><td>L1 samples, L0 files, format hint를 받아 output folder를 만들고 format detection을 실행한다.</td></tr>
+    <tr><td>185-196</td><td>router</td><td>detected format에 따라 JSON document, JSONL, CSV, fallback text profiler를 선택한다.</td></tr>
+    <tr><td>197-208</td><td>fingerprint basis</td><td>schema fingerprint basis와 source_unit/object ids를 준비하고 data shape contract를 만든다.</td></tr>
+    <tr><td>209-239</td><td><code>profile_body</code></td><td>format router, data shape contract, sample/field count, fields, parser stats, schema fingerprint를 한 artifact body로 묶는다.</td></tr>
+    <tr><td>240-281</td><td>artifact 생성</td><td><code>profile_snapshot</code>, <code>format_detection</code>, format-specific profile, <code>schema_fingerprint</code> artifact를 만든다.</td></tr>
+    <tr><td>282-295</td><td>write + return</td><td>L2 JSON artifact를 저장하고 L3가 쓸 profile/fingerprint/detection/format_profile을 반환한다.</td></tr>
+  </tbody></table></section>
+  <section><h2>앞뒤 연결</h2><div class="visual"><div class="step"><b>L1</b><span>sample records</span></div><div class="step active"><b>L2</b><span>profile snapshot</span></div><div class="step ai"><b>L3</b><span>AI-safe evidence</span></div><div class="step ai"><b>L4</b><span>template retrieval</span></div><div class="step handoff"><b>L16</b><span>schema context</span></div></div></section>
+  <div class="prev-next"><a href="l1.html"><- 이전 L1</a><a href="l3.html">다음 L3 -></a></div>
+</main><script src="source-snippets.js"></script><script src="source-analysis.js"></script><script src="source-glossary.js"></script><script src="source-plain.js"></script><script src="layer-detail.js"></script></body></html>
