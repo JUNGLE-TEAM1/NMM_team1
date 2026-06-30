@@ -30,7 +30,7 @@ def build_l5(
         schema_version="m3.l5.silver_policy_decision.v2_1_1",
         access_class="catalog_internal",
         body={
-            "layer": "L5",
+            "layer": "L9",
             "artifact_type": "silver_policy_decision",
             "silver_draft_ref": artifact_ref("l4", "silver_policy_recommendation_draft", source_id, run_id),
             "decision_status": "approved",
@@ -49,7 +49,7 @@ def build_l5(
         schema_version="m3.l5.gold_policy_decision.v2_1_1",
         access_class="catalog_internal",
         body={
-            "layer": "L5",
+            "layer": "L9",
             "artifact_type": "gold_policy_decision",
             "gold_draft_ref": artifact_ref("l4", "gold_model_recommendation_draft", source_id, run_id),
             "decision_status": gold_decision,
@@ -68,7 +68,7 @@ def build_l5(
         schema_version="m3.l5.gold_to_gold_policy_decision.v2_1_1",
         access_class="catalog_internal",
         body={
-            "layer": "L5",
+            "layer": "L9",
             "artifact_type": "gold_to_gold_policy_decision",
             "decision_status": "not_requested",
             "user_selectable": True,
@@ -84,7 +84,7 @@ def build_l5(
         schema_version="m3.l5.approval_state.v2_1_1",
         access_class="catalog_internal",
         body={
-            "layer": "L5",
+            "layer": "L9",
             "artifact_type": "approval_state",
             "silver": {
                 "decision_ref": artifact_ref("l5", "silver_policy_decision", source_id, run_id),
@@ -101,6 +101,25 @@ def build_l5(
                 "decision_status": "not_requested",
                 "compile_allowed": False,
             },
+            "product_health_gold_template": {
+                "template_ref": artifact_ref("l4", "product_health_gold_template_draft", source_id, run_id),
+                "decision_status": "deferred",
+                "compile_allowed": False,
+                "reason": "Presentation product health template is visible for review but cannot compile until explicitly approved by the user.",
+            },
+            "risk_score_policy": {
+                "policy_ref": artifact_ref("l4", "risk_score_policy_recommendation_draft", source_id, run_id),
+                "decision_status": "deferred",
+                "compile_allowed": False,
+                "reason": "Risk score formula and weights are AI/model recommendations and must be approved or edited before deterministic Gold execution.",
+            },
+            "vector_embedding_handoff": {
+                "template_ref": artifact_ref("l4", "vector_embedding_handoff_template", source_id, run_id),
+                "decision_status": "deferred",
+                "handoff_allowed": False,
+                "compile_allowed": False,
+                "reason": "Embedding/vector index creation is an extension handoff and requires separate M5/M6 approval.",
+            },
         },
     )
     diff = with_header(
@@ -111,7 +130,7 @@ def build_l5(
         schema_version="m3.l5.recommendation_diff.v2_1_1",
         access_class="catalog_internal",
         body={
-            "layer": "L5",
+            "layer": "L9",
             "artifact_type": "recommendation_diff",
             "silver_changes_from_draft": [],
             "gold_changes_from_draft": [] if gold_decision == "approved" else ["gold draft retained but not approved for compile"],

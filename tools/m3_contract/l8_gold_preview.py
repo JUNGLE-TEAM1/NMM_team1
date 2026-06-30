@@ -24,7 +24,7 @@ def build_l8(l5: dict[str, Any], l6: dict[str, Any], out_dir: Path, source_id: s
         schema_version="m3.l8.gold_preview_ref.v2_1_1",
         access_class="catalog_internal",
         body={
-            "layer": "L8",
+            "layer": "L14",
             "artifact_type": "gold_preview_ref",
             "execution_owner": "M2",
             "execution_status": "not_executed_by_m3" if approved else "not_requested_or_deferred",
@@ -41,7 +41,7 @@ def build_l8(l5: dict[str, Any], l6: dict[str, Any], out_dir: Path, source_id: s
         schema_version="m3.l8.metric_definition_draft.v2_1_1",
         access_class="catalog_internal",
         body={
-            "layer": "L8",
+            "layer": "L14",
             "artifact_type": "metric_definition_draft",
             "gold_l5_status": gold_status,
             "metrics": metric_definitions,
@@ -56,7 +56,7 @@ def build_l8(l5: dict[str, Any], l6: dict[str, Any], out_dir: Path, source_id: s
         schema_version="m3.l8.gold_readiness_input_report.v2_1_1",
         access_class="catalog_internal",
         body={
-            "layer": "L8",
+            "layer": "L14",
             "artifact_type": "gold_readiness_input_report",
             "gold_l5_status": gold_status,
             "gold_requested": gold_requested,
@@ -74,7 +74,7 @@ def build_l8(l5: dict[str, Any], l6: dict[str, Any], out_dir: Path, source_id: s
         schema_version="m3.l8.gold_preview_validation_result.v2_1_1",
         access_class="catalog_internal",
         body={
-            "layer": "L8",
+            "layer": "L14",
             "artifact_type": "gold_preview_validation_result",
             "gold_l5_status": gold_status,
             "status": "pass" if approved and metric_definitions else "not_requested" if gold_status == "not_requested" else "deferred" if gold_status == "deferred" else "warn",
@@ -92,7 +92,7 @@ def build_l8(l5: dict[str, Any], l6: dict[str, Any], out_dir: Path, source_id: s
         run_id=run_id,
         schema_version="m3.l8.semantic_caveat_report.v2_1_1",
         access_class="catalog_internal",
-        body={"layer": "L8", "artifact_type": "semantic_caveat_report", "caveats": _gold_caveats(gold_status, metric_definitions)},
+        body={"layer": "L14", "artifact_type": "semantic_caveat_report", "caveats": _gold_caveats(gold_status, metric_definitions)},
     )
     write_json(layer_dir / "gold_preview_ref.json", preview)
     write_json(layer_dir / "gold_preview_result.json", preview)

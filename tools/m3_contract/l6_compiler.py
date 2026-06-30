@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any
 
 from .common import artifact_ref, ensure_dir, with_header, write_json
+from .layer_map import LOGICAL_LAYERS, LOGICAL_LAYER_VERSION
 
 
 SUPPORTED_ACTIONS = {
@@ -24,7 +25,7 @@ SUPPORTED_ACTIONS = {
 
 
 def build_l6(l0: dict[str, Any], l5: dict[str, Any], out_dir: Path, source_id: str, run_id: str) -> dict[str, Any]:
-    """Compile L5 decisions into deterministic preview-only specs."""
+    """Compile logical L9 decisions into deterministic preview-only L10/L11 specs."""
 
     layer_dir = out_dir / "l6"
     ensure_dir(layer_dir)
@@ -41,7 +42,7 @@ def build_l6(l0: dict[str, Any], l5: dict[str, Any], out_dir: Path, source_id: s
         schema_version="m3.l6.silver_transform_spec.v2_1_1",
         access_class="catalog_internal",
         body={
-            "layer": "L6",
+            "layer": "L10",
             "artifact_type": "silver_transform_spec",
             "execution_owner": "M2",
             "write_mode": "preview_only",
@@ -60,7 +61,7 @@ def build_l6(l0: dict[str, Any], l5: dict[str, Any], out_dir: Path, source_id: s
         schema_version="m3.l6.gold_generation_spec.v2_1_1",
         access_class="catalog_internal",
         body={
-            "layer": "L6",
+            "layer": "L11",
             "artifact_type": "gold_generation_spec",
             "execution_owner": "M2",
             "request_state": l5["gold_decision"]["decision_status"],
@@ -69,7 +70,7 @@ def build_l6(l0: dict[str, Any], l5: dict[str, Any], out_dir: Path, source_id: s
             "output_ref": artifact_ref("l8", "gold_preview", source_id, run_id),
             "preview_scope": {"source_unit_ids": source_unit_ids, "object_ids": [item["object_id"] for item in l0["objects"]], "stream_window_ids": []},
             "operations": gold_operations,
-            "note": "Gold spec is executable only when L5 gold decision is approved; otherwise it records the deferred/not_requested state.",
+            "note": "Gold spec is executable only when L9 gold decision is approved; otherwise it records the deferred/not_requested state.",
         },
     )
     graph = with_header(
@@ -80,20 +81,20 @@ def build_l6(l0: dict[str, Any], l5: dict[str, Any], out_dir: Path, source_id: s
         schema_version="m3.l6.layered_transform_graph.v2_1_1",
         access_class="catalog_internal",
         body={
-            "layer": "L6",
-            "nodes": [{"id": f"l{index}", "layer": f"L{index}"} for index in range(11)],
-            "edges": [
-                {"from": "l0", "to": "l1"},
-                {"from": "l1", "to": "l2"},
-                {"from": "l2", "to": "l3"},
-                {"from": "l3", "to": "l4"},
-                {"from": "l4", "to": "l5"},
-                {"from": "l5", "to": "l6"},
-                {"from": "l6", "to": "l7"},
-                {"from": "l7", "to": "l8"},
-                {"from": "l8", "to": "l9"},
-                {"from": "l9", "to": "l10"},
+            "layer": "L12",
+            "logical_layer_version": LOGICAL_LAYER_VERSION,
+            "physical_artifact_layout": "l0-l10 folders retained for artifact_id compatibility",
+            "nodes": [
+                {
+                    "id": item["layer"].lower(),
+                    "layer": item["layer"],
+                    "name": item["name"],
+                    "old_layer": item["old_layer"],
+                    "physical_artifacts": item["physical_artifacts"],
+                }
+                for item in LOGICAL_LAYERS
             ],
+            "edges": [{"from": f"l{index}", "to": f"l{index + 1}"} for index in range(len(LOGICAL_LAYERS) - 1)],
         },
     )
     unsupported_report = with_header(
@@ -103,7 +104,7 @@ def build_l6(l0: dict[str, Any], l5: dict[str, Any], out_dir: Path, source_id: s
         run_id=run_id,
         schema_version="m3.l6.unsupported_action_report.v2_1_1",
         access_class="catalog_internal",
-        body={"layer": "L6", "artifact_type": "unsupported_action_report", "unsupported_actions": unsupported},
+        body={"layer": "L12", "artifact_type": "unsupported_action_report", "unsupported_actions": unsupported},
     )
     validation = _compiler_validation(source_id, run_id, silver_spec, gold_spec, unsupported)
     write_json(layer_dir / "silver_transform_spec.json", silver_spec)
@@ -195,8 +196,8 @@ def _unsupported_actions(l5: dict[str, Any]) -> list[dict[str, Any]]:
                         "source_path": field["source_path"],
                         "target_name": field["target_name"],
                         "reason": "Action is not compiler executable.",
-                        "blocked_reason": "Only L5-approved deterministic actions can pass to L6.",
-                        "recommended_owner_action": "Resolve in L5 decision UI.",
+                        "blocked_reason": "Only L9-approved deterministic actions can pass to L10/L11 compilers.",
+                        "recommended_owner_action": "Resolve in L9 decision UI.",
                         "safe_alternative": "select",
                     }
                 )
@@ -214,13 +215,13 @@ def _compiler_validation(
         {
             "pattern": "per_row_ai_call",
             "status": "pass",
-            "evidence": "L6 operations are deterministic and contain no AI call operation.",
+            "evidence": "L10/L11 operations are deterministic and contain no AI call operation.",
             "blocking_reason": None,
         },
         {
             "pattern": "generated_code_execution",
             "status": "pass",
-            "evidence": "L6 operation vocabulary is declarative.",
+            "evidence": "L10/L11 operation vocabulary is declarative.",
             "blocking_reason": None,
         },
         {
@@ -232,14 +233,14 @@ def _compiler_validation(
         {
             "pattern": "preview_only_write_mode",
             "status": "pass" if silver_spec["write_mode"] == "preview_only" and gold_spec["write_mode"] == "preview_only" else "block",
-            "evidence": "Both L6 specs must use write_mode=preview_only.",
+            "evidence": "Both L10/L11 specs must use write_mode=preview_only.",
             "blocking_reason": None,
         },
         {
             "pattern": "unsupported_action",
             "status": "block" if unsupported else "pass",
             "evidence": f"{len(unsupported)} unsupported actions found.",
-            "blocking_reason": "Unsupported actions must be resolved in L5." if unsupported else None,
+            "blocking_reason": "Unsupported actions must be resolved in L9." if unsupported else None,
         },
         {
             "pattern": "legacy_window_id",
@@ -259,7 +260,7 @@ def _compiler_validation(
         schema_version="m3.l6.compiler_validation_result.v2_1_1",
         access_class="catalog_internal",
         body={
-            "layer": "L6",
+            "layer": "L12",
             "artifact_type": "compiler_validation_result",
             "compiler_version": "m3.compiler.v2_1_1",
             "overall_status": "block" if any(check["status"] == "block" for check in checks) else "pass",

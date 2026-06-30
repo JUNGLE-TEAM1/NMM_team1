@@ -61,16 +61,26 @@ def with_header(
     body: dict[str, Any],
     producer: str = "M3",
 ) -> dict[str, Any]:
+    from .layer_map import LOGICAL_LAYER_VERSION, logical_layer_for_artifact
+
+    logical_layer = logical_layer_for_artifact(layer, name)
+    header = artifact_header(
+        layer=layer,
+        name=name,
+        source_id=source_id,
+        run_id=run_id,
+        schema_version=schema_version,
+        producer=producer,
+        access_class=access_class,
+    )
+    header["physical_layer"] = layer.upper()
+    header["logical_layer"] = logical_layer
+    header["logical_layer_version"] = LOGICAL_LAYER_VERSION
     return {
-        "artifact_header": artifact_header(
-            layer=layer,
-            name=name,
-            source_id=source_id,
-            run_id=run_id,
-            schema_version=schema_version,
-            producer=producer,
-            access_class=access_class,
-        ),
+        "artifact_header": header,
+        "physical_layer": layer.upper(),
+        "logical_layer": logical_layer,
+        "logical_layer_version": LOGICAL_LAYER_VERSION,
         **body,
     }
 
@@ -180,6 +190,8 @@ def detect_format(files: list[Path], sample_rows: list[dict[str, Any]], format_h
         return {"format": "json", "confidence": 0.8, "reason": "file extension indicates JSON"}
     if ".csv" in suffixes:
         return {"format": "csv", "confidence": 0.8, "reason": "file extension indicates CSV"}
+    if ".parquet" in suffixes:
+        return {"format": "parquet", "confidence": 0.9, "reason": "file extension indicates Parquet; M3 core records extension-required profile contract"}
     json_success = 0
     csv_delimiter_votes: Counter[str] = Counter()
     for row in sample_rows[:100]:
@@ -285,6 +297,14 @@ def semantic_hints(name: str) -> list[str]:
         hints.append("measure_candidate")
     if any(token in lowered for token in ["time", "date", "timestamp", "created", "updated"]):
         hints.append("time_candidate")
+    if any(token in lowered for token in ["review", "comment", "text", "description", "title", "body"]):
+        hints.append("text_candidate")
+    if any(token in lowered for token in ["review", "rating", "sentiment", "complaint"]):
+        hints.append("review_signal_candidate")
+    if any(token in lowered for token in ["conversion", "purchase", "order", "session", "click", "impression", "cart", "checkout"]):
+        hints.append("conversion_signal_candidate")
+    if any(token in lowered for token in ["delivery", "ship", "late", "arrival", "delivered", "eta"]):
+        hints.append("delivery_signal_candidate")
     if pii_hint(name):
         hints.append("pii_candidate")
     return hints

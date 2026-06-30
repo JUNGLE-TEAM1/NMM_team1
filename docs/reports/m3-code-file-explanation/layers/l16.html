@@ -1,0 +1,36 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="icon" href="data:,"><link rel="stylesheet" href="layer-detail.css"><title>L16 Catalog Query Vector Handoff</title></head>
+<body><div class="topbar"><div class="topbar-inner"><a class="brand" href="../index.html">M3 Code Atlas</a><div class="top-actions"><a href="index.html">L목록</a><a href="../index.html#flow">전체 흐름</a><a href="../index.html#matrix">책임표</a></div></div></div>
+<main>
+  <header class="hero"><p class="eyebrow">Logical L16</p><h1>Catalog, Query, and Vector Handoff Package</h1><p class="lead">M3 core의 마지막 단계다. M5가 저장할 catalog sync package와 M6가 사용할 SQL/query/vector context를 만든다.</p><div class="meta"><span class="pill">code: l10_handoff.py</span><span class="pill">physical: l10</span><span class="pill">to: M5/M6</span></div></header>
+  <div class="content-grid">
+    <section><h2>이 단계가 하는 일</h2><ul><li>catalog metadata draft, SQL context pack, field lineage를 만든다.</li><li>semantic catalog vector index template을 만든다.</li><li>artifact_reference_manifest와 exports package를 만든다.</li></ul></section>
+    <section><h2>코드와 산출물</h2><table><tr><th>코드</th><td><a href="../../../../tools/m3_contract/l10_handoff.py">tools/m3_contract/l10_handoff.py</a></td></tr><tr><th>주요 산출물</th><td><code>catalog_sync_contract_package.json</code>, <code>sql_context_pack.json</code>, <code>semantic_catalog_vector_index_template.json</code>, <code>artifact_reference_manifest.json</code>, <code>exports/*</code></td></tr><tr><th>다음 입력</th><td>M5 catalog storage, M6 SQL/AI/vector context</td></tr></table></section>
+  </div>
+  <section><h2>판단 기준</h2><div class="note">L16은 package를 만든다. 실제 catalog DB write, SQL serving, vector index build는 downstream 책임이다. M3가 운영 저장소를 직접 소유한다고 말하면 안 된다.</div></section>
+  <section><h2>함수/코드 블록별 상세 해설</h2><div class="code-detail">
+    <div class="code-block"><b><code>build_l10()</code></b><span>physical l10 builder지만 logical L16 handoff package를 만든다. L9 gate summary와 L5/L6/L7/L8 artifact들을 묶는다.</span></div>
+    <div class="code-block"><b><code>_allowed_columns()</code></b><span>L5 Silver fields 중 query forbidden field를 제외하고 M6 query-safe column 목록을 만든다.</span></div>
+    <div class="code-block"><b><code>_catalog_metadata()</code></b><span>publish 가능 여부, layer status, quality axes, semantic refs, caveats, lineage/sql refs를 catalog draft로 만든다.</span></div>
+    <div class="code-block"><b><code>_sql_context()</code></b><span>M6가 사용할 SQL context pack을 만든다. Silver table은 기본 포함하고, Gold metric이 준비된 경우에만 Gold table을 추가한다.</span></div>
+    <div class="code-block"><b><code>_semantic_catalog_vector_index_template()</code></b><span>dataset card, product-health template doc, schema field docs, metric docs, filter key, retrieval policy, accuracy boundary를 만든다.</span></div>
+    <div class="code-block"><b><code>_catalog_sync_package()</code></b><span>M5/M6가 필요한 artifact refs, version set, m6_context_status, Gold metric 보유 여부를 하나로 묶는다.</span></div>
+    <div class="code-block"><b><code>_artifact_reference_manifest()</code></b><span>output directory 아래 JSON artifact를 읽어 artifact id/name/access/logical/physical layer, checksum, URI, byte size를 manifest로 만든다.</span></div>
+    <div class="code-block"><b><code>export_*()</code> functions</b><span><code>export_transform_spec</code>, <code>export_schema_definition</code>, <code>export_workflow_definition</code>, <code>export_catalog_metadata</code>가 M2/M5/M6 소비용 export 파일을 만든다.</span></div>
+  </div></section>
+  <section><h2>라인/함수 단위 코드 해설</h2><table><thead><tr><th style="width:18%">Line</th><th style="width:24%">코드 단위</th><th>상세 설명</th></tr></thead><tbody>
+    <tr><td>11-32</td><td><code>build_l10()</code> 시작</td><td>L9 gate summary에서 M6 context status를 읽고 catalog metadata, SQL context, lineage, sync package, vector template을 준비한다.</td></tr>
+    <tr><td>34-40</td><td>primary handoff artifacts</td><td>catalog metadata draft, SQL context pack, field lineage, catalog sync package, semantic vector template, artifact manifest를 저장한다.</td></tr>
+    <tr><td>41-59</td><td><code>handoff_package</code></td><td>catalog package, metadata, SQL context, vector template, artifact manifest, M6 context status를 하나로 묶는다.</td></tr>
+    <tr><td>60-71</td><td>manifest refresh + exports</td><td>handoff package 생성 후 artifact manifest를 다시 만들고 exports 폴더에 transform/schema/workflow/catalog metadata를 쓴다.</td></tr>
+    <tr><td>89-106</td><td><code>_allowed_columns()</code></td><td>L5 Silver fields 중 query forbidden field를 제외하고 M6 query-safe column 목록을 만든다.</td></tr>
+    <tr><td>109-165</td><td><code>_catalog_metadata()</code></td><td>publish 가능 여부, dataset id/name, layer status, quality axes, semantic refs, caveats, lineage/sql refs를 만든다.</td></tr>
+    <tr><td>168-208</td><td><code>_sql_context()</code></td><td>M6용 SQL context pack을 만든다. Silver table은 기본 포함, Gold metric이 준비된 경우에만 Gold table을 추가한다.</td></tr>
+    <tr><td>211-232</td><td><code>_field_lineage()</code></td><td>source path, silver field, recommended actions, PII handling을 field-level lineage로 만든다.</td></tr>
+    <tr><td>235-365</td><td><code>_semantic_catalog_vector_index_template()</code></td><td>dataset card, product-health template doc, schema field docs, metric definition docs, filter key, retrieval policy, accuracy boundary를 만든다.</td></tr>
+    <tr><td>368-428</td><td><code>_catalog_sync_package()</code></td><td>M5/M6가 필요한 artifact refs, version set, M6 context status, Gold metric 보유 여부를 묶는다.</td></tr>
+    <tr><td>431-484</td><td><code>_artifact_reference_manifest()</code></td><td>JSON artifact를 읽어 artifact id/name/access/logical/physical layer, checksum, URI, byte size를 manifest로 만든다.</td></tr>
+    <tr><td>487-674</td><td><code>export_*()</code> helpers</td><td>M2/M5/M6 소비용 transform spec, schema definition, workflow definition, catalog metadata export를 만든다.</td></tr>
+  </tbody></table></section>
+  <section><h2>앞뒤 연결</h2><div class="visual"><div class="step gate"><b>L15</b><span>readiness</span></div><div class="step active handoff"><b>L16</b><span>handoff package</span></div><div class="step"><b>M5</b><span>catalog storage</span></div><div class="step"><b>M6</b><span>query context</span></div><div class="step"><b>Vector</b><span>extension hook</span></div></div></section>
+  <div class="prev-next"><a href="l15.html"><- 이전 L15</a><a href="../index.html">전체 보드 -></a></div>
+</main><script src="source-snippets.js"></script><script src="source-analysis.js"></script><script src="source-glossary.js"></script><script src="source-plain.js"></script><script src="layer-detail.js"></script></body></html>

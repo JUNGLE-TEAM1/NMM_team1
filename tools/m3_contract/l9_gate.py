@@ -25,7 +25,7 @@ def build_l9(l7: dict[str, Any], l8: dict[str, Any], out_dir: Path, source_id: s
         schema_version="m3.l9.processing_quality_axis.v2_1_1",
         access_class="catalog_internal",
         body={
-            "layer": "L9",
+            "layer": "L15",
             "artifact_type": "processing_quality_axis",
             "axis_name": "processing_quality",
             "axis_status": processing_status,
@@ -42,7 +42,7 @@ def build_l9(l7: dict[str, Any], l8: dict[str, Any], out_dir: Path, source_id: s
         schema_version="m3.l9.catalog_safety_axis.v2_1_1",
         access_class="catalog_internal",
         body={
-            "layer": "L9",
+            "layer": "L15",
             "artifact_type": "catalog_safety_axis",
             "axis_name": "catalog_safety",
             "axis_status": catalog_status,
@@ -59,7 +59,7 @@ def build_l9(l7: dict[str, Any], l8: dict[str, Any], out_dir: Path, source_id: s
         schema_version="m3.l9.gold_readiness_axis.v2_1_1",
         access_class="catalog_internal",
         body={
-            "layer": "L9",
+            "layer": "L15",
             "artifact_type": "gold_readiness_axis",
             "axis_name": "gold_readiness",
             "axis_status": gold_status,
@@ -81,7 +81,7 @@ def build_l9(l7: dict[str, Any], l8: dict[str, Any], out_dir: Path, source_id: s
         schema_version="m3.l9.gate_summary.v2_1_1",
         access_class="catalog_internal",
         body={
-            "layer": "L9",
+            "layer": "L15",
             "artifact_type": "gate_summary",
             "gate_version": "m3.gate.v2_1_1",
             "processing_quality_axis_ref": artifact_ref("l9", "processing_quality_axis", source_id, run_id),

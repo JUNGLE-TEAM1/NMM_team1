@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from .common import artifact_ref, ensure_dir, file_sha256, with_header, write_json
+from .layer_map import LOGICAL_LAYER_VERSION
 
 
 def build_l10(
@@ -28,11 +29,13 @@ def build_l10(
     sql_context = _sql_context(source_id, run_id, allowed_columns, metrics, l9, m6_context_status)
     lineage = _field_lineage(source_id, run_id, l5)
     contract_package = _catalog_sync_package(source_id, run_id, m6_context_status, bool(metrics))
+    semantic_vector_template = _semantic_catalog_vector_index_template(source_id, run_id, catalog, sql_context, m6_context_status)
 
     write_json(layer_dir / "catalog_metadata_draft.json", catalog)
     write_json(layer_dir / "sql_context_pack.json", sql_context)
     write_json(layer_dir / "field_level_lineage.json", lineage)
     write_json(layer_dir / "catalog_sync_contract_package.json", contract_package)
+    write_json(layer_dir / "semantic_catalog_vector_index_template.json", semantic_vector_template)
     artifact_manifest = _artifact_reference_manifest(out_dir, source_id, run_id)
     write_json(layer_dir / "artifact_reference_manifest.json", artifact_manifest)
     handoff = with_header(
@@ -43,11 +46,12 @@ def build_l10(
         schema_version="m3.l10.handoff_package.v2_1_1",
         access_class="catalog_internal",
         body={
-            "layer": "L10",
+            "layer": "L16",
             "artifact_type": "handoff_package",
             "catalog_sync_contract_package_ref": artifact_ref("l10", "catalog_sync_contract_package", source_id, run_id),
             "catalog_metadata_ref": artifact_ref("l10", "catalog_metadata_draft", source_id, run_id),
             "sql_context_ref": artifact_ref("l10", "sql_context_pack", source_id, run_id),
+            "semantic_catalog_vector_index_template_ref": artifact_ref("l10", "semantic_catalog_vector_index_template", source_id, run_id),
             "artifact_reference_manifest_ref": artifact_ref("l10", "artifact_reference_manifest", source_id, run_id),
             "m6_context_status": m6_context_status,
         },
@@ -70,6 +74,7 @@ def build_l10(
         "sql_context": sql_context,
         "lineage": lineage,
         "catalog_sync_package": contract_package,
+        "semantic_vector_template": semantic_vector_template,
         "artifact_manifest": artifact_manifest,
         "handoff": handoff,
         "exports": {
@@ -118,16 +123,17 @@ def _catalog_metadata(
         schema_version="m3.l10.catalog_metadata.v2_1_1",
         access_class="catalog_internal",
         body={
-            "layer": "L10",
+            "layer": "L16",
             "artifact_type": "catalog_metadata_draft",
             "publish_decision": {
                 "catalog_public_allowed": m6_context_status["silver_context_status"] in {"ready", "ready_with_caveat"},
-                "reason": "Derived from L9 processing and catalog safety axes.",
+                "reason": "Derived from L15 processing and catalog safety axes.",
                 "decided_by_axis_ref": artifact_ref("l9", "gate_summary", source_id, run_id),
             },
             "dataset_id": f"dataset_{source_id}_silver",
             "dataset_name": f"{source_id} Silver",
             "source_format": profile["format_detection"]["format"],
+            "data_shape_contract": profile.get("data_shape_contract", {}),
             "layers": [
                 {"name": "bronze", "status": "available"},
                 {"name": "silver", "status": "available" if m6_context_status["silver_context_status"] != "blocked" else "blocked"},
@@ -138,6 +144,20 @@ def _catalog_metadata(
                 "catalog_safety": l9["catalog_axis"]["axis_status"],
                 "gold_readiness": l9["gold_axis"]["axis_status"],
             },
+            "semantic_templates": [
+                {
+                    "template_id": "gold_product_health",
+                    "template_ref": artifact_ref("l4", "product_health_gold_template_draft", source_id, run_id),
+                    "status": "draft_deferred",
+                    "catalog_claim": "template_available_not_executed",
+                },
+                {
+                    "template_id": "vector_embedding_handoff",
+                    "template_ref": artifact_ref("l4", "vector_embedding_handoff_template", source_id, run_id),
+                    "status": "draft_deferred",
+                    "catalog_claim": "handoff_template_available_not_indexed",
+                },
+            ],
             "caveats": l9["gate_summary"]["required_caveats"],
             "lineage_ref": artifact_ref("l10", "field_level_lineage", source_id, run_id),
             "sql_context_ref": artifact_ref("l10", "sql_context_pack", source_id, run_id),
@@ -166,12 +186,16 @@ def _sql_context(
         schema_version="m3.l10.sql_context_pack.v2_1_1",
         access_class="query_context_safe",
         body={
-            "layer": "L10",
+            "layer": "L16",
             "artifact_type": "sql_context_pack",
             "m6_context_status": m6_context_status,
             "allowed_tables": ["silver_preview"] + (["gold_preview"] if metrics else []),
             "allowed_columns": allowed_columns,
             "metrics": metrics,
+            "semantic_template_refs": {
+                "product_health_gold_template_ref": artifact_ref("l4", "product_health_gold_template_draft", source_id, run_id),
+                "vector_embedding_handoff_template_ref": artifact_ref("l4", "vector_embedding_handoff_template", source_id, run_id),
+            },
             "forbidden_fields": [],
             "freshness": {"latest_processed_at": None, "freshness_sla": None, "stale_warning": None},
             "query_caveats": caveats,
@@ -193,7 +217,7 @@ def _field_lineage(source_id: str, run_id: str, l5: dict[str, Any]) -> dict[str,
         schema_version="m3.l10.field_level_lineage.v2_1_1",
         access_class="catalog_internal",
         body={
-            "layer": "L10",
+            "layer": "L16",
             "artifact_type": "field_level_lineage",
             "lineage": [
                 {
@@ -208,6 +232,139 @@ def _field_lineage(source_id: str, run_id: str, l5: dict[str, Any]) -> dict[str,
     )
 
 
+def _semantic_catalog_vector_index_template(
+    source_id: str,
+    run_id: str,
+    catalog: dict[str, Any],
+    sql_context: dict[str, Any],
+    m6_context_status: dict[str, str],
+) -> dict[str, Any]:
+    dataset_id = catalog["dataset_id"]
+    table_names = sql_context["allowed_tables"]
+    documents: list[dict[str, Any]] = [
+        {
+            "doc_id": f"{dataset_id}:{run_id}:dataset_card",
+            "document_type": "dataset_card",
+            "text_for_embedding": (
+                f"Dataset {catalog['dataset_name']} has layer status {catalog['layers']} and query tables {table_names}. "
+                f"It is produced from source {source_id} run {run_id} with quality {catalog['quality']}."
+            ),
+            "payload": {
+                "dataset_id": dataset_id,
+                "source_id": source_id,
+                "run_id": run_id,
+                "layer": "silver_or_gold",
+                "table_names": table_names,
+                "m6_silver_context_status": m6_context_status["silver_context_status"],
+                "m6_gold_context_status": m6_context_status["gold_context_status"],
+                "access_class": "query_context_safe",
+            },
+        },
+        {
+            "doc_id": f"{dataset_id}:{run_id}:product_health_template",
+            "document_type": "semantic_template",
+            "text_for_embedding": (
+                "Product health Gold template includes gold_product_health, risk_score, negative_review_rate, "
+                "conversion_rate, late_delivery_rate, review_count, average_rating, view_count, purchase_count, and delivery_count. "
+                "It is a draft template unless L9 approval and L15 Gold readiness make it query-ready."
+            ),
+            "payload": {
+                "dataset_id": dataset_id,
+                "source_id": source_id,
+                "run_id": run_id,
+                "template_id": "gold_product_health",
+                "metric_ids": ["risk_score", "negative_review_rate", "conversion_rate", "late_delivery_rate"],
+                "artifact_ref": artifact_ref("l4", "product_health_gold_template_draft", source_id, run_id),
+                "access_class": "catalog_internal",
+            },
+        },
+    ]
+    for column in sql_context["allowed_columns"]:
+        documents.append(
+            {
+                "doc_id": f"{dataset_id}:{run_id}:field:{column['column']}",
+                "document_type": "schema_field",
+                "text_for_embedding": (
+                    f"Column {column['column']} in table {column['table']} has type {column['data_type']} "
+                    f"from source path {column['source_path']}. {column['semantic_description']}"
+                ),
+                "payload": {
+                    "dataset_id": dataset_id,
+                    "source_id": source_id,
+                    "run_id": run_id,
+                    "table_name": column["table"],
+                    "field_name": column["column"],
+                    "data_type": column["data_type"],
+                    "pii_handling": column["pii_handling"],
+                    "catalog_exposure": column["catalog_exposure"],
+                    "query_context_exposure": column["query_context_exposure"],
+                    "access_class": "query_context_safe",
+                },
+            }
+        )
+    for metric in sql_context["metrics"]:
+        documents.append(
+            {
+                "doc_id": f"{dataset_id}:{run_id}:metric:{metric['name']}",
+                "document_type": "metric_definition",
+                "text_for_embedding": (
+                    f"Metric {metric['name']} belongs to Gold model {metric['gold_model_id']} "
+                    f"with operation {metric['operation']} over field {metric.get('field')} and grain {metric.get('grain', [])}."
+                ),
+                "payload": {
+                    "dataset_id": dataset_id,
+                    "source_id": source_id,
+                    "run_id": run_id,
+                    "metric_id": metric["metric_id"],
+                    "metric_name": metric["name"],
+                    "gold_model_id": metric["gold_model_id"],
+                    "semantic_status": metric["semantic_status"],
+                    "access_class": "query_context_safe",
+                },
+            }
+        )
+    return with_header(
+        layer="l10",
+        name="semantic_catalog_vector_index_template",
+        source_id=source_id,
+        run_id=run_id,
+        schema_version="m3.l10.semantic_catalog_vector_index_template.v2_1_2",
+        access_class="catalog_internal",
+        body={
+            "layer": "L16",
+            "artifact_type": "semantic_catalog_vector_index_template",
+            "index_intent": "schema_metric_catalog_retrieval",
+            "execution_owner": "M6_or_vector_extension",
+            "m3_embedding_execution": False,
+            "vector_db_target": "qdrant_or_pinecone_compatible",
+            "documents": documents,
+            "payload_filter_keys": [
+                "dataset_id",
+                "source_id",
+                "run_id",
+                "document_type",
+                "table_name",
+                "field_name",
+                "metric_id",
+                "template_id",
+                "access_class",
+                "query_context_exposure",
+            ],
+            "recommended_search_policy": {
+                "first_filter": ["dataset_id", "access_class", "query_context_exposure"],
+                "then_vector_search": True,
+                "fallback_when_vector_unavailable": "use exact catalog/sql_context metadata matching",
+                "blocked_use": "Do not use vector similarity as proof that a metric value is correct.",
+            },
+            "accuracy_boundary": {
+                "improves": "dataset, schema field, and metric candidate retrieval for M6 natural-language routing",
+                "does_not_improve": "numeric correctness of Gold output values without deterministic transform execution and validation",
+                "must_validate_with": ["L9 approval_state", "L15 gate_summary", "M2 execution evidence", "M6 SQL guardrail"],
+            },
+        },
+    )
+
+
 def _catalog_sync_package(source_id: str, run_id: str, m6_context_status: dict[str, str], has_gold_metrics: bool) -> dict[str, Any]:
     return with_header(
         layer="l10",
@@ -217,7 +374,7 @@ def _catalog_sync_package(source_id: str, run_id: str, m6_context_status: dict[s
         schema_version="m3.l10.catalog_sync_contract.v2_1_1",
         access_class="catalog_internal",
         body={
-            "layer": "L10",
+            "layer": "L16",
             "artifact_type": "catalog_sync_contract_package",
             "artifact_reference_manifest_ref": artifact_ref("l10", "artifact_reference_manifest", source_id, run_id),
             "m6_context_status": m6_context_status,
@@ -240,7 +397,14 @@ def _catalog_sync_package(source_id: str, run_id: str, m6_context_status: dict[s
                 "rescue_lane_ref": artifact_ref("l1", "rescue_lane", source_id, run_id),
                 "profile_snapshot_ref": artifact_ref("l2", "profile_snapshot", source_id, run_id),
                 "redaction_map_ref": artifact_ref("l3", "redaction_map", source_id, run_id),
+                "unknown_data_recommendation_pack_ref": artifact_ref("l3", "unknown_data_recommendation_pack", source_id, run_id),
+                "metadata_retrieval_index_plan_ref": artifact_ref("l3", "metadata_retrieval_index_plan", source_id, run_id),
+                "gold_template_candidate_retrieval_ref": artifact_ref("l3", "gold_template_candidate_retrieval", source_id, run_id),
+                "candidate_grounding_report_ref": artifact_ref("l3", "candidate_grounding_report", source_id, run_id),
                 "gold_draft_ref": artifact_ref("l4", "gold_model_recommendation_draft", source_id, run_id),
+                "product_health_gold_template_ref": artifact_ref("l4", "product_health_gold_template_draft", source_id, run_id),
+                "risk_score_policy_recommendation_ref": artifact_ref("l4", "risk_score_policy_recommendation_draft", source_id, run_id),
+                "vector_embedding_handoff_template_ref": artifact_ref("l4", "vector_embedding_handoff_template", source_id, run_id),
                 "approval_state_ref": artifact_ref("l5", "approval_state", source_id, run_id),
                 "silver_decision_ref": artifact_ref("l5", "silver_policy_decision", source_id, run_id),
                 "gold_decision_ref": artifact_ref("l5", "gold_policy_decision", source_id, run_id),
@@ -253,6 +417,7 @@ def _catalog_sync_package(source_id: str, run_id: str, m6_context_status: dict[s
                 "gate_summary_ref": artifact_ref("l9", "gate_summary", source_id, run_id),
                 "catalog_metadata_ref": artifact_ref("l10", "catalog_metadata_draft", source_id, run_id),
                 "sql_context_ref": artifact_ref("l10", "sql_context_pack", source_id, run_id),
+                "semantic_catalog_vector_index_template_ref": artifact_ref("l10", "semantic_catalog_vector_index_template", source_id, run_id),
                 "quality_axis_refs": {
                     "processing_quality_axis_ref": artifact_ref("l9", "processing_quality_axis", source_id, run_id),
                     "catalog_safety_axis_ref": artifact_ref("l9", "catalog_safety_axis", source_id, run_id),
@@ -276,6 +441,8 @@ def _artifact_reference_manifest(out_dir: Path, source_id: str, run_id: str) -> 
         access_class = "catalog_internal"
         producer = "M3"
         artifact_name = path.stem
+        logical_layer = None
+        physical_layer = None
         if payload:
             try:
                 data = json.loads(payload)
@@ -284,6 +451,8 @@ def _artifact_reference_manifest(out_dir: Path, source_id: str, run_id: str) -> 
                 artifact_name = header.get("artifact_name", artifact_name)
                 access_class = header.get("access_class", access_class)
                 producer = header.get("producer", producer)
+                logical_layer = header.get("logical_layer")
+                physical_layer = header.get("physical_layer")
             except Exception:
                 pass
         if artifact_id is None:
@@ -293,6 +462,8 @@ def _artifact_reference_manifest(out_dir: Path, source_id: str, run_id: str) -> 
                 "artifact_id": artifact_id,
                 "artifact_name": artifact_name,
                 "artifact_version": "v2.1.1",
+                "logical_layer": logical_layer,
+                "physical_layer": physical_layer,
                 "logical_path": str(path.relative_to(out_dir)).replace("\\", "/"),
                 "physical_uri": path.resolve().as_uri(),
                 "content_type": "application/json" if path.suffix == ".json" else "application/jsonl" if path.suffix == ".jsonl" else "text/plain",
@@ -309,7 +480,7 @@ def _artifact_reference_manifest(out_dir: Path, source_id: str, run_id: str) -> 
         run_id=run_id,
         schema_version="m3.common.artifact_reference_manifest.v2_1_1",
         access_class="catalog_internal",
-        body={"layer": "L10", "artifact_type": "artifact_reference_manifest", "artifacts": artifacts},
+        body={"layer": "L16", "artifact_type": "artifact_reference_manifest", "artifacts": artifacts},
     )
 
 
@@ -342,6 +513,8 @@ def export_transform_spec(source_id: str, run_id: str, l5: dict[str, Any], l6: d
     operations.append({"id": "load_output", "type": "load", "input": operations[-1]["output"], "target_dataset": target_dataset, "layer": layer, "query_table": query_table})
     return {
         "contract": "TransformSpec",
+        "logical_layer": "L16",
+        "logical_layer_version": LOGICAL_LAYER_VERSION,
         "producer": "M3",
         "consumers": ["M5"],
         "tenant_id": "tenant_demo",
@@ -385,6 +558,8 @@ def export_schema_definition(source_id: str, run_id: str, l5: dict[str, Any]) ->
     ]
     return {
         "contract": "SchemaDefinition",
+        "logical_layer": "L16",
+        "logical_layer_version": LOGICAL_LAYER_VERSION,
         "producer": "M3",
         "consumers": ["M1", "M5", "M6"],
         "tenant_id": "tenant_demo",
@@ -425,6 +600,8 @@ def export_workflow_definition(source_id: str, run_id: str, l5: dict[str, Any], 
     edges.append([prev_node, "node_load"])
     return {
         "contract": "WorkflowDefinition",
+        "logical_layer": "L16",
+        "logical_layer_version": LOGICAL_LAYER_VERSION,
         "producer": "M3",
         "consumers": ["M5"],
         "tenant_id": "tenant_demo",
@@ -442,6 +619,8 @@ def export_catalog_metadata(source_id: str, run_id: str, catalog: dict[str, Any]
     allowed_columns = sql_context["allowed_columns"]
     return {
         "contract": "CatalogMetadata",
+        "logical_layer": "L16",
+        "logical_layer_version": LOGICAL_LAYER_VERSION,
         "producers": ["M3", "M5"],
         "consumers": ["M1", "M6"],
         "tenant_id": "tenant_demo",
@@ -449,6 +628,7 @@ def export_catalog_metadata(source_id: str, run_id: str, catalog: dict[str, Any]
         "version": "v2.1.1",
         "name": catalog["dataset_name"],
         "layer": "silver" if catalog["layers"][2]["status"] in {"not_requested", "deferred", "blocked"} else "gold",
+        "data_shape_contract": catalog.get("data_shape_contract", {}),
         "s3_uri": None,
         "s3_uri_status": "m2_execution_pending",
         "storage": {"profile": "local_or_minio_by_M2", "bucket": None, "prefix": None, "local_fallback_path": None},
@@ -466,6 +646,10 @@ def export_catalog_metadata(source_id: str, run_id: str, catalog: dict[str, Any]
         "m3_contract_refs": {
             "catalog_sync_contract_package_ref": artifact_ref("l10", "catalog_sync_contract_package", source_id, run_id),
             "sql_context_ref": artifact_ref("l10", "sql_context_pack", source_id, run_id),
+            "semantic_catalog_vector_index_template_ref": artifact_ref("l10", "semantic_catalog_vector_index_template", source_id, run_id),
+            "product_health_gold_template_ref": artifact_ref("l4", "product_health_gold_template_draft", source_id, run_id),
+            "risk_score_policy_recommendation_ref": artifact_ref("l4", "risk_score_policy_recommendation_draft", source_id, run_id),
+            "vector_embedding_handoff_template_ref": artifact_ref("l4", "vector_embedding_handoff_template", source_id, run_id),
         },
     }
 

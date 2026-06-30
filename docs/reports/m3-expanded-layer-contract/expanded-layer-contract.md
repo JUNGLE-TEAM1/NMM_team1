@@ -1,8 +1,10 @@
-# M3 Expanded Layer Contract
+# Legacy Reference: M3 Expanded Layer Contract
+
+> 이 문서는 과거 L0-L10 확장 초안이다. 최신 canonical 기준은 [M3 Logical L0-L16 설계 해설서](l0-l16-design.md), [M3 Logical L0-L16 핵심 흐름과 판단 기준](l0-l16-core-flow-judgement.md), [M3 Logical L0-L16 Selected Improvement Contract v2.1.1](selected-improvement-contract-v2.1.1-l0-l16.md)이다.
 
 - 대상: unknown CSV/JSON/JSONL/Parquet source를 L2 profile 이후 AI 추천, Silver/Gold 결정, deterministic spec, catalog handoff까지 넘기는 M3 계약
 - 결론: 기존 `L0-L6`은 실행 보고서로는 동작했지만, 실제 제품/팀 역할 계약으로는 `L3`와 `L4`가 과밀하다.
-- 새 기준: `L0-L10`으로 재분해한다. 특히 `L3 -> L4` 사이에 AI input pack, AI recommendation draft, user decision, deterministic compiler를 분리한다.
+- 과거 기준: 이 문서는 당시 `L0-L10`으로 재분해한 초안이다. 현재 최신 기준은 이 초안을 더 쪼갠 logical `L0-L16`이며, 최신 설계는 `l0-l16-design.md`와 `selected-improvement-contract-v2.1.1-l0-l16.md`를 따른다.
 - 중요한 정정: `gpt-5.3-codex-spark`는 Apache Spark 실행 단계가 아니라, `L4 AI Recommendation Draft`에서 쓰는 모델 슬롯으로 둔다.
 
 ## 왜 다시 쪼개야 하는가
@@ -111,6 +113,6 @@ L0 Raw Preservation
 
 ## 적용 판단
 
-기존 `L0-L6` 실행 결과는 폐기할 필요가 없다. 다만 발표나 구현 계약에서는 `L0-L6`이라고 부르면 L3/L4가 너무 넓게 보인다. 앞으로는 내부 파일 경로가 당장 `l3/`, `l4/`로 남아 있어도 문서와 UI에서는 위 `L0-L10` 의미로 보여주는 편이 맞다.
+기존 `L0-L6` 실행 결과는 폐기할 필요가 없다. 다만 발표나 구현 계약에서는 `L0-L6`이라고 부르면 L3/L4가 너무 넓게 보인다. 이 문서가 작성될 당시에는 `L0-L10`으로 보여주는 편이 맞다고 판단했지만, 현재 기준에서는 내부 파일 경로가 당장 `l3/`, `l4/`로 남아 있어도 문서와 UI에서는 logical `L0-L16` 의미로 보여주는 편이 맞다.
 
 특히 사용자가 화면에서 수정해야 하는 지점은 `L5`다. `L4`의 AI draft를 바로 실행하지 않고, `L5`에서 Silver와 Gold를 각각 수정/승인한 뒤 `L6`에서 deterministic spec으로 고정해야 한다.

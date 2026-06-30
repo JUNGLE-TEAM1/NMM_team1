@@ -1,0 +1,28 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="icon" href="data:,"><link rel="stylesheet" href="layer-detail.css"><title>L10 Silver Deterministic Spec Compiler</title></head>
+<body><div class="topbar"><div class="topbar-inner"><a class="brand" href="../index.html">M3 Code Atlas</a><div class="top-actions"><a href="index.html">L목록</a><a href="../index.html#flow">전체 흐름</a><a href="../index.html#matrix">책임표</a></div></div></div>
+<main>
+  <header class="hero"><p class="eyebrow">Logical L10</p><h1>Silver Deterministic Spec Compiler</h1><p class="lead">승인된 Silver decision을 M2가 실행 가능한 preview-only transform spec으로 컴파일한다. M3가 Spark production write를 하지 않는다.</p><div class="meta"><span class="pill">code: l6_compiler.py</span><span class="pill">physical: l6</span><span class="pill">spec: Silver</span></div></header>
+  <div class="content-grid">
+    <section><h2>이 단계가 하는 일</h2><ul><li>Silver field action을 select/cast/rename/mask/hash/quarantine operation으로 변환한다.</li><li>preview_scope는 source_unit_ids, object_ids, stream_window_ids 중심으로 만든다.</li><li>write_mode를 preview_only로 고정한다.</li></ul></section>
+    <section><h2>코드와 산출물</h2><table><tr><th>코드</th><td><a href="../../../../tools/m3_contract/l6_compiler.py">tools/m3_contract/l6_compiler.py</a></td></tr><tr><th>주요 산출물</th><td><code>silver_transform_spec.json</code></td></tr><tr><th>다음 입력</th><td>M2 preview execution, L13 Silver evidence</td></tr></table></section>
+  </div>
+  <section><h2>판단 기준</h2><div class="note danger">production write, generated code execution, per-row AI call이 spec에 들어가면 안 된다. M3는 실행 엔진이 아니라 실행 가능한 계약 작성자다.</div></section>
+  <section><h2>함수/코드 블록별 상세 해설</h2><div class="code-detail">
+    <div class="code-block"><b><code>build_l6()</code> Silver branch</b><span>physical l6 builder 안에서 logical L10 Silver spec을 만든다. L5 approval state와 L0 source units를 읽는다.</span></div>
+    <div class="code-block"><b><code>_silver_operations()</code></b><span>첫 operation은 drop이 아닌 field select이고, 이후 field별 recommended action을 operation으로 변환한다.</span></div>
+    <div class="code-block"><b><code>_operation_for_action()</code></b><span>rename, cast, parse_timestamp, mask, hash, json_string, flatten, explode, normalize_null, quarantine 계열 action을 params schema로 바꾼다.</span></div>
+    <div class="code-block"><b><code>silver_transform_spec</code></b><span>execution owner는 M2, write mode는 preview_only, input은 L1 Bronze sample, output은 L7/L13 Silver preview evidence로 지정한다.</span></div>
+    <div class="code-block"><b><code>preview_scope</code></b><span><code>source_unit_ids</code>, <code>object_ids</code>, <code>stream_window_ids</code>만 사용한다. legacy <code>window_id</code>는 core schema에서 금지한다.</span></div>
+  </div></section>
+  <section><h2>라인/함수 단위 코드 해설</h2><table><thead><tr><th style="width:18%">Line</th><th style="width:24%">코드 단위</th><th>상세 설명</th></tr></thead><tbody>
+    <tr><td>1-24</td><td>import + <code>SUPPORTED_ACTIONS</code></td><td>compiler가 deterministic operation으로 바꿀 수 있는 action만 선언한다. 이 목록 밖 action은 L12에서 unsupported로 잡힌다.</td></tr>
+    <tr><td>27-35</td><td><code>build_l6()</code> 시작</td><td>L0 source units, unsupported actions, Silver operations, Gold operations를 계산한다.</td></tr>
+    <tr><td>37-55</td><td><code>silver_transform_spec</code></td><td>logical L10 artifact다. execution owner M2, write mode preview_only, input L1 Bronze, output L7/L13 Silver preview로 지정한다.</td></tr>
+    <tr><td>51</td><td><code>preview_scope</code></td><td>source_unit_ids, object_ids, stream_window_ids를 사용한다. legacy window_id 대신 source unit 중심으로 preview 범위를 표현한다.</td></tr>
+    <tr><td>53</td><td>runtime forbidden list</td><td>per-row AI call, generated code execution, unbounded collect, production write 금지를 spec에 직접 박아둔다.</td></tr>
+    <tr><td>124-140</td><td><code>_silver_operations()</code></td><td>첫 operation은 field select이며, field별 action을 operation list로 변환한다.</td></tr>
+    <tr><td>143-164</td><td><code>_operation_for_action()</code></td><td>rename/cast/timestamp/mask/hash/json/flatten/explode/null/quarantine action을 operation params schema로 만든다.</td></tr>
+  </tbody></table></section>
+  <section><h2>앞뒤 연결</h2><div class="visual"><div class="step"><b>L9</b><span>decision</span></div><div class="step active spec"><b>L10</b><span>Silver spec</span></div><div class="step spec"><b>L12</b><span>compiler gate</span></div><div class="step gate"><b>L13</b><span>preview evidence</span></div><div class="step"><b>M2</b><span>Spark preview</span></div></div></section>
+  <div class="prev-next"><a href="l9.html"><- 이전 L9</a><a href="l11.html">다음 L11 -></a></div>
+</main><script src="source-snippets.js"></script><script src="source-analysis.js"></script><script src="source-glossary.js"></script><script src="source-plain.js"></script><script src="layer-detail.js"></script></body></html>

@@ -1,0 +1,26 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="icon" href="data:,"><link rel="stylesheet" href="layer-detail.css"><title>L11 Gold Deterministic Spec Compiler</title></head>
+<body><div class="topbar"><div class="topbar-inner"><a class="brand" href="../index.html">M3 Code Atlas</a><div class="top-actions"><a href="index.html">L목록</a><a href="../index.html#flow">전체 흐름</a><a href="../index.html#matrix">책임표</a></div></div></div>
+<main>
+  <header class="hero"><p class="eyebrow">Logical L11</p><h1>Gold Deterministic Spec Compiler</h1><p class="lead">Gold decision이 approved일 때만 Gold preview-only generation spec을 만든다. 승인되지 않은 Gold는 draft로 보존하지만 실행 operation은 비워둔다.</p><div class="meta"><span class="pill">code: l6_compiler.py</span><span class="pill">physical: l6</span><span class="pill">spec: Gold optional</span></div></header>
+  <div class="content-grid">
+    <section><h2>이 단계가 하는 일</h2><ul><li>approved Gold model만 aggregate operation으로 변환한다.</li><li>params는 input_ref, group_by, dimensions, measures, time_window, cardinality_guard 구조를 따른다.</li><li>not_requested/deferred/rejected 상태는 빈 operation으로 둔다.</li></ul></section>
+    <section><h2>코드와 산출물</h2><table><tr><th>코드</th><td><a href="../../../../tools/m3_contract/l6_compiler.py">tools/m3_contract/l6_compiler.py</a></td></tr><tr><th>주요 산출물</th><td><code>gold_generation_spec.json</code></td></tr><tr><th>다음 입력</th><td>M2 Gold preview execution, L14 Gold readiness</td></tr></table></section>
+  </div>
+  <section><h2>판단 기준</h2><div class="note">Gold는 사용자가 만들 수 있게 해야 한다. 무조건 생성하거나 무조건 추천을 실행 spec으로 확정하면 안 된다.</div></section>
+  <section><h2>함수/코드 블록별 상세 해설</h2><div class="code-detail">
+    <div class="code-block"><b><code>build_l6()</code> Gold branch</b><span>physical l6 builder 안에서 logical L11 Gold generation spec을 만든다. Gold compile allowed가 true일 때만 operations를 채운다.</span></div>
+    <div class="code-block"><b><code>_gold_operations()</code></b><span>approved Gold model마다 aggregate operation을 만든다. operation params는 단일 source_path가 아니라 structured aggregate schema를 쓴다.</span></div>
+    <div class="code-block"><b>aggregate params schema</b><span><code>input_ref</code>, <code>group_by[]</code>, <code>dimensions[]</code>, <code>measures[]</code>, <code>time_window</code>, <code>cardinality_guard</code>를 가진다.</span></div>
+    <div class="code-block"><b><code>gold_generation_spec</code></b><span>input은 L7 Silver preview, output은 L8/L14 Gold preview다. approval 전이면 operation이 빈 배열이라 M2가 실수로 Gold를 만들지 않는다.</span></div>
+    <div class="code-block"><b>Gold deferred behavior</b><span>not_requested/deferred/rejected는 실패가 아니라 Gold not-ready 상태다. 이 상태는 L15에서 Gold axis로만 반영된다.</span></div>
+  </div></section>
+  <section><h2>라인/함수 단위 코드 해설</h2><table><thead><tr><th style="width:18%">Line</th><th style="width:24%">코드 단위</th><th>상세 설명</th></tr></thead><tbody>
+    <tr><td>56-75</td><td><code>gold_generation_spec</code></td><td>logical L11 artifact다. input은 L7 Silver preview, output은 L8/L14 Gold preview다.</td></tr>
+    <tr><td>56-75</td><td>approval gating</td><td>Gold가 승인되지 않았으면 operations는 빈 배열이다. draft와 execution spec을 분리하는 핵심 구현이다.</td></tr>
+    <tr><td>167-184</td><td><code>_gold_operations()</code></td><td>Gold model마다 aggregate operation을 만든다. dimensions/measures/time_window/cardinality_guard를 structured params로 표현한다.</td></tr>
+    <tr><td>167-184</td><td>aggregate params</td><td>단일 source_path가 아니라 input_ref, group_by, dimensions, measures 구조라 M2 Spark job으로 해석하기 쉽다.</td></tr>
+    <tr><td>207-271</td><td>compiler validation 연결</td><td>Gold spec도 L12 validation 대상이다. preview-only write mode와 unsupported action이 함께 검사된다.</td></tr>
+  </tbody></table></section>
+  <section><h2>앞뒤 연결</h2><div class="visual"><div class="step"><b>L9</b><span>Gold approval</span></div><div class="step active spec"><b>L11</b><span>Gold spec</span></div><div class="step spec"><b>L12</b><span>compiler gate</span></div><div class="step gate"><b>L14</b><span>readiness</span></div><div class="step gate"><b>L15</b><span>Gold axis</span></div></div></section>
+  <div class="prev-next"><a href="l10.html"><- 이전 L10</a><a href="l12.html">다음 L12 -></a></div>
+</main><script src="source-snippets.js"></script><script src="source-analysis.js"></script><script src="source-glossary.js"></script><script src="source-plain.js"></script><script src="layer-detail.js"></script></body></html>

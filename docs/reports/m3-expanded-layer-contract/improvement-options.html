@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" href="data:,">
-  <title>M3 L0-L10 Improvement Options</title>
+  <title>Legacy M3 L0-L10 Improvement Options</title>
   <style>
     :root {
       --ink: #172033;
@@ -70,7 +70,8 @@
 <body>
 <main>
   <header>
-    <h1>M3 L0-L10 Improvement Options</h1>
+    <h1>Legacy M3 L0-L10 Improvement Options</h1>
+    <p><strong>현재 canonical 기준은 Logical L0-L16입니다.</strong> 이 화면은 과거 L0-L10 후보 선택 이력을 보존하는 legacy 보드이며, 최신 계약은 <code>l0-l16-design.md</code>, <code>l0-l16-core-flow-judgement.md</code>, <code>selected-improvement-contract-v2.1.1-l0-l16.md</code>를 기준으로 봐야 합니다.</p>
     <p>각 계층별 개선 후보 3개를 단독 선택 가능한 완성형 방식으로 정리했다. 후보는 장점, 단점, 우리 구조에 유리한 이유, 유리한 파일 형식, 유리한 데이터 규모를 각각 3줄로 제공한다.</p>
     <p>이 보드는 후보를 합쳐서 쓰라는 용도가 아니라, 이미 필요한 조합을 후보 안에 포함한 상태에서 하나를 고르는 용도다.</p>
   </header>
@@ -540,7 +541,7 @@ function renderSummary() {
   const selectedCount = Object.keys(selections).length;
   const summary = document.getElementById("selectionSummary");
   summary.innerHTML = `
-    <div class="summary-card"><span>Layer count</span><strong>${layers.length}</strong><p class="muted">L0-L10</p></div>
+    <div class="summary-card"><span>Legacy layer count</span><strong>${layers.length}</strong><p class="muted">superseded L0-L10</p></div>
     <div class="summary-card"><span>Candidate count</span><strong>${layers.length * 3}</strong><p class="muted">각 L별 3개</p></div>
     <div class="summary-card"><span>Selected</span><strong>${selectedCount}/${layers.length}</strong><p class="muted">local browser 저장</p></div>
   `;
@@ -637,7 +638,7 @@ document.getElementById("exportBtn").addEventListener("click", () => {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = "m3-l0-l10-improvement-decisions.json";
+  link.download = "legacy-m3-l0-l10-improvement-decisions.json";
   link.click();
   URL.revokeObjectURL(url);
 });

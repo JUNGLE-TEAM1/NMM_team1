@@ -1,0 +1,1521 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>M3 Logical L0-L16 Code Atlas</title>
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --surface: #ffffff;
+      --surface-soft: #f9fbfd;
+      --ink: #17202b;
+      --muted: #5d6978;
+      --line: #d9e1ea;
+      --line-strong: #bdc9d7;
+      --accent: #0f766e;
+      --blue: #1d4ed8;
+      --amber: #b45309;
+      --red: #b91c1c;
+      --green: #15803d;
+      --shadow: 0 14px 34px rgba(23, 32, 43, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: Arial, "Malgun Gothic", sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code {
+      background: #e9eef5;
+      border-radius: 5px;
+      color: #1f2937;
+      padding: 2px 5px;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      border-bottom: 1px solid var(--line);
+      background: rgba(245, 247, 250, 0.95);
+      backdrop-filter: blur(10px);
+    }
+    .topbar-inner {
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 10px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+    .brand {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      white-space: nowrap;
+    }
+    .brand strong { font-size: 16px; }
+    .brand span { color: var(--muted); font-size: 13px; }
+    nav {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+    nav a {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--surface);
+      color: var(--ink);
+      font-size: 13px;
+      padding: 7px 9px;
+    }
+
+    main {
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    header, section {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    header {
+      padding: 30px;
+      margin-bottom: 18px;
+    }
+    section {
+      padding: 22px;
+      margin-bottom: 18px;
+    }
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+    h1 {
+      max-width: 1080px;
+      margin: 0;
+      font-size: clamp(32px, 4vw, 56px);
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+    h2 {
+      margin: 0 0 10px;
+      font-size: 24px;
+      letter-spacing: 0;
+    }
+    h3 {
+      margin: 0 0 8px;
+      font-size: 18px;
+      letter-spacing: 0;
+    }
+    p, li { line-height: 1.65; }
+    header p, .section-lead {
+      max-width: 1120px;
+      color: var(--muted);
+      margin: 12px 0 0;
+      font-size: 15px;
+    }
+    .section-lead { margin-bottom: 16px; }
+
+    .meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 18px;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--surface-soft);
+      color: var(--muted);
+      font-size: 13px;
+      padding: 6px 10px;
+    }
+
+    .plain-overview {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(320px, .9fr);
+      gap: 18px;
+      align-items: start;
+    }
+    .plain-overview-main {
+      display: grid;
+      gap: 13px;
+    }
+    .plain-overview-main p {
+      margin: 0;
+      color: #243042;
+      font-size: 15px;
+      line-height: 1.78;
+    }
+    .plain-overview-main .plain-lead {
+      border-left: 5px solid var(--accent);
+      border-radius: 8px;
+      background: #f1fbf8;
+      color: #0f3f3a;
+      font-weight: 700;
+      padding: 13px 15px;
+    }
+    .plain-overview-side {
+      display: grid;
+      gap: 10px;
+    }
+    .plain-overview-item {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-soft);
+      padding: 12px;
+    }
+    .plain-overview-item strong {
+      display: block;
+      color: var(--accent);
+      margin-bottom: 6px;
+    }
+    .plain-overview-item span {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .outcome-board {
+      display: grid;
+      gap: 12px;
+    }
+    .outcome-note {
+      border-left: 5px solid var(--accent);
+      border-radius: 8px;
+      background: #f1fbf8;
+      color: #0f3f3a;
+      padding: 13px 15px;
+      margin: 0 0 16px;
+      line-height: 1.7;
+      font-weight: 700;
+    }
+    .outcome-row {
+      display: grid;
+      grid-template-columns: 74px minmax(0, 1fr) 104px;
+      gap: 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--surface-soft);
+      padding: 14px;
+      align-items: stretch;
+      box-shadow: none;
+    }
+    .outcome-id {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      background: var(--ink);
+      color: #ffffff;
+      font-size: 20px;
+      font-weight: 800;
+      min-height: 100%;
+    }
+    .outcome-main {
+      display: grid;
+      gap: 10px;
+      min-width: 0;
+    }
+    .outcome-title {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 8px;
+    }
+    .outcome-title h3 {
+      margin: 0;
+      font-size: 18px;
+    }
+    .outcome-title span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .outcome-plain {
+      margin: 0;
+      color: #243042;
+      line-height: 1.65;
+    }
+    .outcome-cols {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .outcome-col {
+      border: 1px solid #dbe3ec;
+      border-radius: 8px;
+      background: #ffffff;
+      padding: 10px;
+      min-width: 0;
+    }
+    .outcome-col b {
+      display: block;
+      color: var(--accent);
+      font-size: 13px;
+      margin-bottom: 5px;
+    }
+    .outcome-col span {
+      display: block;
+      color: #374151;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+    .outcome-example {
+      margin: 0;
+      border-radius: 8px;
+      background: #fffaf1;
+      border: 1px solid #efd4a7;
+      color: #57310a;
+      padding: 10px 12px;
+      line-height: 1.6;
+      font-size: 13px;
+    }
+    .outcome-link {
+      align-self: start;
+      justify-self: end;
+      display: inline-flex;
+      justify-content: center;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #ffffff;
+      color: var(--ink);
+      font-size: 13px;
+      padding: 8px 10px;
+      white-space: nowrap;
+    }
+
+    .flow-shell {
+      display: grid;
+      gap: 14px;
+    }
+    .flow-phasebar {
+      display: grid;
+      grid-template-columns: 3fr 6fr 1fr 3fr 3fr 1fr;
+      gap: 8px;
+      min-width: 1320px;
+      overflow-x: auto;
+    }
+    .phase {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-soft);
+      padding: 10px 12px;
+      min-height: 78px;
+    }
+    .phase strong { display: block; margin-bottom: 5px; }
+    .phase span {
+      color: var(--muted);
+      display: block;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .phase.ai { border-top: 4px solid var(--amber); }
+    .phase.decision { border-top: 4px solid var(--accent); }
+    .phase.spec { border-top: 4px solid var(--blue); }
+    .phase.gate { border-top: 4px solid var(--red); }
+    .phase.handoff { border-top: 4px solid var(--green); }
+
+    .pipeline-wrap {
+      max-width: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding-bottom: 4px;
+    }
+    .pipeline {
+      display: grid;
+      grid-template-columns: repeat(17, minmax(150px, 1fr));
+      gap: 8px;
+      min-width: 2720px;
+      padding: 4px 4px 12px;
+    }
+    .stage {
+      min-height: 214px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-soft);
+      color: var(--ink);
+      display: grid;
+      grid-template-rows: auto auto 1fr auto auto;
+      gap: 7px;
+      padding: 11px 11px 12px;
+      position: relative;
+      text-decoration: none;
+      overflow-wrap: anywhere;
+      transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease, background .16s ease;
+    }
+    .stage:hover {
+      border-color: var(--line-strong);
+      background: #ffffff;
+      box-shadow: var(--shadow);
+      text-decoration: none;
+      transform: translateY(-2px);
+    }
+    .stage::after {
+      content: "";
+      position: absolute;
+      right: -8px;
+      top: 50%;
+      width: 8px;
+      height: 2px;
+      background: var(--line-strong);
+    }
+    .stage:last-child::after { display: none; }
+    .stage.ai { border-top: 4px solid var(--amber); }
+    .stage.spec { border-top: 4px solid var(--blue); }
+    .stage.gate { border-top: 4px solid var(--red); }
+    .stage.handoff { border-top: 4px solid var(--green); }
+    .stage .id {
+      display: inline-flex;
+      width: fit-content;
+      border-radius: 5px;
+      background: var(--ink);
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 3px 6px;
+    }
+    .stage strong {
+      font-size: 14px;
+      line-height: 1.25;
+    }
+    .stage p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .stage small {
+      color: var(--accent);
+      font-size: 11px;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+    .stage .output {
+      color: #405063;
+      font-size: 11px;
+      line-height: 1.35;
+      border-top: 1px solid #e6ebf1;
+      padding-top: 7px;
+    }
+
+    .rule-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(150px, 1fr));
+      gap: 10px;
+    }
+    .rule {
+      border-left: 4px solid var(--accent);
+      border-radius: 6px;
+      background: var(--surface-soft);
+      padding: 12px;
+    }
+    .rule.ai { border-left-color: var(--amber); }
+    .rule.spec { border-left-color: var(--blue); }
+    .rule.gate { border-left-color: var(--red); }
+    .rule.handoff { border-left-color: var(--green); }
+    .rule strong { display: block; margin-bottom: 6px; }
+    .rule span {
+      color: var(--muted);
+      display: block;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .artifact-flow {
+      display: grid;
+      gap: 9px;
+    }
+    .artifact-plain-intro {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(280px, .85fr);
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+    .artifact-plain-box {
+      border: 1px solid var(--line);
+      border-left: 5px solid var(--accent);
+      border-radius: 8px;
+      background: #f8fbfa;
+      padding: 14px;
+    }
+    .artifact-plain-box strong {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--accent);
+    }
+    .artifact-plain-box p {
+      margin: 0;
+      color: #243042;
+      line-height: 1.7;
+    }
+    .artifact-visual-wrap {
+      max-width: 100%;
+      padding: 4px 0 12px;
+      margin-bottom: 16px;
+    }
+    .artifact-visual {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .artifact-node {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-soft);
+      min-height: 210px;
+      padding: 12px;
+      position: relative;
+      overflow-wrap: anywhere;
+    }
+    .artifact-node::after {
+      content: "";
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      bottom: -6px;
+      height: 2px;
+      background: #d9e1ea;
+    }
+    .artifact-node:nth-child(n + 5)::after { display: none; }
+    .artifact-node .num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--ink);
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .artifact-node strong {
+      display: block;
+      margin-bottom: 6px;
+      line-height: 1.35;
+    }
+    .artifact-node p {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .artifact-node small {
+      display: block;
+      border-top: 1px solid #e6ebf1;
+      padding-top: 8px;
+      color: #486171;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .artifact-example-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin: 16px 0;
+    }
+    .artifact-example {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-soft);
+      padding: 13px;
+    }
+    .artifact-example strong {
+      display: block;
+      color: var(--accent);
+      margin-bottom: 7px;
+    }
+    .artifact-example p {
+      margin: 0;
+      color: #374151;
+      line-height: 1.65;
+    }
+    .flow-row {
+      display: grid;
+      grid-template-columns: 130px 1fr 1fr 1fr;
+      gap: 10px;
+      align-items: stretch;
+    }
+    .flow-label {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #eef3f7;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      padding: 10px;
+    }
+    .flow-cell {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-soft);
+      min-height: 92px;
+      padding: 11px;
+    }
+    .flow-cell strong { display: block; margin-bottom: 5px; }
+    .flow-cell span {
+      color: var(--muted);
+      display: block;
+      font-size: 13px;
+      line-height: 1.48;
+    }
+
+    .group-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 10px;
+    }
+    .group {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-soft);
+      padding: 13px;
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+    .group b { display: block; margin-bottom: 6px; }
+    .group span {
+      color: var(--muted);
+      display: block;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .filter-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin: 12px 0;
+    }
+    input[type="search"] {
+      min-width: min(460px, 100%);
+      flex: 1;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+      font-size: 14px;
+      padding: 10px 12px;
+    }
+    .count {
+      color: var(--muted);
+      font-size: 13px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 14px;
+    }
+    th, td {
+      border-bottom: 1px solid #e6ebf1;
+      overflow-wrap: anywhere;
+      padding: 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      position: sticky;
+      top: 46px;
+      z-index: 5;
+      background: #eef3f7;
+      color: #243142;
+    }
+    tbody tr:hover { background: #f8fafc; }
+    .badge {
+      display: inline-block;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #ffffff;
+      color: var(--muted);
+      font-size: 12px;
+      padding: 3px 8px;
+    }
+    .badge.ai { border-color: #f0c58a; color: var(--amber); background: #fff8ed; }
+    .badge.spec { border-color: #b9cdfa; color: var(--blue); background: #f0f5ff; }
+    .badge.gate { border-color: #f3b7b7; color: var(--red); background: #fff1f1; }
+    .badge.handoff { border-color: #b8dfc3; color: var(--green); background: #effaf2; }
+
+    .swimlane {
+      display: grid;
+      grid-template-columns: 132px 1fr;
+      gap: 10px;
+      align-items: stretch;
+    }
+    .swimlane + .swimlane { margin-top: 10px; }
+    .lane-label {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #eef3f7;
+      display: flex;
+      align-items: center;
+      font-weight: 700;
+      padding: 10px;
+    }
+    .lane-track {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    .lane-item {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-soft);
+      min-height: 96px;
+      padding: 10px;
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+    .lane-item strong { display: block; margin-bottom: 5px; }
+    .lane-item span {
+      color: var(--muted);
+      display: block;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .boundary {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+    }
+    .boundary-step {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-soft);
+      min-height: 132px;
+      padding: 12px;
+      position: relative;
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+    .boundary-step::after {
+      content: "->";
+      position: absolute;
+      right: -16px;
+      top: 42%;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .boundary-step:last-child::after { display: none; }
+    .boundary-step b { display: block; margin-bottom: 7px; }
+    .boundary-step span {
+      color: var(--muted);
+      display: block;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .doc-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .doc-link {
+      display: block;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-soft);
+      color: var(--ink);
+      min-height: 150px;
+      padding: 14px;
+      min-width: 0;
+      overflow-wrap: anywhere;
+      transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease, background .16s ease;
+    }
+    .doc-link:hover {
+      border-color: var(--line-strong);
+      background: #ffffff;
+      box-shadow: var(--shadow);
+      text-decoration: none;
+      transform: translateY(-2px);
+    }
+    .doc-link strong { display: block; margin-bottom: 8px; }
+    .doc-link span {
+      color: var(--muted);
+      display: block;
+      line-height: 1.55;
+    }
+    details {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-soft);
+      margin: 10px 0;
+      padding: 12px 14px;
+    }
+    summary {
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .advantage-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(160px, 1fr));
+      gap: 10px;
+    }
+    .advantage {
+      border-left: 4px solid var(--accent);
+      border-radius: 6px;
+      background: var(--surface-soft);
+      padding: 12px;
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+    .advantage strong { display: block; margin-bottom: 6px; }
+    .advantage span {
+      color: var(--muted);
+      display: block;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .note {
+      border-left: 5px solid var(--amber);
+      border-radius: 6px;
+      background: #fffaf1;
+      color: #57310a;
+      margin-top: 14px;
+      padding: 12px 14px;
+    }
+    .print-hint {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 12px;
+    }
+
+    @media (max-width: 1100px) {
+      .topbar-inner { align-items: flex-start; flex-direction: column; }
+      nav { justify-content: flex-start; }
+      .rule-grid,
+      .group-grid,
+      .doc-grid,
+      .advantage-grid,
+      .plain-overview,
+      .outcome-row,
+      .outcome-cols,
+      .artifact-plain-intro,
+      .artifact-visual,
+      .artifact-example-grid,
+      .boundary { grid-template-columns: 1fr; }
+      .swimlane,
+      .flow-row { grid-template-columns: 1fr; }
+      .lane-track { grid-template-columns: 1fr; }
+      .boundary-step::after { display: none; }
+      .artifact-node::after { display: none; }
+      th { position: static; }
+    }
+
+    @media print {
+      .topbar, .filter-row { display: none; }
+      body { background: #ffffff; }
+      header, section { box-shadow: none; break-inside: avoid; }
+      .pipeline { min-width: 0; grid-template-columns: repeat(3, 1fr); }
+      .flow-phasebar { min-width: 0; grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <strong>M3 Code Atlas</strong>
+        <span>Logical L0-L16</span>
+      </div>
+      <nav aria-label="문서 내부 이동">
+        <a href="#plain-overview">쉬운 설명</a>
+        <a href="#stage-outcomes">단계별 결과</a>
+        <a href="#flow">전체 흐름</a>
+        <a href="#artifact-flow">산출물 흐름</a>
+        <a href="#matrix">책임표</a>
+        <a href="#physical">Physical/Logical</a>
+        <a href="#handoff">M 연결</a>
+        <a href="#docs">상세 문서</a>
+      </nav>
+    </div>
+  </div>
+
+  <main>
+    <header>
+      <p class="eyebrow">M3 code explanation board</p>
+      <h1>M3 Logical L0-L16 코드 흐름과 산출물 책임을 한 화면에서 보는 보드</h1>
+      <p>
+        이 보드는 M3가 맡는 Transform 계약 생성 범위를 설명한다. 원본 보존부터 Bronze/Silver/Gold 추천, 사용자 승인, preview-only spec,
+        품질 gate, catalog/query/vector handoff까지 빠뜨리지 않고 연결한다. Spark/MinIO는 검증 하네스이며, production 실행과 저장은 M2/M5 경계다.
+      </p>
+      <div class="meta-row">
+        <span class="pill">M3 scope: recommendation / spec / catalog handoff</span>
+        <span class="pill">AI: bounded control-plane only</span>
+        <span class="pill">Runtime execution: M2 boundary</span>
+        <span class="pill">Catalog / workflow storage: M5 boundary</span>
+        <span class="pill">Query / semantic context: M6 boundary</span>
+      </div>
+    </header>
+
+    <section id="plain-overview">
+      <h2>쉬운 말로 보는 M3 전체 동작</h2>
+      <div class="plain-overview">
+        <div class="plain-overview-main">
+          <p class="plain-lead">
+            M3는 raw 데이터를 직접 크게 돌려서 결과 테이블을 확정하는 파트가 아니다. M3는 unknown data가 들어왔을 때 원본을 잃지 않고, 어떤 정제를 거쳐 Silver가 되어야 하는지, 어떤 근거가 있을 때만 Gold를 만들 수 있는지, 그리고 그 결정을 M2/M5/M6가 읽을 수 있는 계약으로 바꾸는 파트다.
+          </p>
+          <p>
+            실제 흐름은 먼저 원본을 보존하는 데서 시작한다. L0는 파일을 바꾸지 않고 위치표와 지문을 만들고, L1은 제한된 sample을 Bronze 봉투로 감싸며, L2는 그 sample을 보고 format과 schema/profile snapshot을 만든다. 이 구간은 “데이터를 이해한다”기보다 “나중에 같은 데이터를 다시 찾고 같은 근거로 판단할 수 있게 만든다”에 가깝다.
+          </p>
+          <p>
+            예를 들어 Amazon 리뷰 JSONL이 들어오면 M3는 처음부터 `이건 상품 건강도 Gold다`라고 확정하지 않는다. 먼저 `asin`이 상품 id처럼 보이는지, `overall`이 평점처럼 보이는지, `reviewText`가 리뷰 본문인지 profile로 확인한다. 그 다음 review_count나 average_rating은 만들 수 있는지 보고, view_count나 purchase_count처럼 리뷰 파일에 없는 값은 없다고 표시한다. 없는 값을 0으로 채워 Gold를 꾸미지 않는 것이 핵심이다.
+          </p>
+          <p>
+            택시 CSV/Parquet가 들어오면 다른 판단을 한다. `pickup_datetime`, `fare_amount`, `passenger_count` 같은 field는 product_health가 아니라 시간/지역/요금 집계 Gold 후보가 될 수 있다. 그래서 같은 L7 Gold 단계라도 데이터가 리뷰인지 택시인지에 따라 추천 metric과 risk_score component가 달라져야 한다. M3는 고정 공식을 우겨 넣는 것이 아니라, 실제 field 근거를 보고 만들 수 있는 Gold 방법을 제안한다.
+          </p>
+          <p>
+            그 다음 AI는 전체 데이터를 실시간으로 보는 것이 아니라, L2에서 압축된 profile evidence만 본다. L3는 AI에게 넘겨도 되는 근거만 골라 PII와 raw payload 노출을 줄이고, L4/L5는 기존 metadata나 template을 참고하되 실제 source field 근거가 있는지 다시 대조한다. 그래서 AI 추천은 그럴듯한 말이 아니라 “어떤 field와 어떤 evidence 때문에 이 Silver/Gold 후보가 가능한지”를 남겨야 한다.
+          </p>
+          <p>
+            Silver와 Gold는 서로 다른 결정이다. Silver는 Bronze를 깨끗하고 query 가능한 형태로 정리하는 정책이고, Gold는 그 Silver 위에서 product_health, risk_score, aggregate 같은 의미 지표를 만드는 정책이다. Gold에 필요한 view_count, purchase_count, delivery_count 같은 근거가 없으면 0으로 꾸미지 않고 missing/deferred로 남긴다. risk_score도 하나의 고정 수식으로 박지 않고, 데이터에 실제로 있는 component를 보고 추천한 뒤 사용자가 승인하게 한다.
+          </p>
+          <p>
+            사용자가 L9에서 승인해야만 L10/L11이 preview_only spec을 만든다. 그 spec은 M2가 Spark 같은 실행 엔진으로 돌릴 수 있는 설계도이고, M3가 production write를 직접 하지 않는다. preview 결과가 돌아오면 L13-L15가 품질, catalog 안전성, Gold 준비도를 나눠 판정하고, L16이 M5/M6가 읽을 catalog/query/vector handoff package로 묶는다.
+          </p>
+        </div>
+        <div class="plain-overview-side">
+          <div class="plain-overview-item"><strong>입력</strong><span>사용자가 등록한 모르는 구조의 CSV/JSON/JSONL/Parquet/text와 source_id/run_id. M3는 처음부터 schema를 안다고 가정하지 않는다.</span></div>
+          <div class="plain-overview-item"><strong>AI가 보는 것</strong><span>원본 전체 row가 아니라 profile snapshot, field hint, 제한된 example, retrieval candidate, missing evidence다. 대용량/실시간 상황에서 per-row AI는 금지한다.</span></div>
+          <div class="plain-overview-item"><strong>사용자가 고르는 것</strong><span>Silver 정제 정책, Gold 생성 여부, product-health metric, risk_score component/weight, vector handoff 여부, Gold-to-Gold 파생 여부다.</span></div>
+          <div class="plain-overview-item"><strong>M2로 가는 것</strong><span>preview_only transform spec과 source_unit/artifact_ref다. 실제 Spark session, shuffle, output write, MinIO 적재는 M2 경계로 둔다.</span></div>
+          <div class="plain-overview-item"><strong>M5/M6로 가는 것</strong><span>approval state, catalog sync package, SQL context, allowed columns, caveat, artifact_reference_manifest, semantic/vector handoff template이다.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="stage-outcomes">
+      <h2>각 단계별로 그래서 어떻게 되는지</h2>
+      <p class="section-lead">
+        이 표는 코드 이름이나 계약 이름을 먼저 외우라는 표가 아니다. 사용자가 데이터를 넣으면 각 L단계가 실제로 무엇을 보고, 무엇을 만들고, 그 결과 다음 단계가 어떻게 움직이는지 보는 표다.
+      </p>
+      <p class="outcome-note">
+        읽는 법: 왼쪽 L번호를 보고, 가운데의 “들어오면 -> M3가 해서 -> 그래서 남는 것 -> 다음에 어떻게 됨”만 따라가면 된다. 파일명과 코드명은 나중에 상세 코드 화면에서 확인하면 된다.
+      </p>
+      <div class="outcome-board">
+        <article class="outcome-row">
+          <div class="outcome-id">L0</div>
+          <div class="outcome-main">
+            <div class="outcome-title"><h3>원본 파일에 신분증을 붙인다</h3><span>파일을 고치기 전에 “이 파일이 누구인지”부터 고정한다.</span></div>
+            <p class="outcome-plain">사용자가 어떤 파일을 넣었는지 모르는 상태에서는 내용 분석보다 원본 추적이 먼저다. L0가 끝나면 “이 원본은 어디 있고, 나중에 같은 파일인지 어떻게 확인할지”가 정해진다.</p>
+            <div class="outcome-cols">
+              <div class="outcome-col"><b>들어오면</b><span>파일 또는 폴더 경로, source_id, run_id가 들어온다.</span></div>
+              <div class="outcome-col"><b>M3가 해서</b><span>파일마다 object_id와 source_unit_id를 붙이고 위치, 크기, checksum을 적는다.</span></div>
+              <div class="outcome-col"><b>그래서 남는 것</b><span>원본 파일 신분증과 다시 찾는 위치표가 남는다.</span></div>
+              <div class="outcome-col"><b>다음에 어떻게 됨</b><span>L1이 이 위치표를 보고 sample을 뽑는다. M2도 나중에 같은 원본을 읽을 수 있다.</span></div>
+            </div>
+            <p class="outcome-example">예시: Amazon 리뷰 파일이 들어오면 리뷰 내용은 아직 보지 않고, “이 파일은 F드라이브 어디에 있고 크기는 얼마다”부터 기록한다.</p>
+          </div>
+          <a class="outcome-link" href="layers/l0.html">상세 코드</a>
+        </article>
+
+        <article class="outcome-row">
+          <div class="outcome-id">L1</div>
+          <div class="outcome-main">
+            <div class="outcome-title"><h3>원본 일부를 샘플 봉투에 담는다</h3><span>전체를 다 읽지 않고 대표 조각과 실패 조각을 같이 남긴다.</span></div>
+            <p class="outcome-plain">L1은 큰 파일 전체를 처리하지 않는다. 일부 record만 꺼내되, 그 record가 원본의 어느 위치에서 왔는지 같이 저장한다. 깨진 줄도 버리지 않고 따로 모아 둔다.</p>
+            <div class="outcome-cols">
+              <div class="outcome-col"><b>들어오면</b><span>L0의 파일 위치표와 source_unit_id가 들어온다.</span></div>
+              <div class="outcome-col"><b>M3가 해서</b><span>정해진 row/byte 한도만 읽고 정상 sample과 실패 sample을 나눈다.</span></div>
+              <div class="outcome-col"><b>그래서 남는 것</b><span>대표 sample, parse 실패 목록, 각 record의 원본 위치가 남는다.</span></div>
+              <div class="outcome-col"><b>다음에 어떻게 됨</b><span>L2가 이 sample로 컬럼 모양을 추정하고, M2는 같은 규칙으로 전체를 처리한다.</span></div>
+            </div>
+            <p class="outcome-example">예시: JSONL 100GB 중 일부 줄만 보되, 깨진 JSON 줄은 “실패”로 남겨 나중에 격리할 수 있게 한다.</p>
+          </div>
+          <a class="outcome-link" href="layers/l1.html">상세 코드</a>
+        </article>
+
+        <article class="outcome-row">
+          <div class="outcome-id">L2</div>
+          <div class="outcome-main">
+            <div class="outcome-title"><h3>컬럼 건강검진표를 만든다</h3><span>이 데이터가 어떤 모양인지 처음으로 정리한다.</span></div>
+            <p class="outcome-plain">L2는 sample을 보고 각 컬럼이 숫자인지, 날짜인지, 긴 글인지, 비어 있는 값이 많은지 본다. 아직 확정 정답이 아니라 “현재 sample 기준으로 이렇게 보인다”는 검사표다.</p>
+            <div class="outcome-cols">
+              <div class="outcome-col"><b>들어오면</b><span>L1 sample과 실패 기록이 들어온다.</span></div>
+              <div class="outcome-col"><b>M3가 해서</b><span>format 후보, 컬럼별 타입 후보, 빈값 비율, 예시 값을 계산한다.</span></div>
+              <div class="outcome-col"><b>그래서 남는 것</b><span>데이터 모양표와 schema 지문이 남는다.</span></div>
+              <div class="outcome-col"><b>다음에 어떻게 됨</b><span>L3가 이 표를 줄여 AI에게 보여주고, L6/L7 추천의 근거가 된다.</span></div>
+            </div>
+            <p class="outcome-example">예시: `overall`은 평점 숫자 후보, `reviewText`는 리뷰 본문 후보, `reviewTime`은 날짜 후보로 표시된다.</p>
+          </div>
+          <a class="outcome-link" href="layers/l2.html">상세 코드</a>
+        </article>
+
+        <article class="outcome-row">
+          <div class="outcome-id">L3</div>
+          <div class="outcome-main">
+            <div class="outcome-title"><h3>AI에게 줄 안전 요약본을 만든다</h3><span>AI가 원본 전체를 보지 않게 막는 단계다.</span></div>
+            <p class="outcome-plain">L3는 AI에게 필요한 근거만 작게 포장한다. 원본 row 전체, 긴 본문 전체, 민감한 값은 그대로 넘기지 않는다. 그래서 대용량이나 실시간 데이터에서도 “모든 row를 AI가 본다”는 거짓 구조를 피한다.</p>
+            <div class="outcome-cols">
+              <div class="outcome-col"><b>들어오면</b><span>L2의 컬럼 건강검진표와 제한된 예시가 들어온다.</span></div>
+              <div class="outcome-col"><b>M3가 해서</b><span>PII 후보를 가리고 AI가 볼 정보량을 줄인다.</span></div>
+              <div class="outcome-col"><b>그래서 남는 것</b><span>AI용 안전 요약본과 가림표가 남는다.</span></div>
+              <div class="outcome-col"><b>다음에 어떻게 됨</b><span>L4~L8이 이 요약본으로 추천을 만든다. 원본 전체는 계속 M3 밖에 있다.</span></div>
+            </div>
+            <p class="outcome-example">예시: 이메일 같은 값은 그대로 보여주지 않고 “민감 정보 후보 field”라고 표시한다.</p>
+          </div>
+          <a class="outcome-link" href="layers/l3.html">상세 코드</a>
+        </article>
+
+        <article class="outcome-row">
+          <div class="outcome-id">L4</div>
+          <div class="outcome-main">
+            <div class="outcome-title"><h3>비슷한 과거 템플릿을 찾아온다</h3><span>혼자 상상하지 않고 기존 catalog/schema 기억을 참고한다.</span></div>
+            <p class="outcome-plain">L4는 지금 데이터와 비슷한 schema, catalog 설명, Gold 템플릿 후보를 찾아온다. 단, 검색 결과는 정답이 아니라 “참고 후보”다.</p>
+            <div class="outcome-cols">
+              <div class="outcome-col"><b>들어오면</b><span>AI 안전 요약본과 컬럼 특징이 들어온다.</span></div>
+              <div class="outcome-col"><b>M3가 해서</b><span>비슷한 metadata, product-health 템플릿, vector 후보를 찾는다.</span></div>
+              <div class="outcome-col"><b>그래서 남는 것</b><span>참고할 템플릿 후보와 왜 비슷한지 근거가 남는다.</span></div>
+              <div class="outcome-col"><b>다음에 어떻게 됨</b><span>L5가 이 후보가 실제 데이터 재료를 갖는지 다시 확인한다.</span></div>
+            </div>
+            <p class="outcome-example">예시: `asin`, `rating`, `reviewText`가 보이면 product health 템플릿을 참고 후보로 가져올 수 있다.</p>
+          </div>
+          <a class="outcome-link" href="layers/l4.html">상세 코드</a>
+        </article>
+
+        <article class="outcome-row">
+          <div class="outcome-id">L5</div>
+          <div class="outcome-main">
+            <div class="outcome-title"><h3>추천 후보에 실제 재료가 있는지 확인한다</h3><span>없는 지표를 만들어내지 않게 막는다.</span></div>
+            <p class="outcome-plain">L5는 템플릿이 요구하는 재료가 실제 컬럼에 있는지 확인한다. 이 단계가 있어야 review_count는 만들 수 있지만 conversion_rate는 못 만든다는 식의 구분이 가능하다.</p>
+            <div class="outcome-cols">
+              <div class="outcome-col"><b>들어오면</b><span>템플릿 후보와 source field 후보가 들어온다.</span></div>
+              <div class="outcome-col"><b>M3가 해서</b><span>상품 id, 리뷰, 평점, 조회, 구매, 배송 같은 재료 존재 여부를 대조한다.</span></div>
+              <div class="outcome-col"><b>그래서 남는 것</b><span>가능한 지표와 근거 부족 지표 목록이 남는다.</span></div>
+              <div class="outcome-col"><b>다음에 어떻게 됨</b><span>L7이 근거 있는 Gold만 추천하고, 없는 것은 보류로 표시한다.</span></div>
+            </div>
+            <p class="outcome-example">예시: Amazon 리뷰만 있으면 `purchase_count`가 없으므로 conversion_rate는 “근거 부족”으로 남긴다.</p>
+          </div>
+          <a class="outcome-link" href="layers/l5.html">상세 코드</a>
+        </article>
+
+        <article class="outcome-row">
+          <div class="outcome-id">L6</div>
+          <div class="outcome-main">
+            <div class="outcome-title"><h3>Silver 청소 추천서를 만든다</h3><span>분석 전에 데이터를 어떻게 정리할지 제안한다.</span></div>
+            <p class="outcome-plain">L6는 어떤 컬럼을 남길지, 이름을 바꿀지, 숫자/날짜로 고칠지, 민감 정보는 숨길지 추천한다. 아직 실행이 아니라 사용자가 고칠 수 있는 추천서다.</p>
+            <div class="outcome-cols">
+              <div class="outcome-col"><b>들어오면</b><span>컬럼 건강검진표와 AI 안전 근거가 들어온다.</span></div>
+              <div class="outcome-col"><b>M3가 해서</b><span>select, cast, rename, mask, hash, quarantine 후보를 만든다.</span></div>
+              <div class="outcome-col"><b>그래서 남는 것</b><span>Silver 정제 추천서가 남는다.</span></div>
+              <div class="outcome-col"><b>다음에 어떻게 됨</b><span>L9에서 사용자가 승인해야 L10 작업 지시서로 내려간다.</span></div>
+            </div>
+            <p class="outcome-example">예시: `overall`은 숫자 평점으로 바꾸고, `reviewerName`은 query에서 숨기라고 추천할 수 있다.</p>
+          </div>
+          <a class="outcome-link" href="layers/l6.html">상세 코드</a>
+        </article>
+
+        <article class="outcome-row">
+          <div class="outcome-id">L7</div>
+          <div class="outcome-main">
+            <div class="outcome-title"><h3>Gold 표 후보와 risk_score 정책을 제안한다</h3><span>의미 있는 분석용 표를 만들 수 있는지 본다.</span></div>
+            <p class="outcome-plain">L7은 Gold를 무조건 만들지 않는다. product health, 집계표, risk_score 같은 후보를 만들되, 실제 재료가 있는 컬럼만 쓴다. 공식과 가중치도 고정하지 않고 추천 상태로 둔다.</p>
+            <div class="outcome-cols">
+              <div class="outcome-col"><b>들어오면</b><span>L5의 근거 확인 결과와 Silver 후보가 들어온다.</span></div>
+              <div class="outcome-col"><b>M3가 해서</b><span>가능한 Gold 컬럼, 보류할 컬럼, risk_score 재료를 나눈다.</span></div>
+              <div class="outcome-col"><b>그래서 남는 것</b><span>Gold 추천서와 risk_score 정책 초안이 남는다.</span></div>
+              <div class="outcome-col"><b>다음에 어떻게 됨</b><span>L9에서 사용자가 Gold를 만들지, 보류할지, 공식을 고칠지 결정한다.</span></div>
+            </div>
+            <p class="outcome-example">예시: 리뷰 데이터는 review_count와 average_rating은 가능하지만, 조회/구매 데이터가 없으면 conversion_rate는 보류한다.</p>
+          </div>
+          <a class="outcome-link" href="layers/l7.html">상세 코드</a>
+        </article>
+
+        <article class="outcome-row">
+          <div class="outcome-id">L8</div>
+          <div class="outcome-main">
+            <div class="outcome-title"><h3>나중에 검색에 쓸 설명 후보를 만든다</h3><span>벡터 검색은 직접 만들지 않고 넘길 준비만 한다.</span></div>
+            <p class="outcome-plain">L8은 텍스트 컬럼, catalog 설명, metric 설명 중에서 나중에 semantic search에 넣을 만한 후보를 정한다. M3가 embedding을 직접 만들지는 않는다.</p>
+            <div class="outcome-cols">
+              <div class="outcome-col"><b>들어오면</b><span>텍스트 field 후보와 catalog/Gold 설명 후보가 들어온다.</span></div>
+              <div class="outcome-col"><b>M3가 해서</b><span>검색에 넣을 정보와 넣으면 안 되는 민감 정보를 나눈다.</span></div>
+              <div class="outcome-col"><b>그래서 남는 것</b><span>vector handoff 후보 문서가 남는다.</span></div>
+              <div class="outcome-col"><b>다음에 어떻게 됨</b><span>M6나 extension이 semantic search를 만들 때 이 문서를 참고한다.</span></div>
+            </div>
+            <p class="outcome-example">예시: 리뷰 본문은 검색 후보가 될 수 있지만, 사용자 이메일 같은 값은 제외되어야 한다.</p>
+          </div>
+          <a class="outcome-link" href="layers/l8.html">상세 코드</a>
+        </article>
+
+        <article class="outcome-row">
+          <div class="outcome-id">L9</div>
+          <div class="outcome-main">
+            <div class="outcome-title"><h3>사용자 선택을 공식 결정으로 저장한다</h3><span>AI 추천이 실행으로 넘어가기 전 사람이 확정한다.</span></div>
+            <p class="outcome-plain">L9는 Silver, Gold, risk_score, vector, Gold-to-Gold 선택 상태를 저장한다. 승인되지 않은 추천은 뒤 작업 지시서로 내려가지 않는다.</p>
+            <div class="outcome-cols">
+              <div class="outcome-col"><b>들어오면</b><span>L6~L8 추천서와 사용자의 수정/승인 상태가 들어온다.</span></div>
+              <div class="outcome-col"><b>M3가 해서</b><span>approved, deferred, rejected, not_requested 상태로 확정한다.</span></div>
+              <div class="outcome-col"><b>그래서 남는 것</b><span>사용자 승인서와 결정 기록이 남는다.</span></div>
+              <div class="outcome-col"><b>다음에 어떻게 됨</b><span>L10/L11은 여기서 승인된 것만 작업 지시서로 바꾼다.</span></div>
+            </div>
+            <p class="outcome-example">예시: 사용자가 Gold를 아직 안 만들겠다고 하면 Silver는 진행하고 Gold는 not_requested로 남긴다.</p>
+          </div>
+          <a class="outcome-link" href="layers/l9.html">상세 코드</a>
+        </article>
+
+        <article class="outcome-row">
+          <div class="outcome-id">L10</div>
+          <div class="outcome-main">
+            <div class="outcome-title"><h3>Silver 작업 지시서를 만든다</h3><span>M2가 실행할 수 있는 형태로 바꾼다.</span></div>
+            <p class="outcome-plain">L10은 승인된 Silver 결정만 읽고 “어떤 컬럼을 선택하고, 어떻게 변환하고, 무엇을 숨길지”를 작업 지시서로 만든다. 실행 모드는 미리보기 전용이다.</p>
+            <div class="outcome-cols">
+              <div class="outcome-col"><b>들어오면</b><span>L9에서 승인된 Silver 결정이 들어온다.</span></div>
+              <div class="outcome-col"><b>M3가 해서</b><span>select, cast, mask, quarantine 같은 작업 순서를 정리한다.</span></div>
+              <div class="outcome-col"><b>그래서 남는 것</b><span>Silver 미리보기 작업 지시서가 남는다.</span></div>
+              <div class="outcome-col"><b>다음에 어떻게 됨</b><span>M2가 이 지시서를 Spark/local runner로 실행할 수 있다.</span></div>
+            </div>
+            <p class="outcome-example">예시: “reviewTime을 날짜로 바꾸고 reviewerName은 숨겨라”가 실행 가능한 지시서가 된다.</p>
+          </div>
+          <a class="outcome-link" href="layers/l10.html">상세 코드</a>
+        </article>
+
+        <article class="outcome-row">
+          <div class="outcome-id">L11</div>
+          <div class="outcome-main">
+            <div class="outcome-title"><h3>Gold 작업 지시서를 만든다</h3><span>승인된 Gold 지표만 집계 방법으로 바꾼다.</span></div>
+            <p class="outcome-plain">L11은 Gold가 승인된 경우에만 지표 계산 방법을 만든다. 보류된 지표나 근거 없는 지표는 실행 지시서에 넣지 않는다.</p>
+            <div class="outcome-cols">
+              <div class="outcome-col"><b>들어오면</b><span>L9의 Gold 승인 상태와 L7 Gold 추천서가 들어온다.</span></div>
+              <div class="outcome-col"><b>M3가 해서</b><span>group_by, metric, denominator rule, risk_score policy를 정리한다.</span></div>
+              <div class="outcome-col"><b>그래서 남는 것</b><span>Gold 미리보기 작업 지시서가 남는다.</span></div>
+              <div class="outcome-col"><b>다음에 어떻게 됨</b><span>M2가 Silver 결과를 입력으로 Gold preview를 만들 수 있다.</span></div>
+            </div>
+            <p class="outcome-example">예시: product_id별 review_count와 average_rating은 만들고, view_count가 없으면 conversion_rate는 제외한다.</p>
+          </div>
+          <a class="outcome-link" href="layers/l11.html">상세 코드</a>
+        </article>
+
+        <article class="outcome-row">
+          <div class="outcome-id">L12</div>
+          <div class="outcome-main">
+            <div class="outcome-title"><h3>작업 지시서에 위험한 명령이 있는지 막는다</h3><span>실행 전에 안전 검사를 한다.</span></div>
+            <p class="outcome-plain">L12는 Silver/Gold 작업 지시서가 안전한지 본다. 모든 row마다 AI 호출, production write, 임의 코드 실행 같은 것은 막는다.</p>
+            <div class="outcome-cols">
+              <div class="outcome-col"><b>들어오면</b><span>L10/L11 작업 지시서가 들어온다.</span></div>
+              <div class="outcome-col"><b>M3가 해서</b><span>허용된 작업인지, preview_only인지, 참조가 맞는지 검사한다.</span></div>
+              <div class="outcome-col"><b>그래서 남는 것</b><span>통과/차단 결과와 차단 이유가 남는다.</span></div>
+              <div class="outcome-col"><b>다음에 어떻게 됨</b><span>통과한 지시서만 M2 preview 실행 대상으로 볼 수 있다.</span></div>
+            </div>
+            <p class="outcome-example">예시: “production 테이블에 바로 저장” 같은 명령이 들어오면 block된다.</p>
+          </div>
+          <a class="outcome-link" href="layers/l12.html">상세 코드</a>
+        </article>
+
+        <article class="outcome-row">
+          <div class="outcome-id">L13</div>
+          <div class="outcome-main">
+            <div class="outcome-title"><h3>Silver 미리 실행 결과를 검사한다</h3><span>정제가 실제로 쓸 만한지 본다.</span></div>
+            <p class="outcome-plain">L13은 M2가 미리 돌려 준 Silver 결과를 보고 row가 사라졌는지, 변환 실패가 많은지, 민감 정보가 노출됐는지 확인한다.</p>
+            <div class="outcome-cols">
+              <div class="outcome-col"><b>들어오면</b><span>M2의 Silver preview 실행 결과가 들어온다.</span></div>
+              <div class="outcome-col"><b>M3가 해서</b><span>row_count, cast 실패, quarantine, PII/query 노출을 검사한다.</span></div>
+              <div class="outcome-col"><b>그래서 남는 것</b><span>Silver 품질 검사표와 노출 위험 보고서가 남는다.</span></div>
+              <div class="outcome-col"><b>다음에 어떻게 됨</b><span>L15가 Silver를 ready/warn/block으로 판단할 근거로 쓴다.</span></div>
+            </div>
+            <p class="outcome-example">예시: 평점 숫자 변환 실패가 너무 많으면 warn이나 block 근거가 된다.</p>
+          </div>
+          <a class="outcome-link" href="layers/l13.html">상세 코드</a>
+        </article>
+
+        <article class="outcome-row">
+          <div class="outcome-id">L14</div>
+          <div class="outcome-main">
+            <div class="outcome-title"><h3>Gold 지표가 의미적으로 맞는지 검사한다</h3><span>Gold 문제를 Silver 문제와 섞지 않는다.</span></div>
+            <p class="outcome-plain">L14는 Gold 지표가 실제 근거와 공식을 갖는지 본다. Gold가 보류되어도 그 이유를 남기고, Silver 자체를 실패로 만들지는 않는다.</p>
+            <div class="outcome-cols">
+              <div class="outcome-col"><b>들어오면</b><span>Gold 추천/승인 상태와 preview 근거가 들어온다.</span></div>
+              <div class="outcome-col"><b>M3가 해서</b><span>metric별 분자/분모, formula, missing evidence, caveat를 확인한다.</span></div>
+              <div class="outcome-col"><b>그래서 남는 것</b><span>Gold 준비도 보고서와 의미상 주의 문구가 남는다.</span></div>
+              <div class="outcome-col"><b>다음에 어떻게 됨</b><span>L15가 Gold를 available/deferred/not_ready로 나눌 수 있다.</span></div>
+            </div>
+            <p class="outcome-example">예시: 배송 데이터가 없으면 late_delivery_rate는 Gold 지표에서 보류된다.</p>
+          </div>
+          <a class="outcome-link" href="layers/l14.html">상세 코드</a>
+        </article>
+
+        <article class="outcome-row">
+          <div class="outcome-id">L15</div>
+          <div class="outcome-main">
+            <div class="outcome-title"><h3>최종 사용 가능 상태를 세 갈래로 판정한다</h3><span>Silver 품질, 노출 안전, Gold 준비도를 따로 본다.</span></div>
+            <p class="outcome-plain">L15는 처리 품질, catalog/query 안전성, Gold 준비도를 분리해 판단한다. Gold가 보류되어도 Silver가 안전하면 M6가 Silver context를 쓸 수 있다.</p>
+            <div class="outcome-cols">
+              <div class="outcome-col"><b>들어오면</b><span>L13 Silver 검사와 L14 Gold 검사 결과가 들어온다.</span></div>
+              <div class="outcome-col"><b>M3가 해서</b><span>processing_quality, catalog_safety, gold_readiness를 각각 pass/warn/block으로 본다.</span></div>
+              <div class="outcome-col"><b>그래서 남는 것</b><span>M6가 읽을 context 상태표가 남는다.</span></div>
+              <div class="outcome-col"><b>다음에 어떻게 됨</b><span>L16이 이 상태표를 catalog와 query package에 그대로 넣는다.</span></div>
+            </div>
+            <p class="outcome-example">예시: Silver는 ready지만 Gold는 deferred일 수 있다. 이 둘을 하나로 뭉개지 않는다.</p>
+          </div>
+          <a class="outcome-link" href="layers/l15.html">상세 코드</a>
+        </article>
+
+        <article class="outcome-row">
+          <div class="outcome-id">L16</div>
+          <div class="outcome-main">
+            <div class="outcome-title"><h3>M5/M6가 읽을 최종 전달 꾸러미를 만든다</h3><span>모든 결정과 검사 결과를 한 패키지로 묶는다.</span></div>
+            <p class="outcome-plain">L16은 catalog, SQL context, vector handoff, artifact 목차를 묶는다. 다른 M이 어떤 table/column/metric을 써도 되는지, 어떤 caveat를 붙여야 하는지 여기서 읽는다.</p>
+            <div class="outcome-cols">
+              <div class="outcome-col"><b>들어오면</b><span>앞 단계의 결정, 작업 지시서, 품질 판정, artifact 목록이 들어온다.</span></div>
+              <div class="outcome-col"><b>M3가 해서</b><span>M5/M6가 읽을 catalog package와 query context를 만든다.</span></div>
+              <div class="outcome-col"><b>그래서 남는 것</b><span>최종 전달 꾸러미와 artifact 목차가 남는다.</span></div>
+              <div class="outcome-col"><b>다음에 어떻게 됨</b><span>M5는 저장/워크플로우에 쓰고, M6는 질문 답변 context에 쓴다.</span></div>
+            </div>
+            <p class="outcome-example">예시: M6는 여기서 “이 컬럼은 query 가능, 이 Gold metric은 caveat 필요” 같은 정보를 읽는다.</p>
+          </div>
+          <a class="outcome-link" href="layers/l16.html">상세 코드</a>
+        </article>
+      </div>
+    </section>
+
+    <section id="flow">
+      <h2>전체 흐름도</h2>
+      <p class="section-lead">
+        위쪽은 큰 묶음, 아래쪽은 실제 L0~L16 단계다. 각 카드를 누르면 해당 단계의 코드 설명으로 이동한다. 먼저 “무엇이 남는지”를 보고, 필요할 때만 코드 파일명을 보면 된다.
+      </p>
+      <div class="flow-shell">
+        <div class="pipeline-wrap" aria-label="M3 phase groups">
+          <div class="flow-phasebar">
+            <div class="phase"><strong>L0-L2 먼저 확인</strong><span>원본 위치, 일부 sample, 컬럼 상태표를 만든다. 아직 정제나 Gold를 확정하지 않는다.</span></div>
+            <div class="phase ai"><strong>L3-L8 추천 만들기</strong><span>AI가 볼 요약본을 만들고, Silver 청소법과 Gold 후보를 제안한다. 원본 전체를 AI에게 넘기지 않는다.</span></div>
+            <div class="phase decision"><strong>L9 사용자가 고르기</strong><span>추천을 그대로 쓸지, 고칠지, 보류할지, 거절할지 기록한다.</span></div>
+            <div class="phase spec"><strong>L10-L12 작업 지시서</strong><span>승인된 것만 M2가 미리 실행할 수 있는 지시서로 만들고 위험한 명령은 막는다.</span></div>
+            <div class="phase gate"><strong>L13-L15 결과 검사</strong><span>미리 실행한 결과가 쓸 만한지, 민감 정보가 안전한지, Gold가 준비됐는지 따로 본다.</span></div>
+            <div class="phase handoff"><strong>L16 다른 M에 전달</strong><span>M5가 저장하고 M6가 질문 답변에 쓸 최종 꾸러미를 만든다.</span></div>
+          </div>
+        </div>
+
+        <div class="pipeline-wrap">
+          <div class="pipeline" aria-label="M3 L0-L16 pipeline">
+            <a class="stage" href="layers/l0.html"><span class="id">L0</span><strong>파일 신분증</strong><p>원본 파일을 바꾸지 않고 어디 있는지, 나중에 같은 파일인지 확인할 방법을 적는다.</p><small>tools/m3_contract/l0_raw.py</small><span class="output">남는 것: 원본 위치표, 파일 지문, 다시 찾는 포인터</span></a>
+            <a class="stage" href="layers/l1.html"><span class="id">L1</span><strong>샘플 봉투</strong><p>원본 일부를 꺼내고, 실패한 줄도 버리지 않고 따로 남긴다.</p><small>tools/m3_contract/l1_bronze.py</small><span class="output">남는 것: 대표 sample, 실패 sample, record 위치표</span></a>
+            <a class="stage" href="layers/l2.html"><span class="id">L2</span><strong>컬럼 건강검진표</strong><p>각 컬럼이 숫자인지, 날짜인지, 텍스트인지, 빈값이 많은지 검사한다.</p><small>tools/m3_contract/l2_profile.py</small><span class="output">남는 것: 컬럼별 상태표, 데이터 모양 지문</span></a>
+            <a class="stage ai" href="layers/l3.html"><span class="id">L3</span><strong>AI 안전 요약본</strong><p>AI가 원본 전체를 보지 않게 필요한 근거만 작게 줄이고 민감값을 가린다.</p><small>tools/m3_contract/l3_recommend.py</small><span class="output">남는 것: AI용 요약본, 가림표, 추천 질문</span></a>
+            <a class="stage ai" href="layers/l4.html"><span class="id">L4</span><strong>비슷한 템플릿 찾기</strong><p>기존 catalog와 Gold 템플릿 중 지금 데이터와 비슷한 후보를 찾아온다.</p><small>tools/m3_contract/l3_recommend.py</small><span class="output">남는 것: 참고 템플릿 후보, 비슷하다고 본 근거</span></a>
+            <a class="stage ai" href="layers/l5.html"><span class="id">L5</span><strong>재료 확인</strong><p>추천 후보가 실제 컬럼 근거를 갖는지 확인하고 없는 재료를 표시한다.</p><small>tools/m3_contract/l3_recommend.py</small><span class="output">남는 것: 가능한 지표, 근거 부족 지표 목록</span></a>
+            <a class="stage ai" href="layers/l6.html"><span class="id">L6</span><strong>Silver 청소 추천</strong><p>어떤 컬럼을 남기고, 고치고, 숨기고, 격리할지 추천한다.</p><small>tools/m3_contract/l4_recommendation.py</small><span class="output">남는 것: 사용자가 고칠 수 있는 정제 추천서</span></a>
+            <a class="stage ai" href="layers/l7.html"><span class="id">L7</span><strong>Gold 표 추천</strong><p>만들 수 있는 분석용 표와 risk_score 재료를 제안하고 없는 지표는 보류한다.</p><small>tools/m3_contract/l4_recommendation.py</small><span class="output">남는 것: Gold 추천서, risk_score 정책 초안</span></a>
+            <a class="stage ai" href="layers/l8.html"><span class="id">L8</span><strong>검색용 설명 후보</strong><p>나중에 semantic search에 넣을 설명과 넣으면 안 되는 정보를 나눈다.</p><small>tools/m3_contract/l4_recommendation.py</small><span class="output">남는 것: vector/search handoff 후보</span></a>
+            <a class="stage" href="layers/l9.html"><span class="id">L9</span><strong>사용자 승인서</strong><p>AI 추천 중 무엇을 승인, 수정, 보류, 거절했는지 공식 기록으로 남긴다.</p><small>tools/m3_contract/l5_decision.py</small><span class="output">남는 것: 승인 상태, Silver/Gold 결정 기록</span></a>
+            <a class="stage spec" href="layers/l10.html"><span class="id">L10</span><strong>Silver 작업 지시서</strong><p>승인된 정제 방법만 M2가 미리 실행할 수 있는 지시서로 바꾼다.</p><small>tools/m3_contract/l6_compiler.py</small><span class="output">남는 것: Silver preview 실행 지시서</span></a>
+            <a class="stage spec" href="layers/l11.html"><span class="id">L11</span><strong>Gold 작업 지시서</strong><p>승인된 Gold 지표만 집계 지시서로 만들고 보류 지표는 넣지 않는다.</p><small>tools/m3_contract/l6_compiler.py</small><span class="output">남는 것: Gold preview 실행 지시서</span></a>
+            <a class="stage spec" href="layers/l12.html"><span class="id">L12</span><strong>위험 명령 차단</strong><p>미리보기 전용인지, 금지 명령이 섞였는지 검사하고 위험하면 막는다.</p><small>tools/m3_contract/l6_compiler.py</small><span class="output">남는 것: 통과/차단 결과, 차단 이유</span></a>
+            <a class="stage gate" href="layers/l13.html"><span class="id">L13</span><strong>Silver 결과 검사</strong><p>미리 실행한 Silver에서 row 손실, 변환 실패, 민감정보 노출을 본다.</p><small>tools/m3_contract/l7_silver_preview.py</small><span class="output">남는 것: Silver 품질 검사표, 노출 위험 보고서</span></a>
+            <a class="stage gate" href="layers/l14.html"><span class="id">L14</span><strong>Gold 의미 검사</strong><p>Gold 지표가 실제 재료와 공식을 갖는지 보고 보류 이유를 남긴다.</p><small>tools/m3_contract/l8_gold_preview.py</small><span class="output">남는 것: Gold 준비도, 지표 caveat</span></a>
+            <a class="stage gate" href="layers/l15.html"><span class="id">L15</span><strong>최종 사용 판정</strong><p>Silver 품질, catalog 안전성, Gold 준비도를 따로 판정한다.</p><small>tools/m3_contract/l9_gate.py</small><span class="output">남는 것: M6가 읽을 context 상태표</span></a>
+            <a class="stage handoff" href="layers/l16.html"><span class="id">L16</span><strong>최종 전달 꾸러미</strong><p>M5/M6가 읽을 catalog, query context, vector 후보, artifact 목차를 묶는다.</p><small>tools/m3_contract/l10_handoff.py</small><span class="output">남는 것: 저장/질의/검색용 최종 패키지</span></a>
+          </div>
+        </div>
+
+        <div class="rule-grid">
+          <div class="rule"><strong>Raw는 보존</strong><span>M3는 raw를 복사하거나 변형하지 않는다. replay는 source_unit/object/locator로 해결한다.</span></div>
+          <div class="rule ai"><strong>AI는 control-plane</strong><span>AI는 bounded profile evidence만 본다. 실시간 row/event 전체를 AI에 넣지 않는다.</span></div>
+          <div class="rule ai"><strong>Gold는 추천과 승인 분리</strong><span>product-health와 risk_score는 추천 초안이고 L9 승인 전에는 실행 spec이 아니다.</span></div>
+          <div class="rule spec"><strong>Spec은 preview_only</strong><span>L10/L11은 M2가 실행할 선언형 계약이다. production write는 M3가 만들지 않는다.</span></div>
+          <div class="rule gate"><strong>Silver와 Gold readiness 분리</strong><span>Gold가 deferred/not_requested여도 Silver context는 processing/catalog 기준으로 따로 ready가 될 수 있다.</span></div>
+          <div class="rule handoff"><strong>마지막은 M5/M6가 읽는 패키지</strong><span>L16은 catalog sync, SQL context, vector template, artifact resolver를 묶어 넘긴다.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="artifact-flow">
+      <h2>산출물 기준 흐름: M3가 남기는 문서들이 어떤 순서로 생기는지</h2>
+      <p class="section-lead">
+        여기서는 Raw, Bronze, Silver 같은 내부 용어보다 먼저 “M3가 실제로 남기는 문서가 무엇이고, 그 문서를 누가 읽고, 다음 문서가 왜 필요한지”를 쉬운 이름으로 설명한다. 파일명은 아래에 작게 붙였지만, 먼저 봐야 할 것은 역할이다.
+      </p>
+      <div class="artifact-plain-intro">
+        <div class="artifact-plain-box">
+          <strong>한 문장으로 말하면</strong>
+          <p>
+            M3는 데이터를 바로 고치는 사람이 아니라, 데이터가 어디서 왔는지 적은 보관증부터 정제 추천서, 사용자의 승인서, M2가 실행할 작업 지시서, M5/M6가 읽을 최종 전달 꾸러미까지 차례로 만드는 역할이다.
+          </p>
+        </div>
+        <div class="artifact-plain-box">
+          <strong>왜 이렇게 나누는가</strong>
+          <p>
+            모르는 구조의 큰 데이터는 처음부터 “정답 Gold”를 만들 수 없다. 먼저 원본을 잃지 않고, 일부를 보고, 모양을 검사하고, AI 추천을 만들고, 사용자가 고친 뒤, 미리 실행해 본 결과까지 확인해야 안전하게 다른 M에게 넘길 수 있다.
+          </p>
+        </div>
+      </div>
+
+      <div class="artifact-visual-wrap" aria-label="쉬운 산출물 흐름도">
+        <div class="artifact-visual">
+          <div class="artifact-node">
+            <span class="num">1</span>
+            <strong>파일 신분증</strong>
+            <p>원본 파일을 바꾸지 않고, 어디에 있는지와 나중에 같은 파일인지 확인할 지문을 적는다.</p>
+            <small>L0: source_manifest, object_stream_manifest</small>
+          </div>
+          <div class="artifact-node">
+            <span class="num">2</span>
+            <strong>샘플 봉투</strong>
+            <p>원본 전체가 아니라 일부 record를 꺼내고, 어느 파일의 어느 위치에서 왔는지 같이 담는다.</p>
+            <small>L1: sample, rescue lane</small>
+          </div>
+          <div class="artifact-node">
+            <span class="num">3</span>
+            <strong>컬럼 건강검진표</strong>
+            <p>각 컬럼이 숫자인지, 날짜인지, 텍스트인지, 비어 있는 값이 많은지, 위험한 정보 후보가 있는지 적는다.</p>
+            <small>L2: profile, schema fingerprint</small>
+          </div>
+          <div class="artifact-node">
+            <span class="num">4</span>
+            <strong>AI에게 줄 안전 요약본</strong>
+            <p>원본 전체 대신 작은 근거만 AI에게 넘긴다. 민감한 값이나 너무 긴 원문은 줄이거나 가린다.</p>
+            <small>L3-L5: AI input, template 근거 확인</small>
+          </div>
+          <div class="artifact-node">
+            <span class="num">5</span>
+            <strong>정제/Gold 추천서</strong>
+            <p>어떤 컬럼을 남기고 고칠지, 어떤 Gold 표를 만들 수 있는지, 없는 지표는 왜 보류해야 하는지 쓴다.</p>
+            <small>L6-L8: Silver 추천, Gold 추천, vector 후보</small>
+          </div>
+          <div class="artifact-node">
+            <span class="num">6</span>
+            <strong>사용자 승인서</strong>
+            <p>AI 추천을 그대로 실행하지 않고, 사용자가 승인/수정/보류/거절한 선택을 공식 기록으로 남긴다.</p>
+            <small>L9: approval_state, policy decision</small>
+          </div>
+          <div class="artifact-node">
+            <span class="num">7</span>
+            <strong>작업 지시서와 미리 실행 검사표</strong>
+            <p>M2가 실행할 수 있는 preview 전용 지시서를 만들고, 실행 결과가 쓸 만한지 품질과 노출 위험을 검사한다.</p>
+            <small>L10-L15: transform spec, validation, gate</small>
+          </div>
+          <div class="artifact-node">
+            <span class="num">8</span>
+            <strong>최종 전달 꾸러미</strong>
+            <p>M5가 저장하고 M6가 질문 답변에 쓸 수 있도록 catalog, SQL context, caveat, artifact 목차를 묶는다.</p>
+            <small>L16: catalog package, SQL context, artifact resolver</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="artifact-example-grid">
+        <div class="artifact-example">
+          <strong>Amazon 리뷰 데이터 예시</strong>
+          <p>
+            리뷰 파일에서 상품 id와 평점, 리뷰 본문은 찾을 수 있다. 그래서 review_count, average_rating, negative_review_rate 같은 Gold 후보는 만들 수 있다. 하지만 view_count나 purchase_count가 파일에 없으면 conversion_rate는 만들지 않고 보류 사유를 남긴다.
+          </p>
+        </div>
+        <div class="artifact-example">
+          <strong>택시 데이터 예시</strong>
+          <p>
+            택시 데이터는 상품 건강도보다 시간대별 운행 수, 지역별 요금, 이상치 탐지 같은 Gold 후보가 더 자연스럽다. 같은 흐름을 쓰지만, 추천되는 Gold 표와 risk_score 재료는 데이터의 실제 컬럼에 맞게 달라진다.
+          </p>
+        </div>
+      </div>
+
+      <div class="artifact-flow">
+        <div class="flow-row">
+          <div class="flow-label">원본을 잃지 않기</div>
+          <div class="flow-cell"><strong>파일 신분증</strong><span>파일을 고치지 않고 “이 파일은 어디 있고, 크기는 얼마고, 나중에 같은 파일인지 어떻게 확인할지”를 적는다. 주민등록증처럼 원본을 식별하는 문서다.</span></div>
+          <div class="flow-cell"><strong>샘플 봉투</strong><span>전체를 다 열지 않고 일부만 꺼낸다. 꺼낸 줄마다 “어느 파일의 몇 번째 줄에서 왔는지”를 붙여서, 문제가 생기면 원본 위치로 돌아갈 수 있게 한다.</span></div>
+          <div class="flow-cell"><strong>다음에 쓰는 곳</strong><span>M2가 전체 데이터를 처리할 때 이 위치표를 보고 같은 원본을 읽는다. M3는 원본을 복사하거나 직접 크게 실행하지 않는다.</span></div>
+        </div>
+        <div class="flow-row">
+          <div class="flow-label">모양을 알아보기</div>
+          <div class="flow-cell"><strong>컬럼 건강검진표</strong><span>각 컬럼이 숫자인지, 날짜인지, 텍스트인지, 비어 있는 값이 많은지 본다. 예를 들면 `overall`은 평점 후보, `reviewText`는 긴 글 후보처럼 표시한다.</span></div>
+          <div class="flow-cell"><strong>AI 안전 요약본</strong><span>AI에게 원본 전체를 주지 않는다. 컬럼 이름, 타입 후보, 비어 있는 비율, 제한된 예시만 주고 민감한 값은 가린다.</span></div>
+          <div class="flow-cell"><strong>다음에 쓰는 곳</strong><span>이 요약본이 있어야 AI가 Silver 청소법과 Gold 후보를 추천한다. 모든 row를 AI가 실시간으로 보는 구조가 아니다.</span></div>
+        </div>
+        <div class="flow-row">
+          <div class="flow-label">청소법 정하기</div>
+          <div class="flow-cell"><strong>Silver 청소 추천서</strong><span>어떤 컬럼을 남길지, 이름을 바꿀지, 숫자로 바꿀지, 날짜로 바꿀지, 민감 정보는 숨길지 추천한다.</span></div>
+          <div class="flow-cell"><strong>사용자 확인</strong><span>AI 추천을 바로 실행하지 않는다. 사용자가 “이 컬럼은 남겨라”, “이건 숨겨라”, “이건 버리지 말고 격리해라”처럼 고칠 수 있다.</span></div>
+          <div class="flow-cell"><strong>다음에 쓰는 곳</strong><span>승인된 청소법만 M2가 실행할 작업 지시서로 바뀐다. 승인 전에는 아직 제안서일 뿐이다.</span></div>
+        </div>
+        <div class="flow-row">
+          <div class="flow-label">의미 표 만들지 고르기</div>
+          <div class="flow-cell"><strong>Gold 추천서</strong><span>상품별 건강도, 시간대별 요약, 위험 점수 같은 “분석용 표” 후보를 만든다. 단, 실제 컬럼 근거가 있는 지표만 후보가 된다.</span></div>
+          <div class="flow-cell"><strong>없는 재료 표시</strong><span>리뷰 파일에 조회수나 구매수가 없으면 conversion_rate는 만들지 않는다. 없는 값을 0으로 채우는 대신 “근거 없음” 또는 “보류”로 남긴다.</span></div>
+          <div class="flow-cell"><strong>사용자 확인</strong><span>risk_score 공식과 가중치도 고정으로 박지 않는다. 데이터에 있는 재료를 보고 추천하고, 사용자가 승인해야 한다.</span></div>
+        </div>
+        <div class="flow-row">
+          <div class="flow-label">넘기기 전에 검사하기</div>
+          <div class="flow-cell"><strong>작업 지시서</strong><span>사용자가 승인한 내용만 M2가 실행할 수 있는 preview 전용 지시서로 바꾼다. production 저장 명령은 넣지 않는다.</span></div>
+          <div class="flow-cell"><strong>미리 실행 검사표</strong><span>M2가 미리 돌린 결과를 보고 row가 사라졌는지, 변환 실패가 많은지, 민감 정보가 노출됐는지 검사한다.</span></div>
+          <div class="flow-cell"><strong>최종 전달 꾸러미</strong><span>M5는 저장과 workflow에 쓰고, M6는 질문 답변에 쓸 수 있는 table/column/metric과 주의 문구를 읽는다.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="groups">
+      <h2>코드 읽기 묶음</h2>
+      <p class="section-lead">
+        L0-L16을 한 줄로만 보면 길다. 실제 설명과 리뷰는 아래 7개 묶음으로 읽는 것이 빠르다.
+      </p>
+      <div class="group-grid">
+        <div class="group"><b>L0-L2 Ingest Evidence</b><span>원본 pointer, Bronze sample, profile/schema snapshot. AI나 Spark production 실행이 아니라 M3 control-plane evidence다.</span></div>
+        <div class="group"><b>L3-L5 AI Input Safety</b><span>AI-safe input pack, metadata retrieval, candidate grounding. raw full scan과 row-level AI를 막는 구간이다.</span></div>
+        <div class="group"><b>L6-L8 Draft Recommendation</b><span>Silver draft, Gold draft, vector handoff draft. 아직 실행 spec이 아니라 사용자가 편집할 추천 초안이다.</span></div>
+        <div class="group"><b>L9 Decision</b><span>Silver/Gold/Gold-to-Gold/risk/vector 선택 상태를 분리한다. Gold 미요청이 Silver를 막지 않는다.</span></div>
+        <div class="group"><b>L10-L12 Compiler</b><span>preview-only deterministic spec과 compiler validation. M2가 실행할 수 있는 계약으로만 내린다.</span></div>
+        <div class="group"><b>L13-L15 Evidence Gate</b><span>preview evidence와 3-axis readiness. 실행 품질, catalog safety, Gold readiness를 섞지 않는다.</span></div>
+        <div class="group"><b>L16 Handoff</b><span>M5 catalog storage와 M6 SQL/vector context가 읽을 package를 만든다.</span></div>
+      </div>
+    </section>
+
+    <section id="matrix">
+      <h2>Layer Responsibility Matrix</h2>
+      <p class="section-lead">
+        layer, code file, artifact, 판단 기준을 빠르게 찾는 표다. 검색창에 <code>risk</code>, <code>vector</code>, <code>catalog</code>, <code>l6_compiler</code>처럼 입력하면 관련 row만 남는다.
+      </p>
+      <div class="filter-row">
+        <input id="matrixFilter" type="search" placeholder="layer, file, artifact, keyword 검색">
+        <span class="count" id="matrixCount">17 rows</span>
+      </div>
+      <table id="layerTable">
+        <thead>
+          <tr>
+            <th style="width: 8%">Layer</th>
+            <th style="width: 18%">역할</th>
+            <th style="width: 18%">코드</th>
+            <th style="width: 29%">주요 산출물</th>
+            <th style="width: 27%">판단 기준</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><a class="badge" href="layers/l0.html">L0</a></td><td>Raw source unit manifest</td><td><code>l0_raw.py</code></td><td><code>object_stream_manifest.json</code>, <code>source_manifest.json</code>, <code>raw_replay_pointer.json</code></td><td>원본 복제/변형 금지, source_unit_id와 replay pointer 보존.</td></tr>
+          <tr><td><a class="badge" href="layers/l1.html">L1</a></td><td>Bronze envelope</td><td><code>l1_bronze.py</code></td><td><code>bronze_envelope_samples.jsonl</code>, <code>rescue_lane.jsonl</code>, <code>bronze_envelope_spec.json</code></td><td>parse failure와 정상 sample을 모두 추적 가능하게 유지.</td></tr>
+          <tr><td><a class="badge" href="layers/l2.html">L2</a></td><td>Profile snapshot</td><td><code>l2_profile.py</code></td><td><code>format_detection.json</code>, <code>profile_snapshot.json</code>, <code>schema_fingerprint.json</code></td><td>unknown CSV/JSON/JSONL/text/Parquet extension 상태를 bounded profile로 요약.</td></tr>
+          <tr><td><a class="badge ai" href="layers/l3.html">L3</a></td><td>AI-safe evidence</td><td><code>l3_recommend.py</code></td><td><code>ai_recommendation_input_pack.json</code>, <code>redaction_map.json</code>, <code>policy_context_pack.json</code></td><td>PII redaction, example cap, raw payload full exposure 금지.</td></tr>
+          <tr><td><a class="badge ai" href="layers/l4.html">L4</a></td><td>Metadata and template retrieval</td><td><code>l3_recommend.py</code></td><td><code>metadata_retrieval_index_plan.json</code>, <code>gold_template_candidate_retrieval.json</code></td><td>VectorDB/metadata search는 후보 검색 보조이며 값 정확성 증거가 아니다.</td></tr>
+          <tr><td><a class="badge ai" href="layers/l5.html">L5</a></td><td>Candidate grounding</td><td><code>l3_recommend.py</code></td><td><code>candidate_grounding_report.json</code></td><td>product-health/risk 후보가 실제 source field evidence를 갖는지 판정.</td></tr>
+          <tr><td><a class="badge ai" href="layers/l6.html">L6</a></td><td>Silver draft</td><td><code>l4_recommendation.py</code></td><td><code>silver_policy_recommendation_draft.json</code></td><td>cleaning/cast/mask/hash/quarantine 추천. 실행 spec이 아니다.</td></tr>
+          <tr><td><a class="badge ai" href="layers/l7.html">L7</a></td><td>Gold draft</td><td><code>l4_recommendation.py</code></td><td><code>gold_model_recommendation_draft.json</code>, <code>product_health_gold_template_draft.json</code>, <code>risk_score_policy_recommendation_draft.json</code></td><td>Gold와 risk_score는 source evidence adaptive. 전역 고정 공식 금지.</td></tr>
+          <tr><td><a class="badge ai" href="layers/l8.html">L8</a></td><td>Vector handoff draft</td><td><code>l4_recommendation.py</code></td><td><code>vector_embedding_handoff_template.json</code>, <code>ai_generation_trace.json</code></td><td>embedding/index build는 extension hook. M3 core는 template만 만든다.</td></tr>
+          <tr><td><a class="badge" href="layers/l9.html">L9</a></td><td>User decision</td><td><code>l5_decision.py</code></td><td><code>approval_state.json</code>, <code>silver_policy_decision.json</code>, <code>gold_policy_decision.json</code></td><td>Gold approved일 때만 Gold compile allowed. Gold-to-Gold는 user selectable.</td></tr>
+          <tr><td><a class="badge spec" href="layers/l10.html">L10</a></td><td>Silver spec</td><td><code>l6_compiler.py</code></td><td><code>silver_transform_spec.json</code></td><td>write_mode는 <code>preview_only</code>. M2 실행 입력으로만 내린다.</td></tr>
+          <tr><td><a class="badge spec" href="layers/l11.html">L11</a></td><td>Gold spec</td><td><code>l6_compiler.py</code></td><td><code>gold_generation_spec.json</code></td><td>Gold 미승인 상태면 operation은 비어 있어야 한다.</td></tr>
+          <tr><td><a class="badge spec" href="layers/l12.html">L12</a></td><td>Compiler validation</td><td><code>l6_compiler.py</code></td><td><code>compiler_validation_result.json</code>, <code>unsupported_action_report.json</code>, <code>layered_transform_graph.json</code></td><td>per-row AI, generated code, production write, legacy window_id 차단.</td></tr>
+          <tr><td><a class="badge gate" href="layers/l13.html">L13</a></td><td>Silver preview evidence</td><td><code>l7_silver_preview.py</code></td><td><code>silver_preview_validation_result.json</code>, <code>pii_exposure_report.json</code>, <code>silver_quality_axis.json</code></td><td>PII/query exposure와 Silver structural validation을 분리 기록.</td></tr>
+          <tr><td><a class="badge gate" href="layers/l14.html">L14</a></td><td>Gold readiness evidence</td><td><code>l8_gold_preview.py</code></td><td><code>metric_definition_draft.json</code>, <code>gold_readiness_input_report.json</code>, <code>semantic_caveat_report.json</code></td><td>not_requested/deferred도 명시적 status로 남긴다.</td></tr>
+          <tr><td><a class="badge gate" href="layers/l15.html">L15</a></td><td>Three-axis gate</td><td><code>l9_gate.py</code></td><td><code>processing_quality_axis.json</code>, <code>catalog_safety_axis.json</code>, <code>gold_readiness_axis.json</code>, <code>gate_summary.json</code></td><td>Silver는 processing/catalog만으로 판정. Gold readiness는 별도 축.</td></tr>
+          <tr><td><a class="badge handoff" href="layers/l16.html">L16</a></td><td>Catalog/query/vector handoff</td><td><code>l10_handoff.py</code></td><td><code>catalog_sync_contract_package.json</code>, <code>sql_context_pack.json</code>, <code>semantic_catalog_vector_index_template.json</code>, <code>exports/*</code></td><td>M5/M6가 읽을 package. 실제 DB write, SQL serving, vector build는 downstream.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="physical">
+      <h2>Physical l0-l10 vs Logical L0-L16</h2>
+      <p class="section-lead">
+        코드 함수명과 폴더명은 기존 artifact id 호환 때문에 <code>build_l0()</code>~<code>build_l10()</code>로 남아 있다. 발표와 설계 기준은 logical L0-L16이다.
+      </p>
+      <div class="swimlane">
+        <div class="lane-label">Core front</div>
+        <div class="lane-track">
+          <div class="lane-item"><strong>physical l0</strong><span>logical L0<br><code>l0_raw.py</code></span></div>
+          <div class="lane-item"><strong>physical l1</strong><span>logical L1<br><code>l1_bronze.py</code></span></div>
+          <div class="lane-item"><strong>physical l2</strong><span>logical L2<br><code>l2_profile.py</code></span></div>
+          <div class="lane-item"><strong>physical l3/l4</strong><span>logical L3-L8<br>AI evidence, retrieval, grounding, Silver/Gold/vector draft</span></div>
+        </div>
+      </div>
+      <div class="swimlane">
+        <div class="lane-label">Core back</div>
+        <div class="lane-track">
+          <div class="lane-item"><strong>physical l5</strong><span>logical L9<br>approval state and decisions</span></div>
+          <div class="lane-item"><strong>physical l6</strong><span>logical L10-L12<br>Silver spec, Gold spec, compiler gate</span></div>
+          <div class="lane-item"><strong>physical l7/l8/l9</strong><span>logical L13-L15<br>preview evidence and readiness gates</span></div>
+          <div class="lane-item"><strong>physical l10</strong><span>logical L16<br>catalog/query/vector handoff</span></div>
+        </div>
+      </div>
+      <div class="note">
+        발표에서는 logical L0-L16을 먼저 말한다. physical 번호는 기존 artifact layout과 builder 이름을 설명할 때만 사용한다.
+      </div>
+    </section>
+
+    <section id="handoff">
+      <h2>M3 Boundary Visual</h2>
+      <p class="section-lead">
+        M3는 Transform 계약의 T를 정의하고 검증한다. 실행 엔진은 로컬 검증에서는 Spark/MinIO를 쓰지만, 실제 제품 경계에서는 M2/M5/M6로 넘긴다.
+      </p>
+      <div class="boundary">
+        <div class="boundary-step"><b>M1 -> M3</b><span>source registration, 사용자 decision/edit state, 화면에서 선택한 추천 정책이 들어온다.</span></div>
+        <div class="boundary-step"><b>M3 L0-L9</b><span>profile, AI-safe evidence, 추천 draft, approval contract를 만든다.</span></div>
+        <div class="boundary-step"><b>M3 -> M2</b><span>L10/L11 preview-only spec을 넘긴다. Spark session과 production execution은 M2 책임이다.</span></div>
+        <div class="boundary-step"><b>M2 -> M3</b><span>preview evidence가 돌아오면 L13-L15가 품질과 readiness를 판정한다.</span></div>
+        <div class="boundary-step"><b>M3 -> M5/M6</b><span>L16 catalog sync package와 SQL/vector context를 넘긴다.</span></div>
+      </div>
+    </section>
+
+    <section id="docs">
+      <h2>Detailed Code Explanation Documents</h2>
+      <p class="section-lead">
+        인덱스는 전체 흐름과 책임 구분용이다. 각 함수/코드 원문과 세부 해설은 아래 문서로 들어간다.
+      </p>
+      <div class="doc-grid">
+        <a class="doc-link" href="layers/index.html"><strong>L0-L16 단계별 HTML</strong><span>각 L단계의 역할, 산출물, 판단 기준, 원문 코드와 세부 설명을 분리해서 본다.</span></a>
+        <a class="doc-link" href="01-core-l0-l4.md"><strong>Core Logical L0-L8</strong><span>CLI, common helper, L0 raw, L1 Bronze, L2 profile, L3-L5 evidence/retrieval/grounding, L6-L8 recommendation draft.</span></a>
+        <a class="doc-link" href="02-core-physical-l5-l10-logical-l9-l16-layer-map.md"><strong>Core Logical L9-L16</strong><span>L9 decision, L10/L11 spec compiler, L12 compiler gate, L13/L14 preview evidence, L15 gate, L16 handoff.</span></a>
+        <a class="doc-link" href="03-runners-product-health-tests-contracts.md"><strong>Runner, Product Health, Tests</strong><span>Local Spark/MinIO validation harness, product-health reference transform, Spark validation, tests, sample contracts.</span></a>
+      </div>
+      <details>
+        <summary>읽는 순서</summary>
+        <ol>
+          <li>이 인덱스에서 전체 흐름도와 책임표를 먼저 본다.</li>
+          <li><code>layers/index.html</code>에서 L0~L16 단계별 HTML로 이동한다.</li>
+          <li><code>01-core-l0-l4.md</code>와 <code>02-core-physical-l5-l10-logical-l9-l16-layer-map.md</code>에서 코드 설명을 확인한다.</li>
+          <li><code>03-runners-product-health-tests-contracts.md</code>에서 검증 하네스와 product-health 계약을 확인한다.</li>
+        </ol>
+      </details>
+    </section>
+
+    <section id="html-advantages">
+      <h2>HTML 버전의 용도</h2>
+      <p class="section-lead">
+        Markdown은 상세 설명에 강하고 HTML은 발표, 검색, 흐름 파악에 강하다. 이 보드는 둘을 연결하는 탐색용 화면이다.
+      </p>
+      <div class="advantage-grid">
+        <div class="advantage"><strong>한눈에 보는 흐름</strong><span>L0-L16 전체가 어떤 phase에 속하는지 바로 구분한다.</span></div>
+        <div class="advantage"><strong>번호 혼동 방지</strong><span>physical l0-l10과 logical L0-L16을 같은 화면에서 비교한다.</span></div>
+        <div class="advantage"><strong>빠른 검색</strong><span>risk, vector, catalog, compiler 같은 키워드로 관련 layer를 즉시 찾는다.</span></div>
+        <div class="advantage"><strong>발표 자료화</strong><span>색상과 phase 구분으로 M3 범위와 다른 M 경계를 빠르게 설명할 수 있다.</span></div>
+        <div class="advantage"><strong>상세 문서 연결</strong><span>각 L단계 HTML과 Markdown 설명으로 바로 이동한다.</span></div>
+      </div>
+      <p class="print-hint">브라우저 인쇄를 쓰면 flow와 matrix가 포함된 검토용 PDF로도 뽑을 수 있다.</p>
+    </section>
+  </main>
+
+  <script>
+    const filter = document.getElementById("matrixFilter");
+    const table = document.getElementById("layerTable");
+    const count = document.getElementById("matrixCount");
+    const rows = Array.from(table.querySelectorAll("tbody tr"));
+
+    function updateFilter() {
+      const query = filter.value.trim().toLowerCase();
+      let visible = 0;
+      rows.forEach((row) => {
+        const text = row.innerText.toLowerCase();
+        const show = !query || text.includes(query);
+        row.style.display = show ? "" : "none";
+        if (show) visible += 1;
+      });
+      count.textContent = `${visible} / ${rows.length} rows`;
+    }
+
+    filter.addEventListener("input", updateFilter);
+    updateFilter();
+  </script>
+</body>
+</html>

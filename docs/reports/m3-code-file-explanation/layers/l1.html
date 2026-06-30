@@ -1,0 +1,33 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="icon" href="data:,"><link rel="stylesheet" href="layer-detail.css"><title>L1 Bronze Envelope</title></head>
+<body><div class="topbar"><div class="topbar-inner"><a class="brand" href="../index.html">M3 Code Atlas</a><div class="top-actions"><a href="index.html">L목록</a><a href="../index.html#flow">전체 흐름</a><a href="../index.html#matrix">책임표</a></div></div></div>
+<main>
+  <header class="hero"><p class="eyebrow">Logical L1</p><h1>Bronze Envelope and Rescue Lane</h1><p class="lead">원본 전체를 materialize하지 않고 bounded sample을 Bronze envelope로 감싸며, parse 실패가 구조 분석 과정에서 사라지지 않게 rescue lane을 둔다.</p><div class="meta"><span class="pill">code: l1_bronze.py</span><span class="pill">physical: l1</span><span class="pill">input: L0 manifest</span></div></header>
+  <div class="content-grid">
+    <section><h2>이 단계가 하는 일</h2><ul><li>row/byte 상한 안에서 sample line을 읽는다.</li><li>object_id, line number, byte offset, raw hash를 Bronze record에 붙인다.</li><li>parse failure와 schema conflict를 잃지 않는 rescue lane 계약을 만든다.</li></ul></section>
+    <section><h2>코드와 산출물</h2><table><tr><th>코드</th><td><a href="../../../../tools/m3_contract/l1_bronze.py">tools/m3_contract/l1_bronze.py</a></td></tr><tr><th>주요 산출물</th><td><code>bronze_envelope_samples.json</code>, <code>bronze_envelope_spec.json</code>, <code>rescue_lane.json</code>, <code>sample_records.jsonl</code></td></tr><tr><th>다음 입력</th><td>L2 profile이 읽는 bounded sample</td></tr></table></section>
+  </div>
+  <section><h2>판단 기준</h2><div class="note ok">같은 record를 다시 찾을 수 있는 locator가 있어야 한다. parse 실패 record가 profile 전에 없어지면 L1 실패다.</div></section>
+  <section><h2>함수/코드 블록별 상세 해설</h2><div class="code-detail">
+    <div class="code-block"><b><code>build_l1()</code></b><span>L0 manifest를 입력으로 받아 <code>l1</code> 폴더와 Bronze sample artifact를 만든다.</span><ul><li>L0 objects를 path 기준 dict로 만든다.</li><li><code>_sample_bronze_records()</code> 결과를 manifest/spec/rescue lane으로 감싼다.</li></ul></div>
+    <div class="code-block"><b><code>_sample_bronze_records()</code></b><span>파일을 binary line 단위로 읽으며 row limit과 byte limit을 동시에 지킨다.</span><ul><li>line_number와 byte_offset을 replay locator로 남긴다.</li><li>raw bytes는 hash하고 preview는 replacement decode로 제한한다.</li></ul></div>
+    <div class="code-block"><b>Bronze record 생성 블록</b><span>record_id, source_unit_id, object_id, line/byte locator, payload preview, raw sha256, ingest time을 만든다. L2 profile은 이 bounded record만 본다.</span></div>
+    <div class="code-block"><b><code>rescue_lane</code> manifest</b><span>parse 불가 record와 schema conflict가 정상 sample과 분리되어도 추적 가능하도록 계약을 만든다.</span></div>
+    <div class="code-block"><b><code>bronze_envelope_spec</code></b><span>Bronze record가 가져야 할 required columns와 parse status enum, replay locator rule을 고정한다.</span></div>
+  </div></section>
+  <section><h2>라인/함수 단위 코드 해설</h2><table><thead><tr><th style="width:18%">Line</th><th style="width:24%">코드 단위</th><th>상세 설명</th></tr></thead><tbody>
+    <tr><td>1-7</td><td>import</td><td><code>hashlib</code>는 raw line hash, <code>Path</code>는 output path, common helper는 artifact ref/write에 사용된다.</td></tr>
+    <tr><td>10-17</td><td><code>build_l1()</code> signature</td><td>L0 결과와 sampling limit를 받는다. L1은 전체 Bronze table이 아니라 bounded sample lane을 만드는 함수다.</td></tr>
+    <tr><td>20-23</td><td>sample 준비</td><td><code>l1</code> 폴더를 만들고 L0 object metadata를 path 기준 dict로 바꾼 뒤 <code>_sample_bronze_records()</code>를 호출한다.</td></tr>
+    <tr><td>24-45</td><td><code>bronze_envelope_samples</code></td><td>L0 manifest ref, sample count, row/byte limit, sample policy, JSONL artifact 이름을 기록한다.</td></tr>
+    <tr><td>46-73</td><td><code>rescue_lane</code></td><td>parse failure와 schema conflict를 어떻게 보존할지 정의한다. 실제 실패 row가 없어도 실패 lane 계약은 만들어둔다.</td></tr>
+    <tr><td>74-101</td><td><code>bronze_envelope_spec</code></td><td>required columns, parse status enum, optional artifact ref, replay locator rule을 정의한다.</td></tr>
+    <tr><td>102-114</td><td>write + return</td><td>manifest/spec JSON, sample/rescue JSONL, 호환용 <code>sample_records.jsonl</code>을 저장하고 L2용 samples를 반환한다.</td></tr>
+    <tr><td>117-124</td><td><code>_sample_bronze_records()</code> signature</td><td>파일 목록, object metadata, source/run id, row/byte limit를 받는다. 이 helper가 실제 bounded line read를 수행한다.</td></tr>
+    <tr><td>125-133</td><td>loop guard</td><td>row limit 또는 byte limit에 도달하면 즉시 반환한다. 대용량 source에서 전체 scan을 피하는 핵심 조건이다.</td></tr>
+    <tr><td>134-136</td><td>raw decode</td><td>raw bytes를 UTF-8 replacement mode로 preview decode한다. 깨진 문자가 있어도 profiling pipeline이 중단되지 않게 한다.</td></tr>
+    <tr><td>137-167</td><td>Bronze sample record</td><td>record id, source/object refs, source_unit_id, line/byte locator, payload preview, raw sha256, raw size, source uri/path, ingest time을 만든다.</td></tr>
+    <tr><td>168-169</td><td>offset update</td><td>다음 line의 byte start를 갱신하고 모든 파일 처리가 끝나면 rows를 반환한다.</td></tr>
+  </tbody></table></section>
+  <section><h2>앞뒤 연결</h2><div class="visual"><div class="step"><b>L0</b><span>raw pointer</span></div><div class="step active"><b>L1</b><span>sample + rescue</span></div><div class="step"><b>L2</b><span>schema/profile</span></div><div class="step ai"><b>L3</b><span>evidence pack</span></div><div class="step spec"><b>L10</b><span>Bronze input ref</span></div></div></section>
+  <div class="prev-next"><a href="l0.html"><- 이전 L0</a><a href="l2.html">다음 L2 -></a></div>
+</main><script src="source-snippets.js"></script><script src="source-analysis.js"></script><script src="source-glossary.js"></script><script src="source-plain.js"></script><script src="layer-detail.js"></script></body></html>

@@ -51,17 +51,42 @@
         "from": "M3 L2 profile/schema/sketch evidence",
         "to": "M3 L4 AI recommendation model slot"
       },
-      "outputs": ["ai_recommendation_input_pack.json", "field_evidence_reducer.json", "policy_context_pack.json"]
+      "sub_layers": [
+        {
+          "id": "L3A",
+          "name": "Metadata Retrieval Index Plan",
+          "role": "Prepare schema/profile/column/gold-template documents and payload filters for optional vectorDB-backed control-plane retrieval."
+        },
+        {
+          "id": "L3B",
+          "name": "Gold Template Candidate Retrieval",
+          "role": "Retrieve or deterministically match top-k Gold template candidates such as gold_product_health from profile and role-hint evidence."
+        },
+        {
+          "id": "L3C",
+          "name": "Candidate Grounding",
+          "role": "Check candidate templates against exact name/type compatibility, value range needs, join overlap needs, denominator rules, PII/query exposure, preview requirement, and user approval requirement."
+        }
+      ],
+      "outputs": [
+        "ai_recommendation_input_pack.json",
+        "field_evidence_reducer.json",
+        "policy_context_pack.json",
+        "unknown_data_recommendation_pack.json",
+        "metadata_retrieval_index_plan.json",
+        "gold_template_candidate_retrieval.json",
+        "candidate_grounding_report.json"
+      ]
     },
     {
       "id": "L4",
       "name": "AI Recommendation Draft",
-      "role": "Call the configured AI model, for example gpt-5.3-codex-spark if available, to draft editable Silver cleaning recommendations and Gold semantic/model recommendations from L3 evidence only.",
+      "role": "Call the configured AI model, for example gpt-5.3-codex-spark if available, to draft editable Silver cleaning recommendations, general Gold semantic/model recommendations, presentation product health Gold templates, and vector/embedding handoff templates from L3 evidence only.",
       "actual_flow": {
         "from": "M3 L3 AI input evidence pack",
         "to": "M1/M5 L5 recommendation edit and decision"
       },
-      "outputs": ["silver_policy_recommendation_draft.json", "gold_model_recommendation_draft.json", "ai_generation_trace.json"]
+      "outputs": ["silver_policy_recommendation_draft.json", "gold_model_recommendation_draft.json", "product_health_gold_template_draft.json", "risk_score_policy_recommendation_draft.json", "vector_embedding_handoff_template.json", "ai_generation_trace.json"]
     },
     {
       "id": "L5",
@@ -116,12 +141,12 @@
     {
       "id": "L10",
       "name": "Catalog Metadata and Semantic Handoff",
-      "role": "Package source, profile, Silver spec, Gold metric definitions, lineage, quality caveats, semantic hints, and SQL context into catalog metadata usable by M5 and M6.",
+      "role": "Package source, profile, Silver spec, Gold metric definitions, semantic template refs, vector/embedding handoff refs, semantic catalog vector-index template refs, lineage, quality caveats, semantic hints, and SQL context into catalog metadata usable by M5 and M6.",
       "actual_flow": {
         "from": "M3 L0-L9 artifact references and gate results",
         "to": "M5 catalog API/storage and M6 SQL/AI query context"
       },
-      "outputs": ["catalog_metadata_draft.json", "field_level_lineage.json", "sql_context_pack.json", "artifact_reference_manifest.json", "handoff_package.json"]
+      "outputs": ["catalog_metadata_draft.json", "field_level_lineage.json", "sql_context_pack.json", "semantic_catalog_vector_index_template.json", "artifact_reference_manifest.json", "handoff_package.json"]
     }
   ],
   "actual_module_flow": "M1 source registration -> M3 profiling/recommendation/spec contract -> M2 Silver/Gold preview execution -> M3 quality/readiness gate -> M5 catalog storage -> M6 SQL/AI query context",

@@ -1,0 +1,26 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="icon" href="data:,"><link rel="stylesheet" href="layer-detail.css"><title>L8 Vector and Semantic Handoff Draft</title></head>
+<body><div class="topbar"><div class="topbar-inner"><a class="brand" href="../index.html">M3 Code Atlas</a><div class="top-actions"><a href="index.html">L목록</a><a href="../index.html#flow">전체 흐름</a><a href="../index.html#matrix">책임표</a></div></div></div>
+<main>
+  <header class="hero"><p class="eyebrow">Logical L8</p><h1>Vector and Semantic Handoff Draft</h1><p class="lead">schema/profile/catalog metadata를 vector/search extension으로 넘길 후보 template을 만든다. M3 core가 embedding을 만들거나 vector index를 운영하지는 않는다.</p><div class="meta"><span class="pill">code: l4_recommendation.py</span><span class="pill">physical: l4</span><span class="pill">draft: vector handoff</span></div></header>
+  <div class="content-grid">
+    <section><h2>이 단계가 하는 일</h2><ul><li>text/entity/metadata 후보 field를 분리한다.</li><li>chunking, privacy, index build extension hook을 제안한다.</li><li>AI generation trace에 raw payload 미노출과 row-level AI call 0을 기록한다.</li></ul></section>
+    <section><h2>코드와 산출물</h2><table><tr><th>코드</th><td><a href="../../../../tools/m3_contract/l4_recommendation.py">tools/m3_contract/l4_recommendation.py</a></td></tr><tr><th>주요 산출물</th><td><code>vector_embedding_handoff_template.json</code>, <code>ai_generation_trace.json</code></td></tr><tr><th>다음 입력</th><td>L9 vector approval, L16 semantic catalog vector index template</td></tr></table></section>
+  </div>
+  <section><h2>판단 기준</h2><div class="note">Vector handoff는 catalog/search 정확도 보조다. metric numeric correctness를 증명하는 장치로 설명하면 안 된다.</div></section>
+  <section><h2>함수/코드 블록별 상세 해설</h2><div class="code-detail">
+    <div class="code-block"><b><code>_vector_embedding_handoff_template()</code></b><span>text/entity/metadata candidate fields, chunking policy, privacy policy, index build extension hook을 만든다.</span></div>
+    <div class="code-block"><b><code>_vector_candidate_fields()</code></b><span>review/text/entity/metadata로 쓸 수 있는 field를 분류한다. PII 후보는 기본적으로 제외한다.</span></div>
+    <div class="code-block"><b><code>ai_generation_trace</code></b><span>AI slot, deterministic fallback 여부, raw payload 미노출, row-level AI call 0을 남긴다.</span></div>
+    <div class="code-block"><b>semantic handoff boundary</b><span>embedding 생성, vector index build, retrieval runtime은 core에 넣지 않고 M6/extension hook으로 넘긴다.</span></div>
+    <div class="code-block"><b>L16 연결</b><span>L8 draft는 L16의 <code>semantic_catalog_vector_index_template</code>으로 다시 포장되어 M6/vector extension이 해석할 수 있게 된다.</span></div>
+  </div></section>
+  <section><h2>라인/함수 단위 코드 해설</h2><table><thead><tr><th style="width:18%">Line</th><th style="width:24%">코드 단위</th><th>상세 설명</th></tr></thead><tbody>
+    <tr><td>100-123</td><td><code>ai_generation_trace</code></td><td>model slot, deterministic fallback 여부, raw payload를 보지 않았는지, row-level AI call이 0인지 기록한다.</td></tr>
+    <tr><td>124-129</td><td>L4 write block</td><td>Silver draft, Gold draft, product health template, risk policy, vector handoff, AI trace를 한 번에 저장한다.</td></tr>
+    <tr><td>537-597</td><td><code>_vector_embedding_handoff_template()</code></td><td>text/entity/metadata candidate fields, chunking/privacy/index build extension hook을 만든다.</td></tr>
+    <tr><td>600-625</td><td>field matching helpers</td><td>field token과 hint matching을 수행해 vector 후보 field 분류에 사용한다.</td></tr>
+    <tr><td>741-749</td><td><code>_field_projection()</code></td><td>field를 짧은 참조 형태로 줄여 vector/template 문서 안에 과도한 raw 정보를 넣지 않게 한다.</td></tr>
+  </tbody></table></section>
+  <section><h2>앞뒤 연결</h2><div class="visual"><div class="step ai"><b>L4</b><span>retrieval</span></div><div class="step active ai"><b>L8</b><span>vector draft</span></div><div class="step"><b>L9</b><span>approval</span></div><div class="step handoff"><b>L16</b><span>vector template</span></div><div class="step"><b>M6</b><span>extension</span></div></div></section>
+  <div class="prev-next"><a href="l7.html"><- 이전 L7</a><a href="l9.html">다음 L9 -></a></div>
+</main><script src="source-snippets.js"></script><script src="source-analysis.js"></script><script src="source-glossary.js"></script><script src="source-plain.js"></script><script src="layer-detail.js"></script></body></html>
