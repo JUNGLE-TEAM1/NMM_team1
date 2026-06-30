@@ -63,6 +63,8 @@ AskLake의 Target MVP 대표 성공 시나리오는 `Trusted Dataset -> Query/As
 
 ### Trusted Dataset
 
+- [ ] PostgreSQL External Connection을 저장 전 테스트할 수 있고, metadata를 저장/조회할 때 password 원문은 저장하거나 응답하지 않는다.
+- [ ] 저장된 PostgreSQL External Connection에서 `schema.table` schema preview를 조회해 Source Dataset 생성에 사용할 수 있다.
 - [ ] 등록된 External Connection에서 Source Dataset metadata를 생성하고 다시 조회할 수 있다.
 - [ ] Source Dataset metadata는 `connection_id`, `raw_scope`, `schema_preview`, `layer=source`를 포함하며 ingest/run 실행을 암시하지 않는다.
 - [ ] Target Dataset 생성 흐름의 Source 선택 후보는 저장된 Source Dataset metadata를 사용할 수 있다.

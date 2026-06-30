@@ -74,6 +74,44 @@ class SourceDatasetRecord(BaseModel):
     updated_at: str
 
 
+class ExternalConnectionCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+    connection_type: Literal["postgres"]
+    host: str = Field(min_length=1, max_length=255)
+    port: int = Field(default=5432, ge=1, le=65535)
+    database: str = Field(min_length=1, max_length=120)
+    username: str = Field(min_length=1, max_length=120)
+    password_secret_ref: str = Field(min_length=1, max_length=120)
+    default_schema: str = Field(default="public", min_length=1, max_length=120)
+    default_table: str = Field(min_length=1, max_length=120)
+
+
+class ExternalConnectionRecord(BaseModel):
+    id: str
+    name: str
+    connection_type: str
+    host: str
+    port: int
+    database: str
+    username: str
+    password_secret_ref: str
+    default_schema: str
+    default_table: str
+    status: str
+    created_at: str
+    updated_at: str
+
+
+class ExternalTableSchema(BaseModel):
+    connection_id: str
+    schema_name: str
+    table_name: str
+    raw_scope: str
+    resource_label: Literal["schema_table"] = "schema_table"
+    schema_preview: list[ColumnSchema]
+    row_count_estimate: int | None = None
+
+
 class TargetDatasetCreate(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     description: str = Field(default="", max_length=500)

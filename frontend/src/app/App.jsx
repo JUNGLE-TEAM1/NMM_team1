@@ -54,8 +54,18 @@ import {
   getWeek2Run,
   triggerWeek2Run,
 } from "../api/asklakeClient";
+import {
+  createExternalConnection,
+  getExternalTableSchema,
+  listExternalConnections,
+  testExternalConnection,
+} from "../api/externalConnectionApi";
 import { createSourceDataset, listSourceDatasets } from "../api/sourceDatasetApi";
-import { createTargetDataset, listTargetDatasetRuns, triggerTargetDatasetRun } from "../api/targetDatasetApi";
+import {
+  createTargetDataset,
+  listTargetDatasetRuns,
+  triggerTargetDatasetRun,
+} from "../api/targetDatasetApi";
 import asklakeLogo from "../assets/asklake-logo.png";
 import { StatusPill } from "../components/StatusPill";
 import {
@@ -301,7 +311,7 @@ function mapSourceDatasetRecord(record, rankOffset = 100) {
     id: record.id,
     name: record.name,
     sourceType: record.connection_type,
-    typeLabel: record.connection_type.toUpperCase(),
+    typeLabel: record.connection_type === "postgres" ? "PostgreSQL" : record.connection_type.toUpperCase(),
     status: "Metadata ready",
     description: `${record.connection_name}에서 정의한 raw/source dataset입니다.`,
     resource: record.raw_scope,
@@ -309,6 +319,48 @@ function mapSourceDatasetRecord(record, rankOffset = 100) {
     updatedRank: rankOffset,
     columns: schema.map((field) => field.name),
     schema,
+  };
+}
+
+function splitSchemaTable(value) {
+  const parts = String(value || "").split(".", 2);
+  if (parts.length === 1) {
+    return {
+      schemaName: "public",
+      tableName: parts[0] || "",
+    };
+  }
+  const [schemaName, tableName] = parts;
+  return {
+    schemaName: schemaName || "public",
+    tableName: tableName || "",
+  };
+}
+
+function mapExternalConnectionRecord(record, rankOffset = 100) {
+  const rawScope = `${record.default_schema}.${record.default_table}`;
+
+  return {
+    id: record.id,
+    name: record.name,
+    connectorId: record.connection_type,
+    typeLabel: record.connection_type === "postgres" ? "PostgreSQL" : record.connection_type.toUpperCase(),
+    status: record.status === "metadata_ready" ? "Metadata ready" : record.status,
+    description: `${record.host}:${record.port}/${record.database}의 ${rawScope} table을 Source Dataset 후보로 사용합니다.`,
+    resourceLabel: "schema_table",
+    resource: rawScope,
+    updatedLabel: "방금",
+    updatedRank: rankOffset,
+    columns: [],
+    schema: [],
+    host: record.host,
+    port: record.port,
+    database: record.database,
+    username: record.username,
+    passwordSecretRef: record.password_secret_ref,
+    defaultSchema: record.default_schema,
+    defaultTable: record.default_table,
+    isPersisted: true,
   };
 }
 
@@ -717,6 +769,20 @@ function SourcesPage({ navigate, setNotice }) {
   const [selectedConnectionType, setSelectedConnectionType] = useState(externalConnectionTypes[0]);
   const [connectionName, setConnectionName] = useState("conn_product_health_csv");
   const [connectionResource, setConnectionResource] = useState(externalConnectionTypes[0].placeholder);
+  const [connectionHost, setConnectionHost] = useState("localhost");
+  const [connectionPort, setConnectionPort] = useState("55432");
+  const [connectionDatabase, setConnectionDatabase] = useState("taxi_postgre");
+  const [connectionUsername, setConnectionUsername] = useState("asklake");
+  const [connectionPasswordSecretRef, setConnectionPasswordSecretRef] = useState("ASKLAKE_TAXI_POSTGRES_PASSWORD");
+  const [apiExternalConnections, setApiExternalConnections] = useState([]);
+  const [externalConnectionError, setExternalConnectionError] = useState("");
+  const [isSavingExternalConnection, setIsSavingExternalConnection] = useState(false);
+  const [lastCreatedExternalConnectionId, setLastCreatedExternalConnectionId] = useState("");
+  const [isTestingExternalConnection, setIsTestingExternalConnection] = useState(false);
+  const [connectionTestResult, setConnectionTestResult] = useState(null);
+  const [connectionTestSignature, setConnectionTestSignature] = useState("");
+  const [connectionTestError, setConnectionTestError] = useState("");
+  const [isLoadingSourceSchema, setIsLoadingSourceSchema] = useState(false);
   const [sourceWizardStepIndex, setSourceWizardStepIndex] = useState(0);
   const [sourceDraft, setSourceDraft] = useState(null);
   const [sourceDatasetName, setSourceDatasetName] = useState("source_product_health_reviews");
@@ -750,7 +816,12 @@ function SourcesPage({ navigate, setNotice }) {
     () => apiSourceDatasets.map((record, index) => mapSourceDatasetRecord(record, 100 + apiSourceDatasets.length - index)),
     [apiSourceDatasets],
   );
+  const savedExternalConnections = useMemo(
+    () => apiExternalConnections.map((record, index) => mapExternalConnectionRecord(record, 100 + apiExternalConnections.length - index)),
+    [apiExternalConnections],
+  );
   const sourceDatasets = savedSourceDatasets.length > 0 ? savedSourceDatasets : demoSourceDatasets;
+  const externalConnections = savedExternalConnections.length > 0 ? savedExternalConnections : demoExternalConnections;
   const wizardSteps = [
     {
       id: "overview",
@@ -830,16 +901,60 @@ function SourcesPage({ navigate, setNotice }) {
     currentStep.id === "scheduling";
   const canGoNextSource =
     (currentSourceStep.id === "connection" && Boolean(sourceDraft)) ||
-    (currentSourceStep.id === "raw-config" && Boolean(sourceDatasetName.trim() && sourceRawScope.trim()));
+    (currentSourceStep.id === "raw-config" &&
+      Boolean(sourceDatasetName.trim() && sourceRawScope.trim() && sourceDraft?.schema?.length));
   const canCreateSourceDataset =
-    Boolean(sourceDraft && sourceDatasetName.trim() && sourceRawScope.trim()) && !isSavingSourceDataset;
+    Boolean(sourceDraft && sourceDatasetName.trim() && sourceRawScope.trim() && sourceDraft.schema?.length) &&
+    !isSavingSourceDataset;
   const canCreateTargetDraft =
     Boolean(normalizedTargetName && selectedSource && selectedFields.length > 0 && selectedOutputSchema.length > 0) &&
     !isSavingTargetDraft;
   const canStartTargetRun = Boolean(lastCreatedTargetDraft) && !isStartingTargetRun;
+  const { schemaName: connectionSchemaName, tableName: connectionTableName } = splitSchemaTable(connectionResource.trim());
+  const parsedConnectionPort = Number(connectionPort);
+  const hasValidConnectionPort =
+    Number.isInteger(parsedConnectionPort) && parsedConnectionPort >= 1 && parsedConnectionPort <= 65535;
+  const externalConnectionPayload = {
+    name: connectionName.trim(),
+    connection_type: "postgres",
+    host: connectionHost.trim(),
+    port: parsedConnectionPort,
+    database: connectionDatabase.trim(),
+    username: connectionUsername.trim(),
+    password_secret_ref: connectionPasswordSecretRef.trim(),
+    default_schema: connectionSchemaName,
+    default_table: connectionTableName,
+  };
+  const externalConnectionProfileSignature = JSON.stringify(externalConnectionPayload);
+  const hasValidExternalConnectionProfile = Boolean(
+    connectionName.trim() &&
+      connectionResource.trim() &&
+      (selectedConnectionType.id !== "postgres" ||
+        (connectionHost.trim() &&
+          hasValidConnectionPort &&
+          connectionDatabase.trim() &&
+          connectionUsername.trim() &&
+          connectionPasswordSecretRef.trim() &&
+          connectionTableName)),
+  );
+  const hasPassedExternalConnectionTest =
+    selectedConnectionType.id === "postgres" &&
+    Boolean(connectionTestResult) &&
+    connectionTestSignature === externalConnectionProfileSignature;
+  const canTestExternalConnection =
+    selectedConnectionType.id === "postgres" &&
+    currentConnectionStep.id === "configure" &&
+    hasValidExternalConnectionProfile &&
+    !isTestingExternalConnection;
   const canGoNextConnection =
     (currentConnectionStep.id === "connector-type" && Boolean(selectedConnectionType)) ||
-    (currentConnectionStep.id === "configure" && Boolean(connectionName.trim() && connectionResource.trim()));
+    (currentConnectionStep.id === "configure" &&
+      (selectedConnectionType.id === "postgres" ? hasPassedExternalConnectionTest : hasValidExternalConnectionProfile));
+  const canSaveExternalConnection =
+    selectedConnectionType.id === "postgres" &&
+    currentConnectionStep.id === "review" &&
+    hasPassedExternalConnectionTest &&
+    !isSavingExternalConnection;
 
   useEffect(() => {
     let isActive = true;
@@ -859,6 +974,16 @@ function SourcesPage({ navigate, setNotice }) {
           setIsSourceDatasetsLoading(false);
         }
       });
+    listExternalConnections()
+      .then((records) => {
+        if (!isActive) return;
+        setApiExternalConnections(records);
+        setExternalConnectionError("");
+      })
+      .catch((error) => {
+        if (!isActive) return;
+        setExternalConnectionError(error.message);
+      });
 
     return () => {
       isActive = false;
@@ -876,12 +1001,87 @@ function SourcesPage({ navigate, setNotice }) {
     setIsSourceModalOpen(false);
   }
 
-  function selectSourceConnection(connection) {
+  async function selectSourceConnection(connection) {
     setSourceDraft(connection);
     setSourceDatasetName(`source_${normalizeDatasetName(connection.name)}`);
     setSourceRawScope(connection.resource);
     setLastCreatedSourceDatasetId("");
     setNotice(`${connection.name} external connection을 선택했습니다.`);
+    if (connection.isPersisted && connection.connectorId === "postgres") {
+      await loadSourceConnectionSchema(connection, connection.resource);
+    }
+  }
+
+  async function loadSourceConnectionSchema(connection, rawScope = sourceRawScope) {
+    const { schemaName, tableName } = splitSchemaTable(rawScope || connection.resource);
+    if (!connection.id || !schemaName || !tableName) return;
+    setIsLoadingSourceSchema(true);
+    setSourceDatasetError("");
+
+    try {
+      const schema = await getExternalTableSchema(connection.id, schemaName, tableName);
+      setSourceRawScope(schema.raw_scope);
+      setSourceDraft((current) => ({
+        ...(current || connection),
+        resource: schema.raw_scope,
+        columns: schema.schema_preview.map((field) => field.name),
+        schema: schema.schema_preview.map((field) => ({
+          name: field.name,
+          type: field.type,
+          sample: schema.row_count_estimate ? `estimate ${schema.row_count_estimate} rows` : "postgres metadata",
+        })),
+      }));
+      setNotice(`${schema.raw_scope} schema preview를 불러왔습니다.`);
+    } catch (error) {
+      setSourceDatasetError(error.message);
+      setNotice(`Schema preview 실패: ${error.message}`);
+    } finally {
+      setIsLoadingSourceSchema(false);
+    }
+  }
+
+  async function testConnectionProfile() {
+    if (!canTestExternalConnection) return;
+    setIsTestingExternalConnection(true);
+    setExternalConnectionError("");
+    setConnectionTestError("");
+    setConnectionTestResult(null);
+    setConnectionTestSignature("");
+
+    try {
+      const result = await testExternalConnection(externalConnectionPayload);
+      setConnectionTestResult(result);
+      setConnectionTestSignature(externalConnectionProfileSignature);
+      setNotice(`${result.raw_scope} 연결과 schema preview를 확인했습니다.`);
+    } catch (error) {
+      setConnectionTestError(error.message);
+      setExternalConnectionError(error.message);
+      setNotice(`Connection test 실패: ${error.message}`);
+    } finally {
+      setIsTestingExternalConnection(false);
+    }
+  }
+
+  async function saveExternalConnection() {
+    if (!canSaveExternalConnection) return;
+    setIsSavingExternalConnection(true);
+    setExternalConnectionError("");
+
+    try {
+      const record = await createExternalConnection(externalConnectionPayload);
+      setApiExternalConnections((records) => [record, ...records.filter((item) => item.id !== record.id)]);
+      setLastCreatedExternalConnectionId(record.id);
+      const mappedConnection = mapExternalConnectionRecord(record);
+      setSourceDraft(mappedConnection);
+      setSourceDatasetName(`source_${normalizeDatasetName(record.name)}`);
+      setSourceRawScope(`${record.default_schema}.${record.default_table}`);
+      setNotice(`${record.name} External Connection metadata를 저장했습니다.`);
+    } catch (error) {
+      setExternalConnectionError(error.message);
+      setNotice(`External Connection 저장 실패: ${error.message}`);
+    } finally {
+      setIsSavingExternalConnection(false);
+    }
   }
 
   async function saveSourceDataset() {
@@ -939,6 +1139,7 @@ function SourcesPage({ navigate, setNotice }) {
         schedule,
         output_schema: selectedOutputSchema.map(({ name, type }) => ({ name, type })),
       });
+      setApiTargetDatasets((records) => [record, ...records.filter((item) => item.id !== record.id)]);
       setLastCreatedTargetDraft(record);
       setTargetRuns([]);
       setTargetRunError("");
@@ -1031,8 +1232,21 @@ function SourcesPage({ navigate, setNotice }) {
 
   function selectConnectionType(connectionType) {
     setSelectedConnectionType(connectionType);
-    setConnectionName(`conn_${connectionType.id}_demo`);
+    setConnectionName(connectionType.id === "postgres" ? "Taxi PostgreSQL Connection" : `conn_${connectionType.id}_demo`);
     setConnectionResource(connectionType.placeholder);
+    if (connectionType.id === "postgres") {
+      setConnectionResource("public.yellow_taxi_trips");
+      setConnectionHost("localhost");
+      setConnectionPort("55432");
+      setConnectionDatabase("taxi_postgre");
+      setConnectionUsername("asklake");
+      setConnectionPasswordSecretRef("ASKLAKE_TAXI_POSTGRES_PASSWORD");
+    }
+    setLastCreatedExternalConnectionId("");
+    setExternalConnectionError("");
+    setConnectionTestResult(null);
+    setConnectionTestSignature("");
+    setConnectionTestError("");
     setNotice(`${connectionType.label} external connection type을 선택했습니다.`);
   }
 
@@ -1123,9 +1337,9 @@ function SourcesPage({ navigate, setNotice }) {
                   <ArrowRight size={16} />
                 </button>
               ) : (
-                <button type="button" className="primary-action" disabled>
-                  Connection draft 준비
-                  <CheckCircle2 size={16} />
+                <button type="button" className="primary-action" onClick={saveExternalConnection} disabled={!canSaveExternalConnection}>
+                  {isSavingExternalConnection ? "저장 중" : lastCreatedExternalConnectionId ? "Connection 저장됨" : "Connection 저장"}
+                  {isSavingExternalConnection ? <Loader2 size={16} className="spin-icon" /> : <CheckCircle2 size={16} />}
                 </button>
               )}
             </footer>
@@ -1178,7 +1392,7 @@ function SourcesPage({ navigate, setNotice }) {
             <span>2단계</span>
             <div>
               <h3>Configure</h3>
-              <p>실제 credential 없이 demo-safe connection profile만 설정합니다.</p>
+              <p>저장 전에 PostgreSQL 접속 권한과 table schema preview를 확인합니다.</p>
             </div>
           </div>
           <div className="source-config-grid">
@@ -1208,18 +1422,105 @@ function SourcesPage({ navigate, setNotice }) {
                   placeholder={selectedConnectionType.placeholder}
                 />
               </label>
+              {selectedConnectionType.id === "postgres" ? (
+                <>
+                  <label className="target-name-field">
+                    <span>host</span>
+                    <input
+                      type="text"
+                      value={connectionHost}
+                      onChange={(event) => setConnectionHost(event.target.value)}
+                      placeholder="localhost"
+                    />
+                  </label>
+                  <label className="target-name-field">
+                    <span>port</span>
+                    <input
+                      type="number"
+                      value={connectionPort}
+                      onChange={(event) => setConnectionPort(event.target.value)}
+                      placeholder="55432"
+                    />
+                  </label>
+                  <label className="target-name-field">
+                    <span>database</span>
+                    <input
+                      type="text"
+                      value={connectionDatabase}
+                      onChange={(event) => setConnectionDatabase(event.target.value)}
+                      placeholder="taxi_postgre"
+                    />
+                  </label>
+                  <label className="target-name-field">
+                    <span>username</span>
+                    <input
+                      type="text"
+                      value={connectionUsername}
+                      onChange={(event) => setConnectionUsername(event.target.value)}
+                      placeholder="asklake"
+                    />
+                  </label>
+                  <label className="target-name-field">
+                    <span>password_env</span>
+                    <input
+                      type="text"
+                      value={connectionPasswordSecretRef}
+                      onChange={(event) => setConnectionPasswordSecretRef(event.target.value)}
+                      placeholder="ASKLAKE_TAXI_POSTGRES_PASSWORD"
+                    />
+                  </label>
+                </>
+              ) : null}
               <div className="target-summary-strip">
                 <span>Auth mode</span>
                 <strong>{selectedConnectionType.authMode}</strong>
-                <p>Secret 입력과 연결 테스트는 이번 Phase에서 제외합니다.</p>
+                <p>비밀번호 원문은 저장하지 않고 password_env 값으로만 테스트합니다.</p>
               </div>
+              {selectedConnectionType.id === "postgres" ? (
+                <>
+                  <button
+                    type="button"
+                    className="primary-action"
+                    onClick={testConnectionProfile}
+                    disabled={!canTestExternalConnection}
+                  >
+                    {isTestingExternalConnection ? "테스트 중" : "Test Connection"}
+                    {isTestingExternalConnection ? <Loader2 size={16} className="spin-icon" /> : <RefreshCw size={16} />}
+                  </button>
+                  {hasPassedExternalConnectionTest ? (
+                    <div className="wizard-placeholder compact success">
+                      <CheckCircle2 size={22} />
+                      <strong>
+                        {connectionTestResult.raw_scope} schema preview 확인 완료 · {connectionTestResult.schema_preview.length} columns
+                      </strong>
+                    </div>
+                  ) : connectionTestResult ? (
+                    <div className="wizard-placeholder compact warning">
+                      <AlertCircle size={22} />
+                      <strong>연결 정보가 테스트 이후 변경되었습니다. 다시 Test Connection을 실행합니다.</strong>
+                    </div>
+                  ) : null}
+                  {!connectionTestResult && !connectionTestError ? (
+                    <div className="wizard-placeholder compact">
+                      <ShieldCheck size={22} />
+                      <strong>필수값 입력 후 Test Connection을 성공해야 다음 단계로 이동할 수 있습니다.</strong>
+                    </div>
+                  ) : null}
+                  {connectionTestError ? (
+                    <div className="wizard-placeholder compact warning">
+                      <AlertCircle size={22} />
+                      <strong>{connectionTestError}</strong>
+                    </div>
+                  ) : null}
+                </>
+              ) : null}
             </section>
             <section className="wizard-inline-panel">
               <div className="table-title-line">
                 <ShieldCheck size={18} />
                 <div>
                   <strong>Demo safety</strong>
-                  <p>실제 외부 시스템에 접속하거나 credential을 저장하지 않습니다.</p>
+                  <p>Test Connection은 실제 PostgreSQL metadata를 읽지만 credential 원문은 저장하지 않습니다.</p>
                 </div>
               </div>
               <div className="source-config-summary connection-config-summary">
@@ -1239,14 +1540,14 @@ function SourcesPage({ navigate, setNotice }) {
           <span>3단계</span>
           <div>
             <h3>Review</h3>
-            <p>External Connection draft로 준비할 내용을 최종 확인합니다.</p>
+            <p>Test Connection을 통과한 External Connection 정보를 최종 확인합니다.</p>
           </div>
         </div>
         <div className="review-summary-grid">
           <article>
             <span>Connection</span>
             <strong>{connectionName.trim() || "connection_name 필요"}</strong>
-            <p>demo external connection draft</p>
+            <p>test-passed external connection draft</p>
           </article>
           <article>
             <span>Connector type</span>
@@ -1258,11 +1559,34 @@ function SourcesPage({ navigate, setNotice }) {
             <strong>{connectionResource.trim() || selectedConnectionType.placeholder}</strong>
             <p>{selectedConnectionType.authMode}</p>
           </article>
+          {selectedConnectionType.id === "postgres" ? (
+            <article>
+              <span>PostgreSQL</span>
+              <strong>{connectionHost}:{connectionPort}/{connectionDatabase}</strong>
+              <p>{connectionUsername} · {connectionPasswordSecretRef}</p>
+            </article>
+          ) : null}
         </div>
-        <div className="wizard-placeholder compact">
-          <CheckCircle2 size={22} />
-          <strong>Connection draft 준비 완료. 실제 저장과 연결 테스트는 아직 호출하지 않습니다.</strong>
+        <div className={`wizard-placeholder compact ${hasPassedExternalConnectionTest ? "success" : "warning"}`}>
+          {hasPassedExternalConnectionTest ? <CheckCircle2 size={22} /> : <AlertCircle size={22} />}
+          <strong>
+            {hasPassedExternalConnectionTest
+              ? `${connectionTestResult.raw_scope} Test Connection 성공 · ${connectionTestResult.schema_preview.length} columns 확인 후 저장 가능합니다.`
+              : "Test Connection 성공 후에만 Connection 저장 버튼이 활성화됩니다."}
+          </strong>
         </div>
+        {lastCreatedExternalConnectionId ? (
+          <div className="wizard-placeholder compact success">
+            <Save size={22} />
+            <strong>저장된 connection id: {lastCreatedExternalConnectionId}</strong>
+          </div>
+        ) : null}
+        {externalConnectionError ? (
+          <div className="wizard-placeholder compact warning">
+            <AlertCircle size={22} />
+            <strong>{externalConnectionError}</strong>
+          </div>
+        ) : null}
       </section>
     );
   }
@@ -1343,7 +1667,7 @@ function SourcesPage({ navigate, setNotice }) {
             </div>
           </div>
           <div className="connection-type-grid source-connection-grid" aria-label="External connection choices for source dataset">
-            {demoExternalConnections.map((connection) => (
+            {externalConnections.map((connection) => (
               <button
                 key={connection.id}
                 type="button"
@@ -1420,10 +1744,35 @@ function SourcesPage({ navigate, setNotice }) {
                 <input
                   type="text"
                   value={sourceRawScope}
-                  onChange={(event) => setSourceRawScope(event.target.value)}
+                  onChange={(event) => {
+                    setSourceRawScope(event.target.value);
+                    if (sourceDraft?.isPersisted) {
+                      setSourceDraft((current) =>
+                        current
+                          ? {
+                              ...current,
+                              resource: event.target.value,
+                              columns: [],
+                              schema: [],
+                            }
+                          : current,
+                      );
+                    }
+                  }}
                   placeholder={sourceDraft?.resource || "raw/source scope"}
                 />
               </label>
+              {sourceDraft?.isPersisted ? (
+                <button
+                  type="button"
+                  className="ghost-action"
+                  onClick={() => loadSourceConnectionSchema(sourceDraft, sourceRawScope)}
+                  disabled={isLoadingSourceSchema || !sourceRawScope.trim()}
+                >
+                  {isLoadingSourceSchema ? "Schema 불러오는 중" : "Schema preview 불러오기"}
+                  {isLoadingSourceSchema ? <Loader2 size={16} className="spin-icon" /> : <RefreshCw size={16} />}
+                </button>
+              ) : null}
               <div className="target-summary-strip">
                 <span>External Connection</span>
                 <strong>{sourceDraft?.name || "connection 필요"}</strong>

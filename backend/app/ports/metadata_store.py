@@ -3,6 +3,8 @@ from typing import Protocol
 from app.domain.schemas import (
     CatalogDataset,
     ColumnSchema,
+    ExternalConnectionCreate,
+    ExternalConnectionRecord,
     PipelineCreate,
     PipelineRecord,
     PipelineRunRecord,
@@ -30,6 +32,12 @@ class MetadataStore(Protocol):
     def list_sources(self) -> list[SourceRecord]: ...
 
     def get_source(self, source_id: str) -> SourceRecord | None: ...
+
+    def create_external_connection(self, connection: ExternalConnectionCreate) -> ExternalConnectionRecord: ...
+
+    def list_external_connections(self) -> list[ExternalConnectionRecord]: ...
+
+    def get_external_connection(self, connection_id: str) -> ExternalConnectionRecord | None: ...
 
     def create_source_dataset(self, dataset: SourceDatasetCreate) -> SourceDatasetRecord: ...
 

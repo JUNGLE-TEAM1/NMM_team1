@@ -206,6 +206,23 @@ Target MVP는 아래 family를 순차적으로 확정한다.
 R0.5 `Modular Contract Baseline`은 Target MVP를 병렬 workstream으로 구현하기 위한 최소 공유 계약이다.
 이 계약은 상세 endpoint나 저장소 schema를 고정하지 않고, module 간 mock/fake adapter와 integration spine이 같은 언어를 쓰게 하는 기준이다.
 
+### External Connection Metadata API
+
+Taxi PostgreSQL Source Dataset 등록 slice는 External Connection을 metadata로 저장하고, 저장 전 PostgreSQL 접속/schema preview를 테스트한 뒤 Source Dataset 생성 전에 table schema preview를 조회한다.
+비밀번호 원문 저장, 연결 테스트 상태 persistence, production credential vault 연동은 제외한다.
+`password_secret_ref`는 backend process env 또는 후속 secret store의 참조 이름이며 API 응답에 실제 password 값을 포함하지 않는다.
+
+| Method | Path | Request / Response | Notes |
+| --- | --- | --- | --- |
+| `POST` | `/api/external-connections/test` | `ExternalConnectionCreate -> ExternalTableSchema` | 저장 없이 env password ref로 PostgreSQL schema preview를 읽는다 |
+| `POST` | `/api/external-connections` | `ExternalConnectionCreate -> ExternalConnection` | 현재 실제 저장 대상은 `connection_type=postgres` |
+| `GET` | `/api/external-connections` | `ExternalConnection[]` | Source Dataset wizard의 connection 후보로 사용 |
+| `GET` | `/api/external-connections/{connection_id}` | `ExternalConnection` | 저장된 connection profile 조회 |
+| `GET` | `/api/external-connections/{connection_id}/schemas/{schema_name}/tables/{table_name}` | `ExternalTableSchema` | `information_schema.columns` 기반 schema preview. table row count는 estimate로만 반환 가능 |
+
+`ExternalConnectionCreate` 최소 필드는 `name`, `connection_type`, `host`, `port`, `database`, `username`, `password_secret_ref`, `default_schema`, `default_table`이다.
+`ExternalTableSchema.schema_preview[]`는 `ColumnSchema`와 같은 `{name, type}` shape를 사용한다.
+
 ### Source Dataset Metadata API
 
 C-2 `Source Dataset persistence`는 등록된 External Connection을 `SourceConnection` 표시명으로 보고, 그 connection에서 raw/source layer dataset metadata만 저장한다.

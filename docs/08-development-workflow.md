@@ -312,6 +312,7 @@ External Connection은 외부 원천에 접속하기 위한 연결 설정이고,
 - PR #284의 화면 구조가 기준선이다. 연결 Phase는 UX를 다시 크게 바꾸지 않는다.
 - C-1에서 External Connection은 UI 용어이고 contract boundary는 `SourceConnection` / `SourceConfig.connection_ref`로 둔다. 실제 credential secret 저장, 연결 테스트, production connector 실행은 제외한다.
 - C-2에서 ingest/run 실행은 제외하고 Source Dataset metadata 저장까지만 닫는다.
+- Taxi PostgreSQL Source Dataset registration slice는 C-1/C-2의 실사용 보강으로, 저장 전 PostgreSQL schema preview 테스트와 저장된 connection 기반 Source Dataset metadata 저장까지만 닫고 Target Run/Catalog/AI Query는 후속으로 둔다.
 - C-3에서 ETL job은 draft definition까지 저장하고 실행은 C-4 이후로 넘긴다.
 - C-4 이후 M5 실행 화면은 `M5 데모`가 아니라 `Job Runs` 또는 `실행 기록` 같은 사용자 언어로 재도입한다.
 - M2/M4/M3/M6는 독립 메뉴가 아니라 Dataset creation 이후의 runtime, evidence, catalog, query 소비자로 연결한다.

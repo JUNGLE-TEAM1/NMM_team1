@@ -8,6 +8,8 @@ from pathlib import Path
 from app.domain.schemas import (
     CatalogDataset,
     ColumnSchema,
+    ExternalConnectionCreate,
+    ExternalConnectionRecord,
     PipelineCreate,
     PipelineRecord,
     PipelineRunRecord,
@@ -71,6 +73,22 @@ class SQLiteMetadataStore:
                     resource_label TEXT NOT NULL,
                     schema_preview_json TEXT NOT NULL,
                     layer TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS external_connections (
+                    id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL UNIQUE,
+                    connection_type TEXT NOT NULL,
+                    host TEXT NOT NULL,
+                    port INTEGER NOT NULL,
+                    database_name TEXT NOT NULL,
+                    username TEXT NOT NULL,
+                    password_secret_ref TEXT NOT NULL,
+                    default_schema TEXT NOT NULL,
+                    default_table TEXT NOT NULL,
                     status TEXT NOT NULL,
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL
@@ -195,6 +213,48 @@ class SQLiteMetadataStore:
         with self.connect() as connection:
             row = connection.execute("SELECT * FROM sources WHERE id = ?", (source_id,)).fetchone()
         return source_from_row(row) if row else None
+
+    def create_external_connection(self, source_connection: ExternalConnectionCreate) -> ExternalConnectionRecord:
+        connection_id = str(uuid.uuid4())
+        created_at = now_iso()
+
+        with self.connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO external_connections (
+                    id, name, connection_type, host, port, database_name, username,
+                    password_secret_ref, default_schema, default_table, status, created_at, updated_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    connection_id,
+                    source_connection.name,
+                    source_connection.connection_type,
+                    source_connection.host,
+                    source_connection.port,
+                    source_connection.database,
+                    source_connection.username,
+                    source_connection.password_secret_ref,
+                    source_connection.default_schema,
+                    source_connection.default_table,
+                    "metadata_ready",
+                    created_at,
+                    created_at,
+                ),
+            )
+
+        return self.get_external_connection(connection_id)  # type: ignore[return-value]
+
+    def list_external_connections(self) -> list[ExternalConnectionRecord]:
+        with self.connect() as connection:
+            rows = connection.execute("SELECT * FROM external_connections ORDER BY created_at DESC").fetchall()
+        return [external_connection_from_row(row) for row in rows]
+
+    def get_external_connection(self, connection_id: str) -> ExternalConnectionRecord | None:
+        with self.connect() as connection:
+            row = connection.execute("SELECT * FROM external_connections WHERE id = ?", (connection_id,)).fetchone()
+        return external_connection_from_row(row) if row else None
 
     def create_source_dataset(self, dataset: SourceDatasetCreate) -> SourceDatasetRecord:
         dataset_id = str(uuid.uuid4())
@@ -569,6 +629,24 @@ def source_from_row(row: sqlite3.Row) -> SourceRecord:
         dataset_id=row["dataset_id"],
         error_message=row["error_message"],
         created_at=row["created_at"],
+    )
+
+
+def external_connection_from_row(row: sqlite3.Row) -> ExternalConnectionRecord:
+    return ExternalConnectionRecord(
+        id=row["id"],
+        name=row["name"],
+        connection_type=row["connection_type"],
+        host=row["host"],
+        port=row["port"],
+        database=row["database_name"],
+        username=row["username"],
+        password_secret_ref=row["password_secret_ref"],
+        default_schema=row["default_schema"],
+        default_table=row["default_table"],
+        status=row["status"],
+        created_at=row["created_at"],
+        updated_at=row["updated_at"],
     )
 
 
