@@ -78,6 +78,7 @@ AskLake의 Target MVP 대표 성공 시나리오는 `Trusted Dataset -> Query/As
 - [ ] Target Dataset draft 저장은 pipeline run, M5 orchestration, CatalogMetadata 등록을 실행하지 않는다.
 - [ ] 저장된 Target Dataset에서 수동 실행을 시작하고 `week2_run_id`, executor, status를 확인할 수 있다.
 - [ ] Target Dataset 수동 실행은 `ExecutionResult`와 `target_dataset_handoff`를 함께 보존하며, C-4 fixture-backed output이면 `runtime_output_scope=week2_fixture_output`를 내부 evidence로 보존한다.
+- [ ] Product Health Target Dataset 수동 실행은 실제 Gold 생성 전이라도 `product_health_manual_run_contract`를 반환해 source snapshot input, pending Gold output, pending quality results, lineage, `catalog_payload` handoff shape를 고정한다.
 - [ ] 입력 source 또는 dataset은 schema inference, user override, 또는 schema 확인을 거친다.
 - [ ] transform/normalize/load 결과가 output dataset으로 남는다.
 - [ ] row count, bytes, duration, output path 같은 처리 증거가 기록된다.

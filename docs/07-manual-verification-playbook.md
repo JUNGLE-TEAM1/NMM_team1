@@ -216,8 +216,9 @@ docker exec nmm_team1-backend-1 python scripts/load_jsonl_to_mongodb.py \
 5. 성공 알림이 표시되고 실행 ID, executor, status, 실행 결과 dataset이 실행 기록 목록에 표시되는지 확인한다.
 6. 생성 직후 화면이 `GET /api/target-datasets/{dataset_id}/runs` 목록 결과를 반영하는지 확인한다.
 7. `GET /api/target-datasets/{dataset_id}/runs` 응답에 `week2_run_id`, `pipeline_id`, `status`, `execution_result.target_dataset_handoff.runtime_output_scope=week2_fixture_output`가 있는지 확인한다.
-8. `GET /api/week2/runs/{week2_run_id}`로 M5 `ExecutionResult`가 조회되는지 확인한다.
-9. 독립 `M5 데모` 메뉴를 되살리지 않았고, runtime evidence/CatalogMetadata 보강은 후속 Phase로 남아 있는지 확인한다.
+8. Product Health 추천 Target Dataset이면 `execution_result.product_health_manual_run_contract.status=pending_product_health_execution`, `source_snapshot_inputs[]`, `gold_output`, `quality_results[]`, `lineage`, `catalog_payload`가 있는지 확인한다.
+9. `GET /api/week2/runs/{week2_run_id}`로 M5 `ExecutionResult`가 조회되는지 확인한다.
+10. 독립 `M5 데모` 메뉴를 되살리지 않았고, runtime evidence/CatalogMetadata 보강은 후속 Phase로 남아 있는지 확인한다.
 
 ### Modular Contract Baseline 점검
 
