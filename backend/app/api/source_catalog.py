@@ -27,6 +27,7 @@ from app.services.external_connections import (
     ExternalConnectionSecretError,
     ExternalTableNotFoundError,
     PostgresSchemaInspector,
+    inspect_external_connection,
 )
 from app.services.product_health_processing_template import (
     ProductHealthProcessingTemplateError,
@@ -97,11 +98,13 @@ def create_source_catalog_router(
             updated_at="",
         )
         try:
-            return postgres_schema_inspector.inspect_table(
-                test_connection,
-                source_connection.default_schema,
-                source_connection.default_table,
-            )
+            if source_connection.connection_type == "postgres":
+                return postgres_schema_inspector.inspect_table(
+                    test_connection,
+                    source_connection.default_schema,
+                    source_connection.default_table,
+                )
+            return inspect_external_connection(test_connection, postgres_schema_inspector)
         except ExternalConnectionDependencyError as error:
             raise HTTPException(status_code=503, detail=str(error)) from error
         except ExternalConnectionSecretError as error:
@@ -165,6 +168,13 @@ def create_source_catalog_router(
         if dataset is None:
             raise HTTPException(status_code=404, detail="Source dataset not found")
         return dataset
+
+    @router.delete("/source-datasets/{dataset_id}", status_code=status.HTTP_204_NO_CONTENT)
+    def delete_source_dataset(dataset_id: str) -> None:
+        was_deleted = metadata_store.delete_source_dataset(dataset_id)
+        if not was_deleted:
+            raise HTTPException(status_code=404, detail="Source dataset not found")
+        return None
 
     @router.post("/target-datasets", response_model=TargetDatasetRecord, status_code=status.HTTP_201_CREATED)
     def create_target_dataset(dataset: TargetDatasetCreate) -> TargetDatasetRecord:
