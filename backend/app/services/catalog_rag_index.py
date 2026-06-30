@@ -10,6 +10,7 @@ from typing import Any
 from app.adapters.local_embedding import LocalTokenEmbeddingAdapter, tokenize_text
 from app.domain.retrieval_index import RetrievalIndexChunk, RetrievalIndexHit, RetrievalIndexSnapshot
 from app.ports.embedding_adapter import EmbeddingAdapter
+from app.services.catalog_metadata import catalog_allowed_columns, catalog_query_table
 
 
 class CatalogRetrievalIndex:
@@ -21,8 +22,8 @@ class CatalogRetrievalIndex:
         "review_count": ("인기", "리뷰", "review", "reviews"),
         "product_id": ("상품", "product", "products"),
         "average_rating": ("평점", "별점", "rating", "ratings"),
-        "risk_score": ("위험", "리스크", "risk", "risks"),
-        "negative_review_rate": ("부정", "불만", "negative", "negatives"),
+        "risk_score": ("위험", "리스크", "문제", "risk", "risks", "problem"),
+        "negative_review_rate": ("부정", "불만", "나쁘", "negative", "negatives"),
         "conversion_rate": ("전환", "전환율", "conversion", "conversions"),
         "late_delivery_rate": ("배송", "지연", "지연율", "late", "delivery"),
     }
@@ -104,18 +105,17 @@ class CatalogRetrievalIndex:
 
     def _catalog_chunk(self, catalog: dict[str, Any]) -> RetrievalIndexChunk:
         dataset_id = str(catalog.get("dataset_id", ""))
-        query = catalog.get("query", {})
         freshness = catalog.get("freshness", {})
-        allowed_columns = [str(column) for column in query.get("allowed_columns", [])]
+        allowed_columns = catalog_allowed_columns(catalog)
         text = " ".join(
             [
                 f"dataset {dataset_id}",
                 f"name {catalog.get('name', '')}",
                 f"layer {catalog.get('layer', '')}",
-                f"table {query.get('table_name', '')}",
+                f"table {catalog_query_table(catalog)}",
                 f"allowed_columns {' '.join(allowed_columns)}",
-                f"default_limit {query.get('default_limit', '')}",
-                f"timeout_seconds {query.get('timeout_seconds', '')}",
+                f"default_limit {self._query_setting(catalog, 'default_limit')}",
+                f"timeout_seconds {self._query_setting(catalog, 'timeout_seconds')}",
                 f"freshness {catalog.get('updated_at', '')} {freshness.get('data_interval_end', '')}",
                 self._aliases_text(allowed_columns),
             ]
@@ -228,6 +228,14 @@ class CatalogRetrievalIndex:
         for key in keys:
             aliases.extend(self._column_aliases.get(key, ()))
         return "aliases " + " ".join(aliases)
+
+    def _query_setting(self, catalog: dict[str, Any], key: str) -> str:
+        query = catalog.get("query", {})
+        if isinstance(query, dict) and query.get(key) is not None:
+            return str(query[key])
+        if catalog.get(key) is not None:
+            return str(catalog[key])
+        return ""
 
     def _flatten_metrics(self, metrics: dict[str, Any]) -> list[tuple[str, str]]:
         flattened: list[tuple[str, str]] = []
