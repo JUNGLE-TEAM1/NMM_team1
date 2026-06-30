@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect } from "react";
 import {
   AlertCircle,
   Archive,
@@ -72,6 +72,8 @@ import {
 import { DataTable, EmptyState, InfoCard, PageHeader } from "../../design-system";
 import { formatBytes, formatMetric } from "../../app/formatters";
 import { useDatasetDraftData } from "./useDatasetDraftData";
+import { useSourcesPageState } from "./useSourcesPageState";
+import { buildSourcesPageModel } from "./sourcesPageModel";
 import {
   ConnectionManageModal,
   CredentialSecretPolicyPanel,
@@ -121,21 +123,71 @@ import {
 } from "./datasetConfig";
 
 export function SourcesPage({ navigate, setNotice, dataView = "datasets-source", pendingDatasetEdit, onPendingDatasetEditConsumed }) {
-  const [isDatasetTypeModalOpen, setIsDatasetTypeModalOpen] = useState(false);
-  const [datasetCreationMode, setDatasetCreationMode] = useState(null);
-  const [isSourceModalOpen, setIsSourceModalOpen] = useState(false);
-  const [sourceModalPurpose, setSourceModalPurpose] = useState("target");
-  const [connectionWizardStepIndex, setConnectionWizardStepIndex] = useState(0);
-  const [selectedConnectionType, setSelectedConnectionType] = useState(externalConnectionTypes[0]);
-  const [connectionName, setConnectionName] = useState("conn_product_health_reviews_file");
-  const [connectionResource, setConnectionResource] = useState(externalConnectionTypes[0].placeholder);
-  const [connectionSecretRefs, setConnectionSecretRefs] = useState(defaultConnectionSecretRefs(externalConnectionTypes[0]));
-  const [connectionDiscoveryScope, setConnectionDiscoveryScope] = useState(defaultDiscoveryScopeForConnectionType(externalConnectionTypes[0]));
-  const [connectionInspected, setConnectionInspected] = useState(false);
-  const [connectionInspectState, setConnectionInspectState] = useState({ status: "idle", result: null, error: "" });
-  const [connectionRuntimeCheckState, setConnectionRuntimeCheckState] = useState({ status: "idle", checkId: "", result: null, error: "" });
-  const [connectionSaveState, setConnectionSaveState] = useState({ status: "idle", record: null, error: "" });
-  const [productHealthPresetState, setProductHealthPresetState] = useState({ status: "idle", result: null, error: "" });
+  const {
+    isDatasetTypeModalOpen, setIsDatasetTypeModalOpen,
+    datasetCreationMode, setDatasetCreationMode,
+    isSourceModalOpen, setIsSourceModalOpen,
+    sourceModalPurpose, setSourceModalPurpose,
+    connectionWizardStepIndex, setConnectionWizardStepIndex,
+    selectedConnectionType, setSelectedConnectionType,
+    connectionName, setConnectionName,
+    connectionResource, setConnectionResource,
+    connectionSecretRefs, setConnectionSecretRefs,
+    connectionDiscoveryScope, setConnectionDiscoveryScope,
+    connectionInspected, setConnectionInspected,
+    connectionInspectState, setConnectionInspectState,
+    connectionRuntimeCheckState, setConnectionRuntimeCheckState,
+    connectionSaveState, setConnectionSaveState,
+    productHealthPresetState, setProductHealthPresetState,
+    jobRunCreateState, setJobRunCreateState,
+    sourceWizardStepIndex, setSourceWizardStepIndex,
+    sourceDraft, setSourceDraft,
+    sourceDiscoveryState, setSourceDiscoveryState,
+    sourceDatasetName, setSourceDatasetName,
+    sourceRawScope, setSourceRawScope,
+    sourceDatasetSaveState, setSourceDatasetSaveState,
+    managedSourceDataset, setManagedSourceDataset,
+    managedSourceForm, setManagedSourceForm,
+    managedSourceMode, setManagedSourceMode,
+    managedSourceState, setManagedSourceState,
+    managedSourceSnapshotState, setManagedSourceSnapshotState,
+    managedConnection, setManagedConnection,
+    managedConnectionForm, setManagedConnectionForm,
+    managedConnectionMode, setManagedConnectionMode,
+    managedConnectionState, setManagedConnectionState,
+    managedSilverDataset, setManagedSilverDataset,
+    managedSilverForm, setManagedSilverForm,
+    managedSilverMode, setManagedSilverMode,
+    managedSilverState, setManagedSilverState,
+    managedSilverMaterializationState, setManagedSilverMaterializationState,
+    managedTargetDraft, setManagedTargetDraft,
+    managedTargetForm, setManagedTargetForm,
+    managedTargetMode, setManagedTargetMode,
+    managedTargetState, setManagedTargetState,
+    silverWizardStepIndex, setSilverWizardStepIndex,
+    selectedSilverSourceId, setSelectedSilverSourceId,
+    silverDatasetName, setSilverDatasetName,
+    silverPurpose, setSilverPurpose,
+    selectedSilverStandardizeRules, setSelectedSilverStandardizeRules,
+    selectedSilverValidationRules, setSelectedSilverValidationRules,
+    silverDatasetSaveState, setSilverDatasetSaveState,
+    datasetReturnFlow, setDatasetReturnFlow,
+    selectedSource, setSelectedSource,
+    selectedFields, setSelectedFields,
+    targetSilverIds, setTargetSilverIds,
+    baseTargetSilverId, setBaseTargetSilverId,
+    selectedRecipeIds, setSelectedRecipeIds,
+    targetName, setTargetName,
+    targetDescription, setTargetDescription,
+    targetScheduleMode, setTargetScheduleMode,
+    targetScheduleNote, setTargetScheduleNote,
+    targetExecutorMode, setTargetExecutorMode,
+    targetDraftSaveState, setTargetDraftSaveState,
+    scheduleEditorJob, setScheduleEditorJob,
+    scheduleEditorForm, setScheduleEditorForm,
+    scheduleEditorState, setScheduleEditorState,
+    currentStepIndex, setCurrentStepIndex,
+  } = useSourcesPageState();
   const {
     savedExternalConnections,
     setSavedExternalConnections,
@@ -154,210 +206,54 @@ export function SourcesPage({ navigate, setNotice, dataView = "datasets-source",
     datasetDraftListState,
     refreshDatasetDraftLists,
   } = useDatasetDraftData({ setNotice, mapExternalConnectionRecord });
-  const [jobRunCreateState, setJobRunCreateState] = useState({ status: "idle", draftId: "", error: "" });
-  const [sourceWizardStepIndex, setSourceWizardStepIndex] = useState(0);
-  const [sourceDraft, setSourceDraft] = useState(null);
-  const [sourceDiscoveryState, setSourceDiscoveryState] = useState({ status: "idle", result: null, error: "" });
-  const [sourceDatasetName, setSourceDatasetName] = useState("source_product_health_reviews");
-  const [sourceRawScope, setSourceRawScope] = useState("");
-  const [sourceDatasetSaveState, setSourceDatasetSaveState] = useState({ status: "idle", record: null, error: "" });
-  const [managedSourceDataset, setManagedSourceDataset] = useState(null);
-  const [managedSourceForm, setManagedSourceForm] = useState({ name: "", raw_scope: "", resource_label: "" });
-  const [managedSourceMode, setManagedSourceMode] = useState("detail");
-  const [managedSourceState, setManagedSourceState] = useState({ status: "idle", error: "" });
-  const [managedSourceSnapshotState, setManagedSourceSnapshotState] = useState({ status: "idle", snapshots: [], error: "" });
-  const [managedConnection, setManagedConnection] = useState(null);
-  const [managedConnectionForm, setManagedConnectionForm] = useState({
-    name: "",
-    resource: "",
-    resource_label: "",
-    sync_mode: "manual",
-    sync_schedule: "manual on demand",
+  const {
+    normalizedTargetName, normalizedTargetDescription,
+    selectedTargetSilvers, baseTargetSilver,
+    enrichmentTargetSilvers, selectedProcessRecipes,
+    selectedSilverOutputs, selectedFieldSummary,
+    selectedOutputSchema, targetSourceSummary,
+    wizardSteps, sourceWizardSteps,
+    connectionWizardSteps, currentStep,
+    currentSourceStep, currentConnectionStep,
+    isRuntimeConnection, selectedConnectionPresets,
+    isConnectionReadyForReview, sourceDiscovery,
+    sourceSchemaPreview, silverWizardSteps,
+    currentSilverStep, selectedSilverSource,
+    selectedSilverStandardizeRuleDetails, selectedSilverValidationRuleDetails,
+    canGoNext, canGoNextSource,
+    canGoNextConnection, canGoNextSilver,
+    sourceConnectionOptions,
+  } = buildSourcesPageModel({
+    targetName,
+    targetDescription,
+    savedSilverDatasets,
+    targetSilverIds,
+    baseTargetSilverId,
+    selectedRecipeIds,
+    currentStepIndex,
+    targetExecutorMode,
+    targetScheduleMode,
+    sourceDraft,
+    sourceWizardStepIndex,
+    sourceDatasetName,
+    sourceRawScope,
+    selectedConnectionType,
+    connectionName,
+    connectionWizardStepIndex,
+    connectionResource,
+    connectionRuntimeCheckState,
+    connectionInspectState,
+    connectionInspected,
+    sourceDiscoveryState,
+    silverWizardStepIndex,
+    savedSourceDatasets,
+    selectedSilverSourceId,
+    selectedSilverStandardizeRules,
+    selectedSilverValidationRules,
+    silverDatasetName,
+    silverPurpose,
+    savedExternalConnections,
   });
-  const [managedConnectionMode, setManagedConnectionMode] = useState("detail");
-  const [managedConnectionState, setManagedConnectionState] = useState({ status: "idle", error: "" });
-  const [managedSilverDataset, setManagedSilverDataset] = useState(null);
-  const [managedSilverForm, setManagedSilverForm] = useState({
-    name: "",
-    purpose: "",
-    standardize_rules: "",
-    validation_rules: "",
-  });
-  const [managedSilverMode, setManagedSilverMode] = useState("detail");
-  const [managedSilverState, setManagedSilverState] = useState({ status: "idle", error: "" });
-  const [managedSilverMaterializationState, setManagedSilverMaterializationState] = useState({ status: "idle", materializations: [], error: "" });
-  const [managedTargetDraft, setManagedTargetDraft] = useState(null);
-  const [managedTargetForm, setManagedTargetForm] = useState({
-    target_dataset_name: "",
-    description: "",
-    target_grain: "",
-    processing_recipes: "",
-    executor_handoff: "local_runner",
-  });
-  const [managedTargetMode, setManagedTargetMode] = useState("detail");
-  const [managedTargetState, setManagedTargetState] = useState({ status: "idle", error: "" });
-  const [silverWizardStepIndex, setSilverWizardStepIndex] = useState(0);
-  const [selectedSilverSourceId, setSelectedSilverSourceId] = useState("");
-  const [silverDatasetName, setSilverDatasetName] = useState("silver_product_health_reviews");
-  const [silverPurpose, setSilverPurpose] = useState("Source Dataset을 표준화/검증한 Silver Dataset metadata");
-  const [selectedSilverStandardizeRules, setSelectedSilverStandardizeRules] = useState(["normalize_ids", "cast_types"]);
-  const [selectedSilverValidationRules, setSelectedSilverValidationRules] = useState(["required_keys", "schema_drift"]);
-  const [silverDatasetSaveState, setSilverDatasetSaveState] = useState({ status: "idle", record: null, error: "" });
-  const [datasetReturnFlow, setDatasetReturnFlow] = useState(null);
-  const [selectedSource, setSelectedSource] = useState(null);
-  const [selectedFields, setSelectedFields] = useState([]);
-  const [targetSilverIds, setTargetSilverIds] = useState([]);
-  const [baseTargetSilverId, setBaseTargetSilverId] = useState("");
-  const [selectedRecipeIds, setSelectedRecipeIds] = useState(targetProcessingRecipes.map((recipe) => recipe.id));
-  const [targetName, setTargetName] = useState("dataset_product_health_gold");
-  const [targetDescription, setTargetDescription] = useState("제품 상태 분석용 Gold Dataset");
-  const [targetScheduleMode, setTargetScheduleMode] = useState("manual");
-  const [targetScheduleNote, setTargetScheduleNote] = useState("데모에서는 수동 실행으로만 준비합니다.");
-  const [targetExecutorMode, setTargetExecutorMode] = useState("local_runner");
-  const [targetDraftSaveState, setTargetDraftSaveState] = useState({ status: "idle", record: null, error: "" });
-  const [scheduleEditorJob, setScheduleEditorJob] = useState(null);
-  const [scheduleEditorForm, setScheduleEditorForm] = useState({ mode: "manual", note: "" });
-  const [scheduleEditorState, setScheduleEditorState] = useState({ status: "idle", error: "" });
-  const [currentStepIndex, setCurrentStepIndex] = useState(0);
-  const normalizedTargetName = targetName.trim();
-  const normalizedTargetDescription = targetDescription.trim();
-  const selectedTargetSilvers = savedSilverDatasets.filter((silverDataset) => targetSilverIds.includes(silverDataset.id));
-  const baseTargetSilver =
-    selectedTargetSilvers.find((silverDataset) => silverDataset.id === baseTargetSilverId) || selectedTargetSilvers[0] || null;
-  const enrichmentTargetSilvers = selectedTargetSilvers.filter((silverDataset) => silverDataset.id !== baseTargetSilver?.id);
-  const selectedProcessRecipes = targetProcessingRecipes.filter((recipe) => selectedRecipeIds.includes(recipe.id));
-  const selectedSilverOutputs = selectedTargetSilvers.map(silverOutputPayload);
-  const selectedFieldSummary =
-    selectedProcessRecipes.length > 0 ? selectedProcessRecipes.slice(0, 3).map((recipe) => recipe.kind).join(", ") : "선택된 처리 방법이 없습니다.";
-  const selectedOutputSchema = selectedProcessRecipes.length > 0 ? targetGoldSchemaPreview : [];
-  const targetSourceSummary =
-    selectedTargetSilvers.length > 0
-      ? `${selectedTargetSilvers.length} silver datasets · base ${baseTargetSilver?.name || "미지정"}`
-      : "2개 이상의 Silver Dataset을 선택합니다.";
-  const wizardSteps = [
-    {
-      id: "overview",
-      title: "Overview",
-      summary: normalizedTargetName || "Gold Dataset 이름을 입력합니다.",
-      isComplete: Boolean(normalizedTargetName),
-    },
-    {
-      id: "source",
-      title: "Silver 선택",
-      summary: targetSourceSummary,
-      isComplete: currentStepIndex > 1 && selectedTargetSilvers.length >= 2,
-    },
-    {
-      id: "process",
-      title: "Process",
-      summary: selectedProcessRecipes.length > 0 ? `${selectedProcessRecipes.length} processing recipes` : "target 갱신 처리 방법을 설정합니다.",
-      isComplete: currentStepIndex > 3 && selectedProcessRecipes.length > 0,
-    },
-    {
-      id: "handoff",
-      title: "Build 실행 준비",
-      summary: `${targetExecutorMode} 실행 경계`,
-      isComplete: currentStepIndex > 4,
-    },
-    {
-      id: "scheduling",
-      title: "Scheduling",
-      summary: targetScheduleMode === "manual" ? "Job manual trigger" : "Job schedule placeholder",
-      isComplete: currentStepIndex > 5,
-    },
-    {
-      id: "review",
-      title: "Review",
-      summary: "생성 준비 확인",
-      isComplete: false,
-    },
-  ];
-  const sourceWizardSteps = [
-    {
-      id: "connection",
-      title: "Connection 선택",
-      isComplete: Boolean(sourceDraft),
-    },
-    {
-      id: "raw-config",
-      title: "Raw Dataset 설정",
-      isComplete: sourceWizardStepIndex > 1 && Boolean(sourceDatasetName.trim() && sourceRawScope.trim()),
-    },
-    {
-      id: "review",
-      title: "Review",
-      isComplete: false,
-    },
-  ];
-  const connectionWizardSteps = [
-    {
-      id: "connector-type",
-      title: "Connector Type",
-      summary: selectedConnectionType ? selectedConnectionType.label : "connector를 선택합니다.",
-      isComplete: Boolean(selectedConnectionType),
-    },
-    {
-      id: "configure",
-      title: "Configure & Inspect",
-      summary: connectionName.trim() || "connection 이름을 입력합니다.",
-      isComplete: connectionWizardStepIndex > 1 && Boolean(connectionName.trim() && connectionResource.trim()),
-    },
-    {
-      id: "review",
-      title: "Review",
-      summary: "연결 draft 확인",
-      isComplete: false,
-    },
-  ];
-  const currentStep = wizardSteps[currentStepIndex];
-  const currentSourceStep = sourceWizardSteps[sourceWizardStepIndex];
-  const currentConnectionStep = connectionWizardSteps[connectionWizardStepIndex];
-  const isRuntimeConnection = isRuntimeConnectionType(selectedConnectionType);
-  const selectedConnectionPresets = externalConnectionPresets.filter((preset) => preset.connectionTypeId === selectedConnectionType.id);
-  const isConnectionReadyForReview = isRuntimeConnection
-    ? runtimeConnectionPassed(connectionRuntimeCheckState, selectedConnectionType) && Boolean(connectionInspectState.result?.schema_preview?.length)
-    : Boolean(connectionInspected && connectionInspectState.result);
-  const sourceDiscovery = sourceDiscoveryStatus(sourceDraft, sourceDiscoveryState);
-  const sourceSchemaPreview = sourceDiscoveryState.result?.schema_preview?.length
-    ? sourceDiscoveryState.result.schema_preview.map((field) => ({
-        name: field.name,
-        type: field.type,
-        sample: field.sample || "discovered",
-      }))
-    : sourceDraft?.schema || [];
-  const silverWizardSteps = [
-    { id: "source", title: "Source 선택" },
-    { id: "rules", title: "Rules 설정" },
-    { id: "review", title: "Review" },
-  ];
-  const currentSilverStep = silverWizardSteps[silverWizardStepIndex];
-  const selectedSilverSource = savedSourceDatasets.find((sourceDataset) => sourceDataset.id === selectedSilverSourceId) || null;
-  const selectedSilverStandardizeRuleDetails = silverStandardizeRuleOptions.filter((rule) =>
-    selectedSilverStandardizeRules.includes(rule.id),
-  );
-  const selectedSilverValidationRuleDetails = silverValidationRuleOptions.filter((rule) =>
-    selectedSilverValidationRules.includes(rule.id),
-  );
-  const canGoNext =
-    (currentStep.id === "overview" && Boolean(normalizedTargetName)) ||
-    (currentStep.id === "source" && selectedTargetSilvers.length >= 2) ||
-    (currentStep.id === "process" && selectedProcessRecipes.length > 0) ||
-    currentStep.id === "handoff" ||
-    currentStep.id === "scheduling";
-  const canGoNextSource =
-    (currentSourceStep.id === "connection" && Boolean(sourceDraft)) ||
-    (currentSourceStep.id === "raw-config" && Boolean(sourceDatasetName.trim() && sourceRawScope.trim()) && sourceDiscovery.canCreate);
-  const canGoNextConnection =
-    (currentConnectionStep.id === "connector-type" && Boolean(selectedConnectionType)) ||
-    (currentConnectionStep.id === "configure" &&
-      Boolean(connectionName.trim() && connectionResource.trim() && isConnectionReadyForReview));
-  const canGoNextSilver =
-    (currentSilverStep.id === "source" && Boolean(selectedSilverSource)) ||
-    (currentSilverStep.id === "rules" &&
-      Boolean(silverDatasetName.trim() && silverPurpose.trim()) &&
-      selectedSilverStandardizeRules.length > 0 &&
-      selectedSilverValidationRules.length > 0);
-  const sourceConnectionOptions = savedExternalConnections;
   const silverDatasetRecords = savedSilverDatasets.map((silverDataset) => ({
     id: silverDataset.id,
     name: silverDataset.name,
