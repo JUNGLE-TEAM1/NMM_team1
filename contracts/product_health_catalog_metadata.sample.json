@@ -4,7 +4,7 @@
   "consumers": ["M1", "M6"],
   "tenant_id": "tenant_demo",
   "dataset_id": "dataset_product_health_gold",
-  "version": "catalog_product_health_gold_v1",
+  "version": "catalog_product_health_gold_v2",
   "name": "Product Health Gold",
   "layer": "gold",
   "table_name": "gold_product_health",
@@ -19,11 +19,19 @@
     "local_fallback_path": "data/week2/product_health/gold/run_id=<run_id>/"
   },
   "schema": {
-    "schema_version": "schema_product_health_gold_v1",
+    "schema_version": "schema_product_health_gold_v2",
     "fields": [
       {"name": "product_id", "type": "string", "nullable": false},
+      {"name": "synthetic_product_id", "type": "string", "nullable": true},
+      {"name": "canonical_product_id", "type": "string", "nullable": true},
       {"name": "product_name", "type": "string", "nullable": true},
+      {"name": "normalized_brand", "type": "string", "nullable": true},
+      {"name": "unified_category", "type": "string", "nullable": true},
       {"name": "category_l1", "type": "string", "nullable": true},
+      {"name": "ecommerce_product_id", "type": "string", "nullable": true},
+      {"name": "amazon_parent_asin", "type": "string", "nullable": true},
+      {"name": "match_confidence", "type": "number", "nullable": true},
+      {"name": "match_method", "type": "string", "nullable": true},
       {"name": "review_count", "type": "integer", "nullable": false},
       {"name": "average_rating", "type": "number", "nullable": true},
       {"name": "negative_review_rate", "type": "number", "nullable": true},
@@ -61,8 +69,16 @@
     "allow_readonly_sql": true,
     "allowed_columns": [
       "product_id",
+      "synthetic_product_id",
+      "canonical_product_id",
       "product_name",
+      "normalized_brand",
+      "unified_category",
       "category_l1",
+      "ecommerce_product_id",
+      "amazon_parent_asin",
+      "match_confidence",
+      "match_method",
       "review_count",
       "average_rating",
       "negative_review_rate",
@@ -75,7 +91,7 @@
     ],
     "default_limit": 100,
     "timeout_seconds": 30,
-    "canonical_demo_query": "SELECT product_id, product_name, category_l1, risk_score, negative_review_rate, conversion_rate, late_delivery_rate FROM gold_product_health ORDER BY risk_score DESC LIMIT 10"
+    "canonical_demo_query": "SELECT product_id, product_name, normalized_brand, unified_category, ecommerce_product_id, amazon_parent_asin, risk_score, negative_review_rate, conversion_rate, late_delivery_rate FROM gold_product_health ORDER BY risk_score DESC LIMIT 10"
   },
   "m3_contract_refs": {
     "product_health_gold_contract_ref": "contracts/product_health_gold_contract.sample.json",
