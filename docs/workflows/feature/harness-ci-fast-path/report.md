@@ -5,7 +5,7 @@
 - Type: feature / harness + CI policy
 - Branch/work location: `feature/harness-ci-fast-path`, `docs/workflows/feature/harness-ci-fast-path`
 - Date: 2026-06-30
-- Workspace state: in-progress
+- Workspace state: ready-for-review
 - Context Budget mode: Escalate Read
 - Primary context read: `AGENTS.md`, `docs/00-layer-map.md`, `.github/workflows/ci.yml`, `docs/12-quality-gates.md`, `docs/08-development-workflow.md`, `docs/15-context-budget-rule.md`
 - Escalated context read: `docs/10-next-action-menu.md`, `docs/18-harness-regression-policy.md`, `docs/system-guardrails.md`, `docs/04-development-guide.md`, `docs/reports/_template.md`
@@ -23,7 +23,7 @@
 - Type: feature
 - Branch/work location: `feature/harness-ci-fast-path`, `docs/workflows/feature/harness-ci-fast-path`
 - Date: 2026-06-30
-- Workspace state: in-progress
+- Workspace state: ready-for-review
 
 ## Reference Docs / 참고 문서
 
