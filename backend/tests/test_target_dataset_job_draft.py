@@ -206,7 +206,6 @@ def test_create_target_dataset_stores_multi_source_role_mappings() -> None:
     payload["process_rule"] = {
         "type": "product_health_gold_pipeline",
         "mode": "recommended_template",
-        "input_kind": "raw_sources",
         "template_id": "product_health_recommended_v1",
         "template_version": "transform_product_health_gold_v1",
         "final_output": {
@@ -215,7 +214,6 @@ def test_create_target_dataset_stores_multi_source_role_mappings() -> None:
             "layer": "gold",
             "user_facing": True,
         },
-        "internal_stages": ["bronze", "silver", "aggregate", "join", "derive", "load"],
         "internal_artifacts_visible": False,
     }
 

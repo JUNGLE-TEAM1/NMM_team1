@@ -84,7 +84,6 @@ def test_target_dataset_can_store_product_health_recommended_process_rule() -> N
             "process_rule": {
                 "type": "product_health_gold_pipeline",
                 "mode": "recommended_template",
-                "input_kind": "raw_sources",
                 "template_id": template["id"],
                 "template_version": template["template_version"],
                 "target_dataset": template["target_dataset"],
@@ -95,7 +94,6 @@ def test_target_dataset_can_store_product_health_recommended_process_rule() -> N
                     "layer": "gold",
                     "user_facing": True,
                 },
-                "internal_stages": template["flow"],
                 "internal_artifacts_visible": False,
                 "steps": template["steps"],
                 "quality_rules": template["quality_rules"],
