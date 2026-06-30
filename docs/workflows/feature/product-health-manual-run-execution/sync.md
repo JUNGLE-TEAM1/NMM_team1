@@ -47,5 +47,5 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 - PR closing keyword: Closes #313
 - pushed branch: `feature/product-health-manual-run-execution`
 - PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/315
-- merge status: open stacked PR, base `feature/product-health-manual-run-contract`
+- merge status: open stacked PR, base `feature/product-health-manual-run-contract`; GitHub checks passed
 - issue close status: pending PR merge; body includes `Closes #313`

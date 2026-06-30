@@ -27,10 +27,17 @@
 ## CI/CD Gate / CI-CD 게이트
 
 - CI required: yes, PR 생성 후 GitHub checks 확인 필요
-- CI result: not run yet
+- CI result: PR #315 GitHub checks passed after PR body update
 - Deploy/publish required: no
 - Deployment confirmation: not applicable
 - Rollback/smoke notes: Product Health 실행 경로는 `process_rule.type=product_health_gold_pipeline`에만 적용되므로 일반 Target Dataset run은 기존 fixture handoff로 rollback 가능
+
+## GitHub Checks / GitHub 확인
+
+- PR: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/315
+- Result: all checks passed
+- Checks: `container-smoke`, `harness`, `linked-issue`, `manifest-smoke`, `migration-schema-security`, `pr-size-hard-gate`, `pr-template-drift`, `risk-warning`
+- Note: initial `pr-template-drift`, `migration-schema-security`, `pr-size-hard-gate` failed because PR body did not use the 7-section handoff, did not fill `API/schema 영향`, and exceeded size hard gate without the allowed large PR exception. PR body was updated; rerun checks passed.
 
 ## Skipped Checks / 생략한 검증
 
