@@ -1717,12 +1717,6 @@ function SourcesPage({ navigate, setNotice }) {
     setSourceDetail(dataset);
   }
 
-  function handleSourceDetailKeyDown(event, dataset) {
-    if (event.key !== "Enter" && event.key !== " ") return;
-    event.preventDefault();
-    openSourceDetail(dataset);
-  }
-
   async function saveTargetDatasetDraft() {
     if (!canCreateTargetDraft) return;
     setIsSavingTargetDraft(true);
@@ -3370,10 +3364,7 @@ function SourcesPage({ navigate, setNotice }) {
                     <article
                       className="source-card dataset-asset-card clickable-card"
                       key={dataset.id}
-                      role="button"
-                      tabIndex={0}
                       onClick={() => openSourceDetail(dataset)}
-                      onKeyDown={(event) => handleSourceDetailKeyDown(event, dataset)}
                     >
                       <div className="source-card-head">
                         <span className="source-card-icon source">
@@ -3385,7 +3376,7 @@ function SourcesPage({ navigate, setNotice }) {
                       <p>{dataset.description}</p>
                       <div className="source-card-meta">
                         <span>{dataset.status}</span>
-                        <span>{dataset.columns.length} columns</span>
+                        <span>{dataset.columns.length}개 컬럼</span>
                       </div>
                       <small>{dataset.resource}</small>
                       <small>Target Dataset input 후보</small>
@@ -3576,7 +3567,7 @@ function SourceDatasetDetailModal({ source, isDisconnecting, onClose, onDisconne
           <div className="source-detail-grid">
             <InfoCard title="Connector" value={source.typeLabel} detail={source.connectionName || source.sourceType} />
             <InfoCard title={source.resourceLabel || "resource"} value={source.resource} detail="raw/source scope" />
-            <InfoCard title="Schema" value={`${source.columns.length} columns`} detail={source.status} />
+            <InfoCard title="Schema" value={`${source.columns.length}개 컬럼`} detail={source.status} />
             <InfoCard title="Layer" value={source.layer || "source"} detail={source.updatedAt || source.updatedLabel} />
           </div>
           <section className="source-detail-section">
@@ -3587,7 +3578,7 @@ function SourceDatasetDetailModal({ source, isDisconnecting, onClose, onDisconne
                 <p>Kafka consumer가 읽을 topic payload 기준 컬럼입니다.</p>
               </div>
             </div>
-            <DataTable columns={["column", "type", "sample"]} rows={schemaRows} />
+            <DataTable columns={["컬럼", "타입", "샘플"]} rows={schemaRows} />
           </section>
         </div>
         <footer>
