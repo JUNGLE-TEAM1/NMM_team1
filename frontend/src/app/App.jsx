@@ -1401,6 +1401,7 @@ function SourcesPage({ navigate, setNotice, dataView = "datasets-source", pendin
   const [selectedSilverStandardizeRules, setSelectedSilverStandardizeRules] = useState(["normalize_ids", "cast_types"]);
   const [selectedSilverValidationRules, setSelectedSilverValidationRules] = useState(["required_keys", "schema_drift"]);
   const [silverDatasetSaveState, setSilverDatasetSaveState] = useState({ status: "idle", record: null, error: "" });
+  const [datasetReturnFlow, setDatasetReturnFlow] = useState(null);
   const [selectedSource, setSelectedSource] = useState(null);
   const [selectedFields, setSelectedFields] = useState([]);
   const [targetSilverIds, setTargetSilverIds] = useState([]);
@@ -1797,7 +1798,16 @@ function SourcesPage({ navigate, setNotice, dataView = "datasets-source", pendin
       setSilverDatasetSaveState({ status: "saved", record, error: "" });
       setSavedSilverDatasets((records) => [record, ...records.filter((silverRecord) => silverRecord.id !== record.id)]);
       setNotice(`${record.name} silver dataset metadata를 저장했습니다.`);
-      setDatasetCreationMode(null);
+      if (datasetReturnFlow?.target === "gold") {
+        setTargetSilverIds((ids) => (ids.includes(record.id) ? ids : [record.id, ...ids]));
+        setBaseTargetSilverId((currentId) => currentId || record.id);
+        setCurrentStepIndex(1);
+        setDatasetCreationMode("target");
+        setDatasetReturnFlow(null);
+        setNotice(`${record.name} 저장 후 Gold Dataset 입력 선택으로 돌아왔습니다.`);
+      } else {
+        setDatasetCreationMode(null);
+      }
     } catch (error) {
       setSilverDatasetSaveState({ status: "error", record: null, error: error.message });
       setNotice(`Silver Dataset 저장 실패: ${error.message}`);
@@ -1831,7 +1841,15 @@ function SourcesPage({ navigate, setNotice, dataView = "datasets-source", pendin
       setSourceDatasetSaveState({ status: "saved", record, error: "" });
       setSavedSourceDatasets((records) => [record, ...records.filter((sourceRecord) => sourceRecord.id !== record.id)]);
       setNotice(`${record.name} source dataset metadata를 저장했습니다.`);
-      setDatasetCreationMode(null);
+      if (datasetReturnFlow?.target === "silver") {
+        selectSilverSourceDataset(record);
+        setSilverWizardStepIndex(1);
+        setDatasetCreationMode("silver");
+        setDatasetReturnFlow({ target: "gold" });
+        setNotice(`${record.name} 저장 후 Silver Dataset rules 설정으로 이동했습니다.`);
+      } else {
+        setDatasetCreationMode(null);
+      }
     } catch (error) {
       setSourceDatasetSaveState({ status: "error", record: null, error: error.message });
       setNotice(`Source Dataset 저장 실패: ${error.message}`);
@@ -2347,6 +2365,16 @@ function SourcesPage({ navigate, setNotice, dataView = "datasets-source", pendin
       setSilverWizardStepIndex(0);
       setSilverDatasetSaveState({ status: "idle", record: null, error: "" });
     }
+  }
+
+  function startSourceCreationForGoldInput() {
+    setDatasetReturnFlow({ target: "silver" });
+    startDatasetCreation("source");
+  }
+
+  function startSilverCreationForGoldInput() {
+    setDatasetReturnFlow({ target: "gold" });
+    startDatasetCreation("silver");
   }
 
   function selectConnectionType(connectionType) {
@@ -3715,11 +3743,11 @@ function SourcesPage({ navigate, setNotice, dataView = "datasets-source", pendin
               <p>Gold Dataset을 만들 여러 Silver Dataset을 선택하고 row 기준이 되는 Base silver를 정합니다.</p>
             </div>
             <div className="handoff-actions">
-              <button type="button" className="ghost-action" onClick={() => startDatasetCreation("source")}>
+              <button type="button" className="ghost-action" onClick={startSourceCreationForGoldInput}>
                 Source Dataset 생성
                 <Database size={16} />
               </button>
-              <button type="button" className="primary-action" onClick={() => startDatasetCreation("silver")}>
+              <button type="button" className="primary-action" onClick={startSilverCreationForGoldInput}>
                 Silver Dataset 생성
                 <Layers3 size={16} />
               </button>
@@ -4641,6 +4669,7 @@ function SourcesPage({ navigate, setNotice, dataView = "datasets-source", pendin
           onSelect={handleSourceSelect}
           onCreateNew={() => {
             setIsSourceModalOpen(false);
+            setDatasetReturnFlow({ target: "silver" });
             startDatasetCreation("source");
             setNotice("Source Dataset 생성 화면으로 이동했습니다.");
           }}
