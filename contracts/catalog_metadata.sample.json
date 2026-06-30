@@ -7,6 +7,8 @@
   "version": "v1",
   "name": "Amazon Reviews Gold",
   "layer": "gold",
+  "storage_uri": "s3://asklake-demo/reviews/gold/run_id=run_reviews_demo_001/dataset_reviews_gold.parquet",
+  "format": "parquet",
   "s3_uri": "s3://asklake-demo/reviews/gold/run_id=run_reviews_demo_001/",
   "s3_uri_status": "adapter_locked_endpoint_pending",
   "storage": {
@@ -41,6 +43,14 @@
     "run_id": "run_reviews_demo_001",
     "upstream_datasets": ["dataset_reviews_silver"]
   },
+  "quality_summary": {
+    "schema_match": "pending",
+    "row_count_checked": false
+  },
+  "m3_contract_refs": [
+    "contracts/schema_definition.sample.json",
+    "contracts/transform_spec.sample.json"
+  ],
   "query": {
     "table_name": "reviews_gold",
     "allow_readonly_sql": true,

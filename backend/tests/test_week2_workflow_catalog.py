@@ -392,6 +392,98 @@ def test_week2_airflow_success_updates_catalog_without_local_fallback(tmp_path: 
     assert catalog["storage"]["local_fallback_path"].endswith("dataset_reviews_gold.jsonl")
 
 
+def test_week2_airflow_catalog_payload_registers_storage_uri_without_guessing(tmp_path: Path) -> None:
+    storage_uri = "s3://manual-bucket/m3/reviews/gold/run_id=run_reviews_demo_001/manual-gold.parquet"
+    service = Week2WorkflowService(
+        airflow_adapter=CatalogPayloadAirflowAdapter(
+            {
+                "dataset_id": "dataset_reviews_gold",
+                "name": "Manual Reviews Gold",
+                "layer": "gold",
+                "query_table": "manual_reviews_gold",
+                "storage_uri": storage_uri,
+                "format": "parquet",
+                "schema": {
+                    "fields": [
+                        {"name": "product_id", "type": "string", "nullable": False},
+                        {"name": "review_count", "type": "integer", "nullable": False},
+                        {"name": "average_rating", "type": "number", "nullable": True},
+                    ]
+                },
+                "row_count": 42,
+                "quality_summary": {"schema_match": "passed", "row_count_checked": True},
+                "lineage": {"source_ids": ["source_amazon_reviews_demo"]},
+                "m3_contract_refs": [
+                    "contracts/schema_definition.sample.json",
+                    "contracts/transform_spec.sample.json",
+                ],
+            },
+            output_path="/tmp/guessed/reviews/gold/run_id=run_reviews_demo_001/wrong.parquet",
+        ),
+        local_runner=FailingRunner(),
+        output_root=tmp_path / "out",
+    )
+
+    run = service.trigger_run("pipeline_reviews_json_e2e", executor="airflow", triggered_by="m5_owner")
+    catalog = service.get_catalog_metadata("dataset_reviews_gold")
+
+    assert run["status"] == "succeeded"
+    assert catalog["dataset_id"] == "dataset_reviews_gold"
+    assert catalog["name"] == "Manual Reviews Gold"
+    assert catalog["storage_uri"] == storage_uri
+    assert catalog["s3_uri"] == storage_uri
+    assert catalog["storage"]["uri"] == storage_uri
+    assert catalog["storage"]["bucket"] == "manual-bucket"
+    assert catalog["storage"]["prefix"] == "m3/reviews/gold/run_id=run_reviews_demo_001/"
+    assert catalog["storage"]["local_fallback_path"] is None
+    assert catalog["storage"]["format"] == "parquet"
+    assert catalog["query"]["table_name"] == "manual_reviews_gold"
+    assert catalog["query"]["allowed_columns"] == ["product_id", "review_count", "average_rating"]
+    assert catalog["metrics"]["row_count"] == 42
+    assert catalog["metrics"]["bytes"] == 2048
+    assert catalog["metrics"]["quality"] == {"schema_match": "passed", "row_count_checked": True}
+    assert catalog["quality_summary"] == {"schema_match": "passed", "row_count_checked": True}
+    assert catalog["lineage"]["pipeline_id"] == "pipeline_reviews_json_e2e"
+    assert catalog["lineage"]["run_id"] == "run_reviews_demo_001"
+    assert catalog["lineage"]["source_ids"] == ["source_amazon_reviews_demo"]
+    assert catalog["m3_contract_refs"] == [
+        "contracts/schema_definition.sample.json",
+        "contracts/transform_spec.sample.json",
+    ]
+
+
+def test_week2_airflow_catalog_payload_missing_storage_uri_does_not_guess_catalog_path(tmp_path: Path) -> None:
+    service = Week2WorkflowService(
+        airflow_adapter=CatalogPayloadAirflowAdapter(
+            {
+                "dataset_id": "dataset_reviews_gold",
+                "name": "Manual Reviews Gold",
+                "layer": "gold",
+                "query_table": "manual_reviews_gold",
+                "format": "parquet",
+                "schema": {"fields": [{"name": "product_id", "type": "string", "nullable": False}]},
+                "row_count": 1,
+                "quality_summary": {"schema_match": "passed", "row_count_checked": True},
+                "lineage": {"run_id": "run_reviews_demo_001"},
+                "m3_contract_refs": ["contracts/transform_spec.sample.json"],
+            },
+            output_path="/tmp/guessed/reviews/gold/run_id=run_reviews_demo_001/wrong.parquet",
+        ),
+        local_runner=FailingRunner(),
+        output_root=tmp_path / "out",
+    )
+
+    run = service.trigger_run("pipeline_reviews_json_e2e", executor="airflow", triggered_by="m5_owner")
+
+    assert run["status"] == "succeeded"
+    assert any(
+        "catalog_payload missing required field(s): storage_uri" in log["message"]
+        for log in run["logs"]
+    )
+    with pytest.raises(Week2WorkflowNotFoundError):
+        service.get_catalog_metadata("dataset_reviews_gold")
+
+
 def test_week2_airflow_failed_result_uses_local_fallback(tmp_path: Path) -> None:
     service = Week2WorkflowService(
         airflow_adapter=FailedAirflowAdapter(),
@@ -526,6 +618,35 @@ class SuccessfulAirflowAdapter:
             output_path=str(self.output_path),
             output_row_count=7,
             output_bytes=self.output_path.stat().st_size,
+        )
+
+
+class CatalogPayloadAirflowAdapter:
+    def __init__(self, catalog_payload: dict, output_path: str) -> None:
+        self.catalog_payload = catalog_payload
+        self.output_path = output_path
+
+    def run(self, workflow_definition: dict, run_id: str) -> Week2RunnerResult:
+        return Week2RunnerResult(
+            status="succeeded",
+            task_results=[
+                {
+                    "node_id": "airflow_manual_run",
+                    "status": "succeeded",
+                    "attempt": 1,
+                    "row_count": self.catalog_payload.get("row_count"),
+                    "bytes": 2048,
+                    "error": None,
+                }
+            ],
+            logs=[{"level": "info", "message": f"Manual Run completed for {run_id}"}],
+            row_count=100,
+            bytes=4096,
+            duration_ms=3,
+            output_path=self.output_path,
+            output_row_count=self.catalog_payload.get("row_count"),
+            output_bytes=2048,
+            catalog_payload=self.catalog_payload,
         )
 
 

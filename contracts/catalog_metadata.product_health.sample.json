@@ -7,6 +7,8 @@
   "version": "v1",
   "name": "Product Health Gold",
   "layer": "gold",
+  "storage_uri": "s3://asklake-demo/product_health/gold/run_id=run_product_health_demo_001/dataset_product_health_gold.parquet",
+  "format": "parquet",
   "s3_uri": "s3://asklake-demo/product_health/gold/run_id=run_product_health_demo_001/",
   "s3_uri_status": "adapter_locked_endpoint_pending",
   "storage": {
@@ -50,6 +52,14 @@
     "run_id": "run_product_health_demo_001",
     "upstream_datasets": ["dataset_product_health_silver"]
   },
+  "quality_summary": {
+    "schema_match": "pending",
+    "row_count_checked": false
+  },
+  "m3_contract_refs": [
+    "contracts/schema_definition.sample.json",
+    "contracts/transform_spec.sample.json"
+  ],
   "query": {
     "table_name": "gold_product_health",
     "allow_readonly_sql": true,

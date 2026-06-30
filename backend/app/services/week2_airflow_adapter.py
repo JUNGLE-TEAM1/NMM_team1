@@ -1,5 +1,6 @@
 import json
 import os
+from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
 from time import sleep
@@ -148,7 +149,9 @@ def result_from_successful_dag_run(
             return failed_airflow_result(run_id, artifact_error)
     if payload is None:
         return failed_airflow_result(run_id, "Airflow DAG succeeded but missing Week 2 result payload")
-    if not payload.get("output_path"):
+    catalog_payload = optional_dict(payload.get("catalog_payload"))
+    output_path = payload.get("output_path")
+    if not output_path and not catalog_payload_storage_uri(catalog_payload):
         return failed_airflow_result(run_id, "Airflow DAG result is missing output_path")
     return Week2RunnerResult(
         status=str(payload.get("status", "succeeded")),
@@ -157,9 +160,10 @@ def result_from_successful_dag_run(
         row_count=optional_int(payload.get("row_count")),
         bytes=optional_int(payload.get("bytes")),
         duration_ms=optional_int(payload.get("duration_ms")),
-        output_path=str(payload["output_path"]),
+        output_path=str(output_path) if output_path else None,
         output_row_count=optional_int(payload.get("output_row_count")),
         output_bytes=optional_int(payload.get("output_bytes")),
+        catalog_payload=catalog_payload,
     )
 
 
@@ -280,4 +284,19 @@ def optional_int(value: Any) -> int | None:
             return int(value)
         except ValueError:
             return None
+    return None
+
+
+def optional_dict(value: Any) -> dict[str, Any] | None:
+    if not isinstance(value, dict):
+        return None
+    return deepcopy(value)
+
+
+def catalog_payload_storage_uri(catalog_payload: dict[str, Any] | None) -> str | None:
+    if catalog_payload is None:
+        return None
+    storage_uri = catalog_payload.get("storage_uri")
+    if isinstance(storage_uri, str) and storage_uri.strip():
+        return storage_uri
     return None

@@ -90,12 +90,13 @@ PYTHONPATH=backend ./.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
 7. 응답 `status`가 `succeeded`인지 확인한다.
 8. run log에 `airflow adapter executed Week 2 workflow boundary`가 있고 `falling back`이 없는지 확인한다.
 9. `data/week2/_airflow_results/<run_id>.json`과 `data/week2/reviews/gold/run_id=<run_id>/dataset_reviews_gold.jsonl`이 생겼는지 확인한다.
-10. `GET /api/week2/catalog/dataset_reviews_gold`에서 같은 `run_id`, row count, bytes, local path가 확인되는지 확인한다.
-11. `POST /api/week2/workflows/pipeline_product_health_e2e/runs`에 `{"executor":"airflow","triggered_by":"m5_owner"}`를 보낸다.
-12. 응답 `status`가 `succeeded`이고 run log에 `airflow adapter executed Week 2 workflow boundary`가 있는지 확인한다.
-13. `data/week2/_airflow_results/<run_id>.json`과 `data/week2/product_health/gold/run_id=<run_id>/dataset_product_health_gold.parquet` 또는 `.jsonl` smoke output이 생겼는지 확인한다.
-14. `GET /api/week2/catalog/dataset_product_health_gold`에서 `query.table_name=gold_product_health`, 같은 `run_id`, row count, bytes, local path가 확인되는지 확인한다.
-15. 확인 뒤 필요한 경우 `docker compose -f docker-compose.airflow.yml down`을 실행한다.
+10. result artifact에 `week2_result.catalog_payload`가 있으면 `storage_uri`, `query_table`, `schema`, `row_count`, `quality_summary`, `lineage`, `m3_contract_refs`가 들어 있는지 확인한다.
+11. `GET /api/week2/catalog/dataset_reviews_gold`에서 같은 `run_id`, row count, bytes, local path가 확인되는지 확인한다. `catalog_payload.storage_uri`가 제공된 run은 Catalog의 `storage_uri`와 호환 `s3_uri`가 같은 값을 보존하는지도 확인한다.
+12. `POST /api/week2/workflows/pipeline_product_health_e2e/runs`에 `{"executor":"airflow","triggered_by":"m5_owner"}`를 보낸다.
+13. 응답 `status`가 `succeeded`이고 run log에 `airflow adapter executed Week 2 workflow boundary`가 있는지 확인한다.
+14. `data/week2/_airflow_results/<run_id>.json`과 `data/week2/product_health/gold/run_id=<run_id>/dataset_product_health_gold.parquet` 또는 `.jsonl` smoke output이 생겼는지 확인한다.
+15. `GET /api/week2/catalog/dataset_product_health_gold`에서 `query.table_name=gold_product_health`, 같은 `run_id`, row count, bytes, local path가 확인되는지 확인한다.
+16. 확인 뒤 필요한 경우 `docker compose -f docker-compose.airflow.yml down`을 실행한다.
 
 ## Week 2 M5 product-health Catalog smoke 점검
 

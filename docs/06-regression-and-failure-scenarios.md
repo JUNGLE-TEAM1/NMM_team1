@@ -118,6 +118,16 @@
 | Verification method | `backend/tests/test_week2_storage_adapter.py`, `backend/tests/test_week2_spark_runner.py`, `backend/tests/test_week2_workflow_catalog.py`를 확인한다. |
 | Related docs/interface/Phase | `docs/03`, `contracts/runtime_config.sample.json`, `contracts/catalog_metadata.sample.json`, M2 storage adapter |
 
+### Manual Run catalog_payload.storage_uri를 무시하고 gold parquet 경로를 추측하는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | Manual Run result에 `catalog_payload`가 있으면 M5 Catalog 등록은 `catalog_payload.storage_uri`를 canonical output location으로 사용한다. |
+| Failure condition | `catalog_payload.storage_uri`가 있는데도 M5가 `run_id`, `output_path`, hardcoded `gold/` path로 Catalog URI를 다시 계산한다. |
+| Expected behavior | `catalog_payload` 최소 필드가 모두 있으면 `CatalogMetadata.storage_uri`와 호환 `s3_uri`가 payload의 `storage_uri`를 그대로 보존한다. `storage_uri`가 없으면 Catalog 등록을 건너뛰고 run log에 실패 이유를 남긴다. |
+| Verification method | `backend/tests/test_week2_airflow_adapter.py`, `backend/tests/test_week2_workflow_catalog.py`의 catalog_payload 회귀 테스트를 확인한다. |
+| Related docs/interface/Phase | `docs/03`, `contracts/execution_result.sample.json`, M5 Workflow/Catalog |
+
 ### Week 2 SQL runtime이 adapter guardrail 없이 local file을 읽는 경우
 
 | 항목 | 내용 |

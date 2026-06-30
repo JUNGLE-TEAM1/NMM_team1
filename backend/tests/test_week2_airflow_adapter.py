@@ -201,6 +201,54 @@ def test_week2_airflow_adapter_reads_shared_result_artifact(tmp_path: Path) -> N
     assert http_client.requests[0][2]["conf"]["airflow_result_file"] == "run_reviews_demo_001.json"
 
 
+def test_week2_airflow_adapter_preserves_manual_run_catalog_payload() -> None:
+    catalog_payload = {
+        "dataset_id": "dataset_reviews_gold",
+        "name": "Amazon Reviews Gold",
+        "layer": "gold",
+        "query_table": "reviews_gold",
+        "storage_uri": (
+            "s3://manual-bucket/reviews/gold/run_id=run_reviews_demo_001/dataset_reviews_gold.parquet"
+        ),
+        "format": "parquet",
+        "schema": {
+            "fields": [
+                {"name": "product_id", "type": "string", "nullable": False},
+                {"name": "review_count", "type": "integer", "nullable": False},
+            ]
+        },
+        "row_count": 2,
+        "quality_summary": {"schema_match": "passed", "row_count_checked": True},
+        "lineage": {"run_id": "run_reviews_demo_001", "source_ids": ["source_amazon_reviews_demo"]},
+        "m3_contract_refs": ["contracts/schema_definition.sample.json", "contracts/transform_spec.sample.json"],
+    }
+    http_client = FakeAirflowHttpClient(
+        [
+            {"dag_run_id": "run_reviews_demo_001", "state": "queued"},
+            {
+                "dag_run_id": "run_reviews_demo_001",
+                "state": "success",
+                "week2_result": {
+                    "status": "succeeded",
+                    "row_count": 4,
+                    "bytes": 580,
+                    "duration_ms": 12,
+                    "output_row_count": 2,
+                    "output_bytes": 2048,
+                    "catalog_payload": catalog_payload,
+                },
+            },
+        ]
+    )
+    adapter = Week2AirflowAdapter(config=airflow_config(max_polls=1), http_client=http_client)
+
+    result = adapter.run({"pipeline_id": "pipeline_reviews_json_e2e"}, run_id="run_reviews_demo_001")
+
+    assert result.status == "succeeded"
+    assert result.output_path is None
+    assert result.catalog_payload == catalog_payload
+
+
 def test_week2_airflow_adapter_marks_success_without_result_as_failed() -> None:
     http_client = FakeAirflowHttpClient(
         [

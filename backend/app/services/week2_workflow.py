@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+from urllib.parse import unquote, urlparse
 
 from app.domain.runtime_config import RuntimeConfig, StorageConfig
 from app.services.week2_airflow_adapter import Week2AirflowAdapter, Week2AirflowError
@@ -18,6 +19,19 @@ SUCCESSFUL_RUN_STATUSES = {"succeeded", "fallback_succeeded"}
 AIRFLOW_SUCCESS_STATUS = "succeeded"
 SUPPORTED_EXECUTORS = {"airflow", "local_runner", "spark_runner"}
 PRODUCT_HEALTH_PIPELINE_ID = "pipeline_product_health_e2e"
+REQUIRED_CATALOG_PAYLOAD_FIELDS = {
+    "dataset_id",
+    "name",
+    "layer",
+    "query_table",
+    "storage_uri",
+    "format",
+    "schema",
+    "row_count",
+    "quality_summary",
+    "lineage",
+    "m3_contract_refs",
+}
 DEFAULT_WORKFLOW_CONTRACTS = [
     (
         "workflow_definition.sample.json",
@@ -40,6 +54,12 @@ class Week2WorkflowNotFoundError(ValueError):
 
 class Week2WorkflowInvalidExecutorError(ValueError):
     """지원하지 않는 Week 2 executor 요청이 들어왔을 때 발생하는 오류."""
+
+    pass
+
+
+class Week2CatalogPayloadError(ValueError):
+    """Manual Run catalog_payload가 Catalog 등록에 충분하지 않을 때 발생한다."""
 
     pass
 
@@ -129,12 +149,16 @@ class Week2WorkflowService:
         run["task_results"] = runner_result.task_results
         run["logs"] = self._logs_for_executor(executor, status, runner_result.logs)
 
+        if status in SUCCESSFUL_RUN_STATUSES:
+            try:
+                catalog = self._catalog_for_run(bundle, run_id, timestamp, runner_result)
+            except Week2CatalogPayloadError as error:
+                run["logs"].append({"level": "error", "message": str(error)})
+            else:
+                self.catalog[catalog["dataset_id"]] = catalog
+                self.catalog_store.save_catalog(catalog)
         self.runs[run_id] = run
         self.catalog_store.save_run(run)
-        if status in SUCCESSFUL_RUN_STATUSES:
-            catalog = self._catalog_for_run(bundle, run_id, timestamp, runner_result)
-            self.catalog[catalog["dataset_id"]] = catalog
-            self.catalog_store.save_catalog(catalog)
         return run
 
     def get_run(self, run_id: str) -> dict[str, Any]:
@@ -293,6 +317,12 @@ class Week2WorkflowService:
     ) -> dict[str, Any]:
         """runner 결과를 CatalogMetadata fixture에 반영해 저장 가능한 catalog record를 만든다."""
 
+        catalog_payload = getattr(runner_result, "catalog_payload", None)
+        if catalog_payload is not None:
+            if not isinstance(catalog_payload, dict):
+                raise Week2CatalogPayloadError("catalog_payload must be a JSON object; Catalog registration skipped")
+            return self._catalog_from_payload(bundle, run_id, timestamp, runner_result, catalog_payload)
+
         catalog = deepcopy(bundle.catalog_template)
         output_file_name = Path(runner_result.output_path).name if runner_result.output_path else f"{catalog['dataset_id']}.parquet"
         storage_location = self._catalog_storage_location(bundle.catalog_template, run_id, output_file_name)
@@ -306,6 +336,69 @@ class Week2WorkflowService:
         catalog["metrics"]["quality"]["row_count_checked"] = output_row_count(runner_result) is not None
         catalog["lineage"]["pipeline_id"] = bundle.pipeline_id
         catalog["lineage"]["run_id"] = run_id
+        catalog["updated_at"] = timestamp
+        return catalog
+
+    def _catalog_from_payload(
+        self,
+        bundle: Week2WorkflowBundle,
+        run_id: str,
+        timestamp: str,
+        runner_result: Any,
+        catalog_payload: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Manual Run result의 catalog_payload를 우선해 CatalogMetadata record를 만든다."""
+
+        missing_fields = missing_catalog_payload_fields(catalog_payload)
+        if missing_fields:
+            missing = ", ".join(missing_fields)
+            raise Week2CatalogPayloadError(
+                f"catalog_payload missing required field(s): {missing}; Catalog registration skipped"
+            )
+
+        lineage = deepcopy(catalog_payload["lineage"])
+        if not isinstance(lineage, dict):
+            raise Week2CatalogPayloadError("catalog_payload.lineage must be a JSON object; Catalog registration skipped")
+
+        catalog = deepcopy(bundle.catalog_template)
+        storage_uri = str(catalog_payload["storage_uri"])
+        schema = deepcopy(catalog_payload["schema"])
+        quality_summary = deepcopy(catalog_payload["quality_summary"])
+        output_format = str(catalog_payload["format"])
+
+        catalog["dataset_id"] = str(catalog_payload["dataset_id"])
+        catalog["name"] = str(catalog_payload["name"])
+        catalog["layer"] = str(catalog_payload["layer"])
+        catalog["storage_uri"] = storage_uri
+        catalog["format"] = output_format
+        catalog["schema"] = schema
+        catalog["quality_summary"] = quality_summary
+        catalog["m3_contract_refs"] = deepcopy(catalog_payload["m3_contract_refs"])
+        catalog["s3_uri"] = storage_uri
+
+        catalog["storage"]["uri"] = storage_uri
+        catalog["storage"]["format"] = output_format
+        storage_bucket = storage_bucket_from_uri(storage_uri)
+        storage_prefix = storage_prefix_from_uri(storage_uri)
+        if storage_bucket is not None:
+            catalog["storage"]["bucket"] = storage_bucket
+        if storage_prefix is not None:
+            catalog["storage"]["prefix"] = storage_prefix
+        catalog["storage"]["local_fallback_path"] = local_fallback_path_from_storage_uri(storage_uri)
+
+        catalog["metrics"]["row_count"] = int(catalog_payload["row_count"])
+        catalog["metrics"]["bytes"] = output_bytes(runner_result)
+        catalog["metrics"]["quality"] = quality_summary
+
+        lineage.setdefault("pipeline_id", bundle.pipeline_id)
+        lineage.setdefault("run_id", run_id)
+        catalog["lineage"] = lineage
+
+        catalog["query"]["table_name"] = str(catalog_payload["query_table"])
+        catalog["query"]["allow_readonly_sql"] = True
+        allowed_columns = schema_field_names(schema)
+        if allowed_columns:
+            catalog["query"]["allowed_columns"] = allowed_columns
         catalog["updated_at"] = timestamp
         return catalog
 
@@ -405,6 +498,7 @@ def result_with_logs(result: Week2RunnerResult, leading_logs: list[dict[str, str
         output_path=result.output_path,
         output_row_count=result.output_row_count,
         output_bytes=result.output_bytes,
+        catalog_payload=deepcopy(result.catalog_payload),
     )
 
 
@@ -418,3 +512,53 @@ def output_bytes(result: Week2RunnerResult) -> int | None:
     """Catalog metric에 쓸 output bytes를 고르고 없으면 input bytes로 대체한다."""
 
     return result.output_bytes if result.output_bytes is not None else result.bytes
+
+
+def missing_catalog_payload_fields(catalog_payload: dict[str, Any]) -> list[str]:
+    """Catalog 등록에 필요한 최소 catalog_payload 필드가 빠졌는지 확인한다."""
+
+    missing = []
+    for field in sorted(REQUIRED_CATALOG_PAYLOAD_FIELDS):
+        value = catalog_payload.get(field)
+        if value is None or (isinstance(value, str) and not value.strip()):
+            missing.append(field)
+    return missing
+
+
+def schema_field_names(schema: Any) -> list[str]:
+    """Catalog payload schema에서 SQL allowlist에 쓸 field name을 추출한다."""
+
+    fields = schema.get("fields", []) if isinstance(schema, dict) else schema
+    if not isinstance(fields, list):
+        return []
+    return [
+        str(field["name"])
+        for field in fields
+        if isinstance(field, dict) and field.get("name")
+    ]
+
+
+def storage_bucket_from_uri(storage_uri: str) -> str | None:
+    parsed = urlparse(storage_uri)
+    return parsed.netloc if parsed.scheme == "s3" and parsed.netloc else None
+
+
+def storage_prefix_from_uri(storage_uri: str) -> str | None:
+    parsed = urlparse(storage_uri)
+    if parsed.scheme != "s3":
+        return None
+    key = parsed.path.lstrip("/")
+    if not key or key.endswith("/"):
+        return key
+    if "/" not in key:
+        return ""
+    return f"{key.rsplit('/', 1)[0]}/"
+
+
+def local_fallback_path_from_storage_uri(storage_uri: str) -> str | None:
+    parsed = urlparse(storage_uri)
+    if parsed.scheme == "file":
+        return unquote(parsed.path)
+    if parsed.scheme:
+        return None
+    return storage_uri
