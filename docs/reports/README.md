@@ -53,6 +53,7 @@ report가 늘어나면 영역별 최신 report index를 작게 유지한다. 이
 | MongoDB Source Dataset seed | [`mongodb-source-seed.md`](mongodb-source-seed.md) | 로컬 Docker MongoDB에 AskLake demo JSONL 일부를 적재하고 실제 collection preview + Source Dataset metadata 저장을 확인 |
 | Product Health Processing Template | [`product-health-processing-template.md`](product-health-processing-template.md) | M3 Product Health TransformSpec 기반 추천 Processing Template을 Target Dataset UI에서 review/save 가능한 draft metadata로 받는지 확인 |
 | Product Health handoff catalog ingest | [`product-health-handoff-catalog-ingest.md`](product-health-handoff-catalog-ingest.md) | 준비된 handoff bundle을 canonical Gold parquet, Week 2 CatalogMetadata, run metadata로 import해 M6 DuckDB AI Query가 동작하는지 확인 |
+| Dashboard card storage | [`dashboard-card-storage.md`](dashboard-card-storage.md) | AI Query 결과의 `chart_spec`과 SQL context를 Dashboard card로 저장/조회하는 backend API 확인 |
 | Multi-source Target Dataset | [`multi-source-target-dataset.md`](multi-source-target-dataset.md) | Product Health `reviews`, `behavior`, `delivery`, `product_master` source role mapping을 Target Dataset metadata/UI에 저장하는지 확인 |
 | Transform Builder MVP | [`transform-builder-mvp.md`](transform-builder-mvp.md) | Target Dataset Processing에서 M3 추천 규칙을 기본값으로 불러오고 column/cast/null policy를 일부 수정해 `process_rule.builder_config`로 저장하는지 확인 |
 | M5 Day 3 Catalog Persistence Handoff | [`m5-day3-catalog-persistence-handoff.md`](m5-day3-catalog-persistence-handoff.md) | Week 2 M5 run/catalog metadata가 service restart 이후에도 조회되는 local JSON handoff persistence 확인 |

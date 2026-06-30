@@ -57,6 +57,7 @@ AskLake의 Target MVP 대표 성공 시나리오는 `Trusted Dataset -> Query/As
 - [ ] M6 Hybrid Route는 SQL-only, RAG-only, Hybrid, Unsupported 질문을 구분하고, Hybrid는 SQL rows와 CatalogMetadata evidence를 함께 사용한다.
 - [ ] M6 답변 생성은 `LLMAdapter` 경계를 통과하되 Week 2 기본값은 외부 호출 없는 deterministic template adapter이며, adapter context에는 SQL rows, evidence, retrieval trace 같은 허용된 재료만 포함한다.
 - [ ] M6 `OpenAILLMAdapter`는 `WEEK2_LLM_PROVIDER=openai`와 `OPENAI_API_KEY`가 모두 있을 때만 선택되고, key 부재/provider 오류/timeout/malformed response에서는 template fallback으로 기존 M1 응답 계약을 유지한다.
+- [ ] M1/M6 Dashboard card storage는 `AIQueryResult`에서 나온 `question`, `sql`, `chart_spec`, `dataset_id`를 저장하고 `created_at DESC` 조회와 card id 단건 조회를 제공한다. invalid `chart_spec`은 저장하지 않는다.
 - [ ] Week 2 M5 Airflow smoke는 실제 DAG 실행 결과 artifact를 backend가 읽고, `executor=airflow` run이 fallback 없이 Catalog lineage와 metrics를 갱신한다.
 - [ ] M2 Taxi local batch supporting evidence는 TLC Taxi Parquet 입력을 `gold_taxi_daily_metrics` Parquet output으로 만들고 row count, bytes, duration, output path를 기록한다. 이는 `gold_product_health` 대표 경로를 대체하지 않는다.
 - [ ] M4 Kafka replay는 성공/실패 실행 증거를 `KAFKA_REPLAY_EVIDENCE_DIR`에 남기고, 실패 producer batch row를 `KAFKA_REPLAY_DEAD_LETTER_DIR`의 JSONL로 남긴다.
