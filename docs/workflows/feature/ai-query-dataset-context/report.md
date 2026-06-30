@@ -11,7 +11,7 @@
 - Escalated context read: `docs/03-interface-reference.md`, `docs/05-acceptance-scenarios-and-checklist.md`, `docs/06-regression-and-failure-scenarios.md`, `docs/07-manual-verification-playbook.md`, `docs/reports/m6-m5-catalog-source-adapter.md`, `docs/reports/m6-duckdb-runtime-integration.md`, `contracts/product_health_catalog_metadata.sample.json`
 - Changed: M6 AI Query가 저장된 Product Health `CatalogMetadata`의 nested shape와 PR 5/6 top-level alias(`query_table`, `allowed_columns`, `canonical_demo_query`, local `storage_uri`)를 모두 읽어 DuckDB SQL context를 만들게 했다. Product Health risk/demo 질문은 Catalog의 `canonical_demo_query`를 우선 사용하고, DuckDB guardrail은 기존처럼 SELECT-only/table/column/LIMIT/path를 검증한다.
 - Verified: focused M6 SQL/Catalog tests `37 passed`; focused M6 + LLM safety tests `42 passed`; Product Health contract tests `4 passed`; Python compile passed; frontend build passed; `git diff --check` passed; `scripts/validate-harness.sh` and `scripts/validate-harness.sh --strict` passed; local API smoke returned `dataset_product_health_gold`, `engine=duckdb`, `route=sql`, first row `ph_000028`.
-- Remaining: PR #314 review/CI. Full backend suite has an environment-only gap: `144 passed`, 2 Taxi Spark tests failed because this local machine has no Java Runtime.
+- Remaining: PR #314 review/CI with linked issue #316. Full backend suite has an environment-only gap: `144 passed`, 2 Taxi Spark tests failed because this local machine has no Java Runtime.
 - Next context: PR 5/6이 remote/object-only `storage_uri`를 제공하면 M6 remote read가 아니라 M5 local fallback materialization 또는 DuckDB remote credential policy를 별도 결정해야 한다.
 - Risk: 이번 Phase는 CatalogMetadata 저장을 구현하지 않는다. 저장된 catalog가 없거나 path가 remote-only이면 SQL query는 blocked 상태가 정상이다.
 

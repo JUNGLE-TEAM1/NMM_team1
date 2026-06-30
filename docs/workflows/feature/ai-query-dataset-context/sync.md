@@ -22,7 +22,13 @@
 
 ## Push / PR
 
+- linked GitHub issue: #316
+- issue link: https://github.com/JUNGLE-TEAM1/NMM_team1/issues/316
+- issue creation result: created after PR #314 opened to satisfy linked-issue required check
+- PR closing keyword: Closes #316
 - pushed branch: feature/ai-query-dataset-context
 - PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/314
 - merge status: open
-- issue close status: n/a
+- issue close status: open
+- issue reopen result: already open
+- issue project result: failed: non-200 OK status code: 500 Internal Server Error body: ""
