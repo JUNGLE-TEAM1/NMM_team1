@@ -22,7 +22,7 @@
 
 - Current branch: `feature/product-health-processing-template`
 - Base branch/worktree context: `feat-#295`
-- Remote status: not pushed
+- Remote status: pushed to `origin/feature/product-health-processing-template`
 
 ## Pre-Merge Sync
 
@@ -36,3 +36,10 @@
 
 - PR 생성 전 `docs/11-git-sync-policy.md`를 따른다.
 - merge/finalize/cleanup은 사람 확인 전 실행하지 않는다.
+
+## Remote
+
+- pushed branch: `feature/product-health-processing-template`
+- PR link: `https://github.com/JUNGLE-TEAM1/NMM_team1/pull/301`
+- merge status: not merged
+- issue close status: open until PR merge
