@@ -623,6 +623,104 @@ code {
   min-height: 360px;
 }
 
+.dataset-inventory-card {
+  min-height: 420px;
+}
+
+.dataset-inventory-body {
+  display: grid;
+  gap: 18px;
+  padding: 18px 24px 24px;
+}
+
+.dataset-inventory-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.dataset-inventory-tabs button {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 10px;
+  align-items: center;
+  min-width: 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 13px 14px;
+  color: #374151;
+  text-align: left;
+}
+
+.dataset-inventory-tabs button.active {
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+
+.dataset-inventory-tabs span {
+  display: inline-grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 999px;
+  background: #f3f4f6;
+  color: #111827;
+  font-size: 12px;
+  font-weight: 850;
+  grid-row: span 2;
+}
+
+.dataset-inventory-tabs button.active span {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.dataset-inventory-tabs strong {
+  min-width: 0;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 850;
+  overflow-wrap: anywhere;
+}
+
+.dataset-inventory-tabs small {
+  min-width: 0;
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.dataset-card-grid {
+  align-items: stretch;
+}
+
+.dataset-asset-card {
+  min-height: 190px;
+}
+
+.source-card-icon.target {
+  background: #eef2ff;
+  color: #4f46e5;
+}
+
+.source-card-icon.source {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.source-card-icon.connection {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.dataset-empty-panel {
+  min-height: 240px;
+  display: grid;
+  place-items: center;
+}
+
 .dataset-placeholder-body {
   display: grid;
   min-height: 300px;
@@ -4365,6 +4463,7 @@ tbody tr:hover {
   .source-config-grid,
   .source-config-summary,
   .connection-type-grid,
+  .dataset-inventory-tabs,
   .source-card-grid,
   .source-picker-toolbar,
   .start-steps,
@@ -4384,6 +4483,11 @@ tbody tr:hover {
   .target-run-actions {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .table-card-header,
+  .table-card-actions {
+    flex-wrap: wrap;
   }
 
   .source-type-grid {
