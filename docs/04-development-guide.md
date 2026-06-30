@@ -187,6 +187,20 @@ OPENAI_TIMEOUT_SECONDS=30
 docker compose up -d --force-recreate backend frontend
 ```
 
+로컬 MongoDB Source Dataset smoke는 별도 Compose override를 사용한다.
+demo credential은 local-only 값이며 production credential로 사용하지 않는다.
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.mongodb.yml up -d --build mongo backend
+docker exec nmm_team1-backend-1 python scripts/load_jsonl_to_mongodb.py \
+  --input data/asklakemart_chimera_raw_test/events.jsonl \
+  --host mongo \
+  --database asklake_demo \
+  --collection customer_events \
+  --limit 500 \
+  --truncate
+```
+
 ### 하네스 검증 명령
 
 ```bash

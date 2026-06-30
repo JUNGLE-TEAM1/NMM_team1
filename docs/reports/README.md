@@ -48,6 +48,7 @@ report가 늘어나면 영역별 최신 report index를 작게 유지한다. 이
 | Target Dataset job draft | [`target-dataset-job-draft.md`](target-dataset-job-draft.md) | Target Dataset Review 결과가 실행 없이 ETL job definition draft metadata로 저장되는지 확인 |
 | Target Dataset run handoff | [`target-dataset-run-handoff.md`](target-dataset-run-handoff.md) | 저장된 Target Dataset draft가 `Job Runs`에서 Week2 `ExecutionResult`와 연결되는지 확인 |
 | Taxi PostgreSQL Source Dataset 등록 | [`taxi-postgres-source-dataset.md`](taxi-postgres-source-dataset.md) | 로컬 Taxi PostgreSQL table을 실제 External Connection schema preview로 읽어 Source Dataset metadata로 저장하는지 확인 |
+| MongoDB Source Dataset seed | [`mongodb-source-seed.md`](mongodb-source-seed.md) | 로컬 Docker MongoDB에 AskLake demo JSONL 일부를 적재하고 실제 collection preview + Source Dataset metadata 저장을 확인 |
 | Product Health Processing Template | [`product-health-processing-template.md`](product-health-processing-template.md) | M3 Product Health TransformSpec 기반 추천 Processing Template을 Target Dataset UI에서 review/save 가능한 draft metadata로 받는지 확인 |
 | Multi-source Target Dataset | [`multi-source-target-dataset.md`](multi-source-target-dataset.md) | Product Health `reviews`, `behavior`, `delivery`, `product_master` source role mapping을 Target Dataset metadata/UI에 저장하는지 확인 |
 | Transform Builder MVP | [`transform-builder-mvp.md`](transform-builder-mvp.md) | Target Dataset Processing에서 M3 추천 규칙을 기본값으로 불러오고 column/cast/null policy를 일부 수정해 `process_rule.builder_config`로 저장하는지 확인 |
