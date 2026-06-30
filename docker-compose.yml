@@ -49,10 +49,15 @@ services:
       context: .
       dockerfile: infra/docker/backend.Dockerfile
     image: asklake-backend:local
+    env_file:
+      - path: .env.local
+        required: false
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     environment:
       APP_ENV: local
+    volumes:
+      - ./data:/app/data
 
   frontend:
     build:
