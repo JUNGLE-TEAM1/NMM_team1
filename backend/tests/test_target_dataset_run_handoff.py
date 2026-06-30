@@ -240,7 +240,10 @@ def test_product_health_target_dataset_run_exposes_manual_run_contract() -> None
     assert contract["gold_output"]["format"] == "parquet"
     assert contract["gold_output"]["status"] == "pending_product_health_execution"
     assert contract["gold_output"]["storage_uri"] is None
+    assert contract["gold_output"]["schema_version"] == "schema_product_health_gold_v2"
+    assert contract["gold_output"]["contract_version"] == "product_health_gold_contract_v2"
     assert any(field["name"] == "risk_score" for field in contract["gold_output"]["schema"])
+    assert any(field["name"] == "synthetic_product_id" for field in contract["gold_output"]["schema"])
     assert all(result["status"] == "pending" for result in contract["quality_results"])
     assert contract["lineage"]["input_source_dataset_ids"] == [source_dataset["id"]]
     assert contract["lineage"]["output_dataset_id"] == "dataset_product_health_gold"
@@ -249,4 +252,5 @@ def test_product_health_target_dataset_run_exposes_manual_run_contract() -> None
     assert contract["catalog_payload"]["storage_uri"] is None
     assert contract["catalog_payload"]["query"]["table_name"] == "gold_product_health"
     assert "risk_score" in contract["catalog_payload"]["query"]["allowed_columns"]
+    assert "synthetic_product_id" in contract["catalog_payload"]["query"]["allowed_columns"]
     assert contract["error"] is None

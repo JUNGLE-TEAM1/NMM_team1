@@ -54,12 +54,12 @@ AI가 멈추고 사람 확인을 받아야 하는 지점을 기록한다.
 
 ## Git Sync Confirm / Git sync 확인
 
-- Status: confirmed-with-deferral
+- Status: confirmed
 - Ask human to confirm:
   - 구현 전 start sync command/result
   - mid-phase upstream change action
   - 완료 전 pre-merge sync command/result
-- Human response: `origin/main`이 branch 시작 뒤 `6089c725`까지 advance됨. pull/merge/rebase는 사람 확인이 필요하므로 `sync.md`에 deferral reason을 기록하고 이 turn에서는 실행하지 않음.
+- Human response: 사용자가 "main 병합하고 PR 올려"라고 승인함. `git merge origin/main`을 실행했고 충돌 없이 병합됨. `sync.md`에 merge result와 v2 재검증을 기록.
 
 ## Sync Conflict Confirm / sync 충돌 확인
 

@@ -10,7 +10,7 @@
 - Reason: `TargetDatasetRun.execution_result`는 PR 4/5B/6/7/8이 공유할 integration contract라 회귀 위험이 있음.
 - Failing test first: `backend/tests/test_target_dataset_run_handoff.py::test_product_health_target_dataset_run_exposes_manual_run_contract`
 - Expected failure command/result: `PYTHONPATH=backend pytest backend/tests/test_target_dataset_run_handoff.py -q` -> expected failure `KeyError: 'product_health_manual_run_contract'`
-- Pass command/result: `PYTHONPATH=backend pytest backend/tests/test_target_dataset_run_handoff.py backend/tests/test_target_dataset_job_draft.py backend/tests/test_product_health_processing_template.py -q` -> `11 passed in 0.36s`
+- Pass command/result: `PYTHONPATH=backend pytest backend/tests/test_target_dataset_run_handoff.py backend/tests/test_target_dataset_job_draft.py backend/tests/test_product_health_processing_template.py tests/test_product_health_contracts.py -q` -> `15 passed in 0.40s`
 - Refactor notes: Product Health 전용 contract 생성은 `ProductHealthManualRunContractService`로 분리했고, 기존 select-fields run에는 contract block을 붙이지 않음.
 
 ## Branch Checks / 브랜치 검증
@@ -19,7 +19,7 @@
 | --- | --- | --- | --- |
 | lint | n/a | skipped | 별도 Python lint 설정 파일 없음 |
 | unit/focused test | `PYTHONPATH=backend pytest backend/tests/test_target_dataset_run_handoff.py -q` | passed | `4 passed in 0.22s` |
-| integration/contract test | `PYTHONPATH=backend pytest backend/tests/test_target_dataset_run_handoff.py backend/tests/test_target_dataset_job_draft.py backend/tests/test_product_health_processing_template.py -q` | passed | `11 passed in 0.36s` |
+| integration/contract test | `PYTHONPATH=backend pytest backend/tests/test_target_dataset_run_handoff.py backend/tests/test_target_dataset_job_draft.py backend/tests/test_product_health_processing_template.py tests/test_product_health_contracts.py -q` | passed | `15 passed in 0.40s` |
 | build/typecheck | n/a | skipped | 백엔드 계약-only 변경이며 frontend/build 산출 없음 |
 | harness validation | `scripts/validate-harness.sh` | passed | `Harness validation passed.` |
 | strict harness validation | `scripts/validate-harness.sh --strict` | passed | `Harness validation passed.` |

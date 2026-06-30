@@ -18,14 +18,15 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 | Checked At | Upstream Changes | Impacted Source of Truth | Action |
 | --- | --- | --- | --- |
 | 2026-06-30 | `origin/main` advanced `218741b8..6089c725` with PR #307, #308, #310 | `docs/03`, `docs/reports/README.md`, Product Health contract fixtures | Read-only review performed. Merge/rebase deferred because docs/11 requires human confirmation for branch sync state changes. |
+| 2026-06-30 | 사람 승인 후 `origin/main@6089c725` merge | Product Health Gold v2 contract, Kafka/LLM UI changes | `git merge origin/main` completed without conflicts. Focused v2 tests rerun. |
 
 ## Pre-Merge Sync
 
 - main commit: `origin/main` at `6089c725`
-- conflicts: not merged locally; `git diff --name-only HEAD...origin/main` shows overlap in `docs/03-interface-reference.md` and `docs/reports/README.md`, so sync should be human-approved before PR.
-- validation: focused backend tests passed before sync deferral; harness strict rerun after recording deferral.
-- result: deferred
-- deferral reason: `origin/main` advanced after branch start. Pull/merge/rebase is blocked until human confirms the sync method under `docs/11-git-sync-policy.md`.
+- conflicts: none. `git merge origin/main` auto-merged `docs/03-interface-reference.md` and `docs/reports/README.md`.
+- validation: `PYTHONPATH=backend pytest backend/tests/test_target_dataset_run_handoff.py backend/tests/test_target_dataset_job_draft.py backend/tests/test_product_health_processing_template.py tests/test_product_health_contracts.py -q` -> `15 passed in 0.40s`
+- result: merged
+- deferral reason: n/a
 
 ## PR Conflict Resolution
 
