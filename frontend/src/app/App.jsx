@@ -488,9 +488,12 @@ function mapTargetDatasetRecord(record, rankOffset = 100) {
     sourceDatasetId: record.source_dataset_id,
     sourceMappingCount: (record.source_mappings || []).length,
     selectedFieldCount: (record.selected_fields || []).length,
-    processingLabel: ["product_health_gold_pipeline", "product_health_recommended_template"].includes(processRule.type)
-      ? "Product Health Gold pipeline"
-      : "Select Fields",
+    processingLabel:
+      processRule.type === "kafka_realtime_csv_target_demo"
+        ? "Kafka realtime CSV demo"
+        : ["product_health_gold_pipeline", "product_health_recommended_template"].includes(processRule.type)
+          ? "Product Health Gold pipeline"
+          : "Select Fields",
     qualityRuleCount: (processRule.quality_rules || []).length,
     scheduleMode: record.schedule?.mode || "manual",
   };
@@ -1096,6 +1099,7 @@ function SourcesPage({ navigate, setNotice }) {
   const [isSavingSourceDataset, setIsSavingSourceDataset] = useState(false);
   const [lastCreatedSourceDatasetId, setLastCreatedSourceDatasetId] = useState("");
   const [sourceDetail, setSourceDetail] = useState(null);
+  const [targetDetail, setTargetDetail] = useState(null);
   const [isDisconnectingSourceDataset, setIsDisconnectingSourceDataset] = useState(false);
   const [selectedSource, setSelectedSource] = useState(null);
   const [targetSourceMappings, setTargetSourceMappings] = useState({});
@@ -1582,6 +1586,65 @@ function SourcesPage({ navigate, setNotice }) {
     }
   }
 
+  async function saveKafkaConnectionAsTargetDataset({ record, mappedConnection, sourceRecord, schemaPreview }) {
+    const mappedSource = mapSourceDatasetRecord(sourceRecord);
+    const kafkaTargetName = `target_${normalizeDatasetName(mappedConnection.resource)}_realtime_csv`;
+    const targetPayload = {
+      name: kafkaTargetName,
+      description: `${record.name} Kafka topic ${mappedConnection.resource} target dataset draft`,
+      source_dataset_id: sourceRecord.id,
+      source_dataset_name: sourceRecord.name,
+      source_type: sourceRecord.connection_type,
+      source_mappings: [],
+      selected_fields: schemaPreview.map((field) => field.name),
+      process_rule: {
+        type: "kafka_realtime_csv_target_demo",
+        mode: "passthrough",
+        input_kind: "preloaded_kafka_topic",
+        topic: mappedConnection.resource,
+        broker: `${record.host}:${record.port}`,
+        replay_csv_path: record.database || realtimeCsvPath,
+      },
+      schedule: {
+        mode: "manual",
+        note: "Kafka test-002 topic is preloaded; demo consumer can read current offsets.",
+      },
+      output_schema: schemaPreview,
+    };
+
+    setSelectedSource(mappedSource);
+    setSelectedFields(mappedSource.columns);
+    setTargetRuns([]);
+    setTargetRunError("");
+    setTargetDraftError("");
+
+    try {
+      const targetRecord = await createTargetDataset(targetPayload);
+      setApiTargetDatasets((records) => [targetRecord, ...records.filter((item) => item.id !== targetRecord.id)]);
+      setLastCreatedTargetDraft(targetRecord);
+      setDatasetInventoryTab("target");
+      setDatasetCreationMode(null);
+      setNotice(`${record.name} Kafka connection saved as ${targetRecord.name} Target Dataset draft.`);
+    } catch (targetError) {
+      if (String(targetError.message).includes("Target dataset name already exists")) {
+        const targetRecords = await listTargetDatasets();
+        setApiTargetDatasets(targetRecords);
+        const targetRecord = targetRecords.find((item) => item.name === kafkaTargetName);
+        if (targetRecord) {
+          setLastCreatedTargetDraft(targetRecord);
+          setDatasetInventoryTab("target");
+          setDatasetCreationMode(null);
+          setNotice(`${record.name} Kafka connection reused ${targetRecord.name} Target Dataset draft.`);
+          return;
+        }
+      }
+      setDatasetCreationMode("target");
+      setCurrentStepIndex(4);
+      setTargetDraftError(targetError.message);
+      setNotice(`Kafka backing Source Dataset was saved, but Target Dataset failed: ${targetError.message}`);
+    }
+  }
+
   async function saveExternalConnection() {
     if (!canSaveExternalConnection) return;
     setIsSavingExternalConnection(true);
@@ -1624,9 +1687,7 @@ function SourcesPage({ navigate, setNotice }) {
           });
           setApiSourceDatasets((records) => [sourceRecord, ...records.filter((item) => item.id !== sourceRecord.id)]);
           setLastCreatedSourceDatasetId(sourceRecord.id);
-          setDatasetInventoryTab("source");
-          setDatasetCreationMode(null);
-          setNotice(`${record.name} Kafka connection과 ${sourceRecord.name} Source Dataset metadata를 저장했습니다.`);
+          await saveKafkaConnectionAsTargetDataset({ record, mappedConnection, sourceRecord, schemaPreview });
           return;
         } catch (sourceError) {
           if (String(sourceError.message).includes("Source dataset name already exists")) {
@@ -1635,9 +1696,7 @@ function SourcesPage({ navigate, setNotice }) {
             const sourceRecord = records.find((item) => item.name === kafkaSourceName);
             if (sourceRecord) {
               setLastCreatedSourceDatasetId(sourceRecord.id);
-              setDatasetInventoryTab("source");
-              setDatasetCreationMode(null);
-              setNotice(`${record.name} Kafka connection과 ${sourceRecord.name} Source Dataset metadata를 저장했습니다.`);
+              await saveKafkaConnectionAsTargetDataset({ record, mappedConnection, sourceRecord, schemaPreview });
               return;
             }
           }
@@ -1715,6 +1774,10 @@ function SourcesPage({ navigate, setNotice }) {
 
   function openSourceDetail(dataset) {
     setSourceDetail(dataset);
+  }
+
+  function openTargetDetail(dataset) {
+    setTargetDetail(dataset);
   }
 
   async function saveTargetDatasetDraft() {
@@ -3337,7 +3400,11 @@ function SourcesPage({ navigate, setNotice }) {
             <div className="source-card-grid dataset-card-grid">
               {datasetInventoryTab === "target"
                 ? activeItems.map((dataset) => (
-                    <article className="source-card dataset-asset-card" key={dataset.id}>
+                    <article
+                      className="source-card dataset-asset-card clickable-card"
+                      key={dataset.id}
+                      onClick={() => openTargetDetail(dataset)}
+                    >
                       <div className="source-card-head">
                         <span className="source-card-icon target">
                           <Table2 size={18} aria-hidden="true" />
@@ -3355,6 +3422,18 @@ function SourcesPage({ navigate, setNotice }) {
                       {dataset.sourceMappingCount ? <small>Source 역할: {dataset.sourceMappingCount}</small> : null}
                       <small>source: {dataset.sourceName}</small>
                       <small>catalog: draft · AI Query: publish 대기</small>
+                      <div className="source-card-actions">
+                        <button
+                          type="button"
+                          className="ghost-action"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openTargetDetail(dataset);
+                          }}
+                        >
+                          정보 보기
+                        </button>
+                      </div>
                     </article>
                   ))
                 : null}
@@ -3500,6 +3579,12 @@ function SourcesPage({ navigate, setNotice }) {
           onDisconnect={() => disconnectSourceDataset(sourceDetail)}
         />
       ) : null}
+      {targetDetail ? (
+        <TargetDatasetDetailModal
+          target={targetDetail}
+          onClose={() => setTargetDetail(null)}
+        />
+      ) : null}
     </div>
   );
 }
@@ -3588,6 +3673,49 @@ function SourceDatasetDetailModal({ source, isDisconnecting, onClose, onDisconne
           <button type="button" className="ghost-action danger-action" onClick={onDisconnect} disabled={isDisconnecting}>
             {isDisconnecting ? "끊는 중" : "Source 연결 끊기"}
             {isDisconnecting ? <Loader2 size={16} className="spin-icon" /> : <Trash2 size={16} />}
+          </button>
+        </footer>
+      </section>
+    </div>
+  );
+}
+
+function TargetDatasetDetailModal({ target, onClose }) {
+  const schemaRows = target.schema.map((field) => [field.name, field.type, field.sample || "target field"]);
+
+  return (
+    <div className="modal-backdrop" role="presentation">
+      <section className="source-modal source-modal-wide source-detail-modal" role="dialog" aria-modal="true" aria-labelledby="target-detail-title">
+        <header>
+          <div>
+            <h2 id="target-detail-title">{target.name}</h2>
+            <p>{target.description}</p>
+          </div>
+          <button type="button" onClick={onClose} aria-label="닫기">
+            <X size={18} />
+          </button>
+        </header>
+        <div className="source-detail-body">
+          <div className="source-detail-grid">
+            <InfoCard title="Dataset" value={target.typeLabel} detail={target.status} />
+            <InfoCard title="Source" value={target.sourceName} detail={target.sourceType} />
+            <InfoCard title="Schema" value={`${target.columns.length}개 컬럼`} detail={target.processingLabel} />
+            <InfoCard title="Schedule" value={target.scheduleMode} detail="draft execution plan" />
+          </div>
+          <section className="source-detail-section">
+            <div className="table-title-line">
+              <Table2 size={18} />
+              <div>
+                <strong>Output schema</strong>
+                <p>Kafka topic payload를 Target Dataset draft로 고정한 컬럼입니다.</p>
+              </div>
+            </div>
+            <DataTable columns={["컬럼", "타입", "샘플"]} rows={schemaRows} />
+          </section>
+        </div>
+        <footer>
+          <button type="button" className="ghost-action" onClick={onClose}>
+            닫기
           </button>
         </footer>
       </section>
