@@ -68,8 +68,13 @@ scripts/validate-harness.sh --strict
 scripts/status-workflow.sh <workspace>
 ```
 
-CI must run `scripts/test-harness.sh` as part of the harness job.
+CI must run `scripts/test-harness.sh` as part of the harness job when harness behavior is changed.
 The harness CI checkout uses `fetch-depth: 0` so strict validation can compare workspace Source of Truth proposals against the workspace base commit.
+
+In the Fast CI model, the always-present `harness` job may path-filter `scripts/test-harness.sh`.
+It must run when changed paths affect harness behavior, harness scripts, CI harness jobs, workspace templates, or required evidence fields.
+It may be skipped for changes clearly outside harness behavior, but the CI log must say it was skipped by path filter.
+If a branch changes only wording in harness documentation and does not change behavior, local `quality.md` may record `Harness test impact: skipped` with the reason and replacement validation.
 
 ## External E2E Boundary
 

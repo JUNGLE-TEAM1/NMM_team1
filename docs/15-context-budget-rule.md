@@ -32,6 +32,23 @@ Default inputs:
 
 AI should state the selected mode briefly and name the primary files it read.
 
+### Fast Path Read
+
+Fast Path Read is a Lite Read variant for small, low-risk changes that meet the Fast Path conditions in `docs/08-development-workflow.md`.
+
+Default inputs:
+
+- `AGENTS.md`
+- `docs/00-layer-map.md`
+- `scripts/status-workflow.sh <workspace>` output when a workspace exists
+- the directly related Source of Truth file or files, usually 1-2 files
+- `rg` checks against `docs/05`, `docs/06`, and `docs/07` when acceptance, regression, or manual verification relevance is uncertain
+
+Do not open all acceptance, regression, manual verification, report, or workspace files by default.
+Open the detailed section only when `rg` finds a relevant item or the change touches behavior that those documents govern.
+
+Fast Path Read must escalate to Escalate Read when the task touches or discovers API, schema, data, security, migration, deploy, CI/CD workflow, harness behavior, scripts, integration, PR-ready, merge, or remote-state risk.
+
 ### Project Context Read
 
 `docs/project-context/` stores project-specific reference context such as meeting decisions, option analysis, and pre-Source-of-Truth decision logs.

@@ -28,7 +28,7 @@
 | --- | --- | --- | --- | --- | --- |
 | `main` 직접 push 금지 | GitHub repository ruleset `AskLake main system guardrails` | enabled | direct push 또는 direct merge blocked | repo admin | default branch에 pull request rule이 active다. |
 | PR required for `main` | GitHub repository ruleset `AskLake main system guardrails` | enabled | PR 없는 `main` 변경 blocked | repo admin | PR 기반 통합의 실제 강제 위치. |
-| Required CI checks | GitHub repository ruleset `AskLake main system guardrails` + `.github/workflows/ci.yml` | enabled | required check 실패 시 merge blocked | repo admin / maintainer | Required contexts: `harness`, `container-smoke`, `manifest-smoke`, `linked-issue`, `migration-schema-security`. |
+| Required CI checks | GitHub repository ruleset `AskLake main system guardrails` + `.github/workflows/ci.yml` | enabled | required check 실패 시 merge blocked | repo admin / maintainer | Required contexts: `harness`, `container-smoke`, `manifest-smoke`, `linked-issue`, `migration-schema-security`. CI workflow keeps these contexts always present and path-filters heavy steps inside them. |
 | Force push / branch deletion 제한 | GitHub repository ruleset `AskLake main system guardrails` | enabled | protected branch non-fast-forward push/delete blocked | repo admin | feature branch cleanup은 하네스 프로토콜과 script가 담당한다. |
 | Backup branch protection | GitHub repository ruleset `AskLake backup branch guardrails` + `scripts/create-main-backup-branch.sh` | enabled | `backup/main-*` branch delete/update/non-fast-forward blocked | repo admin / maintainer | `origin/main` 백업은 protected branch로 만들고, 기존 backup branch를 덮어쓰지 않는다. |
 | Secret scanning / push protection | GitHub secret scanning + push protection | enabled | secret push blocked/warned by GitHub | repo admin / maintainer | `secret_scanning`과 `secret_scanning_push_protection`이 enabled다. |
@@ -43,7 +43,7 @@
 | PR size hard gate | `.github/workflows/pr-size-hard-gate.yml` + GitHub repository ruleset | enabled | non-evidence files > 10 또는 non-evidence changed lines > 600이면 required check 실패 | maintainer / repo admin | `docs/workflows/**`, `docs/reports/**` evidence 파일은 size 계산에서 제외한다. `Large PR Exception: approved`가 PR body에 있으면 명시 예외로 통과한다. |
 | PR risk warning | `.github/workflows/pr-risk-warning.yml` | partial | advisory warning and step summary when risky path is detected | maintainer | 위험 경로 변경은 아직 hard gate가 아니라 reviewer 판단을 돕는 경고로 유지한다. |
 | Migration/schema/security change detection | `.github/workflows/migration-schema-security-check.yml` + GitHub repository ruleset | enabled | sensitive path 변경 시 PR impact field가 비어 있으면 required check 실패 | maintainer / repo admin | `contracts/`, migration/schema/security/auth/policy 경로 변경은 PR body의 `API/schema`, `data/migration`, `security/privacy` 영향 기록을 요구한다. |
-| Harness validation required check | `.github/workflows/ci.yml` + GitHub repository ruleset | enabled | merge blocked when harness validation fails | repo admin / maintainer | `scripts/test-harness.sh`, `scripts/validate-harness.sh`, `--strict`가 `harness` required context에 포함된다. |
+| Harness validation required check | `.github/workflows/ci.yml` + GitHub repository ruleset | enabled | merge blocked when fast harness validation fails; strict/fixture checks run when harness paths require them | repo admin / maintainer | `harness` always runs shell syntax, PR metadata fixture tests, and `scripts/validate-harness.sh`. `scripts/test-harness.sh` and `--strict` are path-filtered for harness behavior changes. |
 
 ## 3) Team Guide
 
@@ -56,7 +56,7 @@
 | --- | --- |
 | `main` direct push blocked | `main`은 PR 없이 직접 바꾸지 않는다. 작업은 branch -> PR -> checks -> merge 흐름을 탄다. |
 | PR required for `main` | `main` 반영은 PR을 통해서만 한다. 긴급 수정도 Hotfix branch와 PR 흐름을 기본으로 둔다. |
-| Required checks | `harness`, `container-smoke`, `manifest-smoke`, `linked-issue`, `migration-schema-security`, `pr-size-hard-gate`가 통과해야 merge할 수 있다. `pr-template-drift`는 repo-local check가 추가됐고 required context 등록 확인이 필요하다. |
+| Required checks | `harness`, `container-smoke`, `manifest-smoke`, `linked-issue`, `migration-schema-security`, `pr-size-hard-gate`가 통과해야 merge할 수 있다. `container-smoke`와 `manifest-smoke`는 관련 path가 아니면 `skipped by path filter`로 통과할 수 있다. `pr-template-drift`는 repo-local check가 추가됐고 required context 등록 확인이 필요하다. |
 | PR size hard gate | evidence 파일을 제외한 변경 파일이 10개를 넘거나 변경 라인이 600줄을 넘으면 merge할 수 없다. 필요하면 PR body에 `Large PR Exception: approved`와 이유를 남긴다. |
 | Force push / branch deletion blocked on protected refs | 보호된 branch는 히스토리를 덮어쓰거나 삭제하지 못한다. |
 | Backup branch protection | `backup/main-*`은 복구 기준 branch다. 생성 후 delete/update/force push를 막는다. |
@@ -87,9 +87,9 @@
 | `pr-template-drift` failed | PR title을 `[기능]`, `[버그]`, `[문서/운영]`, `[긴급수정]`, `[검증]` prefix로 고치고, PR body가 `.github/pull_request_template.md`의 7개 section을 포함하도록 보정한다. |
 | `migration-schema-security` failed | PR body의 `API/schema 영향`, `data/migration 영향`, `security/privacy 영향` 중 해당 항목에 영향과 검증 결과를 적는다. |
 | `pr-size-hard-gate` failed | PR을 더 작은 Phase/PR로 쪼개거나, 정말 필요한 경우 PR body에 `Large PR Exception: approved`와 이유를 적는다. |
-| `harness` failed | workspace `quality.md`, `sync.md`, `report.md` evidence와 `scripts/validate-harness.sh --strict` 결과를 확인한다. |
-| `container-smoke` failed | Docker image build, backend health test, compose smoke failure log를 확인한다. |
-| `manifest-smoke` failed | `infra/k8s/base` manifest 파일과 `apiVersion`/`kind` shape를 확인한다. |
+| `harness` failed | workspace `quality.md`, `sync.md`, `report.md` evidence와 fast/strict harness validation 결과를 확인한다. 하네스 path 변경이면 `scripts/test-harness.sh` 결과도 확인한다. |
+| `container-smoke` failed | Docker image build, backend health test, compose smoke failure log를 확인한다. 관련 path가 아니면 path filter skip 로그가 남아야 한다. |
+| `manifest-smoke` failed | `infra/k8s/base` manifest 파일과 `apiVersion`/`kind` shape를 확인한다. 관련 path가 아니면 path filter skip 로그가 남아야 한다. |
 | Secret push blocked | secret 값을 제거하고 credential을 rotate한 뒤 다시 push한다. 실제 secret 값은 문서나 commit에 남기지 않는다. |
 | Backup branch already exists | `scripts/create-main-backup-branch.sh`가 `-1`, `-2` suffix를 자동 선택한다. 기존 backup branch를 덮어쓰지 않는다. |
 
@@ -121,7 +121,7 @@ Scenario audit은 새 hard rule을 추가하는 절차가 아니다.
 
 | Test Layer | Runs By Default | Scope | Expected Result |
 | --- | --- | --- | --- |
-| CI unit / focused checks | yes, every PR | `tests/pr-linked-issue-check.test.js`, `tests/pr-risk-warning.test.js`, `scripts/test-harness.sh`, `scripts/validate-harness.sh --strict` | repo-local rule scripts and harness validation stay deterministic |
+| CI unit / focused checks | yes, every PR | PR metadata fixture tests, shell syntax, `scripts/validate-harness.sh`; `scripts/test-harness.sh` and strict validation when harness paths change | repo-local rule scripts and harness validation stay deterministic while heavy checks run only for matching risk paths |
 | PR event checks | yes, on PR events | `.github/workflows/pr-linked-issue-check.yml`, `.github/workflows/pr-size-hard-gate.yml`, `.github/workflows/pr-risk-warning.yml`, `.github/workflows/migration-schema-security-check.yml` | missing linked issue fails; oversize non-evidence PR fails unless explicitly approved; migration/schema/security impact omissions fail; risky paths emit advisory warning |
 | Read-only lifecycle audit | no, manual or scheduled | `scripts/status-workflow.sh`, `scripts/audit-github-records.sh`, GitHub issue/PR/project reads | drift is reported without changing remote state |
 | Admin setting audit | no, human-approved or read-only admin audit | branch protection, required checks, secret scanning, CODEOWNERS, Environment approval | actual repository settings match the inventory status or the gap is recorded |

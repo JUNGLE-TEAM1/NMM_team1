@@ -137,6 +137,61 @@ Waiting on you:
 - Next AI action: read only the selected scope, then report primary context and omitted context.
 - Ask: "현재는 Lite Read로 충분해 보입니다. 위험 신호가 나오면 읽기 범위를 확장할까요?"
 
+### Fast Path Candidate
+
+- Current state: the requested change appears small and low-risk, with no API/schema/data/security/migration/deploy/runtime/CI/harness behavior impact.
+- Recommended next action: use Fast Path Read and aim for local complete before deciding whether to promote to PR-ready.
+- Options:
+  1. Continue as Fast Path and record minimal workspace evidence.
+  2. Escalate to normal Phase because shared Source of Truth or integration risk exists.
+  3. Pause and clarify scope before editing.
+- Next AI action: record Fast Path eligibility in `plan.md` or `report.md`, run focused validation, and record skipped checks with reasons.
+- Ask: "작은 저위험 변경으로 보고 Fast Path로 local complete까지 진행할까요?"
+
+### Local Complete
+
+- Current state: local implementation, focused verification, skip reasons, and short report/quality evidence are complete, but PR-ready sync or strict checks are not yet complete.
+- Recommended next action: either hold locally with a resume condition or promote to PR-ready if this should become a team-shared artifact.
+- Options:
+  1. Hold at local complete and record resume condition.
+  2. Promote to PR-ready.
+  3. Add one focused verification before deciding.
+- Next AI action: update `sync.md`, `next-actions.md`, and `report.md` with the selected state.
+- Ask: "이 변경은 local complete로 보류할까요, 아니면 PR-ready로 승격할까요?"
+
+### Promote Local Complete To PR Ready
+
+- Current state: a local complete workspace should now become a team-shared PR candidate.
+- Recommended next action: run required strict/sync/PR readiness checks for the changed risk class.
+- Options:
+  1. Run PR-ready validation and prepare PR.
+  2. Run only missing strict or sync checks first.
+  3. Keep local complete and defer PR promotion.
+- Next AI action: run the selected checks, update `quality.md` and `sync.md`, then proceed through PR preparation rules if no stop condition remains.
+- Ask: "PR-ready로 올리기 위해 strict/sync 검증을 진행할까요?"
+
+### CI Slow / Heavy Gate Triggered
+
+- Current state: CI path filter detected a harness, runtime/container, manifest, or migration/schema/security-sensitive change that requires heavy checks.
+- Recommended next action: keep the heavy gate enabled and record why it ran.
+- Options:
+  1. Continue with heavy gate and wait for CI result.
+  2. Split the PR to isolate the heavy-triggering files.
+  3. Add focused local validation before pushing.
+- Next AI action: record the trigger paths and expected heavy checks in `quality.md` or the Phase report.
+- Ask: "무거운 CI가 필요한 변경입니다. 그대로 진행할까요, 아니면 PR을 나눌까요?"
+
+### Heavy Gate Skipped
+
+- Current state: CI path filter skipped a heavy gate because the related paths were not changed.
+- Recommended next action: accept the skip if the risk classification is correct.
+- Options:
+  1. Accept skipped heavy gate and continue.
+  2. Run the heavy check manually for extra confidence.
+  3. Reclassify as heavy because the path filter missed a risk.
+- Next AI action: record the skip reason and any manual override in `quality.md`.
+- Ask: "path filter 기준으로 heavy gate가 생략됐습니다. 그대로 인정할까요, 수동으로 돌릴까요?"
+
 ### Escalate Read Required
 
 - Current state: a risk signal means Lite Read is no longer enough.

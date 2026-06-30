@@ -63,10 +63,39 @@ scripts/validate-harness.sh --strict
 
 Project-specific CI should add stack-specific lint, test, typecheck, build, security, migration, and smoke checks as needed.
 
+### Fast CI And Conditional Heavy Gates
+
+AskLake CI uses a fast default path plus conditional heavy gates.
+The goal is not to remove checks. The goal is to keep required checks present while running expensive steps only when the changed paths or risk class need them.
+
+Fast CI runs on normal PRs:
+
+- shell syntax for harness scripts
+- PR metadata fixture tests
+- lightweight harness validation with `scripts/validate-harness.sh`
+- focused stack checks selected by the changed area
+
+Heavy gates run only when their trigger paths are changed:
+
+| Gate | Trigger examples | Heavy checks |
+| --- | --- | --- |
+| Harness strict | `.github/workflows/**`, `scripts/**`, `docs/08`, `docs/10`, `docs/11`, `docs/12`, `docs/18`, workspace template or required evidence field changes | `scripts/validate-harness.sh --strict`, `scripts/test-harness.sh` |
+| Container/runtime smoke | Dockerfiles, `docker-compose*.yml`, backend/frontend dependency files, backend/frontend runtime paths | image builds, backend container pytest, compose smoke |
+| Manifest smoke | `infra/k8s/**` or CI manifest validation changes | Kubernetes manifest shape checks |
+| Migration/schema/security | `contracts/**`, migration/schema/security/auth/policy-sensitive paths | PR impact checks, focused schema/security validation, reviewer attention |
+
+Workflow jobs that are registered as required checks should keep a stable job name and produce a success or failure result on every PR.
+If a heavy gate is not in scope, the required job should explicitly report `skipped by path filter` and pass.
+Do not make a conditional job itself the only required check unless an always-running aggregator check also summarizes skipped and executed gates.
+
+`ci-status` is the preferred aggregator pattern when repository admins later adjust branch protection.
+Until branch protection is changed by a human, the existing required contexts such as `harness`, `container-smoke`, and `manifest-smoke` should remain stable.
+
 An optional harness-level CI example lives at `.github/workflows/harness-validation.example.yml`.
 Copy or adapt it when the target project wants provider-based CI.
 Required check status, branch protection, secret scanning, CODEOWNER review, PR linked issue checks, and Project lifecycle automation are tracked in `docs/system-guardrails.md`.
 The current `main` ruleset requires `harness`, `container-smoke`, `manifest-smoke`, `linked-issue`, `migration-schema-security`, and `pr-size-hard-gate` checks before merge.
+Those required contexts may now pass with an explicit path-filter skip when their heavy work is not applicable.
 `migration-schema-security` is a hard detection gate for migration/schema/security-sensitive path changes.
 `pr-size-hard-gate` blocks PRs over 10 non-evidence files or 600 non-evidence changed lines unless the PR body includes `Large PR Exception: approved`.
 `pr-template-drift` is a repo-local PR event check for Korean PR title prefix and 7-section PR body shape; repo admin must confirm whether it is registered as a required context in the active ruleset.
@@ -119,6 +148,9 @@ Skipped checks must not be used as the first response to a missing local runtime
 
 Harness behavior is tested with lightweight fixture regression tests.
 The detailed Source of Truth for the Harness Test Update Gate, fixture expectations, `scripts/test-harness.sh`, and external E2E boundaries is `docs/18-harness-regression-policy.md`.
+
+`scripts/test-harness.sh` is required when harness behavior, harness scripts, CI harness jobs, workspace templates, or required evidence fields change.
+For wording-only documentation edits, it can be skipped only when `quality.md` records why no behavior changed and what lighter validation replaced it.
 
 Reports summarize the result; `quality.md` keeps the working detail.
 
