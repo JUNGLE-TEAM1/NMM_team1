@@ -222,7 +222,9 @@ export function SourcesPage({ navigate, setNotice, dataView = "datasets-source",
     selectedSilverStandardizeRuleDetails, selectedSilverValidationRuleDetails,
     canGoNext, canGoNextSource,
     canGoNextConnection, canGoNextSilver,
-    sourceConnectionOptions,
+    sourceConnectionOptions, silverDatasetRecords,
+    goldDatasetRecords, connectionJobRecords,
+    silverJobRecords, goldJobRecords,
   } = buildSourcesPageModel({
     targetName,
     targetDescription,
@@ -253,82 +255,9 @@ export function SourcesPage({ navigate, setNotice, dataView = "datasets-source",
     silverDatasetName,
     silverPurpose,
     savedExternalConnections,
+    savedTargetDatasetDrafts,
+    publishedCatalogDatasets,
   });
-  const silverDatasetRecords = savedSilverDatasets.map((silverDataset) => ({
-    id: silverDataset.id,
-    name: silverDataset.name,
-    source: silverDataset.source_dataset_name,
-    purpose: silverDataset.purpose,
-    rules: [...(silverDataset.standardize_rules || []), ...(silverDataset.validation_rules || [])],
-    status: silverDataset.status,
-    fileEvidence: silverDataset.file_evidence,
-  }));
-  const publishedGoldDatasetRecords = publishedCatalogDatasets
-    .filter((dataset) => dataset.source_type === "target_dataset_job_run")
-    .map((dataset) => ({
-      id: dataset.id,
-      name: dataset.name,
-      target: dataset.lineage?.target_dataset_name || dataset.name,
-      sources: dataset.metrics?.source_count || dataset.source_evidence?.length || 0,
-      silverOutputs: dataset.metrics?.silver_output_count || dataset.lineage?.silver_output_paths?.length || 0,
-      rows: dataset.metrics?.row_count || dataset.row_count,
-      bytes: dataset.metrics?.bytes || 0,
-      path: dataset.storage?.local_path || dataset.path,
-      status: "registered",
-      recordType: "registered",
-      catalog: dataset,
-    }));
-  const plannedGoldDatasetRecords = savedTargetDatasetDrafts.map((targetDraft) => ({
-    id: targetDraft.id,
-    name: targetDraft.gold_output || targetDraft.target_dataset_name,
-    target: targetDraft.target_dataset_name,
-    sources: targetDraft.source_refs?.length || 0,
-    silverOutputs: targetDraft.silver_outputs?.length || 0,
-    rows: null,
-    bytes: null,
-    path: "",
-    status: targetDraft.status,
-    recordType: "planned",
-    draft: targetDraft,
-  }));
-  const goldDatasetRecords = [...publishedGoldDatasetRecords, ...plannedGoldDatasetRecords];
-  const connectionJobRecords = savedExternalConnections.map((connection) => ({
-    id: `connection-job:${connection.id}`,
-    connectionId: connection.id,
-    type: "connection",
-    name: `Sync ${connection.name}`,
-    input: connection.resource,
-    output: "Source Dataset raw zone",
-    schedule: connection.syncMode === "manual" ? "manual" : "placeholder",
-    scheduleNote: connection.syncSchedule || "",
-    status: connection.status || "planned",
-    connection,
-  }));
-  const silverJobRecords = savedSilverDatasets.map((silverDataset) => ({
-    id: `silver-job:${silverDataset.id}`,
-    datasetId: silverDataset.id,
-    type: "silver",
-    name: `Standardize ${silverDataset.source_dataset_name || silverDataset.name}`,
-    input: silverDataset.source_dataset_name,
-    output: silverDataset.name,
-    rules: [...(silverDataset.standardize_rules || []), ...(silverDataset.validation_rules || [])].join(", "),
-    schedule: silverDataset.schedule?.mode || "manual",
-    scheduleNote: silverDataset.schedule?.note || "",
-    status: "planned",
-  }));
-  const goldJobRecords = savedTargetDatasetDrafts.map((targetDraft) => ({
-    id: targetDraft.id,
-    datasetId: targetDraft.id,
-    type: "gold",
-    name: `Build ${targetDraft.gold_output || targetDraft.target_dataset_name}`,
-    input: `${targetDraft.silver_outputs?.length || 0} silver datasets`,
-    output: targetDraft.gold_output || targetDraft.target_dataset_name,
-    rules: (targetDraft.processing_recipes || []).join(", ") || "processing recipe 없음",
-    runner: targetDraft.executor_handoff,
-    schedule: targetDraft.schedule?.mode || "manual",
-    scheduleNote: targetDraft.schedule?.note || "",
-    status: "ready to run",
-  }));
 
   async function runProductHealthPreset() {
     setProductHealthPresetState({ status: "running", result: null, error: "" });
