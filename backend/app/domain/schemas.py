@@ -76,14 +76,14 @@ class SourceDatasetRecord(BaseModel):
 
 class ExternalConnectionCreate(BaseModel):
     name: str = Field(min_length=1, max_length=120)
-    connection_type: Literal["postgres"]
-    host: str = Field(min_length=1, max_length=255)
-    port: int = Field(default=5432, ge=1, le=65535)
-    database: str = Field(min_length=1, max_length=120)
-    username: str = Field(min_length=1, max_length=120)
-    password_secret_ref: str = Field(min_length=1, max_length=120)
+    connection_type: Literal["csv", "kafka", "postgres", "mongodb", "api", "s3"]
+    host: str = Field(default="local", min_length=1, max_length=255)
+    port: int = Field(default=1, ge=1, le=65535)
+    database: str = Field(default="metadata", min_length=1, max_length=500)
+    username: str = Field(default="none", min_length=1, max_length=120)
+    password_secret_ref: str = Field(default="none", min_length=1, max_length=120)
     default_schema: str = Field(default="public", min_length=1, max_length=120)
-    default_table: str = Field(min_length=1, max_length=120)
+    default_table: str = Field(min_length=1, max_length=500)
 
 
 class ExternalConnectionRecord(BaseModel):
@@ -107,7 +107,7 @@ class ExternalTableSchema(BaseModel):
     schema_name: str
     table_name: str
     raw_scope: str
-    resource_label: Literal["schema_table"] = "schema_table"
+    resource_label: Literal["schema_table", "topic", "file_path", "collection", "endpoint", "bucket_prefix"] = "schema_table"
     schema_preview: list[ColumnSchema]
     row_count_estimate: int | None = None
 

@@ -51,6 +51,20 @@ def external_connection_payload(name: str = "Taxi PostgreSQL Connection") -> dic
     }
 
 
+def kafka_connection_payload(csv_path: Path, name: str = "Realtime CSV Kafka Connection") -> dict:
+    return {
+        "name": name,
+        "connection_type": "kafka",
+        "host": "localhost",
+        "port": 29092,
+        "database": str(csv_path),
+        "username": "replay_rows_per_second_2000",
+        "password_secret_ref": "none",
+        "default_schema": "kafka",
+        "default_table": "test-002",
+    }
+
+
 def test_create_list_and_read_external_connection_metadata() -> None:
     client = make_client()
 
@@ -125,3 +139,29 @@ def test_external_connection_test_reads_schema_without_saving_connection() -> No
     list_response = client.get("/api/external-connections")
     assert list_response.status_code == 200
     assert list_response.json() == []
+
+
+def test_kafka_connection_test_reads_replay_csv_schema(monkeypatch, tmp_path: Path) -> None:
+    csv_path = tmp_path / "realtime.csv"
+    csv_path.write_text(
+        "event_time,event_type,product_id,price,is_synthetic\n"
+        "2019-10-01 00:00:00 UTC,view,44600062,35.79,false\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr("app.services.external_connections.verify_kafka_topic_exists", lambda connection: None)
+    client = make_client()
+
+    response = client.post("/api/external-connections/test", json=kafka_connection_payload(csv_path))
+
+    assert response.status_code == 200
+    schema = response.json()
+    assert schema["connection_id"] == "connection_test_preview"
+    assert schema["raw_scope"] == "test-002"
+    assert schema["resource_label"] == "topic"
+    assert schema["schema_preview"] == [
+        {"name": "event_time", "type": "timestamp"},
+        {"name": "event_type", "type": "string"},
+        {"name": "product_id", "type": "integer"},
+        {"name": "price", "type": "decimal"},
+        {"name": "is_synthetic", "type": "boolean"},
+    ]

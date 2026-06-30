@@ -60,7 +60,7 @@ import {
   listExternalConnections,
   testExternalConnection,
 } from "../api/externalConnectionApi";
-import { createSourceDataset, listSourceDatasets } from "../api/sourceDatasetApi";
+import { createSourceDataset, deleteSourceDataset, listSourceDatasets } from "../api/sourceDatasetApi";
 import { getProductHealthProcessingTemplate } from "../api/processingTemplateApi";
 import {
   createTargetDataset,
@@ -353,6 +353,25 @@ const sourceSortOptions = [
   { id: "columns", label: "컬럼 수 많은 순" },
 ];
 
+const realtimeCsvPath = String.raw`D:\DownloadsSSD\15GB짜리 데이터\결정체\실시간.csv`;
+const realtimeKafkaTopic = "test-002";
+const realtimeReplayRatePerSecond = 2000;
+const realtimeCsvSchema = [
+  { name: "event_time", type: "timestamp", sample: "2019-10-01 00:00:00 UTC" },
+  { name: "event_type", type: "string", sample: "view" },
+  { name: "product_id", type: "string", sample: "44600062" },
+  { name: "category_id", type: "string", sample: "2103807459595387724" },
+  { name: "category_code", type: "string", sample: "appliances.environment.water_heater" },
+  { name: "brand", type: "string", sample: "shiseido" },
+  { name: "price", type: "decimal", sample: "35.79" },
+  { name: "user_id", type: "string", sample: "541312140" },
+  { name: "user_session", type: "string", sample: "72d76fde-8bb3-4e00-8c23-a032dfed738c" },
+  { name: "event_date", type: "date", sample: "2019-10-01" },
+  { name: "source", type: "string", sample: "ecommerce_event" },
+  { name: "is_synthetic", type: "boolean", sample: "false" },
+  { name: "synthetic_join_key", type: "string", sample: "product_id" },
+];
+
 function normalizeDatasetName(value) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
 }
@@ -372,6 +391,12 @@ function mapSourceDatasetRecord(record, rankOffset = 100) {
     status: "Metadata ready",
     description: `${record.connection_name}에서 정의한 raw/source dataset입니다.`,
     resource: record.raw_scope,
+    resourceLabel: record.resource_label,
+    connectionId: record.connection_id,
+    connectionName: record.connection_name,
+    layer: record.layer,
+    createdAt: record.created_at,
+    updatedAt: record.updated_at,
     updatedLabel: "방금",
     updatedRank: rankOffset,
     columns: schema.map((field) => field.name),
@@ -394,25 +419,43 @@ function splitSchemaTable(value) {
   };
 }
 
+function connectionTypeMeta(connectionType) {
+  return externalConnectionTypes.find((type) => type.id === connectionType) || externalConnectionTypes[0];
+}
+
+function schemaForConnectionType(connectionType) {
+  if (connectionType === "kafka" || connectionType === "csv") return realtimeCsvSchema;
+  return [];
+}
+
 function mapExternalConnectionRecord(record, rankOffset = 100) {
-  const rawScope = `${record.default_schema}.${record.default_table}`;
+  const typeMeta = connectionTypeMeta(record.connection_type);
+  const isPostgres = record.connection_type === "postgres";
+  const rawScope = isPostgres ? `${record.default_schema}.${record.default_table}` : record.default_table;
+  const schema = schemaForConnectionType(record.connection_type);
 
   return {
     id: record.id,
     name: record.name,
     connectorId: record.connection_type,
-    typeLabel: record.connection_type === "postgres" ? "PostgreSQL" : record.connection_type.toUpperCase(),
+    typeLabel: typeMeta.label,
     status: record.status === "metadata_ready" ? "Metadata ready" : record.status,
-    description: `${record.host}:${record.port}/${record.database}의 ${rawScope} table을 Source Dataset 후보로 사용합니다.`,
-    resourceLabel: "schema_table",
+    description:
+      record.connection_type === "kafka"
+        ? `${record.host}:${record.port} broker의 ${rawScope} topic을 Source Dataset 후보로 사용합니다.`
+        : isPostgres
+          ? `${record.host}:${record.port}/${record.database}의 ${rawScope} table을 Source Dataset 후보로 사용합니다.`
+          : `${rawScope} source를 ${typeMeta.label} 연결로 사용합니다.`,
+    resourceLabel: typeMeta.resourceLabel,
     resource: rawScope,
     updatedLabel: "방금",
     updatedRank: rankOffset,
-    columns: [],
-    schema: [],
+    columns: schema.map((field) => field.name),
+    schema,
     host: record.host,
     port: record.port,
     database: record.database,
+    replayCsvPath: record.connection_type === "kafka" ? record.database : "",
     username: record.username,
     passwordSecretRef: record.password_secret_ref,
     defaultSchema: record.default_schema,
@@ -445,9 +488,12 @@ function mapTargetDatasetRecord(record, rankOffset = 100) {
     sourceDatasetId: record.source_dataset_id,
     sourceMappingCount: (record.source_mappings || []).length,
     selectedFieldCount: (record.selected_fields || []).length,
-    processingLabel: ["product_health_gold_pipeline", "product_health_recommended_template"].includes(processRule.type)
-      ? "Product Health Gold pipeline"
-      : "Select Fields",
+    processingLabel:
+      processRule.type === "kafka_realtime_csv_target_demo"
+        ? "Kafka realtime CSV demo"
+        : ["product_health_gold_pipeline", "product_health_recommended_template"].includes(processRule.type)
+          ? "Product Health Gold pipeline"
+          : "Select Fields",
     qualityRuleCount: (processRule.quality_rules || []).length,
     scheduleMode: record.schedule?.mode || "manual",
   };
@@ -655,9 +701,9 @@ const externalConnectionTypes = [
     id: "kafka",
     label: "Kafka",
     description: "broker와 topic 기반 streaming source",
-    placeholder: "commerce.order.events",
+    placeholder: "test-002",
     resourceLabel: "topic",
-    authMode: "SASL placeholder",
+    authMode: "No credential",
   },
   {
     id: "postgres",
@@ -1032,6 +1078,8 @@ function SourcesPage({ navigate, setNotice }) {
   const [connectionDatabase, setConnectionDatabase] = useState("taxi_postgre");
   const [connectionUsername, setConnectionUsername] = useState("asklake");
   const [connectionPasswordSecretRef, setConnectionPasswordSecretRef] = useState("ASKLAKE_TAXI_POSTGRES_PASSWORD");
+  const [connectionReplayCsvPath, setConnectionReplayCsvPath] = useState(realtimeCsvPath);
+  const [connectionReplayRowsPerSecond, setConnectionReplayRowsPerSecond] = useState(String(realtimeReplayRatePerSecond));
   const [apiExternalConnections, setApiExternalConnections] = useState([]);
   const [externalConnectionError, setExternalConnectionError] = useState("");
   const [isSavingExternalConnection, setIsSavingExternalConnection] = useState(false);
@@ -1050,6 +1098,9 @@ function SourcesPage({ navigate, setNotice }) {
   const [sourceDatasetError, setSourceDatasetError] = useState("");
   const [isSavingSourceDataset, setIsSavingSourceDataset] = useState(false);
   const [lastCreatedSourceDatasetId, setLastCreatedSourceDatasetId] = useState("");
+  const [sourceDetail, setSourceDetail] = useState(null);
+  const [targetDetail, setTargetDetail] = useState(null);
+  const [isDisconnectingSourceDataset, setIsDisconnectingSourceDataset] = useState(false);
   const [selectedSource, setSelectedSource] = useState(null);
   const [targetSourceMappings, setTargetSourceMappings] = useState({});
   const [selectedFields, setSelectedFields] = useState([]);
@@ -1261,22 +1312,36 @@ function SourcesPage({ navigate, setNotice }) {
   const parsedConnectionPort = Number(connectionPort);
   const hasValidConnectionPort =
     Number.isInteger(parsedConnectionPort) && parsedConnectionPort >= 1 && parsedConnectionPort <= 65535;
+  const isPostgresConnection = selectedConnectionType.id === "postgres";
+  const isKafkaConnection = selectedConnectionType.id === "kafka";
+  const parsedReplayRowsPerSecond = Number(connectionReplayRowsPerSecond);
+  const hasValidReplayRowsPerSecond =
+    Number.isInteger(parsedReplayRowsPerSecond) && parsedReplayRowsPerSecond >= 1 && parsedReplayRowsPerSecond <= 1000000;
   const externalConnectionPayload = {
     name: connectionName.trim(),
-    connection_type: "postgres",
-    host: connectionHost.trim(),
-    port: parsedConnectionPort,
-    database: connectionDatabase.trim(),
-    username: connectionUsername.trim(),
-    password_secret_ref: connectionPasswordSecretRef.trim(),
-    default_schema: connectionSchemaName,
-    default_table: connectionTableName,
+    connection_type: selectedConnectionType.id,
+    host: isPostgresConnection || isKafkaConnection ? connectionHost.trim() : "local",
+    port: isPostgresConnection || isKafkaConnection ? parsedConnectionPort : 1,
+    database: isKafkaConnection
+      ? connectionReplayCsvPath.trim()
+      : isPostgresConnection
+        ? connectionDatabase.trim()
+        : connectionResource.trim(),
+    username: isKafkaConnection
+      ? `replay_rows_per_second_${connectionReplayRowsPerSecond.trim() || realtimeReplayRatePerSecond}`
+      : isPostgresConnection
+        ? connectionUsername.trim()
+        : "metadata",
+    password_secret_ref: isPostgresConnection ? connectionPasswordSecretRef.trim() : "none",
+    default_schema: isPostgresConnection ? connectionSchemaName : selectedConnectionType.id,
+    default_table: isPostgresConnection ? connectionTableName : connectionResource.trim(),
   };
   const externalConnectionProfileSignature = JSON.stringify(externalConnectionPayload);
   const hasValidExternalConnectionProfile = Boolean(
     connectionName.trim() &&
       connectionResource.trim() &&
-      (selectedConnectionType.id !== "postgres" ||
+      (!isKafkaConnection || (connectionHost.trim() && hasValidConnectionPort && connectionReplayCsvPath.trim() && hasValidReplayRowsPerSecond)) &&
+      (!isPostgresConnection ||
         (connectionHost.trim() &&
           hasValidConnectionPort &&
           connectionDatabase.trim() &&
@@ -1285,22 +1350,19 @@ function SourcesPage({ navigate, setNotice }) {
           connectionTableName)),
   );
   const hasPassedExternalConnectionTest =
-    selectedConnectionType.id === "postgres" &&
     Boolean(connectionTestResult) &&
     connectionTestSignature === externalConnectionProfileSignature;
   const canTestExternalConnection =
-    selectedConnectionType.id === "postgres" &&
     currentConnectionStep.id === "configure" &&
     hasValidExternalConnectionProfile &&
     !isTestingExternalConnection;
   const canGoNextConnection =
     (currentConnectionStep.id === "connector-type" && Boolean(selectedConnectionType)) ||
     (currentConnectionStep.id === "configure" &&
-      (selectedConnectionType.id === "postgres" ? hasPassedExternalConnectionTest : hasValidExternalConnectionProfile));
+      (isPostgresConnection || isKafkaConnection ? hasPassedExternalConnectionTest : hasValidExternalConnectionProfile));
   const canSaveExternalConnection =
-    selectedConnectionType.id === "postgres" &&
     currentConnectionStep.id === "review" &&
-    hasPassedExternalConnectionTest &&
+    (isPostgresConnection || isKafkaConnection ? hasPassedExternalConnectionTest : hasValidExternalConnectionProfile) &&
     !isSavingExternalConnection;
 
   useEffect(() => {
@@ -1524,19 +1586,126 @@ function SourcesPage({ navigate, setNotice }) {
     }
   }
 
+  async function saveKafkaConnectionAsTargetDataset({ record, mappedConnection, sourceRecord, schemaPreview }) {
+    const mappedSource = mapSourceDatasetRecord(sourceRecord);
+    const kafkaTargetName = `target_${normalizeDatasetName(mappedConnection.resource)}_realtime_csv`;
+    const targetPayload = {
+      name: kafkaTargetName,
+      description: `${record.name} Kafka topic ${mappedConnection.resource} target dataset draft`,
+      source_dataset_id: sourceRecord.id,
+      source_dataset_name: sourceRecord.name,
+      source_type: sourceRecord.connection_type,
+      source_mappings: [],
+      selected_fields: schemaPreview.map((field) => field.name),
+      process_rule: {
+        type: "kafka_realtime_csv_target_demo",
+        mode: "passthrough",
+        input_kind: "preloaded_kafka_topic",
+        topic: mappedConnection.resource,
+        broker: `${record.host}:${record.port}`,
+        replay_csv_path: record.database || realtimeCsvPath,
+      },
+      schedule: {
+        mode: "manual",
+        note: "Kafka test-002 topic is preloaded; demo consumer can read current offsets.",
+      },
+      output_schema: schemaPreview,
+    };
+
+    setSelectedSource(mappedSource);
+    setSelectedFields(mappedSource.columns);
+    setTargetRuns([]);
+    setTargetRunError("");
+    setTargetDraftError("");
+
+    try {
+      const targetRecord = await createTargetDataset(targetPayload);
+      setApiTargetDatasets((records) => [targetRecord, ...records.filter((item) => item.id !== targetRecord.id)]);
+      setLastCreatedTargetDraft(targetRecord);
+      setDatasetInventoryTab("target");
+      setDatasetCreationMode(null);
+      setNotice(`${record.name} Kafka connection saved as ${targetRecord.name} Target Dataset draft.`);
+    } catch (targetError) {
+      if (String(targetError.message).includes("Target dataset name already exists")) {
+        const targetRecords = await listTargetDatasets();
+        setApiTargetDatasets(targetRecords);
+        const targetRecord = targetRecords.find((item) => item.name === kafkaTargetName);
+        if (targetRecord) {
+          setLastCreatedTargetDraft(targetRecord);
+          setDatasetInventoryTab("target");
+          setDatasetCreationMode(null);
+          setNotice(`${record.name} Kafka connection reused ${targetRecord.name} Target Dataset draft.`);
+          return;
+        }
+      }
+      setDatasetCreationMode("target");
+      setCurrentStepIndex(4);
+      setTargetDraftError(targetError.message);
+      setNotice(`Kafka backing Source Dataset was saved, but Target Dataset failed: ${targetError.message}`);
+    }
+  }
+
   async function saveExternalConnection() {
     if (!canSaveExternalConnection) return;
     setIsSavingExternalConnection(true);
     setExternalConnectionError("");
 
     try {
-      const record = await createExternalConnection(externalConnectionPayload);
+      let record;
+      try {
+        record = await createExternalConnection(externalConnectionPayload);
+      } catch (createError) {
+        if (!isKafkaConnection || !String(createError.message).includes("External connection name already exists")) {
+          throw createError;
+        }
+        const records = await listExternalConnections();
+        setApiExternalConnections(records);
+        record = records.find((item) => item.name === externalConnectionPayload.name);
+        if (!record) throw createError;
+      }
       setApiExternalConnections((records) => [record, ...records.filter((item) => item.id !== record.id)]);
       setLastCreatedExternalConnectionId(record.id);
       const mappedConnection = mapExternalConnectionRecord(record);
       setSourceDraft(mappedConnection);
       setSourceDatasetName(`source_${normalizeDatasetName(record.name)}`);
-      setSourceRawScope(`${record.default_schema}.${record.default_table}`);
+      setSourceRawScope(mappedConnection.resource);
+      if (record.connection_type === "kafka") {
+        const kafkaSourceName = `source_${normalizeDatasetName(record.name)}`;
+        const schemaPreview = (connectionTestResult?.schema_preview || mappedConnection.schema).map(({ name, type }) => ({
+          name,
+          type,
+        }));
+        try {
+          const sourceRecord = await createSourceDataset({
+            connection_id: record.id,
+            connection_name: record.name,
+            connection_type: record.connection_type,
+            name: kafkaSourceName,
+            raw_scope: mappedConnection.resource,
+            resource_label: mappedConnection.resourceLabel,
+            schema_preview: schemaPreview,
+          });
+          setApiSourceDatasets((records) => [sourceRecord, ...records.filter((item) => item.id !== sourceRecord.id)]);
+          setLastCreatedSourceDatasetId(sourceRecord.id);
+          await saveKafkaConnectionAsTargetDataset({ record, mappedConnection, sourceRecord, schemaPreview });
+          return;
+        } catch (sourceError) {
+          if (String(sourceError.message).includes("Source dataset name already exists")) {
+            const records = await listSourceDatasets();
+            setApiSourceDatasets(records);
+            const sourceRecord = records.find((item) => item.name === kafkaSourceName);
+            if (sourceRecord) {
+              setLastCreatedSourceDatasetId(sourceRecord.id);
+              await saveKafkaConnectionAsTargetDataset({ record, mappedConnection, sourceRecord, schemaPreview });
+              return;
+            }
+          }
+          setDatasetCreationMode("source");
+          setSourceDatasetError(sourceError.message);
+          setNotice(`Kafka connection은 저장됐지만 Source Dataset 저장은 실패했습니다: ${sourceError.message}`);
+          return;
+        }
+      }
       setNotice(`${record.name} External Connection metadata를 저장했습니다.`);
     } catch (error) {
       setExternalConnectionError(error.message);
@@ -1579,6 +1748,36 @@ function SourcesPage({ navigate, setNotice }) {
     } finally {
       setIsSavingSourceDataset(false);
     }
+  }
+
+  async function disconnectSourceDataset(dataset) {
+    if (!dataset?.id || isDisconnectingSourceDataset) return;
+    setIsDisconnectingSourceDataset(true);
+    setSourceDatasetError("");
+
+    try {
+      await deleteSourceDataset(dataset.id);
+      setApiSourceDatasets((records) => records.filter((record) => record.id !== dataset.id));
+      setSourceDetail(null);
+      if (selectedSource?.id === dataset.id) {
+        setSelectedSource(null);
+        setSelectedFields([]);
+      }
+      setNotice(`${dataset.name} Source Dataset 연결을 끊었습니다. Kafka topic 데이터는 유지됩니다.`);
+    } catch (error) {
+      setSourceDatasetError(error.message);
+      setNotice(`Source Dataset 연결 끊기 실패: ${error.message}`);
+    } finally {
+      setIsDisconnectingSourceDataset(false);
+    }
+  }
+
+  function openSourceDetail(dataset) {
+    setSourceDetail(dataset);
+  }
+
+  function openTargetDetail(dataset) {
+    setTargetDetail(dataset);
   }
 
   async function saveTargetDatasetDraft() {
@@ -1734,7 +1933,7 @@ function SourcesPage({ navigate, setNotice }) {
 
   function selectConnectionType(connectionType) {
     setSelectedConnectionType(connectionType);
-    setConnectionName(connectionType.id === "postgres" ? "Taxi PostgreSQL Connection" : `conn_${connectionType.id}_demo`);
+    setConnectionName(connectionType.id === "postgres" ? "Taxi PostgreSQL Connection" : connectionType.id === "kafka" ? "Realtime CSV Kafka test-002" : `conn_${connectionType.id}_demo`);
     setConnectionResource(connectionType.placeholder);
     if (connectionType.id === "postgres") {
       setConnectionResource("public.yellow_taxi_trips");
@@ -1743,6 +1942,22 @@ function SourcesPage({ navigate, setNotice }) {
       setConnectionDatabase("taxi_postgre");
       setConnectionUsername("asklake");
       setConnectionPasswordSecretRef("ASKLAKE_TAXI_POSTGRES_PASSWORD");
+    } else if (connectionType.id === "kafka") {
+      setConnectionResource(realtimeKafkaTopic);
+      setConnectionHost("localhost");
+      setConnectionPort("29092");
+      setConnectionReplayCsvPath(realtimeCsvPath);
+      setConnectionReplayRowsPerSecond(String(realtimeReplayRatePerSecond));
+      setConnectionDatabase("kafka");
+      setConnectionUsername("none");
+      setConnectionPasswordSecretRef("none");
+    } else if (connectionType.id === "csv") {
+      setConnectionResource(realtimeCsvPath);
+      setConnectionHost("local");
+      setConnectionPort("1");
+      setConnectionDatabase(realtimeCsvPath);
+      setConnectionUsername("metadata");
+      setConnectionPasswordSecretRef("none");
     }
     setLastCreatedExternalConnectionId("");
     setExternalConnectionError("");
@@ -1894,7 +2109,11 @@ function SourcesPage({ navigate, setNotice }) {
             <span>2단계</span>
             <div>
               <h3>Configure</h3>
-              <p>저장 전에 PostgreSQL 접속 권한과 table schema preview를 확인합니다.</p>
+              <p>
+                {selectedConnectionType.id === "kafka"
+                  ? "저장 전에 Kafka broker 접속과 topic schema preview를 확인합니다."
+                  : "저장 전에 PostgreSQL 접속 권한과 table schema preview를 확인합니다."}
+              </p>
             </div>
           </div>
           <div className="source-config-grid">
@@ -1924,7 +2143,7 @@ function SourcesPage({ navigate, setNotice }) {
                   placeholder={selectedConnectionType.placeholder}
                 />
               </label>
-              {selectedConnectionType.id === "postgres" ? (
+              {selectedConnectionType.id === "postgres" || selectedConnectionType.id === "kafka" ? (
                 <>
                   <label className="target-name-field">
                     <span>host</span>
@@ -1941,9 +2160,13 @@ function SourcesPage({ navigate, setNotice }) {
                       type="number"
                       value={connectionPort}
                       onChange={(event) => setConnectionPort(event.target.value)}
-                      placeholder="55432"
+                      placeholder={selectedConnectionType.id === "kafka" ? "29092" : "55432"}
                     />
                   </label>
+                </>
+              ) : null}
+              {selectedConnectionType.id === "postgres" ? (
+                <>
                   <label className="target-name-field">
                     <span>database</span>
                     <input
@@ -1973,12 +2196,14 @@ function SourcesPage({ navigate, setNotice }) {
                   </label>
                 </>
               ) : null}
-              <div className="target-summary-strip">
-                <span>Auth mode</span>
-                <strong>{selectedConnectionType.authMode}</strong>
-                <p>비밀번호 원문은 저장하지 않고 password_env 값으로만 테스트합니다.</p>
-              </div>
               {selectedConnectionType.id === "postgres" ? (
+                <div className="target-summary-strip">
+                  <span>Auth mode</span>
+                  <strong>{selectedConnectionType.authMode}</strong>
+                  <p>비밀번호 원문은 저장하지 않고 password_env 값으로만 테스트합니다.</p>
+                </div>
+              ) : null}
+              {selectedConnectionType.id === "postgres" || selectedConnectionType.id === "kafka" ? (
                 <>
                   <button
                     type="button"
@@ -1999,7 +2224,7 @@ function SourcesPage({ navigate, setNotice }) {
                   ) : connectionTestResult ? (
                     <div className="wizard-placeholder compact warning">
                       <AlertCircle size={22} />
-                      <strong>연결 정보가 테스트 이후 변경되었습니다. 다시 Test Connection을 실행합니다.</strong>
+                      <strong>현재 입력값은 아직 검증되지 않았습니다. Test Connection을 눌러 broker와 topic을 다시 확인하세요.</strong>
                     </div>
                   ) : null}
                   {!connectionTestResult && !connectionTestError ? (
@@ -2022,7 +2247,11 @@ function SourcesPage({ navigate, setNotice }) {
                 <ShieldCheck size={18} />
                 <div>
                   <strong>Demo safety</strong>
-                  <p>Test Connection은 실제 PostgreSQL metadata를 읽지만 credential 원문은 저장하지 않습니다.</p>
+                  <p>
+                    {selectedConnectionType.id === "kafka"
+                      ? "Test Connection은 Kafka broker 접속과 topic schema preview를 확인하지만 credential 원문은 저장하지 않습니다."
+                      : "Test Connection은 실제 PostgreSQL metadata를 읽지만 credential 원문은 저장하지 않습니다."}
+                  </p>
                 </div>
               </div>
               <div className="source-config-summary connection-config-summary">
@@ -2059,13 +2288,20 @@ function SourcesPage({ navigate, setNotice }) {
           <article>
             <span>{selectedConnectionType.resourceLabel}</span>
             <strong>{connectionResource.trim() || selectedConnectionType.placeholder}</strong>
-            <p>{selectedConnectionType.authMode}</p>
+            <p>{selectedConnectionType.id === "kafka" ? "preloaded Kafka topic" : selectedConnectionType.authMode}</p>
           </article>
           {selectedConnectionType.id === "postgres" ? (
             <article>
               <span>PostgreSQL</span>
               <strong>{connectionHost}:{connectionPort}/{connectionDatabase}</strong>
               <p>{connectionUsername} · {connectionPasswordSecretRef}</p>
+            </article>
+          ) : null}
+          {selectedConnectionType.id === "kafka" ? (
+            <article>
+              <span>Kafka broker</span>
+              <strong>{connectionHost}:{connectionPort}</strong>
+              <p>{connectionResource.trim() || selectedConnectionType.placeholder}</p>
             </article>
           ) : null}
         </div>
@@ -3164,7 +3400,11 @@ function SourcesPage({ navigate, setNotice }) {
             <div className="source-card-grid dataset-card-grid">
               {datasetInventoryTab === "target"
                 ? activeItems.map((dataset) => (
-                    <article className="source-card dataset-asset-card" key={dataset.id}>
+                    <article
+                      className="source-card dataset-asset-card clickable-card"
+                      key={dataset.id}
+                      onClick={() => openTargetDetail(dataset)}
+                    >
                       <div className="source-card-head">
                         <span className="source-card-icon target">
                           <Table2 size={18} aria-hidden="true" />
@@ -3182,13 +3422,29 @@ function SourcesPage({ navigate, setNotice }) {
                       {dataset.sourceMappingCount ? <small>Source 역할: {dataset.sourceMappingCount}</small> : null}
                       <small>source: {dataset.sourceName}</small>
                       <small>catalog: draft · AI Query: publish 대기</small>
+                      <div className="source-card-actions">
+                        <button
+                          type="button"
+                          className="ghost-action"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openTargetDetail(dataset);
+                          }}
+                        >
+                          정보 보기
+                        </button>
+                      </div>
                     </article>
                   ))
                 : null}
 
               {datasetInventoryTab === "source"
                 ? activeItems.map((dataset) => (
-                    <article className="source-card dataset-asset-card" key={dataset.id}>
+                    <article
+                      className="source-card dataset-asset-card clickable-card"
+                      key={dataset.id}
+                      onClick={() => openSourceDetail(dataset)}
+                    >
                       <div className="source-card-head">
                         <span className="source-card-icon source">
                           <Database size={18} aria-hidden="true" />
@@ -3199,10 +3455,32 @@ function SourcesPage({ navigate, setNotice }) {
                       <p>{dataset.description}</p>
                       <div className="source-card-meta">
                         <span>{dataset.status}</span>
-                        <span>{dataset.columns.length} columns</span>
+                        <span>{dataset.columns.length}개 컬럼</span>
                       </div>
                       <small>{dataset.resource}</small>
                       <small>Target Dataset input 후보</small>
+                      <div className="source-card-actions">
+                        <button
+                          type="button"
+                          className="ghost-action"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openSourceDetail(dataset);
+                          }}
+                        >
+                          정보 보기
+                        </button>
+                        <button
+                          type="button"
+                          className="ghost-action danger-action"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            disconnectSourceDataset(dataset);
+                          }}
+                        >
+                          연결 끊기
+                        </button>
+                      </div>
                     </article>
                   ))
                 : null}
@@ -3293,6 +3571,20 @@ function SourcesPage({ navigate, setNotice }) {
           }}
         />
       ) : null}
+      {sourceDetail ? (
+        <SourceDatasetDetailModal
+          source={sourceDetail}
+          isDisconnecting={isDisconnectingSourceDataset}
+          onClose={() => setSourceDetail(null)}
+          onDisconnect={() => disconnectSourceDataset(sourceDetail)}
+        />
+      ) : null}
+      {targetDetail ? (
+        <TargetDatasetDetailModal
+          target={targetDetail}
+          onClose={() => setTargetDetail(null)}
+        />
+      ) : null}
     </div>
   );
 }
@@ -3336,6 +3628,96 @@ function DatasetTypeChoiceModal({ onClose, onSelect }) {
             <small>{"개요 -> 소스 선택 -> 처리 계획 -> 실행 방식 -> 최종 검토"}</small>
           </button>
         </div>
+      </section>
+    </div>
+  );
+}
+
+function SourceDatasetDetailModal({ source, isDisconnecting, onClose, onDisconnect }) {
+  const schemaRows = source.schema.map((field) => [field.name, field.type, field.sample || "metadata draft"]);
+
+  return (
+    <div className="modal-backdrop" role="presentation">
+      <section className="source-modal source-modal-wide source-detail-modal" role="dialog" aria-modal="true" aria-labelledby="source-detail-title">
+        <header>
+          <div>
+            <h2 id="source-detail-title">{source.name}</h2>
+            <p>{source.description}</p>
+          </div>
+          <button type="button" onClick={onClose} aria-label="닫기">
+            <X size={18} />
+          </button>
+        </header>
+        <div className="source-detail-body">
+          <div className="source-detail-grid">
+            <InfoCard title="Connector" value={source.typeLabel} detail={source.connectionName || source.sourceType} />
+            <InfoCard title={source.resourceLabel || "resource"} value={source.resource} detail="raw/source scope" />
+            <InfoCard title="Schema" value={`${source.columns.length}개 컬럼`} detail={source.status} />
+            <InfoCard title="Layer" value={source.layer || "source"} detail={source.updatedAt || source.updatedLabel} />
+          </div>
+          <section className="source-detail-section">
+            <div className="table-title-line">
+              <Database size={18} />
+              <div>
+                <strong>Schema preview</strong>
+                <p>Kafka consumer가 읽을 topic payload 기준 컬럼입니다.</p>
+              </div>
+            </div>
+            <DataTable columns={["컬럼", "타입", "샘플"]} rows={schemaRows} />
+          </section>
+        </div>
+        <footer>
+          <button type="button" className="ghost-action" onClick={onClose}>
+            닫기
+          </button>
+          <button type="button" className="ghost-action danger-action" onClick={onDisconnect} disabled={isDisconnecting}>
+            {isDisconnecting ? "끊는 중" : "Source 연결 끊기"}
+            {isDisconnecting ? <Loader2 size={16} className="spin-icon" /> : <Trash2 size={16} />}
+          </button>
+        </footer>
+      </section>
+    </div>
+  );
+}
+
+function TargetDatasetDetailModal({ target, onClose }) {
+  const schemaRows = target.schema.map((field) => [field.name, field.type, field.sample || "target field"]);
+
+  return (
+    <div className="modal-backdrop" role="presentation">
+      <section className="source-modal source-modal-wide source-detail-modal" role="dialog" aria-modal="true" aria-labelledby="target-detail-title">
+        <header>
+          <div>
+            <h2 id="target-detail-title">{target.name}</h2>
+            <p>{target.description}</p>
+          </div>
+          <button type="button" onClick={onClose} aria-label="닫기">
+            <X size={18} />
+          </button>
+        </header>
+        <div className="source-detail-body">
+          <div className="source-detail-grid">
+            <InfoCard title="Dataset" value={target.typeLabel} detail={target.status} />
+            <InfoCard title="Source" value={target.sourceName} detail={target.sourceType} />
+            <InfoCard title="Schema" value={`${target.columns.length}개 컬럼`} detail={target.processingLabel} />
+            <InfoCard title="Schedule" value={target.scheduleMode} detail="draft execution plan" />
+          </div>
+          <section className="source-detail-section">
+            <div className="table-title-line">
+              <Table2 size={18} />
+              <div>
+                <strong>Output schema</strong>
+                <p>Kafka topic payload를 Target Dataset draft로 고정한 컬럼입니다.</p>
+              </div>
+            </div>
+            <DataTable columns={["컬럼", "타입", "샘플"]} rows={schemaRows} />
+          </section>
+        </div>
+        <footer>
+          <button type="button" className="ghost-action" onClick={onClose}>
+            닫기
+          </button>
+        </footer>
       </section>
     </div>
   );
