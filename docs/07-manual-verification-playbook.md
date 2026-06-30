@@ -281,6 +281,15 @@ PYTHONPATH=backend .venv/bin/python scripts/week2_m2_product_health_l6_evidence.
 
 이 smoke는 Product Health source별 read/write evidence, M3 L6 preview-only aggregate spec 실행, `gold_product_health.parquet` 생성, DuckDB SQL read를 확인한다. 5GB input 처리와 `risk_score` 최종 의미 확정은 포함하지 않는다.
 
+준비된 `product-health-demo-dataset-handoff` bundle을 앱에 넣을 때는 raw handoff catalog를 직접 복사하지 않고 importer를 먼저 실행한다.
+
+```bash
+PYTHONPATH=backend .venv/bin/python scripts/import_product_health_handoff.py \
+  /Users/jungilyou/Downloads/product-health-demo-dataset-handoff
+```
+
+기대 결과는 `data/results/week2/product_health/gold/run_id=run_product_health_5gb_001/gold_product_health.parquet`, `data/results/week2/_metadata/catalog/dataset_product_health_gold.json`, `data/results/week2/_metadata/runs/run_product_health_5gb_001.json`이 생성되고, Catalog metrics에 `input_total_bytes >= 5368709120`와 Gold output row/bytes가 함께 남는 것이다. `silver/*.parquet`은 내부 lineage/evidence이며 기본 사용자-facing AI Query dataset은 `dataset_product_health_gold` 하나다.
+
 1. `pipeline_product_health_e2e` run을 실행하거나 사전 실행된 5GB run id를 선택한다.
 2. `ExecutionResult.status`가 `succeeded`인지 확인한다.
 3. `ExecutionResult.bytes` 또는 run metrics의 `input_total_bytes`가 5GB 이상인지 확인한다.

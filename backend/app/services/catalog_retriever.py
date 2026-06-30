@@ -4,7 +4,7 @@ from typing import Any
 
 from app.domain.retrieval_index import RetrievalIndexHit
 from app.ports.retrieval_index import RetrievalIndex
-from app.services.catalog_metadata import catalog_allowed_columns, catalog_query_table
+from app.services.catalog_metadata import catalog_allowed_columns, catalog_query_table, catalog_schema_fields
 from app.services.catalog_rag_index import CatalogRetrievalIndex
 
 
@@ -85,7 +85,6 @@ class CatalogRetriever:
         )
 
     def _metadata_tokens(self, catalog: dict[str, Any]) -> set[str]:
-        schema_fields = catalog.get("schema", {}).get("fields", [])
         lineage = catalog.get("lineage", {})
         allowed_columns = catalog_allowed_columns(catalog)
         values: list[str] = [
@@ -96,7 +95,7 @@ class CatalogRetriever:
         ]
 
         values.extend(str(column) for column in allowed_columns)
-        values.extend(str(field.get("name", "")) for field in schema_fields)
+        values.extend(str(field.get("name", "")) for field in catalog_schema_fields(catalog))
         values.extend(str(source_id) for source_id in lineage.get("source_ids", []))
         values.extend(str(dataset_id) for dataset_id in lineage.get("upstream_datasets", []))
 

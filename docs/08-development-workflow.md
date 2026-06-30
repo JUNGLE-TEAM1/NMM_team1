@@ -317,6 +317,7 @@ External Connection은 외부 원천에 접속하기 위한 연결 설정이고,
 - C-3에서 ETL job은 draft definition까지 저장하고 실행은 C-4 이후로 넘긴다.
 - C-4 이후 M5 실행 화면은 `M5 데모`가 아니라 `Job Runs` 또는 `실행 기록` 같은 사용자 언어로 재도입한다.
 - M2/M4/M3/M6는 독립 메뉴가 아니라 Dataset creation 이후의 runtime, evidence, catalog, query 소비자로 연결한다.
+- Product Health handoff bundle을 실제 앱에 넣는 작업은 C-6의 작은 구현 slice로 취급한다. raw handoff catalog를 직접 등록하지 않고 canonical Gold parquet와 Week 2 `CatalogMetadata` / run metadata로 import한 뒤 M6 AI Query smoke를 통과해야 한다.
 
 ## Local Environment Follow-up Queue
 

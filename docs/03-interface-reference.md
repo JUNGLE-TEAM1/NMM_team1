@@ -495,6 +495,16 @@ Week 2 product risk representative IDs:
 | `source_delivery_trips_seed` | Delivery fact input source |
 | `source_product_master_seed` | Product dimension source |
 
+Product Health handoff import boundary:
+
+- CLI: `PYTHONPATH=backend .venv/bin/python scripts/import_product_health_handoff.py <handoff_root>`
+- Input bundle: `product-health-demo-dataset-handoff` style folder with `gold/gold_product_health.parquet`, `silver/seed_product_mapping.parquet`, source handoff catalog, and 5GB/smoke run evidence JSON.
+- The handoff `catalog/dataset_product_health_gold.json` is not registered directly as AskLake `CatalogMetadata`. It is a source handoff descriptor whose `schema` may be a list and whose Gold columns may use handoff-native names such as `internal_product_id`, `product_title`, and `avg_rating`.
+- The importer writes a canonical Gold parquet under `data/results/week2/product_health/gold/run_id=<run_id>/gold_product_health.parquet` using the frozen `schema_product_health_gold_v2` query-facing columns. Required mapping examples: `product_id <- internal_product_id`, `product_name <- product_title`, `average_rating <- avg_rating`, `normalized_brand <- brand`, and `ecommerce_product_id` / `amazon_parent_asin` / `match_confidence` / `match_method` from `silver/seed_product_mapping.parquet`.
+- The importer writes Week 2 metadata under `data/results/week2/_metadata/catalog/dataset_product_health_gold.json` and `data/results/week2/_metadata/runs/<run_id>.json`. `CatalogMetadata.metrics.bytes` remains Gold output bytes, while `CatalogMetadata.metrics.input_total_bytes` records measured processed input bytes from 5GB evidence.
+- `silver/*.parquet` artifacts are internal lineage/evidence for this boundary. They must not become the default M6 user-facing query dataset unless a later Source of Truth change explicitly promotes them.
+- M6 may tolerate a list-shaped raw handoff `schema` for defensive retrieval, but Product Health SQL/ranking questions are expected to succeed only after the canonical import provides `query.allowed_columns` including `product_id` and `risk_score`.
+
 Week 2 draft API/UI route contract:
 
 | Flow | Method / Route or UI route | Owner | Response fixture |
