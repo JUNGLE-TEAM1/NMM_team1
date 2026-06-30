@@ -8,8 +8,6 @@ import {
   BookOpen,
   Boxes,
   ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
   CheckCircle2,
   CircleDot,
   Clock3,
@@ -22,10 +20,8 @@ import {
   HardDrive,
   HelpCircle,
   Layers3,
-  LayoutDashboard,
   ListChecks,
   Loader2,
-  LogOut,
   MessageSquareText,
   MonitorCheck,
   Network,
@@ -99,85 +95,24 @@ import {
   updateTargetDatasetDraft,
   updateTargetDatasetDraftSchedule,
 } from "../api/targetDatasetDraftApi";
-import asklakeLogo from "../assets/asklake-logo.png";
-import { StatusPill } from "../components/StatusPill";
+import { DataTable, EmptyState, InfoCard, PageHeader } from "../design-system";
+import { AppShell } from "./AppShell";
 import {
   m1AiQueryPlaceholder,
   m1CatalogPlaceholder,
   m1IntegrationRows,
   m1WorkflowPlaceholder,
 } from "./m1StaticShellData";
+import {
+  WEEK2_DEFAULT_CATALOG_DETAIL_URL,
+  dataViewForPath,
+  navItems,
+  normalizePath,
+  routeToUrl,
+} from "./routes";
 import "./styles.css";
 
-const WEEK2_DEFAULT_CATALOG_DETAIL_URL = `/catalog/${WEEK2_DEFAULT_DATASET_ID}`;
 const AI_QUERY_SESSION_STORAGE_KEY = "asklake.ai_query.latest_result.v1";
-
-const navItems = [
-  {
-    path: "/connections",
-    label: "연결",
-    description: "External",
-    icon: ServerCog,
-  },
-  {
-    path: "/datasets/source",
-    label: "데이터셋",
-    description: "Source / Silver / Gold",
-    icon: Database,
-    children: [
-      {
-        path: "/datasets/source",
-        label: "Source Datasets",
-      },
-      {
-        path: "/datasets/silver",
-        label: "Silver Datasets",
-      },
-      {
-        path: "/datasets/gold",
-        label: "Gold Datasets",
-      },
-    ],
-  },
-  {
-    path: "/jobs/silver-transform",
-    label: "작업",
-    description: "Sync / Transform / Build",
-    icon: Workflow,
-    children: [
-      {
-        path: "/jobs/connection-sync",
-        label: "Connection Sync Jobs",
-      },
-      {
-        path: "/jobs/silver-transform",
-        label: "Silver Transform Jobs",
-      },
-      {
-        path: "/jobs/gold-build",
-        label: "Gold Build Jobs",
-      },
-    ],
-  },
-  {
-    path: "/runs",
-    label: "실행 기록",
-    description: "Job Runs",
-    icon: Play,
-  },
-  {
-    path: "/catalog",
-    label: "데이터 카탈로그",
-    description: "Catalog",
-    icon: LayoutDashboard,
-  },
-  {
-    path: "/ask",
-    label: "AI Query",
-    description: "Ask / SQL",
-    icon: MessageSquareText,
-  },
-];
 
 const PRODUCT_HEALTH_DATASET_ID = "dataset_product_health_gold";
 
@@ -1063,27 +998,6 @@ function silverOutputPayload(silverDataset) {
   };
 }
 
-function normalizePath(pathname) {
-  if (pathname === "/" || pathname === "" || pathname === "/dataset" || pathname === "/sources") return "/datasets/source";
-  if (pathname === "/datasets") return "/datasets/source";
-  if (pathname === "/jobs") return "/jobs/silver-transform";
-  if (pathname === "/schema-preview") return "/datasets/source";
-  if (pathname === "/etl/visual" || pathname === "/etl-visual") return "/etl-visual";
-  if (pathname === "/etl") return "/runs";
-  if (pathname === "/query") return "/ask";
-  if (pathname.startsWith("/catalog/")) return "/catalog-detail";
-  const supportedPaths = [
-    ...navItems.flatMap((item) => [item.path, ...(item.children || []).map((child) => child.path)]),
-    "/catalog",
-    "/catalog-detail",
-    "/ask",
-    "/dashboard",
-    "/admin",
-    "/etl-visual",
-  ];
-  return supportedPaths.includes(pathname) ? pathname : "/datasets/source";
-}
-
 export function App() {
   const initialPath = normalizePath(window.location.pathname);
   const [health, setHealth] = useState({ state: "loading", message: "확인 중" });
@@ -1092,8 +1006,6 @@ export function App() {
     datasets: normalizePath(window.location.pathname).startsWith("/datasets"),
     jobs: normalizePath(window.location.pathname).startsWith("/jobs"),
   }));
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [isCopilotOpen, setIsCopilotOpen] = useState(false);
   const [notice, setNotice] = useState("");
   const [isNoticeLeaving, setIsNoticeLeaving] = useState(false);
   const [pendingDatasetEdit, setPendingDatasetEdit] = useState(null);
@@ -1153,6 +1065,7 @@ export function App() {
   }
 
   const activeItem = useMemo(() => navItems.find((item) => activePath === item.path || item.children?.some((child) => child.path === activePath)) || navItems[0], [activePath]);
+  const activeDataView = dataViewForPath(activePath);
 
   function toggleNavItem(item) {
     if (!item.children?.length) {
@@ -1168,200 +1081,40 @@ export function App() {
   }
 
   return (
-    <main className={`m1-shell ${isSidebarCollapsed ? "sidebar-collapsed" : ""}`}>
-      <aside className="shell-sidebar" aria-label="AskLake M1 navigation">
-        <div className="brand-block">
-          <img className="brand-logo" src={asklakeLogo} alt="AskLake" />
-        </div>
-
-        <nav className="nav-list">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const navKey = item.path.split("/")[1];
-            const isExpanded = Boolean(expandedNav[navKey]);
-            const isActive = activeItem.path === item.path || item.children?.some((child) => child.path === activePath);
-
-            return (
-              <div className={`nav-group ${isExpanded ? "expanded" : ""}`} key={item.path}>
-                <button
-                  type="button"
-                  className={`nav-item ${isActive ? "active" : ""}`}
-                  onClick={() => toggleNavItem(item)}
-                  aria-current={!item.children?.length && isActive ? "page" : undefined}
-                  aria-expanded={item.children?.length ? isExpanded : undefined}
-                >
-                  <Icon size={18} />
-                  <span>
-                    <strong>{item.label}</strong>
-                    <small>{item.description}</small>
-                  </span>
-                  {item.children?.length ? <ChevronRight className="nav-chevron" size={15} /> : null}
-                </button>
-                {item.children?.length && isExpanded ? (
-                  <div className="nav-sublist" aria-label={`${item.label} 하위 메뉴`}>
-                    {item.children.map((child) => {
-                      const isChildActive = activePath === child.path;
-                      return (
-                        <button
-                          key={child.path}
-                          type="button"
-                          className={`nav-subitem ${isChildActive ? "active" : ""}`}
-                          onClick={() => navigate(child.path)}
-                          aria-current={isChildActive ? "page" : undefined}
-                        >
-                          {child.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : null}
-              </div>
-            );
-          })}
-        </nav>
-
-        <button type="button" className="logout-button">
-          <LogOut size={16} />
-          로그아웃
-        </button>
-      </aside>
-
-      <section className="shell-main">
-        <button
-          type="button"
-          className="collapse-button"
-          aria-label={isSidebarCollapsed ? "사이드바 펼치기" : "사이드바 접기"}
-          aria-pressed={isSidebarCollapsed}
-          onClick={() => setIsSidebarCollapsed((current) => !current)}
-        >
-          {isSidebarCollapsed ? <ChevronsRight size={14} /> : <ChevronsLeft size={14} />}
-        </button>
-        <header className="topbar">
-          <div className="topbar-search">
-            <Search size={18} />
-            <span>데이터셋, source, schema 검색...</span>
-            <kbd>/</kbd>
-          </div>
-          <div className="topbar-actions">
-            <button type="button" className="refresh-button" onClick={refreshHealth}>
-              <RefreshCw size={16} />
-              Health
-            </button>
-            <StatusPill health={health} />
-            <div className="user-chip" aria-label="Current shell user">
-              <span>S</span>
-            </div>
-            <div className="user-meta">
-              <strong>study</strong>
-              <span>관리자</span>
-            </div>
-            <button
-              type="button"
-              className="copilot-toggle"
-              onClick={() => setIsCopilotOpen((current) => !current)}
-              aria-pressed={isCopilotOpen}
-            >
-              <Sparkles size={16} />
-              AI 도우미
-            </button>
-          </div>
-        </header>
-
-        <section className="page-surface">
-          {notice ? (
-            <ToastNotice
-              message={notice}
-              isLeaving={isNoticeLeaving}
-              onClose={() => {
-                setNotice("");
-                setIsNoticeLeaving(false);
-              }}
-            />
-          ) : null}
-          {activePath === "/connections" ? (
-            <SourcesPage
-              navigate={navigate}
-              setNotice={setNotice}
-              dataView="connections"
-              pendingDatasetEdit={pendingDatasetEdit}
-              onPendingDatasetEditConsumed={() => setPendingDatasetEdit(null)}
-            />
-          ) : null}
-          {activePath === "/datasets/source" ? (
-            <SourcesPage
-              navigate={navigate}
-              setNotice={setNotice}
-              dataView="datasets-source"
-              pendingDatasetEdit={pendingDatasetEdit}
-              onPendingDatasetEditConsumed={() => setPendingDatasetEdit(null)}
-            />
-          ) : null}
-          {activePath === "/datasets/silver" ? (
-            <SourcesPage
-              navigate={navigate}
-              setNotice={setNotice}
-              dataView="datasets-silver"
-              pendingDatasetEdit={pendingDatasetEdit}
-              onPendingDatasetEditConsumed={() => setPendingDatasetEdit(null)}
-            />
-          ) : null}
-          {activePath === "/datasets/gold" ? (
-            <SourcesPage
-              navigate={navigate}
-              setNotice={setNotice}
-              dataView="datasets-gold"
-              pendingDatasetEdit={pendingDatasetEdit}
-              onPendingDatasetEditConsumed={() => setPendingDatasetEdit(null)}
-            />
-          ) : null}
-          {activePath === "/jobs/connection-sync" ? (
-            <SourcesPage
-              navigate={navigate}
-              setNotice={setNotice}
-              dataView="jobs-connection"
-              pendingDatasetEdit={pendingDatasetEdit}
-              onPendingDatasetEditConsumed={() => setPendingDatasetEdit(null)}
-            />
-          ) : null}
-          {activePath === "/jobs/silver-transform" ? (
-            <SourcesPage
-              navigate={navigate}
-              setNotice={setNotice}
-              dataView="jobs-silver"
-              pendingDatasetEdit={pendingDatasetEdit}
-              onPendingDatasetEditConsumed={() => setPendingDatasetEdit(null)}
-            />
-          ) : null}
-          {activePath === "/jobs/gold-build" ? (
-            <SourcesPage
-              navigate={navigate}
-              setNotice={setNotice}
-              dataView="jobs-gold"
-              pendingDatasetEdit={pendingDatasetEdit}
-              onPendingDatasetEditConsumed={() => setPendingDatasetEdit(null)}
-            />
-          ) : null}
-          {activePath === "/etl-visual" ? <VisualEditorPage navigate={navigate} setNotice={setNotice} /> : null}
-          {activePath === "/runs" ? <JobRunsPage setNotice={setNotice} /> : null}
-          {activePath === "/catalog" ? <CatalogPage navigate={navigate} focusedCatalogDatasetId={focusedCatalogDatasetId} /> : null}
-          {activePath === "/catalog-detail" ? <CatalogDetailShell navigate={navigate} /> : null}
-          {activePath === "/ask" ? <AiQueryPage navigate={navigate} setNotice={setNotice} /> : null}
-          {activePath === "/dashboard" ? <DashboardPlaceholder /> : null}
-          {activePath === "/admin" ? <AdminPlaceholder /> : null}
-        </section>
-        <AiCopilotDock isOpen={isCopilotOpen} onClose={() => setIsCopilotOpen(false)} />
-      </section>
-    </main>
+    <AppShell
+      activeItem={activeItem}
+      activePath={activePath}
+      expandedNav={expandedNav}
+      health={health}
+      isNoticeLeaving={isNoticeLeaving}
+      navItems={navItems}
+      notice={notice}
+      onClearNotice={() => {
+        setNotice("");
+        setIsNoticeLeaving(false);
+      }}
+      onNavigate={navigate}
+      onRefreshHealth={refreshHealth}
+      onToggleNavItem={toggleNavItem}
+    >
+      {activeDataView ? (
+        <SourcesPage
+          navigate={navigate}
+          setNotice={setNotice}
+          dataView={activeDataView}
+          pendingDatasetEdit={pendingDatasetEdit}
+          onPendingDatasetEditConsumed={() => setPendingDatasetEdit(null)}
+        />
+      ) : null}
+      {activePath === "/etl-visual" ? <VisualEditorPage navigate={navigate} setNotice={setNotice} /> : null}
+      {activePath === "/runs" ? <JobRunsPage setNotice={setNotice} /> : null}
+      {activePath === "/catalog" ? <CatalogPage navigate={navigate} focusedCatalogDatasetId={focusedCatalogDatasetId} /> : null}
+      {activePath === "/catalog-detail" ? <CatalogDetailShell navigate={navigate} /> : null}
+      {activePath === "/ask" ? <AiQueryPage navigate={navigate} setNotice={setNotice} /> : null}
+      {activePath === "/dashboard" ? <DashboardPlaceholder /> : null}
+      {activePath === "/admin" ? <AdminPlaceholder /> : null}
+    </AppShell>
   );
-}
-
-function routeToUrl(path) {
-  if (path === "/sources") return "/datasets/source";
-  if (path === "/etl-visual") return "/etl/visual";
-  if (path === "/runs") return "/runs";
-  if (path === "/ask") return "/query";
-  if (path === "/catalog-detail") return WEEK2_DEFAULT_CATALOG_DETAIL_URL;
-  return path;
 }
 
 function PageIntro({ icon: Icon, title, body, status }) {
@@ -8835,109 +8588,6 @@ function AdminPlaceholder() {
         title="권한 관리 기능은 연결 전입니다"
         body="fake admin 생성이나 mock login 없이 shell route만 유지합니다."
       />
-    </div>
-  );
-}
-
-function AiCopilotDock({ isOpen, onClose }) {
-  return (
-    <aside className={`ai-copilot-dock ${isOpen ? "open" : ""}`} aria-hidden={!isOpen}>
-      <header>
-        <div className="copilot-icon">
-          <Sparkles size={16} />
-        </div>
-        <div>
-          <strong>AI 도우미</strong>
-          <span>자연어 SQL 변환</span>
-        </div>
-        <button type="button" className="copilot-close" onClick={onClose} aria-label="AI 도우미 닫기">
-          <X size={18} />
-        </button>
-      </header>
-      <div className="copilot-empty">
-        <div className="copilot-large-icon">
-          <Sparkles size={26} />
-        </div>
-        <h3>AI SQL 도우미</h3>
-        <p>자연어로 데이터에 대해 질문하면 SQL 쿼리를 생성합니다.</p>
-        <button type="button">"품질 위험 점수가 높은 상품을 보여줘"</button>
-        <button type="button">"부정 리뷰와 배송 지연이 함께 증가한 카테고리는?"</button>
-        <button type="button">"전환율이 떨어진 상품의 근거 데이터를 요약해줘"</button>
-      </div>
-    </aside>
-  );
-}
-
-function PageHeader({ title, body, actionLabel, onAction }) {
-  return (
-    <header className="page-header">
-      <div>
-        <h2>{title}</h2>
-        <p>{body}</p>
-      </div>
-      {actionLabel ? (
-        <button type="button" className="ghost-action" onClick={onAction}>
-          {actionLabel}
-        </button>
-      ) : null}
-    </header>
-  );
-}
-
-function ToastNotice({ message, isLeaving, onClose }) {
-  return (
-    <div className={`toast-notice ${isLeaving ? "leaving" : ""}`} role="status">
-      <span>{message}</span>
-      <button type="button" onClick={onClose} aria-label="알림 닫기">
-        <X size={16} />
-      </button>
-    </div>
-  );
-}
-
-function InfoCard({ title, value, detail }) {
-  return (
-    <article className="info-card">
-      <p>{title}</p>
-      <strong>{value}</strong>
-      <span>{detail}</span>
-    </article>
-  );
-}
-
-function EmptyState({ icon: Icon, title, body }) {
-  return (
-    <section className="empty-state">
-      <Icon size={22} />
-      <div>
-        <strong>{title}</strong>
-        <p>{body}</p>
-      </div>
-    </section>
-  );
-}
-
-function DataTable({ columns, rows }) {
-  return (
-    <div className="table-shell">
-      <table>
-        <thead>
-          <tr>
-            {columns.map((column) => (
-              <th key={column}>{column}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.join(":")}>
-              {row.map((cell, cellIndex) => (
-                <td key={`${cell}-${cellIndex}`}>{cell}</td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
     </div>
   );
 }

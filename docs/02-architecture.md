@@ -52,8 +52,9 @@ core -> api/services/adapters
 ```text
 frontend/src/
   api/               resource별 backend client와 shared http client
-  app/               app shell and global styles
+  app/               app shell, route mapping, and global styles
   components/        shared UI components
+  design-system/     UI tokens and reusable primitive components
   features/catalog/  source form, catalog list/detail, catalog state hook
   features/pipeline/ pipeline run panel and run state hook
 ```

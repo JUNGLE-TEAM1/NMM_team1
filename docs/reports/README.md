@@ -95,6 +95,7 @@ report가 늘어나면 영역별 최신 report index를 작게 유지한다. 이
 | M1 final browser smoke | [`m1-final-browser-smoke.md`](m1-final-browser-smoke.md) | 최신 main 기준 `/etl -> /catalog -> /query` browser smoke에서 run/catalog/query/evidence가 이어지는지 확인 |
 | M1 query route trace UI | [`m1-query-route-trace-ui.md`](m1-query-route-trace-ui.md) | M1 `/query` 화면이 M6 `AIQueryResult.route`와 `retrieval_trace[]`를 성공/차단 상태와 함께 표시하는지 확인 |
 | M1 Product Health supported query UI | [`m1-product-health-supported-query-ui.md`](m1-product-health-supported-query-ui.md) | M1 `/query` 화면이 `dataset_product_health_gold`와 DuckDB SQL 성공 결과를 발표용 answer panel로 표시하는지 확인 |
+| Frontend design system foundation | [`frontend-design-system-foundation.md`](frontend-design-system-foundation.md) | `App.jsx` shell/routes/common UI primitive 분리와 다음 `SourcesPage` domain split 전제 확인 |
 | External Connection type alignment | [`external-connection-type-alignment.md`](external-connection-type-alignment.md) | External Connection 타입을 Local File/Folder/Prepared Dataset/Kafka Topic 중심으로 정리하고 Kafka replay 경로를 보존했는지 확인 |
 | External Connection persistence | [`external-connection-persistence.md`](external-connection-persistence.md) | External Connection metadata가 `/api/external-connections`로 저장/조회되고 Source Dataset 후보로 이어지는지 확인 |
 | Target Dataset multi-source processing | [`target-dataset-multi-source-processing.md`](target-dataset-multi-source-processing.md) | Target Dataset 생성이 여러 Source Dataset과 processing recipe 중심으로 보이는지 확인 |
