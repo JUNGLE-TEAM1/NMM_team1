@@ -8,9 +8,9 @@
 - Workspace state: ready-for-review
 - Changed: Product Health handoff bundle을 canonical `gold_product_health` parquet, Week 2 `CatalogMetadata`, `ExecutionResult` run metadata로 import하는 CLI를 추가했다. M6 Catalog schema helper는 list/dict schema shape를 모두 안전하게 읽도록 보강했고, AI Query evidence에 `input_total_bytes`를 포함했다.
 - Verified: focused importer tests passed, 실제 handoff import smoke passed, DuckDB AI Query smoke passed, M6/Product Health focused regression 34 tests passed, `scripts/validate-harness.sh --strict` passed.
-- Remaining: PR creation is deferred because current worktree still contains unrelated `feature/ai-query-chat-ui` changes.
+- Remaining: PR review/CI remains. Current worktree still contains unrelated `feature/ai-query-chat-ui` changes that are not part of this PR.
 - Next context: `scripts/import_product_health_handoff.py /Users/jungilyou/Downloads/product-health-demo-dataset-handoff` 실행 후 `/api/week2/ai/query` Product Health 질문이 `dataset_product_health_gold`를 선택한다.
-- Risk: 현재 worktree에 기존 `feature/ai-query-chat-ui` 변경이 남아 있어 PR 생성 전 별도 정리가 필요하다. generated `data/` artifacts는 ignored local evidence다.
+- Risk: 현재 worktree에 기존 `feature/ai-query-chat-ui` 변경이 남아 있으나 PR branch에는 포함하지 않았다. generated `data/` artifacts는 ignored local evidence다.
 
 ## Context Budget Evidence / 컨텍스트 예산 증거
 
@@ -38,4 +38,4 @@
 
 - Branch pushed: `codex/product-health-handoff-catalog-ingest`
 - Push result: `origin/codex/product-health-handoff-catalog-ingest` upstream tracking set.
-- PR status: not created yet.
+- PR status: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/321 opened against `main`.

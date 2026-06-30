@@ -24,20 +24,20 @@
 - conflicts: not checked against remote because branch switching/pull/rebase was avoided due existing dirty worktree
 - validation: focused pytest and local smoke passed; final harness validation recorded in `quality.md`
 - result: Implementation committed on `codex/product-health-handoff-catalog-ingest`; branch push completed after selective staging kept unrelated worktree changes out of commits.
-- deferral reason: PR creation is deferred until the remaining unrelated `feature/ai-query-chat-ui` worktree changes are separated or explicitly included.
+- deferral reason: none for PR creation; unrelated `feature/ai-query-chat-ui` worktree changes remain excluded from this PR.
 
 ## Push / PR
 
 - linked GitHub issue: n/a
 - PR closing keyword: n/a
 - pushed branch: `codex/product-health-handoff-catalog-ingest`
-- PR link: n/a
-- merge status: not created yet
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/321
+- merge status: open
 - issue close status: not created yet
 
 ## Remote Operations Reconciliation
 
 - Date: 2026-07-01
-- Operation: `git push -u origin codex/product-health-handoff-catalog-ingest`
-- Result: pushed successfully; upstream tracking set to `origin/codex/product-health-handoff-catalog-ingest`.
+- Operation: `git push -u origin codex/product-health-handoff-catalog-ingest`, `/opt/homebrew/bin/gh pr create --base main --head codex/product-health-handoff-catalog-ingest`
+- Result: pushed successfully; upstream tracking set to `origin/codex/product-health-handoff-catalog-ingest`; PR opened at https://github.com/JUNGLE-TEAM1/NMM_team1/pull/321.
 - Scope guard: Product Health commits only. Unrelated `frontend/src/app/App.jsx`, `frontend/src/app/styles.css`, and `docs/workflows/feature/ai-query-chat-ui/` remain uncommitted.
