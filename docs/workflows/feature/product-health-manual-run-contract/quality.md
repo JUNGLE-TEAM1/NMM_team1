@@ -23,6 +23,8 @@
 | build/typecheck | n/a | skipped | 백엔드 계약-only 변경이며 frontend/build 산출 없음 |
 | harness validation | `scripts/validate-harness.sh` | passed | `Harness validation passed.` |
 | strict harness validation | `scripts/validate-harness.sh --strict` | passed | `Harness validation passed.` |
+| GitHub record drift audit | `scripts/audit-github-records.sh --pr 312` | passed | `GitHub record drift audit passed.` |
+| PR sync check | `scripts/prepare-pr.sh --check-pr-sync docs/workflows/feature/product-health-manual-run-contract` | passed | `PR sync check passed.` |
 
 ## CI/CD Gate / CI-CD 게이트
 

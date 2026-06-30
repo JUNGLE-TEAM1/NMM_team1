@@ -46,7 +46,7 @@ PR-ready 조건이 clear이면 feature branch push와 PR 생성은 자동 실행
 - issue creation result: created
 - issue project result: added to JUNGLE-TEAM1 project 3; status set to In Progress
 - PR closing keyword: Closes #311
-- pushed branch:
-- PR link:
-- merge status:
-- issue close status:
+- pushed branch: `feature/product-health-manual-run-contract`
+- PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/312
+- merge status: open
+- issue close status: open
