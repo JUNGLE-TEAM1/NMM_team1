@@ -13,7 +13,7 @@
 
 | Decision | Selected Option | Reason | Confirmed By / At |
 | --- | --- | --- | --- |
-| Transform Builder 저장 방식 | `process_rule.steps[]`에 편집 반영 + `process_rule.builder_config`에 사용자 설정 보존 | M3 TransformSpec 기본값을 유지하면서 사용자의 column/cast/null 선택을 다음 PR의 실행 연결이 읽을 수 있게 분리한다. | user request / 2026-06-30 |
+| Transform Builder 저장 방식 | `process_rule.steps[]` 원본 보존 + `process_rule.builder_config`에 Source role mapping과 검토 상태 보존 | M3 TransformSpec 기본값을 유지하면서 추천 템플릿 자동 적용 흐름을 단순화하고, 다음 PR의 preview/execution 연결이 읽을 수 있게 분리한다. | user request / 2026-06-30 |
 | Locked 영역 | aggregate/join은 review-only, `risk_score`/Gold schema는 locked | 데모 계약으로 동결된 의미를 사용자가 실수로 바꾸지 않게 하고 PR 3 범위를 실행 구현으로 키우지 않는다. | user request / 2026-06-30 |
 
 ## Deferred Decisions / 보류한 결정

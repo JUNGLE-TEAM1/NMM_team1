@@ -8,13 +8,13 @@
 
 ## 목표
 
-- Target Dataset Processing 화면을 Product Health Transform Builder MVP로 바꿔 사용자가 M3 추천 규칙을 읽고 일부 수정할 수 있게 한다.
-- M3 TransformSpec/Gold Contract를 기반으로 role별 column mapping, silver cast type, null/quarantine policy를 UI에서 조정하고 `process_rule.builder_config`에 저장한다.
+- Target Dataset Processing 화면을 Product Health Transform Builder MVP로 바꿔 사용자가 M3 추천 규칙을 읽고 저장할 수 있게 한다.
+- M3 TransformSpec/Gold Contract를 기반으로 Source role mapping과 내부 처리 단계 요약을 표시하고 `process_rule.builder_config`에 저장한다.
 
 ## 범위
 
 - `frontend/src/app/App.jsx`의 Product Health 추천 template Process 화면 개선.
-- role별 column mapping, silver normalize cast/null policy 편집 UI 추가.
+- role별 Source mapping과 내부 normalize/aggregate/join/derive/load 검토 UI 추가.
 - aggregate metric, join key, `risk_score`, Gold schema는 review-only/locked로 표시.
 - Target Dataset 저장 payload에 수정된 `steps[]`와 `builder_config` 포함.
 - 변경된 metadata shape를 `docs/03`, `docs/05`, `docs/07`에 최소 반영.

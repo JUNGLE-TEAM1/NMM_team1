@@ -170,8 +170,8 @@ ASKLAKE_TAXI_POSTGRES_PASSWORD=asklake .venv/bin/python scripts/load_taxi_parque
 3. `Target Dataset`을 선택한다.
 4. 1단계 Overview에서 target dataset 이름과 목적을 확인 또는 수정한다.
 5. 2단계 Source 선택에서 저장된 Source Dataset을 고른다.
-6. 3단계 Process에서 `추천 템플릿 사용`과 `직접 설정` mode가 보이는지 확인한다. Product Health 추천 템플릿을 선택하면 Transform Builder에서 role별 column mapping, silver cast type, null/quarantine policy를 수정할 수 있고 aggregate metric, join key, `risk_score`, Gold schema는 review-only 또는 locked로 표시되는지 확인한다.
-7. 4단계 Scheduling에서 manual 또는 placeholder schedule note를 확인한다.
+6. 3단계 처리 계획에서 `추천 템플릿 사용`과 `직접 설정` mode가 보이는지 확인한다. Product Health 추천 템플릿을 선택하면 Source 역할 매핑, 내부 처리 단계 요약, 품질 규칙, 최종 Gold 출력, Gold Target 컬럼 미리보기가 표시되는지 확인한다.
+7. 4단계 실행 방식에서 수동 실행 또는 예약 실행 준비 중 상태와 실행 메모를 확인한다.
 8. 5단계 Review에서 `Target draft 저장`을 누른다.
 9. 성공 알림과 저장된 draft id가 표시되는지 확인한다.
 10. `GET /api/target-datasets` 응답에 `source_dataset_id`, `process_rule`, `selected_fields`, `schedule`, `job_definition`, `status=draft`가 있는지 확인한다. 추천 템플릿 저장 시 `process_rule.steps[]`, `process_rule.builder_config`, `process_rule.quality_rules[]`가 포함되는지 확인한다.
@@ -183,7 +183,7 @@ ASKLAKE_TAXI_POSTGRES_PASSWORD=asklake .venv/bin/python scripts/load_taxi_parque
 2. `/sources` 데이터셋 화면에서 Target Dataset C-3 흐름을 따라 draft를 저장한다.
 3. Review 화면의 `Job Runs` 패널이 저장된 draft 이후에만 보이는지 확인한다.
 4. `Job Run 시작`을 누른다.
-5. 성공 알림이 표시되고 `run_id`, executor, status, `fixture output dataset_reviews_gold`가 `Job Runs` 목록에 표시되는지 확인한다.
+5. 성공 알림이 표시되고 실행 ID, executor, status, 실행 결과 dataset이 실행 기록 목록에 표시되는지 확인한다.
 6. 생성 직후 화면이 `GET /api/target-datasets/{dataset_id}/runs` 목록 결과를 반영하는지 확인한다.
 7. `GET /api/target-datasets/{dataset_id}/runs` 응답에 `week2_run_id`, `pipeline_id`, `status`, `execution_result.target_dataset_handoff.runtime_output_scope=week2_fixture_output`가 있는지 확인한다.
 8. `GET /api/week2/runs/{week2_run_id}`로 M5 `ExecutionResult`가 조회되는지 확인한다.

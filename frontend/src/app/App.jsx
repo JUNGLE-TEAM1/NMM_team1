@@ -454,22 +454,65 @@ function mapTargetDatasetRecord(record, rankOffset = 100) {
 }
 
 function mapTemplateSchemaField(field) {
+  const name = field.name || field.path;
+  const info = productHealthFieldInfo[name] || {};
   return {
-    name: field.name || field.path,
+    name,
     type: field.type || "unknown",
-    sample: field.semantic_role || (field.nullable ? "nullable" : "required"),
+    meaning: info.meaning || "최종 Gold Dataset 컬럼",
+    sample: info.sample || "예상값",
   };
 }
 
 const productHealthRoleLabels = {
-  reviews: "reviews",
-  behavior: "behavior",
-  delivery: "delivery",
-  product_master: "product_master",
+  reviews: "리뷰",
+  behavior: "행동 이벤트",
+  delivery: "배송",
+  product_master: "상품 마스터",
 };
 
-const castTypeOptions = ["string", "number", "integer", "timestamp", "boolean", "json"];
-const nullPolicyOptions = ["keep_null", "quarantine_if_null", "drop_row_if_null", "fill_default"];
+const productHealthFieldInfo = {
+  product_id: { meaning: "상품을 구분하는 기준 키", sample: "sku_8842" },
+  product_name: { meaning: "상품명", sample: "Air Flow Desk Fan" },
+  category_l1: { meaning: "1차 상품 카테고리", sample: "home_appliance" },
+  review_count: { meaning: "상품별 리뷰 수", sample: "42" },
+  average_rating: { meaning: "평균 평점", sample: "4.3" },
+  negative_review_rate: { meaning: "부정 리뷰 비율", sample: "0.12" },
+  view_count: { meaning: "상품 조회 수", sample: "1840" },
+  purchase_count: { meaning: "구매 수", sample: "138" },
+  conversion_rate: { meaning: "조회 대비 구매 전환율", sample: "0.075" },
+  delivery_count: { meaning: "배송 건수", sample: "126" },
+  late_delivery_rate: { meaning: "지연 배송 비율", sample: "0.08" },
+  risk_score: { meaning: "리뷰/행동/배송을 합산한 상품 위험 점수", sample: "67.5" },
+};
+
+const productHealthPhaseLabels = {
+  bronze: "원천 수집",
+  silver: "정리",
+  aggregate: "집계",
+  join: "조인",
+  derive: "계산",
+  load: "저장",
+};
+
+const productHealthQualityRuleLabels = {
+  schema_match: "스키마 일치",
+  row_count_nonzero: "결과 행 존재",
+  risk_score_range: "위험 점수 범위",
+  zero_denominator_policy: "0 나눗셈 방지",
+};
+
+const productHealthQualityTypeLabels = {
+  schema_match: "스키마 검사",
+  row_count_min: "행 수 기준",
+  range: "범위 검사",
+  semantic_rule: "계산 규칙",
+};
+
+const productHealthQualitySeverityLabels = {
+  blocking: "필수",
+  warning: "경고",
+};
 
 function productHealthRoleFromRequirement(requirement) {
   const signature = `${requirement.source_id || ""} ${requirement.role || ""}`.toLowerCase();
@@ -530,36 +573,10 @@ function sourceColumnMappingFor(source, requirement, currentFields = {}) {
   }, {});
 }
 
-function stepsWithBuilderEdits(steps, castOverrides, nullPolicyOverrides) {
-  return steps.map((step) => {
-    if (step.operation_type !== "normalize") return step;
-
-    const casts = (step.details?.casts || []).map((cast) => ({
-      ...cast,
-      target_type: castOverrides[step.id]?.[cast.field] || cast.target_type,
-    }));
-    const nullPolicy = {
-      ...(step.details?.null_policy || {}),
-      ...(nullPolicyOverrides[step.id] || {}),
-    };
-
-    return {
-      ...step,
-      details: {
-        ...(step.details || {}),
-        casts,
-        null_policy: nullPolicy,
-      },
-    };
-  });
-}
-
 function builderConfigForTemplate({
   template,
   sourceMappings,
   columnMappings,
-  castOverrides,
-  nullPolicyOverrides,
   steps,
 }) {
   if (!template) return null;
@@ -584,8 +601,8 @@ function builderConfigForTemplate({
 
   return {
     builder_version: "transform_builder_mvp_v1",
-    editable_sections: ["column_mappings", "cast_types", "null_policies"],
-    review_only_sections: ["aggregate_metrics", "join_keys"],
+    editable_sections: ["column_mappings"],
+    review_only_sections: ["normalize_rules", "aggregate_metrics", "join_keys"],
     locked_sections: ["risk_score_policy", "gold_schema"],
     column_mappings: sourceMappings
       .filter((mapping) => mapping.source)
@@ -596,35 +613,12 @@ function builderConfigForTemplate({
         source_dataset_name: mapping.source.name,
         fields: columnMappings[mapping.role]?.fields || {},
       })),
-    cast_overrides: castOverrides,
-    null_policy_overrides: nullPolicyOverrides,
+    cast_overrides: {},
+    null_policy_overrides: {},
     aggregate_confirmations: aggregateSteps,
     join_confirmations: joinSteps,
     locked_fields: template.locked_fields || [],
   };
-}
-
-function stepDetailSummary(step) {
-  const details = step.details || {};
-  if (Array.isArray(details.metrics) && details.metrics.length > 0) {
-    return details.metrics.map((metric) => metric.name).join(", ");
-  }
-  if (Array.isArray(details.casts) && details.casts.length > 0) {
-    return details.casts.map((cast) => `${cast.field}:${cast.target_type}`).join(", ");
-  }
-  if (Array.isArray(details.keys) && details.keys.length > 0) {
-    return `keys: ${details.keys.join(", ")}`;
-  }
-  if (Array.isArray(details.select_columns) && details.select_columns.length > 0) {
-    return details.select_columns.join(", ");
-  }
-  if (Array.isArray(details.required_columns) && details.required_columns.length > 0) {
-    return `required: ${details.required_columns.join(", ")}`;
-  }
-  if (details.query_table) {
-    return details.query_table;
-  }
-  return step.output_artifact || step.operation_type;
 }
 
 function targetRunTone(status) {
@@ -643,9 +637,9 @@ function formatRunStatusLabel(status) {
 function formatRuntimeOutputScope(executionResult) {
   const handoff = executionResult?.target_dataset_handoff;
   if (handoff?.runtime_output_scope === "week2_fixture_output") {
-    return `fixture output ${handoff.runtime_output_dataset_id || "dataset_reviews_gold"}`;
+    return `실행 결과 ${handoff.runtime_output_dataset_id || "dataset_reviews_gold"}`;
   }
-  return "target output";
+  return "Target 출력";
 }
 
 const externalConnectionTypes = [
@@ -1064,13 +1058,11 @@ function SourcesPage({ navigate, setNotice }) {
   const [isProcessingTemplateLoading, setIsProcessingTemplateLoading] = useState(false);
   const [processingTemplateError, setProcessingTemplateError] = useState("");
   const [sourceColumnMappings, setSourceColumnMappings] = useState({});
-  const [castTypeOverrides, setCastTypeOverrides] = useState({});
-  const [nullPolicyOverrides, setNullPolicyOverrides] = useState({});
   const [isTransformBuilderAdvancedOpen, setIsTransformBuilderAdvancedOpen] = useState(false);
   const [targetName, setTargetName] = useState("dataset_product_health_gold");
   const [targetDescription, setTargetDescription] = useState("제품 상태 분석용 gold dataset draft");
   const [targetScheduleMode, setTargetScheduleMode] = useState("manual");
-  const [targetScheduleNote, setTargetScheduleNote] = useState("데모에서는 수동 실행으로만 준비합니다.");
+  const [targetScheduleNote, setTargetScheduleNote] = useState("저장된 처리 계획을 사용자가 수동으로 실행합니다.");
   const [apiTargetDatasets, setApiTargetDatasets] = useState([]);
   const [isTargetDatasetsLoading, setIsTargetDatasetsLoading] = useState(false);
   const [targetDatasetListError, setTargetDatasetListError] = useState("");
@@ -1109,12 +1101,11 @@ function SourcesPage({ navigate, setNotice }) {
     .filter((mapping) => mapping.source)
     .map((mapping) => buildSourceMappingPayload(mapping.requirement, mapping.source));
   const mappedProductHealthSourceCount = productHealthSourceMappings.filter((mapping) => mapping.source).length;
-  const hasRecommendedSourceMappings =
-    productHealthSourceRequirements.length > 0 && mappedProductHealthSourceCount === productHealthSourceRequirements.length;
   const primaryTargetSource =
     productHealthSourceMappings.find((mapping) => mapping.role === "reviews" && mapping.source)?.source ||
     productHealthSourceMappings.find((mapping) => mapping.source)?.source ||
     selectedSource;
+  const hasRecommendedSourceInput = Boolean(primaryTargetSource) || mappedProductHealthSourceCount > 0;
   const selectedFieldSummary =
     selectedFields.length > 0 ? selectedFields.slice(0, 3).join(", ") : "선택된 필드가 없습니다.";
   const selectedOutputSchema = selectedSource
@@ -1125,26 +1116,19 @@ function SourcesPage({ navigate, setNotice }) {
   const effectiveSelectedFields = selectedFields.length > 0 ? selectedFields : primaryTargetSource?.columns || selectedSource?.columns || [];
   const recommendedTemplateSteps = productHealthTemplate?.steps || [];
   const recommendedTemplateQualityRules = productHealthTemplate?.quality_rules || [];
-  const productHealthBuilderSteps = useMemo(
-    () => stepsWithBuilderEdits(recommendedTemplateSteps, castTypeOverrides, nullPolicyOverrides),
-    [recommendedTemplateSteps, castTypeOverrides, nullPolicyOverrides],
-  );
+  const productHealthBuilderSteps = recommendedTemplateSteps;
   const productHealthBuilderConfig = useMemo(
     () =>
       builderConfigForTemplate({
         template: productHealthTemplate,
         sourceMappings: productHealthSourceMappings,
         columnMappings: sourceColumnMappings,
-        castOverrides: castTypeOverrides,
-        nullPolicyOverrides,
         steps: productHealthBuilderSteps,
       }),
     [
       productHealthTemplate,
       productHealthSourceMappings,
       sourceColumnMappings,
-      castTypeOverrides,
-      nullPolicyOverrides,
       productHealthBuilderSteps,
     ],
   );
@@ -1154,23 +1138,23 @@ function SourcesPage({ navigate, setNotice }) {
   const processSummary =
     processingMode === "recommended_template"
       ? hasRecommendedTemplateReady
-        ? `Gold pipeline · ${recommendedTemplateSteps.length} steps · ${mappedProductHealthSourceCount}/${productHealthSourceRequirements.length} raw sources`
+        ? `Gold 처리 계획 · ${recommendedTemplateSteps.length}단계 · ${mappedProductHealthSourceCount}/${productHealthSourceRequirements.length}개 소스 연결`
         : "Product Health 추천 템플릿을 불러옵니다."
       : selectedFields.length > 0
-        ? `Select Fields · ${selectedFields.length} fields`
+        ? `필드 선택 · ${selectedFields.length}개`
         : "직접 설정할 필드를 선택합니다.";
   const processIsReady =
     processingMode === "recommended_template"
-      ? hasRecommendedTemplateReady && hasRecommendedSourceMappings
+      ? hasRecommendedTemplateReady && hasRecommendedSourceInput
       : selectedFields.length > 0;
   const sourceStepSummary =
     processingMode === "recommended_template" && productHealthSourceRequirements.length > 0
-      ? `${mappedProductHealthSourceCount}/${productHealthSourceRequirements.length} source roles mapped`
+      ? `${mappedProductHealthSourceCount}/${productHealthSourceRequirements.length}개 역할 연결`
       : selectedSource
         ? selectedSource.name
         : "등록된 Source Dataset을 선택합니다.";
   const targetOutputSchemaSummary =
-    targetOutputSchema.length > 0 ? targetOutputSchema.map((field) => field.name).slice(0, 4).join(", ") : "schema 없음";
+    targetOutputSchema.length > 0 ? targetOutputSchema.map((field) => field.name).slice(0, 4).join(", ") : "스키마 없음";
   const savedSourceDatasets = useMemo(
     () => apiSourceDatasets.map((record, index) => mapSourceDatasetRecord(record, 100 + apiSourceDatasets.length - index)),
     [apiSourceDatasets],
@@ -1188,31 +1172,31 @@ function SourcesPage({ navigate, setNotice }) {
   const wizardSteps = [
     {
       id: "overview",
-      title: "Overview",
-      summary: normalizedTargetName || "target dataset 이름을 입력합니다.",
+      title: "개요",
+      summary: normalizedTargetName || "Target Dataset 이름을 입력합니다.",
       isComplete: Boolean(normalizedTargetName),
     },
     {
       id: "source",
-      title: "Sources",
+      title: "소스 선택",
       summary: sourceStepSummary,
       isComplete: currentStepIndex > 1 && Boolean(primaryTargetSource),
     },
     {
       id: "process",
-      title: "Pipeline Plan",
+      title: "처리 계획",
       summary: processSummary,
       isComplete: currentStepIndex > 3 && processIsReady,
     },
     {
       id: "scheduling",
-      title: "Run Mode",
-      summary: targetScheduleMode === "manual" ? "Manual run" : "Schedule placeholder",
+      title: "실행 방식",
+      summary: targetScheduleMode === "manual" ? "수동 실행" : "예약 실행 준비 중",
       isComplete: currentStepIndex > 4,
     },
     {
       id: "review",
-      title: "Review",
+      title: "최종 검토",
       summary: "생성 준비 확인",
       isComplete: false,
     },
@@ -1434,52 +1418,6 @@ function SourcesPage({ navigate, setNotice }) {
   }, [productHealthSourceMappings]);
 
   useEffect(() => {
-    if (recommendedTemplateSteps.length === 0) return;
-
-    setCastTypeOverrides((currentOverrides) => {
-      let hasChange = false;
-      const nextOverrides = { ...currentOverrides };
-
-      recommendedTemplateSteps
-        .filter((step) => step.operation_type === "normalize")
-        .forEach((step) => {
-          const currentStepOverrides = nextOverrides[step.id] || {};
-          const nextStepOverrides = { ...currentStepOverrides };
-          (step.details?.casts || []).forEach((cast) => {
-            if (!nextStepOverrides[cast.field]) {
-              nextStepOverrides[cast.field] = cast.target_type;
-              hasChange = true;
-            }
-          });
-          nextOverrides[step.id] = nextStepOverrides;
-        });
-
-      return hasChange ? nextOverrides : currentOverrides;
-    });
-
-    setNullPolicyOverrides((currentOverrides) => {
-      let hasChange = false;
-      const nextOverrides = { ...currentOverrides };
-
-      recommendedTemplateSteps
-        .filter((step) => step.operation_type === "normalize")
-        .forEach((step) => {
-          const currentStepOverrides = nextOverrides[step.id] || {};
-          const nextStepOverrides = { ...currentStepOverrides };
-          Object.entries(step.details?.null_policy || {}).forEach(([field, policy]) => {
-            if (!nextStepOverrides[field]) {
-              nextStepOverrides[field] = policy;
-              hasChange = true;
-            }
-          });
-          nextOverrides[step.id] = nextStepOverrides;
-        });
-
-      return hasChange ? nextOverrides : currentOverrides;
-    });
-  }, [recommendedTemplateSteps]);
-
-  useEffect(() => {
     if (processingMode !== "recommended_template" || !primaryTargetSource) return;
     if (selectedSource?.id === primaryTargetSource.id) return;
     setSelectedSource(primaryTargetSource);
@@ -1523,53 +1461,6 @@ function SourcesPage({ navigate, setNotice }) {
     setTargetRuns([]);
     setTargetRunError("");
     setNotice(`${productHealthRoleLabels[role] || role} role에 ${source.name} source를 매핑했습니다.`);
-  }
-
-  function updateSourceColumnMapping(role, field, value) {
-    const source = targetSourceMappings[role];
-    setSourceColumnMappings((currentMappings) => ({
-      ...currentMappings,
-      [role]: {
-        source_dataset_id: source?.id || currentMappings[role]?.source_dataset_id || "",
-        source_dataset_name: source?.name || currentMappings[role]?.source_dataset_name || "",
-        fields: {
-          ...(currentMappings[role]?.fields || {}),
-          [field]: value,
-        },
-      },
-    }));
-    setLastCreatedTargetDraft(null);
-    setTargetDraftError("");
-    setTargetRuns([]);
-    setTargetRunError("");
-  }
-
-  function updateCastType(stepId, field, targetType) {
-    setCastTypeOverrides((currentOverrides) => ({
-      ...currentOverrides,
-      [stepId]: {
-        ...(currentOverrides[stepId] || {}),
-        [field]: targetType,
-      },
-    }));
-    setLastCreatedTargetDraft(null);
-    setTargetDraftError("");
-    setTargetRuns([]);
-    setTargetRunError("");
-  }
-
-  function updateNullPolicy(stepId, field, policy) {
-    setNullPolicyOverrides((currentOverrides) => ({
-      ...currentOverrides,
-      [stepId]: {
-        ...(currentOverrides[stepId] || {}),
-        [field]: policy,
-      },
-    }));
-    setLastCreatedTargetDraft(null);
-    setTargetDraftError("");
-    setTargetRuns([]);
-    setTargetRunError("");
   }
 
   async function selectSourceConnection(connection) {
@@ -1775,10 +1666,10 @@ function SourcesPage({ navigate, setNotice }) {
       });
       const runRecords = await listTargetDatasetRuns(lastCreatedTargetDraft.id);
       setTargetRuns(runRecords.length > 0 ? runRecords : [runRecord]);
-      setNotice(`${runRecord.target_dataset_name} Manual Run smoke를 시작했습니다.`);
+      setNotice(`${runRecord.target_dataset_name} 수동 실행을 시작했습니다.`);
     } catch (error) {
       setTargetRunError(error.message);
-      setNotice(`Manual Run smoke 시작 실패: ${error.message}`);
+      setNotice(`수동 실행 시작 실패: ${error.message}`);
     } finally {
       setIsStartingTargetRun(false);
     }
@@ -2469,8 +2360,8 @@ function SourcesPage({ navigate, setNotice }) {
           <div className="table-title-line">
             <Workflow size={20} />
             <div>
-              <strong>Create Target Dataset</strong>
-              <p>여러 Raw Source를 입력으로 받아 최종 Gold Target Dataset을 준비합니다.</p>
+              <strong>Target Dataset 생성</strong>
+              <p>하나 이상의 Source Dataset을 입력으로 받아 최종 Gold Target Dataset을 준비합니다.</p>
             </div>
           </div>
           <div className="table-card-actions">
@@ -2533,7 +2424,7 @@ function SourcesPage({ navigate, setNotice }) {
           <div className="wizard-step-heading">
             <span>1단계</span>
             <div>
-              <h3>Overview</h3>
+              <h3>개요</h3>
               <p>사용자가 Catalog와 AI Query에서 쓸 최종 Gold Target Dataset의 이름과 목적을 정합니다.</p>
             </div>
           </div>
@@ -2541,8 +2432,8 @@ function SourcesPage({ navigate, setNotice }) {
             <div className="table-title-line">
               <Table2 size={18} />
               <div>
-                <strong>Target dataset draft</strong>
-                <p>Source Dataset과 processing rule이 붙을 output dataset 초안입니다.</p>
+                <strong>Target Dataset 초안</strong>
+                <p>Source Dataset과 처리 규칙이 붙을 결과 Dataset 초안입니다.</p>
               </div>
             </div>
             <label className="target-name-field">
@@ -2576,7 +2467,7 @@ function SourcesPage({ navigate, setNotice }) {
               />
             </label>
             <div className="target-summary-strip">
-              <span>Output draft</span>
+              <span>결과 Dataset 초안</span>
               <strong>{normalizedTargetName || "target_dataset_name 필요"}</strong>
               <p>{normalizedTargetDescription || "dataset 목적을 짧게 적어둡니다."}</p>
             </div>
@@ -2592,7 +2483,7 @@ function SourcesPage({ navigate, setNotice }) {
             <span>2단계</span>
             <div>
               <h3>Source 선택</h3>
-              <p>Gold Target Pipeline의 raw input으로 사용할 Source Dataset들을 고릅니다.</p>
+              <p>Gold Target을 만들 때 입력으로 사용할 Source Dataset을 고릅니다. 하나만 선택해도 진행할 수 있습니다.</p>
             </div>
           </div>
           <div className="wizard-source-layout">
@@ -2604,12 +2495,12 @@ function SourcesPage({ navigate, setNotice }) {
                 <strong>{primaryTargetSource ? primaryTargetSource.name : "등록된 Source Dataset을 선택하세요"}</strong>
                 <p>
                   {primaryTargetSource
-                    ? `${primaryTargetSource.typeLabel} · ${primaryTargetSource.columns.length} columns · ${primaryTargetSource.resource}`
-                    : "등록된 Source Dataset card 목록에서 target dataset의 입력을 고릅니다."}
+                    ? `${primaryTargetSource.typeLabel} · ${primaryTargetSource.columns.length}개 컬럼 · ${primaryTargetSource.resource}`
+                    : "등록된 Source Dataset 목록에서 Target Dataset의 입력을 고릅니다."}
                 </p>
               </div>
               <button type="button" className="primary-action" onClick={() => openSourcePicker("target")}>
-                {primaryTargetSource ? "Primary Source 변경" : "Source 선택"}
+                {primaryTargetSource ? "기본 Source 변경" : "Source 선택"}
                 <ArrowRight size={16} />
               </button>
             </div>
@@ -2618,9 +2509,9 @@ function SourcesPage({ navigate, setNotice }) {
                 <div className="table-title-line">
                   <GitBranch size={18} />
                   <div>
-                    <strong>Product Health source roles</strong>
+                    <strong>Product Health Source 역할</strong>
                     <p>
-                      {mappedProductHealthSourceCount}/{productHealthSourceMappings.length} roles mapped · M3 source_id 연결
+                      {mappedProductHealthSourceCount}/{productHealthSourceMappings.length}개 역할 연결 · 필요한 경우만 추가 매핑합니다
                     </p>
                   </div>
                 </div>
@@ -2631,7 +2522,7 @@ function SourcesPage({ navigate, setNotice }) {
                         <span>{mapping.label}</span>
                         <strong>{mapping.source ? mapping.source.name : "Source Dataset 선택"}</strong>
                         <p>
-                          {mapping.requirement.source_id} · required:{" "}
+                          {mapping.requirement.source_id} · 기준 컬럼:{" "}
                           {(mapping.requirement.required_fields || []).join(", ") || productHealthSourceHint(mapping.role)}
                         </p>
                       </div>
@@ -2647,16 +2538,16 @@ function SourcesPage({ navigate, setNotice }) {
               <div className="table-title-line">
                 <FileJson size={18} />
                 <div>
-                  <strong>Schema preview</strong>
-                  <p>{primaryTargetSource ? "Pipeline Plan 단계의 primary input schema로 사용됩니다." : "Source Dataset 선택 후 컬럼 미리보기가 표시됩니다."}</p>
+                  <strong>Source 스키마 미리보기</strong>
+                  <p>{primaryTargetSource ? "처리 계획 단계의 기본 입력 스키마로 사용됩니다." : "Source Dataset 선택 후 컬럼 미리보기가 표시됩니다."}</p>
                 </div>
               </div>
               {primaryTargetSource ? (
                 <div className="schema-preview-table" aria-label="Selected source schema preview">
                   <div className="schema-preview-head">
-                    <span>Field</span>
-                    <span>Type</span>
-                    <span>Sample</span>
+                    <span>컬럼</span>
+                    <span>타입</span>
+                    <span>예시</span>
                   </div>
                   {primaryTargetSource.schema.map((field) => (
                     <div className="schema-preview-row" key={field.name}>
@@ -2685,21 +2576,21 @@ function SourcesPage({ navigate, setNotice }) {
           <div className="wizard-step-heading">
             <span>3단계</span>
             <div>
-              <h3>Pipeline Plan</h3>
-              <p>{selectedSource ? "Raw source들을 내부 처리 단계로 묶어 최종 Gold Target을 만드는 계획입니다." : "Source Dataset을 먼저 선택합니다."}</p>
+              <h3>처리 계획</h3>
+              <p>{selectedSource ? "선택한 Source Dataset을 최종 Gold Target으로 가공하는 계획입니다." : "Source Dataset을 먼저 선택합니다."}</p>
             </div>
           </div>
           <section className={`transform-panel wizard-inline-panel ${selectedSource ? "" : "disabled"}`}>
             <div className="table-title-line">
               <GitBranch size={18} />
               <div>
-                <strong>Gold Target pipeline plan</strong>
+                <strong>Gold Target 처리 계획</strong>
                 <p>추천 템플릿 또는 직접 설정한 계획을 Target Dataset metadata에 저장합니다.</p>
               </div>
             </div>
             {selectedSource ? (
               <>
-                <div className="processing-mode-grid" role="radiogroup" aria-label="Target Dataset Pipeline Plan mode">
+                <div className="processing-mode-grid" role="radiogroup" aria-label="Target Dataset 처리 계획 mode">
                   <label className={processingMode === "recommended_template" ? "selected" : ""}>
                     <input
                       type="radio"
@@ -2717,7 +2608,7 @@ function SourcesPage({ navigate, setNotice }) {
                     />
                     <span>
                       <strong>추천 템플릿 사용</strong>
-                      <small>Raw sources to Gold Target</small>
+                      <small>Source Dataset에서 Gold Target 생성</small>
                     </span>
                   </label>
                   <label className={processingMode === "manual" ? "selected" : ""}>
@@ -2736,7 +2627,7 @@ function SourcesPage({ navigate, setNotice }) {
                     />
                     <span>
                       <strong>직접 설정</strong>
-                      <small>Single-source field draft</small>
+                      <small>단일 Source 필드 선택</small>
                     </span>
                   </label>
                 </div>
@@ -2749,10 +2640,10 @@ function SourcesPage({ navigate, setNotice }) {
                         <strong>{productHealthTemplate ? "Gold Target Pipeline 자동 설정 완료" : "Product Health 추천 템플릿"}</strong>
                         <p>
                           {isProcessingTemplateLoading
-                            ? "template loading"
+                            ? "템플릿을 불러오는 중입니다"
                             : productHealthTemplate
-                              ? `Raw sources -> internal transform -> ${productHealthTemplate.query_table} · ${recommendedTemplateSteps.length} steps`
-                              : processingTemplateError || "template unavailable"}
+                              ? `선택한 Source를 내부 처리한 뒤 ${productHealthTemplate.query_table} 테이블을 만듭니다 · ${recommendedTemplateSteps.length}단계`
+                              : processingTemplateError || "추천 템플릿을 사용할 수 없습니다"}
                         </p>
                       </div>
                       {productHealthTemplate ? (
@@ -2764,7 +2655,7 @@ function SourcesPage({ navigate, setNotice }) {
                           {isTransformBuilderAdvancedOpen ? "고급 설정 접기" : "고급 설정 보기"}
                         </button>
                       ) : (
-                        <span>loading</span>
+                        <span>로딩 중</span>
                       )}
                     </div>
 
@@ -2781,9 +2672,9 @@ function SourcesPage({ navigate, setNotice }) {
                           <div className="table-title-line">
                             <Database size={18} />
                             <div>
-                              <strong>Raw source role mapping</strong>
+                              <strong>Source 역할 매핑</strong>
                               <p>
-                                {mappedProductHealthSourceCount}/{productHealthSourceMappings.length} mapped · reviews, behavior, delivery, product_master
+                                {mappedProductHealthSourceCount}/{productHealthSourceMappings.length}개 연결됨 · 하나만 연결해도 다음 단계로 갈 수 있습니다
                               </p>
                             </div>
                           </div>
@@ -2804,160 +2695,26 @@ function SourcesPage({ navigate, setNotice }) {
                         </div>
 
                         {isTransformBuilderAdvancedOpen ? (
-                          <div className="transform-builder-shell" aria-label="Product Health transform builder">
-                          <div className="builder-stage-strip">
-                            {productHealthTemplate.flow.map((phase) => (
-                              <span key={phase}>{phase}</span>
-                            ))}
-                          </div>
-
-                          <section className="builder-section">
-                            <div className="builder-section-head">
+                          <section className="wizard-inline-panel review-template-panel">
+                            <div className="table-title-line">
+                              <ListChecks size={18} />
                               <div>
-                                <strong>1. Source column mapping</strong>
-                                <p>M3 source_id의 required/optional field를 실제 Source Dataset column에 연결합니다.</p>
+                                <strong>내부 처리 단계</strong>
+                                <p>기본 추천값으로 적용되며, 화면에서는 최종 Gold Target 중심으로 확인합니다.</p>
                               </div>
-                              <span>{mappedProductHealthSourceCount}/{productHealthSourceMappings.length} sources</span>
                             </div>
-                            <div className="builder-role-grid">
-                              {productHealthSourceMappings.map((mapping) => {
-                                const fields = sourceRequirementFields(mapping.requirement);
-                                const sourceColumns = mapping.source?.columns || [];
-                                const roleMapping = sourceColumnMappings[mapping.role]?.fields || {};
-                                return (
-                                  <article className="builder-role-card" key={mapping.role}>
-                                    <div className="builder-role-card-head">
-                                      <span>{mapping.label}</span>
-                                      <strong>{mapping.source ? mapping.source.name : "Source Dataset 필요"}</strong>
-                                    </div>
-                                    <div className="builder-field-map">
-                                      {fields.map((field) => {
-                                        const isRequired = (mapping.requirement.required_fields || []).includes(field);
-                                        return (
-                                          <label className="builder-field-row" key={field}>
-                                            <span>
-                                              {field}
-                                              {isRequired ? <small>required</small> : <small>optional</small>}
-                                            </span>
-                                            <select
-                                              value={roleMapping[field] || ""}
-                                              disabled={!mapping.source}
-                                              onChange={(event) => updateSourceColumnMapping(mapping.role, field, event.target.value)}
-                                            >
-                                              <option value="">column 선택</option>
-                                              {sourceColumns.map((column) => (
-                                                <option value={column} key={column}>
-                                                  {column}
-                                                </option>
-                                              ))}
-                                            </select>
-                                          </label>
-                                        );
-                                      })}
-                                    </div>
-                                  </article>
-                                );
-                              })}
+                            <div className="review-step-strip">
+                              {productHealthTemplate.flow.map((phase) => (
+                                <span key={phase}>{productHealthPhaseLabels[phase] || phase}</span>
+                              ))}
+                            </div>
+                            <div className="review-source-map">
+                              <span>정규화 {productHealthBuilderSteps.filter((step) => step.operation_type === "normalize").length}개</span>
+                              <span>집계 {productHealthBuilderSteps.filter((step) => step.operation_type === "aggregate").length}개</span>
+                              <span>조인/계산/로드는 계약값으로 잠금</span>
+                              <span>중간 산출물은 사용자-facing dataset으로 만들지 않음</span>
                             </div>
                           </section>
-
-                          <section className="builder-section">
-                            <div className="builder-section-head">
-                              <div>
-                                <strong>2. Internal normalize rules</strong>
-                                <p>cast type과 null/quarantine policy만 수정할 수 있습니다.</p>
-                              </div>
-                              <span>{productHealthBuilderSteps.filter((step) => step.operation_type === "normalize").length} steps</span>
-                            </div>
-                            <div className="builder-rule-stack">
-                              {productHealthBuilderSteps
-                                .filter((step) => step.operation_type === "normalize")
-                                .map((step) => (
-                                  <article className="builder-normalize-card" key={step.id}>
-                                    <div>
-                                      <strong>{step.title}</strong>
-                                      <p>
-                                        {step.input_artifacts?.[0]} {"->"} {step.output_artifact}
-                                      </p>
-                                    </div>
-                                    <div className="builder-normalize-grid">
-                                      {(step.details?.casts || []).map((cast) => (
-                                        <div className="builder-rule-row" key={`${step.id}-${cast.field}`}>
-                                          <code>{cast.field}</code>
-                                          <select
-                                            value={cast.target_type}
-                                            onChange={(event) => updateCastType(step.id, cast.field, event.target.value)}
-                                          >
-                                            {castTypeOptions.map((option) => (
-                                              <option value={option} key={option}>
-                                                {option}
-                                              </option>
-                                            ))}
-                                          </select>
-                                          <select
-                                            value={step.details?.null_policy?.[cast.field] || "keep_null"}
-                                            onChange={(event) => updateNullPolicy(step.id, cast.field, event.target.value)}
-                                          >
-                                            {nullPolicyOptions.map((option) => (
-                                              <option value={option} key={option}>
-                                                {option}
-                                              </option>
-                                            ))}
-                                          </select>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </article>
-                                ))}
-                            </div>
-                          </section>
-
-                          <div className="builder-review-grid">
-                            <section className="builder-section">
-                              <div className="builder-section-head">
-                                <div>
-                                  <strong>3. Aggregate metrics</strong>
-                                  <p>source별 metric은 검토만 가능하며 raw fact join 전에 계산됩니다.</p>
-                                </div>
-                                <span>read-only</span>
-                              </div>
-                              <div className="builder-metric-list">
-                                {productHealthBuilderSteps
-                                  .filter((step) => step.operation_type === "aggregate")
-                                  .map((step) => (
-                                    <article key={step.id}>
-                                      <strong>{step.title}</strong>
-                                      <p>group by {(step.details?.group_by || []).join(", ")}</p>
-                                      <div>
-                                        {(step.details?.metrics || []).map((metric) => (
-                                          <span key={metric.name}>{metric.name}</span>
-                                        ))}
-                                      </div>
-                                    </article>
-                                  ))}
-                              </div>
-                            </section>
-                            <section className="builder-section locked">
-                              <div className="builder-section-head">
-                                <div>
-                                  <strong>4. Join / derive lock</strong>
-                                  <p>join key, risk_score policy, Gold schema는 데모 계약이라 read-only입니다.</p>
-                                </div>
-                                <span>locked</span>
-                              </div>
-                              <div className="builder-lock-list">
-                                {productHealthBuilderSteps
-                                  .filter((step) => ["join", "derive", "load"].includes(step.operation_type))
-                                  .map((step) => (
-                                    <article key={step.id}>
-                                      <strong>{step.title}</strong>
-                                      <code>{stepDetailSummary(step)}</code>
-                                    </article>
-                                  ))}
-                              </div>
-                            </section>
-                          </div>
-                          </div>
                         ) : null}
 
                         <div className="template-contract-grid">
@@ -2965,16 +2722,16 @@ function SourcesPage({ navigate, setNotice }) {
                             <div className="table-title-line">
                               <ShieldCheck size={18} />
                               <div>
-                                <strong>Quality rules</strong>
-                                <p>{recommendedTemplateQualityRules.length} blocking checks from M3 contract</p>
+                                <strong>품질 규칙</strong>
+                                <p>{recommendedTemplateQualityRules.length}개 필수 검사를 저장합니다</p>
                               </div>
                             </div>
                             <div className="quality-rule-list">
                               {recommendedTemplateQualityRules.map((rule) => (
                                 <article key={rule.id}>
-                                  <strong>{rule.id}</strong>
-                                  <span>{rule.type}</span>
-                                  <small>{rule.severity}</small>
+                                  <strong>{productHealthQualityRuleLabels[rule.id] || rule.id}</strong>
+                                  <span>{productHealthQualityTypeLabels[rule.type] || rule.type}</span>
+                                  <small>{productHealthQualitySeverityLabels[rule.severity] || rule.severity}</small>
                                 </article>
                               ))}
                             </div>
@@ -2983,16 +2740,14 @@ function SourcesPage({ navigate, setNotice }) {
                             <div className="table-title-line">
                               <Table2 size={18} />
                               <div>
-                                <strong>Locked Gold schema</strong>
-                                <p>{productHealthOutputSchema.length} output fields · risk_score policy locked</p>
+                                <strong>최종 Gold 출력</strong>
+                                <p>{productHealthTemplate.query_table} · {productHealthOutputSchema.length}개 컬럼 · risk_score 공식 잠금</p>
                               </div>
                             </div>
-                            <div className="schema-chip-list">
-                              {productHealthOutputSchema.map((field) => (
-                                <span className="schema-chip" key={field.name}>
-                                  {field.name}
-                                </span>
-                              ))}
+                            <div className="target-summary-strip">
+                              <span>사용자에게 공개되는 결과</span>
+                              <strong>{productHealthTemplate.target_dataset}</strong>
+                              <p>중간 단계는 내부 처리로만 사용하고 Catalog/AI Query에는 Gold Target을 연결합니다.</p>
                             </div>
                           </section>
                         </div>
@@ -3005,7 +2760,7 @@ function SourcesPage({ navigate, setNotice }) {
                   <>
                     <div className="transform-toolbar">
                       <span>
-                        Select Fields · {selectedFields.length}/{selectedSource.columns.length}
+                        필드 선택 · {selectedFields.length}/{selectedSource.columns.length}
                       </span>
                       <div>
                         <button type="button" className="ghost-action" onClick={selectAllFields}>
@@ -3016,7 +2771,7 @@ function SourcesPage({ navigate, setNotice }) {
                         </button>
                       </div>
                     </div>
-                    <div className="field-choice-grid" aria-label="Select Fields columns">
+                    <div className="field-choice-grid" aria-label="직접 설정 필드 선택">
                       {selectedSource.columns.map((column) => (
                         <label className="field-choice" key={column}>
                           <input
@@ -3035,21 +2790,23 @@ function SourcesPage({ navigate, setNotice }) {
                   <div className="table-title-line">
                     <Table2 size={18} />
                     <div>
-                      <strong>Target schema preview</strong>
-                      <p>Gold Target Dataset에 남길 output schema입니다.</p>
+                      <strong>Gold Target 컬럼 미리보기</strong>
+                      <p>최종 결과 컬럼의 의미와 예시값입니다.</p>
                     </div>
                   </div>
                   {targetOutputSchema.length > 0 ? (
-                    <div className="schema-preview-table" aria-label="Transform output schema preview">
+                    <div className="schema-preview-table with-meaning" aria-label="Gold Target 컬럼 미리보기">
                       <div className="schema-preview-head">
-                        <span>Field</span>
-                        <span>Type</span>
-                        <span>Sample</span>
+                        <span>컬럼</span>
+                        <span>타입</span>
+                        <span>의미</span>
+                        <span>예시</span>
                       </div>
                       {targetOutputSchema.map((field) => (
                         <div className="schema-preview-row" key={field.name}>
                           <strong>{field.name}</strong>
                           <span>{field.type}</span>
+                          <span>{field.meaning}</span>
                           <code>{field.sample}</code>
                         </div>
                       ))}
@@ -3057,8 +2814,8 @@ function SourcesPage({ navigate, setNotice }) {
                   ) : (
                     <EmptyState
                       icon={Table2}
-                      title="Target schema가 비어 있습니다"
-                      body="target dataset에 남길 필드를 하나 이상 선택합니다."
+                      title="출력 컬럼이 비어 있습니다"
+                      body="Target Dataset에 남길 컬럼을 하나 이상 선택합니다."
                     />
                   )}
                 </div>
@@ -3066,14 +2823,14 @@ function SourcesPage({ navigate, setNotice }) {
             ) : (
               <EmptyState
                 icon={GitBranch}
-                title="Pipeline Plan 설정 대기"
+                title="처리 계획 설정 대기"
                 body="뒤로가기로 돌아가 Source Dataset을 먼저 선택합니다."
               />
             )}
           </section>
           <div className="wizard-placeholder compact">
             <CheckCircle2 size={22} />
-            <strong>다음 단계에서 Manual Run 기본값을 확인합니다</strong>
+            <strong>다음 단계에서 실행 방식을 확인합니다</strong>
           </div>
         </section>
       );
@@ -3085,7 +2842,7 @@ function SourcesPage({ navigate, setNotice }) {
           <div className="wizard-step-heading">
             <span>4단계</span>
             <div>
-              <h3>Run Mode</h3>
+              <h3>실행 방식</h3>
               <p>Gold Target Dataset을 갱신할 실행 방식을 정합니다.</p>
             </div>
           </div>
@@ -3093,8 +2850,8 @@ function SourcesPage({ navigate, setNotice }) {
             <div className="table-title-line">
               <Clock3 size={18} />
               <div>
-                <strong>Manual run mode</strong>
-                <p>내일 데모는 수동 실행 경계만 확인하며 cron/scheduler는 후속 범위입니다.</p>
+                <strong>수동 실행</strong>
+                <p>저장된 처리 계획을 사용자가 필요할 때 직접 실행합니다. 예약 실행은 후속 범위입니다.</p>
               </div>
             </div>
             <div className="schedule-choice-grid" aria-label="Target dataset schedule mode">
@@ -3113,8 +2870,8 @@ function SourcesPage({ navigate, setNotice }) {
                   }}
                 />
                 <span>
-                  <strong>Manual</strong>
-                  <small>데모 기본값. Gold Target 갱신을 수동 실행 대상으로 표시합니다.</small>
+                  <strong>수동 실행</strong>
+                  <small>저장 후 사용자가 버튼을 눌러 Gold Target 갱신을 시작합니다.</small>
                 </span>
               </label>
               <label className={targetScheduleMode === "placeholder" ? "selected" : ""}>
@@ -3132,13 +2889,13 @@ function SourcesPage({ navigate, setNotice }) {
                   }}
                 />
                 <span>
-                  <strong>Schedule placeholder</strong>
-                  <small>cron UI 자리만 확인합니다. job schedule 저장은 하지 않습니다.</small>
+                  <strong>예약 실행 준비 중</strong>
+                  <small>cron, timezone, scheduler 연결은 후속 버전에서 제공합니다.</small>
                 </span>
               </label>
             </div>
             <label className="target-name-field">
-              <span>schedule_note</span>
+              <span>실행 메모</span>
               <input
                 type="text"
                 value={targetScheduleNote}
@@ -3149,13 +2906,13 @@ function SourcesPage({ navigate, setNotice }) {
                   setTargetRuns([]);
                   setTargetRunError("");
                 }}
-                placeholder="데모에서는 수동 실행으로만 준비합니다."
+                placeholder="저장된 처리 계획을 사용자가 수동으로 실행합니다."
               />
             </label>
             <div className="target-summary-strip">
-              <span>Run mode summary</span>
-              <strong>{targetScheduleMode === "manual" ? "Manual" : "Placeholder"}</strong>
-              <p>{targetScheduleNote.trim() || "schedule note 없음"}</p>
+              <span>실행 방식 요약</span>
+              <strong>{targetScheduleMode === "manual" ? "수동 실행" : "예약 실행 준비 중"}</strong>
+              <p>{targetScheduleNote.trim() || "메모 없음"}</p>
             </div>
           </section>
         </section>
@@ -3168,53 +2925,53 @@ function SourcesPage({ navigate, setNotice }) {
           <div className="wizard-step-heading">
             <span>5단계</span>
             <div>
-              <h3>Review</h3>
-              <p>Gold Target Dataset과 Pipeline Plan draft를 최종 확인합니다.</p>
+              <h3>최종 검토</h3>
+              <p>Gold Target Dataset과 처리 계획 초안을 최종 확인합니다.</p>
             </div>
           </div>
           <div className="review-summary-grid target-review-grid">
             <article>
-              <span>Target dataset</span>
+              <span>Target Dataset</span>
               <strong>{normalizedTargetName || "target_dataset_name 필요"}</strong>
               <p>{normalizedTargetDescription || "purpose 없음"}</p>
             </article>
             <article>
-              <span>Raw inputs</span>
+              <span>입력 Source</span>
               <strong>
                 {processingMode === "recommended_template"
-                  ? `${mappedProductHealthSourceCount}/${productHealthSourceMappings.length} source roles`
+                  ? `${mappedProductHealthSourceCount}/${productHealthSourceMappings.length}개 역할 연결`
                   : selectedSource
                     ? selectedSource.name
                     : "선택 전"}
               </strong>
               <p>
                 {processingMode === "recommended_template"
-                  ? hasRecommendedSourceMappings
-                    ? "M3 source_id가 실제 Source Dataset에 연결되었습니다."
-                    : "Source role mapping이 더 필요합니다."
+                  ? mappedProductHealthSourceCount > 0
+                    ? "연결된 Source Dataset만 사용해 처리 계획을 저장합니다. 나머지 역할은 나중에 추가할 수 있습니다."
+                    : "Source Dataset을 하나 이상 선택합니다."
                   : selectedSource
                     ? `Source Dataset · ${selectedSource.typeLabel} · ${selectedSource.resource}`
                     : "Source 선택 단계에서 고릅니다."}
               </p>
             </article>
             <article>
-              <span>Pipeline Plan</span>
+              <span>처리 계획</span>
               <strong>
                 {processingMode === "recommended_template"
-                  ? `Raw sources -> Gold · ${recommendedTemplateSteps.length} steps`
-                  : `Select Fields rule · ${selectedFields.length} fields`}
+                  ? `Source to Gold · ${recommendedTemplateSteps.length}단계`
+                  : `필드 선택 규칙 · ${selectedFields.length}개`}
               </strong>
-              <p>{processingMode === "recommended_template" ? "internal transform stages, user-facing Gold output only" : `${selectedFieldSummary}${selectedFields.length > 3 ? "..." : ""}`}</p>
+              <p>{processingMode === "recommended_template" ? "내부 처리 단계를 거쳐 최종 Gold 출력만 공개합니다." : `${selectedFieldSummary}${selectedFields.length > 3 ? "..." : ""}`}</p>
             </article>
             <article>
-              <span>Target schema</span>
-              <strong>{targetOutputSchema.length} fields</strong>
+              <span>출력 스키마</span>
+              <strong>{targetOutputSchema.length}개 컬럼</strong>
               <p>{targetOutputSchemaSummary}</p>
             </article>
             <article>
-              <span>Run mode</span>
-              <strong>{targetScheduleMode === "manual" ? "Manual Run" : "Schedule placeholder"}</strong>
-              <p>{targetScheduleNote.trim() || "schedule note 없음"}</p>
+              <span>실행 방식</span>
+              <strong>{targetScheduleMode === "manual" ? "수동 실행" : "예약 실행 준비 중"}</strong>
+              <p>{targetScheduleNote.trim() || "메모 없음"}</p>
             </article>
           </div>
           {processingMode === "recommended_template" && productHealthTemplate ? (
@@ -3222,13 +2979,13 @@ function SourcesPage({ navigate, setNotice }) {
               <div className="table-title-line">
                 <ListChecks size={18} />
                 <div>
-                  <strong>Saved Pipeline Plan preview</strong>
-                  <p>Raw sources to internal stages to {productHealthTemplate.query_table} · {recommendedTemplateQualityRules.length} quality rules</p>
+                  <strong>저장될 처리 계획 미리보기</strong>
+                  <p>Source를 내부 처리 단계로 가공해 {productHealthTemplate.query_table} 생성 · 품질 규칙 {recommendedTemplateQualityRules.length}개</p>
                 </div>
               </div>
               <div className="review-step-strip">
                 {productHealthTemplate.flow.map((phase) => (
-                  <span key={phase}>{phase}</span>
+                  <span key={phase}>{productHealthPhaseLabels[phase] || phase}</span>
                 ))}
               </div>
               <div className="review-source-map">
@@ -3242,7 +2999,7 @@ function SourcesPage({ navigate, setNotice }) {
           ) : null}
           <div className="wizard-placeholder compact">
             <CheckCircle2 size={22} />
-            <strong>저장 시 Gold Target Dataset metadata와 Pipeline Plan draft만 생성하며 실행은 호출하지 않습니다.</strong>
+            <strong>저장 시 Gold Target Dataset metadata와 처리 계획 초안만 생성하며 실행은 호출하지 않습니다.</strong>
           </div>
           {lastCreatedTargetDraft ? (
             <div className="wizard-placeholder compact success">
@@ -3255,18 +3012,18 @@ function SourcesPage({ navigate, setNotice }) {
               <div className="table-title-line">
                 <Play size={18} />
                 <div>
-                  <strong>Manual Run smoke</strong>
-                  <p>저장된 Pipeline Plan draft를 실행 경계로 넘겨 run evidence handoff를 확인합니다.</p>
+                  <strong>수동 실행</strong>
+                  <p>저장된 처리 계획으로 실행을 시작하고 실행 상태를 확인합니다.</p>
                 </div>
               </div>
               <div className="target-run-actions">
                 <div>
-                  <span>executor</span>
+                  <span>실행기</span>
                   <strong>local_runner</strong>
-                  <p>이번 Phase는 run API handoff만 확인하며 runtime output은 Week2 fixture입니다.</p>
+                  <p>선택한 실행기가 처리 계획을 받아 처리하고 결과 상태를 반환합니다.</p>
                 </div>
                 <button type="button" className="primary-action" onClick={startTargetDatasetRun} disabled={!canStartTargetRun}>
-                  {isStartingTargetRun ? "Run 생성 중..." : "Manual Run smoke"}
+                  {isStartingTargetRun ? "실행 중..." : "수동 실행"}
                   {isStartingTargetRun ? <Loader2 size={16} className="spin" /> : <Play size={16} />}
                 </button>
               </div>
@@ -3275,7 +3032,7 @@ function SourcesPage({ navigate, setNotice }) {
                   {targetRuns.map((run) => (
                     <article className="target-run-row" key={run.id}>
                       <div>
-                        <span>run_id</span>
+                        <span>실행 ID</span>
                         <strong>{run.week2_run_id}</strong>
                         <p>
                           {run.pipeline_id} · {run.executor} · {formatRuntimeOutputScope(run.execution_result)}
@@ -3290,8 +3047,8 @@ function SourcesPage({ navigate, setNotice }) {
               ) : (
                 <EmptyState
                   icon={Clock3}
-                  title="아직 생성된 Manual Run smoke가 없습니다"
-                  body="Manual Run smoke를 누르면 저장된 draft와 Week2 ExecutionResult가 연결됩니다."
+                  title="아직 실행 기록이 없습니다"
+                  body="수동 실행을 누르면 저장된 처리 계획의 실행 상태가 표시됩니다."
                 />
               )}
               {targetRunError ? (
@@ -3417,12 +3174,12 @@ function SourcesPage({ navigate, setNotice }) {
                       <strong>{dataset.name}</strong>
                       <p>{dataset.description}</p>
                       <div className="source-card-meta">
-                        <span>{dataset.selectedFieldCount || dataset.columns.length} fields</span>
+                    <span>{dataset.selectedFieldCount || dataset.columns.length}개 컬럼</span>
                         <span>{dataset.scheduleMode}</span>
                       </div>
                       <small>process: {dataset.processingLabel}</small>
-                      {dataset.qualityRuleCount ? <small>quality rules: {dataset.qualityRuleCount}</small> : null}
-                      {dataset.sourceMappingCount ? <small>source roles: {dataset.sourceMappingCount}</small> : null}
+                      {dataset.qualityRuleCount ? <small>품질 규칙: {dataset.qualityRuleCount}</small> : null}
+                      {dataset.sourceMappingCount ? <small>Source 역할: {dataset.sourceMappingCount}</small> : null}
                       <small>source: {dataset.sourceName}</small>
                       <small>catalog: draft · AI Query: publish 대기</small>
                     </article>
@@ -3489,7 +3246,7 @@ function SourcesPage({ navigate, setNotice }) {
     <div className="page-stack">
       <PageHeader
         title="데이터셋"
-        body="External Connection, Source Dataset, Target Dataset을 순서대로 준비하는 데모 진입점입니다."
+        body="External Connection, Source Dataset, Target Dataset을 순서대로 준비하는 작업 화면입니다."
         actionLabel="데이터셋 생성"
         onAction={() => setIsDatasetTypeModalOpen(true)}
       />
@@ -3508,7 +3265,7 @@ function SourcesPage({ navigate, setNotice }) {
               ? "CSV, Kafka, DB, API, S3 같은 외부 원천 연결 설정을 준비하는 흐름입니다."
               : datasetCreationMode === "source"
                 ? "등록된 External Connection에서 raw/source dataset을 만드는 흐름입니다."
-                : "Raw Source들을 입력으로 받아 최종 Gold Target Dataset을 준비하는 흐름입니다."}
+                : "하나 이상의 Source Dataset을 입력으로 받아 최종 Gold Target Dataset을 준비하는 흐름입니다."}
           </p>
         </div>
       ) : null}
@@ -3575,8 +3332,8 @@ function DatasetTypeChoiceModal({ onClose, onSelect }) {
               <Table2 size={22} />
             </span>
             <strong>Target Dataset</strong>
-            <p>Raw Source들을 입력으로 받아 최종 Gold Target Dataset을 준비합니다.</p>
-            <small>{"Overview -> Sources -> Pipeline Plan -> Run Mode -> Review"}</small>
+            <p>하나 이상의 Source Dataset을 입력으로 받아 최종 Gold Target Dataset을 준비합니다.</p>
+            <small>{"개요 -> 소스 선택 -> 처리 계획 -> 실행 방식 -> 최종 검토"}</small>
           </button>
         </div>
       </section>

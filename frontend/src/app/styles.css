@@ -1782,6 +1782,11 @@ code {
   padding: 10px 12px;
 }
 
+.schema-preview-table.with-meaning .schema-preview-head,
+.schema-preview-table.with-meaning .schema-preview-row {
+  grid-template-columns: minmax(110px, 1fr) minmax(80px, 0.55fr) minmax(180px, 1.5fr) minmax(120px, 0.9fr);
+}
+
 .schema-preview-head {
   background: #f8fafc;
   color: #64748b;
