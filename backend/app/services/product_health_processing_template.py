@@ -30,7 +30,7 @@ class ProductHealthProcessingTemplateService:
     """M3 Product Health contracts를 Target Dataset Processing UI용 template으로 변환한다."""
 
     def __init__(self, root: Path | None = None) -> None:
-        self.root = root or Path(__file__).resolve().parents[3]
+        self.root = root or discover_contract_root()
 
     def get_template(self) -> dict[str, Any]:
         transform_spec = self._load_contract("transform_spec")
@@ -81,6 +81,16 @@ class ProductHealthProcessingTemplateService:
         if not isinstance(payload, dict):
             raise ProductHealthProcessingTemplateError(f"Product Health contract must be a JSON object: {relative_path}")
         return payload
+
+
+def discover_contract_root() -> Path:
+    """local repo와 backend container 구조에서 contracts folder가 있는 root를 찾는다."""
+
+    current_file = Path(__file__).resolve()
+    for parent in current_file.parents:
+        if (parent / CONTRACT_PATHS["transform_spec"]).exists():
+            return parent
+    return current_file.parents[3]
 
 
 def operation_to_step(operation: dict[str, Any]) -> dict[str, Any]:

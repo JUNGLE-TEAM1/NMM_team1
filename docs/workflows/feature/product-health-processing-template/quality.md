@@ -24,6 +24,7 @@
 - `npm run build` in `frontend/`: passed
 - `PYTHONPATH=. pytest` in `backend/`: collection blocked by local environment, `pyarrow` missing and `scripts` import path missing for unrelated Week2 runtime tests
 - PR size: expected to exceed non-evidence hard gate; PR body must include `Large PR Exception: approved`
+- CI fix: Product Health template contract root now discovers the nearest parent containing `contracts/` so local repo and backend container paths both work.
 
 ## Notes
 

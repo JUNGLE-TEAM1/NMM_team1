@@ -54,6 +54,7 @@ PYTHONPATH=. pytest
 - Frontend build: passed.
 - Backend full test: local collection blocked by missing `pyarrow` and unrelated `scripts` import path in this invocation.
 - PR size hard gate: expected to require `Large PR Exception: approved` because the first Product Health processing slice crosses backend API, frontend wizard, interface docs, and tests.
+- CI fix: Product Health template contract root discovery now supports backend container layout where contracts live under `/app/contracts`.
 
 ## Regression Guard / 회귀 보호
 

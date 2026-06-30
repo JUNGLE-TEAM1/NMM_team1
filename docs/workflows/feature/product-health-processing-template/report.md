@@ -41,6 +41,7 @@ PYTHONPATH=. pytest
 - Frontend build: passed.
 - Backend full test: not completed in local environment. Collection stopped because unrelated Week2 tests require `pyarrow`, and one Airflow handoff test imports `scripts` without the repo-root path in this invocation.
 - PR size: expected to require `Large PR Exception: approved` because this first slice must update backend API, frontend wizard, interface docs, and tests together.
+- CI fix: changed Product Health template service root discovery to find the nearest parent with `contracts/`, covering backend container `/app/contracts`.
 
 ## Regression Guard
 
