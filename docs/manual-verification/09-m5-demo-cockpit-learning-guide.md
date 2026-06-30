@@ -2,6 +2,8 @@
 
 이 문서는 `/etl` 데모 페이지를 보면서 M5가 만든 기능을 빠르게 이해하고 검증하기 위한 가이드다.
 
+M5 전체 역할과 함수/코드 단위 흐름을 먼저 훑고 싶으면 [`M5 Overview Demo Guide`](../project-context/asklake-week2-module-plan/ver2/m5-overview-demo-guide.md)를 읽는다.
+
 ## 한 줄 요약
 
 M5는 `pipeline_reviews_json_e2e` workflow를 실행해서 `ExecutionResult`를 만들고, 그 결과 dataset을 `CatalogMetadata`로 등록하는 모듈이다.

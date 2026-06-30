@@ -17,9 +17,10 @@
 7. `m3-json-main-path-decision.md`
 8. `runner-boundary-decision.md`
 9. `m5-airflow-integration-options.md`
-10. `m1-live-ui-phase-plan.md`
-11. 필요 시 `m5-technical-depth-study-guide.md`
-12. 필요 시 상위 폴더의 `decisions.md`, `plan.md`, `meeting-summary.md`
+10. `m5-overview-demo-guide.md`
+11. `m1-live-ui-phase-plan.md`
+12. 필요 시 `m5-technical-depth-study-guide.md`
+13. 필요 시 상위 폴더의 `decisions.md`, `plan.md`, `meeting-summary.md`
 
 ## 현재 기준
 
@@ -81,6 +82,8 @@ Phase 5의 현재 기준은 [`m3-json-main-path-decision.md`](m3-json-main-path-
 Phase 6의 현재 기준은 [`runner-boundary-decision.md`](runner-boundary-decision.md)에 둔다.
 
 M5 실제 Airflow 연결 전 선택지는 [`m5-airflow-integration-options.md`](m5-airflow-integration-options.md)에 둔다.
+
+M5가 실제로 무엇을 했는지 `/etl`과 product-health demo page를 보며 설명할 때는 [`m5-overview-demo-guide.md`](m5-overview-demo-guide.md)를 먼저 읽는다.
 
 M1 live UI 후속 Phase 기준은 [`m1-live-ui-phase-plan.md`](m1-live-ui-phase-plan.md)에 둔다.
 
