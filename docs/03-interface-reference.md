@@ -544,6 +544,8 @@ M6 AI Query
 -> CatalogMetadata.s3_uri or local path
 ```
 
+M6는 `CatalogMetadata`에 저장된 SQL context만 소비한다. 기본 shape는 `query.table_name`, `query.allowed_columns`, `query.default_limit`, `query.timeout_seconds`, `query.canonical_demo_query`, `storage.local_fallback_path`이며, Product Health Catalog 등록 PR과 병렬 통합할 때는 top-level alias인 `query_table`, `allowed_columns`, `canonical_demo_query`, `storage_uri`도 같은 의미로 읽을 수 있다. `storage_uri`가 local file path 또는 `file://` URI이면 `SqlEngineContext.local_fallback_path`로 전달하고, M6가 `gold_product_health` output file path를 직접 추측하지 않는다.
+
 Minimum `SqlEngineAdapter` methods:
 
 | Method | Purpose |
