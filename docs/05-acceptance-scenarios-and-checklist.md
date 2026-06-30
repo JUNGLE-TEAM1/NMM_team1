@@ -50,6 +50,7 @@ AskLake의 Target MVP 대표 성공 시나리오는 `Trusted Dataset -> Query/As
 - [ ] Week 2 모듈 구현 전 API/UI route, ID 규칙, storage path pattern, workflow/run status, `QueryResult`, guardrail failure shape, daily smoke evidence 형식이 공통 계약으로 확인된다.
 - [ ] Week 2 상품 리스크 대표 경로는 `pipeline_product_health_e2e`가 5GB 이상 reviews/behavior/delivery fact input을 처리해 `dataset_product_health_gold` / `gold_product_health`를 생성하고, source별 row count, bytes, duration, output path, run id를 evidence로 남긴다.
 - [ ] `gold_product_health` output은 M5 Catalog에 등록되고, M6는 Gold output file을 SQL로 조회해 위험 상품군과 근거 지표를 `AIQueryResult`로 반환한다.
+- [ ] Product Health handoff bundle을 사용할 때는 raw handoff catalog를 직접 등록하지 않고 canonical `gold_product_health.parquet`, Week 2 `CatalogMetadata`, `ExecutionResult` run metadata로 import한 뒤 M6 AI Query가 DuckDB rows와 5GB input evidence를 반환한다.
 - [ ] M6 `AIQueryResult`는 기존 `sql`, `query_result`, `rows`, `summary`, `evidence`를 유지하면서 `route`와 `retrieval_trace`로 어떤 경로와 CatalogMetadata 근거를 선택했는지 설명한다.
 - [ ] M6 `AIQueryResult.answer_metadata`는 답변 source/provider/fallback/grounding state와 사용 evidence index를 반환해 M1이 summary text를 파싱하지 않고 답변 신뢰 상태를 표시할 수 있게 한다.
 - [ ] M6 Catalog RAG-lite index는 CatalogMetadata의 안전한 metadata chunk만 사용하고, `retrieval_trace`에 schema/metric/lineage 근거를 evidence와 연결해 남긴다.

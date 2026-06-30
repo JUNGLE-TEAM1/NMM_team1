@@ -168,6 +168,16 @@
 | Verification method | `backend/tests/test_duckdb_sql_engine.py`, `backend/tests/test_week2_ai_query_duckdb.py`, `scripts/week2_m2_sql_runtime_smoke.py`를 확인한다. |
 | Related docs/interface/Phase | `docs/03`, `contracts/catalog_metadata.sample.json`, M2 SQL runtime smoke |
 
+### Product Health handoff catalog를 직접 등록하는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | Product Health handoff bundle은 canonical Gold parquet와 Week 2 `CatalogMetadata`로 변환한 뒤 M6 AI Query에 노출한다. |
+| Failure condition | handoff의 `catalog/dataset_product_health_gold.json`을 그대로 `data/results/week2/_metadata/catalog/dataset_product_health_gold.json`에 등록해 `schema` list shape, `internal_product_id`, `product_title`, `avg_rating` 같은 handoff-native 컬럼이 M6 SQL planner로 들어간다. |
+| Expected behavior | `scripts/import_product_health_handoff.py`가 `product_id`, `product_name`, `average_rating`, `risk_score` 등 `schema_product_health_gold_v2` 컬럼을 가진 canonical `gold_product_health.parquet`와 `CatalogMetadata.schema.fields`, `query.allowed_columns`, `query.canonical_demo_query`, 5GB `input_total_bytes` evidence를 생성한다. raw handoff catalog가 들어와도 M6는 500으로 죽지 않고 unsupported/blocked 경로로 처리한다. |
+| Verification method | `backend/tests/test_product_health_handoff_import.py`, importer smoke, M6 AI Query DuckDB smoke를 확인한다. |
+| Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07`, `scripts/import_product_health_handoff.py`, M6 AI Query |
+
 ### M6 route 또는 retrieval trace가 응답 근거와 어긋나는 경우
 
 | 항목 | 내용 |
