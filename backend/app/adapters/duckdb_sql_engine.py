@@ -137,7 +137,7 @@ class DuckDBSqlEngine:
 
         if suffix == ".parquet":
             connection.execute(
-                f"CREATE VIEW {quoted_table} AS SELECT * FROM read_parquet({path_literal})",
+                f"CREATE VIEW {quoted_table} AS SELECT * FROM read_parquet({path_literal}, hive_partitioning = false)",
             )
             return
 

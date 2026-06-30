@@ -7,6 +7,7 @@ Gold output을 CatalogDataset으로 등록하고, AI Query가 실제 CatalogData
 ## 상태
 
 - 2026-06-30: 계획 생성. Catalog/AI Query 경로는 구현되어 있지만 runtime-generated Gold output과 live catalog 연결을 다시 검수해야 한다.
+- 2026-06-30: C-30 실행. runtime Gold parquet publish 후 AI Query가 live CatalogDataset을 DuckDB로 읽는 테스트를 추가했다.
 
 ## 범위
 
@@ -38,10 +39,10 @@ Gold output을 CatalogDataset으로 등록하고, AI Query가 실제 CatalogData
 
 ## Acceptance Criteria
 
-- runtime Gold output이 CatalogDataset으로 등록된다.
-- Catalog detail에서 storage/lineage/schema/evidence가 보인다.
-- AI Query가 등록된 CatalogDataset을 선택하거나 자동 감지한다.
-- 대표 질문이 read-only SQL/evidence 결과를 반환한다.
+- runtime Gold output이 CatalogDataset으로 등록된다. 완료.
+- Catalog detail에서 storage/lineage/schema/evidence가 보인다. 기존 UI/API 유지.
+- AI Query가 등록된 CatalogDataset을 선택하거나 자동 감지한다. 완료.
+- 대표 질문이 read-only SQL/evidence 결과를 반환한다. 완료.
 
 ## Regression / Failure Scenario
 
