@@ -1,6 +1,6 @@
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, model_validator
 
 
 class ColumnSchema(BaseModel):
@@ -180,9 +180,36 @@ class TargetDatasetRecord(BaseModel):
     updated_at: str
 
 
+class SourceSnapshotRunInput(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    snapshot_id: str | None = Field(default=None, min_length=1, max_length=160)
+    source_dataset_id: str = Field(min_length=1, max_length=120)
+    source_type: str | None = Field(default=None, min_length=1, max_length=80)
+    artifact_uri: str = Field(min_length=1, max_length=1000)
+    format: Literal["parquet"] = "parquet"
+    row_count: int | None = Field(default=None, ge=0)
+    bytes: int | None = Field(default=None, ge=0)
+    schema_fields: list[ColumnSchema] = Field(
+        default_factory=list,
+        validation_alias="schema",
+        serialization_alias="schema",
+    )
+    created_at: str | None = Field(default=None, min_length=1, max_length=120)
+    connection_id: str | None = Field(default=None, min_length=1, max_length=120)
+    source_table: str | None = Field(default=None, min_length=1, max_length=500)
+    source_topic: str | None = Field(default=None, min_length=1, max_length=500)
+    source_collection: str | None = Field(default=None, min_length=1, max_length=500)
+    partition_info: dict[str, Any] | None = None
+
+
 class TargetDatasetRunCreate(BaseModel):
     executor: Literal["airflow", "local_runner", "spark_runner"] = "local_runner"
     triggered_by: str = Field(default="demo_user", min_length=1, max_length=80)
+    source_snapshots: list[SourceSnapshotRunInput] = Field(
+        default_factory=list,
+        validation_alias=AliasChoices("source_snapshots", "source_snapshot_inputs"),
+    )
 
 
 class TargetDatasetRunRecord(BaseModel):
