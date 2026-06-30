@@ -48,6 +48,17 @@ class SqlPlanner:
                 optional_columns=["review_count"],
             )
         if intent == "top_risk":
+            if context.canonical_demo_query:
+                return SqlPlan(
+                    intent="top_risk",
+                    sql=context.canonical_demo_query,
+                    chart_spec=ChartSpec(
+                        type="bar",
+                        x="product_id",
+                        y="risk_score",
+                        title="Top products by risk score",
+                    ),
+                )
             return self._ranked_plan(
                 intent="top_risk",
                 metric_column="risk_score",
@@ -103,10 +114,10 @@ class SqlPlanner:
         if any(term in normalized for term in unsupported_terms):
             return "unsupported"
 
-        if any(term in normalized for term in ["위험", "리스크", "risk", "risk_score"]):
+        if any(term in normalized for term in ["위험", "리스크", "문제", "problem", "risk", "risk_score"]):
             return "top_risk"
 
-        if any(term in normalized for term in ["부정", "negative_review", "negative review", "negative", "불만"]):
+        if any(term in normalized for term in ["부정", "negative_review", "negative review", "negative", "불만", "나쁘"]):
             return "top_negative_review"
 
         if any(term in normalized for term in ["전환율", "conversion", "구매 전환", "구매율"]):

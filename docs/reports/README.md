@@ -96,6 +96,7 @@ report가 늘어나면 영역별 최신 report index를 작게 유지한다. 이
 | M6 answer evidence grounding | [`m6-answer-evidence-grounding.md`](m6-answer-evidence-grounding.md) | M6 `AIQueryResult.evidence`가 CatalogMetadata schema/metrics/lineage/retrieval terms를 포함하고 summary가 같은 근거를 말하는지 확인 |
 | M6 SQL-first 2주차 빌드업 | [`m6-sql-first-week2-buildup.md`](m6-sql-first-week2-buildup.md) | M6 최종 방향은 RAG/LLM 포함이지만 2주차 후속 실행은 SQL MVP 완성부터라는 기준 확인 |
 | M6 DuckDB runtime integration | [`m6-duckdb-runtime-integration.md`](m6-duckdb-runtime-integration.md) | M6 Step 3에서 기본 runtime을 DuckDB로 연결하고 실제 Week2 output file을 SQL로 읽는지 확인 |
+| AI Query Catalog 연결 | [`ai-query-dataset-context.md`](ai-query-dataset-context.md) | M6 AI Query가 Product Health CatalogMetadata의 `gold_product_health` table/path/query contract를 읽어 DuckDB SQL을 실행하는지 확인 |
 | M6 SQL planner intent rules | [`m6-sql-planner-intents.md`](m6-sql-planner-intents.md) | M6 Step 4에서 deterministic SQL planner intent, product health 지표, unsupported guardrail을 확인 |
 | M6 response contract route trace | [`m6-response-contract-trace.md`](m6-response-contract-trace.md) | M6 Step 5에서 `AIQueryResult.route`와 `retrieval_trace` additive response contract를 확인 |
 | M6 Catalog RAG Index | [`m6-catalog-rag-index.md`](m6-catalog-rag-index.md) | M6 Step 6에서 CatalogMetadata 기반 RAG-lite index, safe chunk, stale cache, richer retrieval trace를 확인 |

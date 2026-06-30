@@ -4,6 +4,7 @@ from typing import Any
 
 from app.domain.retrieval_index import RetrievalIndexHit
 from app.ports.retrieval_index import RetrievalIndex
+from app.services.catalog_metadata import catalog_allowed_columns, catalog_query_table
 from app.services.catalog_rag_index import CatalogRetrievalIndex
 
 
@@ -20,8 +21,8 @@ class CatalogRetriever:
         "review_count": ("인기", "리뷰", "review", "reviews"),
         "product_id": ("상품", "product", "products"),
         "average_rating": ("평점", "별점", "rating", "ratings"),
-        "risk_score": ("위험", "리스크", "risk", "risks"),
-        "negative_review_rate": ("부정", "불만", "negative", "negatives"),
+        "risk_score": ("위험", "리스크", "문제", "risk", "risks", "problem"),
+        "negative_review_rate": ("부정", "불만", "나쁘", "negative", "negatives"),
         "conversion_rate": ("전환", "전환율", "conversion", "conversions"),
         "late_delivery_rate": ("배송", "지연", "지연율", "late", "delivery"),
     }
@@ -57,7 +58,7 @@ class CatalogRetriever:
         normalized_question = question.lower()
         question_tokens = self._tokens(normalized_question)
         metadata_tokens = self._metadata_tokens(catalog)
-        allowed_columns = catalog["query"]["allowed_columns"]
+        allowed_columns = catalog_allowed_columns(catalog)
         reason_terms: list[str] = []
         score = 0
 
@@ -86,15 +87,15 @@ class CatalogRetriever:
     def _metadata_tokens(self, catalog: dict[str, Any]) -> set[str]:
         schema_fields = catalog.get("schema", {}).get("fields", [])
         lineage = catalog.get("lineage", {})
-        query = catalog.get("query", {})
+        allowed_columns = catalog_allowed_columns(catalog)
         values: list[str] = [
             str(catalog.get("dataset_id", "")),
             str(catalog.get("name", "")),
             str(catalog.get("layer", "")),
-            str(query.get("table_name", "")),
+            catalog_query_table(catalog),
         ]
 
-        values.extend(str(column) for column in query.get("allowed_columns", []))
+        values.extend(str(column) for column in allowed_columns)
         values.extend(str(field.get("name", "")) for field in schema_fields)
         values.extend(str(source_id) for source_id in lineage.get("source_ids", []))
         values.extend(str(dataset_id) for dataset_id in lineage.get("upstream_datasets", []))

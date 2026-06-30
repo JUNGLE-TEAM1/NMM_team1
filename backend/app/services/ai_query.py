@@ -21,6 +21,12 @@ from app.ports.catalog_source import CatalogSource
 from app.ports.llm_adapter import LLMAdapter
 from app.ports.sql_engine import SqlEngineAdapter
 from app.services.catalog_retriever import CatalogRetriever
+from app.services.catalog_metadata import (
+    catalog_allowed_columns,
+    catalog_canonical_demo_query,
+    catalog_local_fallback_path,
+    catalog_query_table,
+)
 from app.services.query_router import QueryRouter
 from app.services.sql_planner import SqlPlanner
 
@@ -150,14 +156,14 @@ class Week2AIQueryService:
 
     def _context_from_catalog(self, catalog: dict[str, Any]) -> SqlEngineContext:
         fields = catalog["schema"]["fields"]
-        storage = catalog.get("storage", {})
         return SqlEngineContext(
-            table_name=catalog["query"]["table_name"],
-            allowed_columns=catalog["query"]["allowed_columns"],
-            local_fallback_path=storage.get("local_fallback_path"),
-            default_limit=catalog["query"].get("default_limit", 100),
-            timeout_seconds=catalog["query"].get("timeout_seconds", 30),
+            table_name=catalog_query_table(catalog),
+            allowed_columns=catalog_allowed_columns(catalog),
+            local_fallback_path=catalog_local_fallback_path(catalog),
+            default_limit=self._query_setting(catalog, "default_limit", 100),
+            timeout_seconds=self._query_setting(catalog, "timeout_seconds", 30),
             column_types={field["name"]: field["type"] for field in fields},
+            canonical_demo_query=catalog_canonical_demo_query(catalog),
         )
 
     def _select_dataset(self, catalog: dict[str, Any], reason_terms: list[str]) -> SelectedDataset:
@@ -171,14 +177,13 @@ class Week2AIQueryService:
     def _evidence_from_catalog(self, catalog: dict[str, Any], reason_terms: list[str]) -> list[QueryEvidence]:
         lineage = catalog.get("lineage", {})
         metrics = catalog.get("metrics", {})
-        query = catalog.get("query", {})
         return [
             QueryEvidence(
                 dataset_id=catalog["dataset_id"],
                 run_id=lineage.get("run_id"),
                 s3_uri=catalog.get("s3_uri"),
                 freshness=catalog.get("updated_at"),
-                table_name=query.get("table_name"),
+                table_name=catalog_query_table(catalog),
                 schema_fields=deepcopy(catalog.get("schema", {}).get("fields", [])),
                 metrics=deepcopy(
                     {
@@ -270,3 +275,11 @@ class Week2AIQueryService:
             used_evidence_indexes=answer.used_evidence_indexes,
             grounding_state=grounding_state,
         )
+
+    def _query_setting(self, catalog: dict[str, Any], key: str, default: int) -> int:
+        query = catalog.get("query", {})
+        if isinstance(query, dict) and query.get(key) is not None:
+            return int(query[key])
+        if catalog.get(key) is not None:
+            return int(catalog[key])
+        return default

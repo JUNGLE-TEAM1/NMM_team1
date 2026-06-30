@@ -87,6 +87,7 @@ class SqlEngineContext(BaseModel):
     default_limit: int = 100
     timeout_seconds: int = 30
     column_types: dict[str, str] = Field(default_factory=dict)
+    canonical_demo_query: str | None = None
 
 
 class ChartSpec(BaseModel):
