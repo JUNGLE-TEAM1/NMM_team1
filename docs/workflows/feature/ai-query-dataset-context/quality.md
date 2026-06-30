@@ -33,7 +33,7 @@
 ## CI/CD Gate / CI-CD 게이트
 
 - CI required: yes for implementation PR
-- CI result: pending
+- CI result: passed on PR #314 (`harness`, `linked-issue`, `migration-schema-security`, `risk-warning`, `pr-size-hard-gate`, `pr-template-drift`, `container-smoke`, `manifest-smoke`)
 - Deploy/publish required: no
 - Deployment confirmation: not required
 - Rollback/smoke notes: not applicable yet

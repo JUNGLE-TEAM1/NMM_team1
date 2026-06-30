@@ -28,6 +28,7 @@
 - PR closing keyword: Closes #316
 - pushed branch: feature/ai-query-dataset-context
 - PR link: https://github.com/JUNGLE-TEAM1/NMM_team1/pull/314
+- PR CI/check status: passed on PR #314 (`harness`, `linked-issue`, `migration-schema-security`, `risk-warning`, `pr-size-hard-gate`, `pr-template-drift`, `container-smoke`, `manifest-smoke`)
 - merge status: open
 - issue close status: open
 - issue reopen result: already open
