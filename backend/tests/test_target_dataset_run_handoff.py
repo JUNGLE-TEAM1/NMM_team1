@@ -111,6 +111,7 @@ def test_target_dataset_run_handoff_creates_week2_run_link() -> None:
         "runtime_pipeline_id": "pipeline_reviews_json_e2e",
     }
     assert run_record["execution_result"]["outputs"][0]["dataset_id"] == "dataset_reviews_gold"
+    assert "product_health_manual_run_contract" not in run_record["execution_result"]
 
     list_response = client.get(f"/api/target-datasets/{target_dataset['id']}/runs")
     assert list_response.status_code == 200
@@ -148,3 +149,104 @@ def test_target_dataset_run_handoff_rejects_invalid_executor() -> None:
     )
 
     assert response.status_code == 422
+
+
+def test_product_health_target_dataset_run_exposes_manual_run_contract() -> None:
+    client = make_client()
+    source_dataset = create_source_dataset(client)
+    source_mapping = {
+        "role": "reviews",
+        "source_id": "source_reviews_seed",
+        "source_dataset_id": source_dataset["id"],
+        "source_dataset_name": source_dataset["name"],
+        "source_type": source_dataset["connection_type"],
+        "required_fields": ["product_id", "rating"],
+        "optional_fields": ["review_id", "review_time"],
+        "produces_metrics": ["review_count", "average_rating", "negative_review_rate"],
+    }
+    target_response = client.post(
+        "/api/target-datasets",
+        json={
+            "name": "dataset_product_health_gold",
+            "description": "제품 상태 분석용 gold dataset draft",
+            "source_dataset_id": source_dataset["id"],
+            "source_dataset_name": source_dataset["name"],
+            "source_type": source_dataset["connection_type"],
+            "source_mappings": [source_mapping],
+            "selected_fields": ["product_id", "rating"],
+            "process_rule": {
+                "type": "product_health_gold_pipeline",
+                "mode": "recommended_template",
+                "input_kind": "raw_sources",
+                "template_id": "product_health_recommended_v1",
+                "template_version": "transform_product_health_gold_v1",
+                "final_output": {
+                    "dataset_id": "dataset_product_health_gold",
+                    "query_table": "gold_product_health",
+                    "layer": "gold",
+                    "user_facing": True,
+                },
+                "source_mappings": [source_mapping],
+                "steps": [
+                    {"id": "read_reviews", "phase": "bronze", "operation_type": "source"},
+                    {"id": "load_product_health_gold", "phase": "load", "operation_type": "load"},
+                ],
+                "quality_rules": [
+                    {"id": "row_count_nonzero", "type": "row_count_min", "severity": "blocking"},
+                    {"id": "risk_score_range", "type": "range", "field": "risk_score", "severity": "blocking"},
+                ],
+            },
+            "schedule": {"mode": "manual"},
+            "output_schema": [
+                {"name": "product_id", "type": "string"},
+                {"name": "risk_score", "type": "number"},
+            ],
+        },
+    )
+    assert target_response.status_code == 201
+    target_dataset = target_response.json()
+
+    response = client.post(
+        f"/api/target-datasets/{target_dataset['id']}/runs",
+        json={"executor": "local_runner", "triggered_by": "demo_user"},
+    )
+
+    assert response.status_code == 201
+    run_record = response.json()
+    contract = run_record["execution_result"]["product_health_manual_run_contract"]
+    assert contract["contract_version"] == "product_health_manual_run_result_v1"
+    assert contract["status"] == "pending_product_health_execution"
+    assert contract["target_dataset"]["dataset_id"] == "dataset_product_health_gold"
+    assert contract["target_dataset"]["query_table"] == "gold_product_health"
+    assert contract["source_snapshot_inputs"] == [
+        {
+            "source_dataset_id": source_dataset["id"],
+            "source_dataset_name": source_dataset["name"],
+            "source_type": "csv",
+            "role": "reviews",
+            "source_id": "source_reviews_seed",
+            "required_snapshot_contract": "source_snapshot_artifact_v1",
+            "snapshot_lookup": "latest_successful_by_source_dataset_id",
+            "snapshot_status": "pending_source_snapshot",
+            "artifact_uri": None,
+            "format": "parquet",
+            "row_count": None,
+            "bytes": None,
+            "schema": [],
+        }
+    ]
+    assert contract["gold_output"]["dataset_id"] == "dataset_product_health_gold"
+    assert contract["gold_output"]["query_table"] == "gold_product_health"
+    assert contract["gold_output"]["format"] == "parquet"
+    assert contract["gold_output"]["status"] == "pending_product_health_execution"
+    assert contract["gold_output"]["storage_uri"] is None
+    assert any(field["name"] == "risk_score" for field in contract["gold_output"]["schema"])
+    assert all(result["status"] == "pending" for result in contract["quality_results"])
+    assert contract["lineage"]["input_source_dataset_ids"] == [source_dataset["id"]]
+    assert contract["lineage"]["output_dataset_id"] == "dataset_product_health_gold"
+    assert contract["catalog_payload"]["dataset_id"] == "dataset_product_health_gold"
+    assert contract["catalog_payload"]["table_name"] == "gold_product_health"
+    assert contract["catalog_payload"]["storage_uri"] is None
+    assert contract["catalog_payload"]["query"]["table_name"] == "gold_product_health"
+    assert "risk_score" in contract["catalog_payload"]["query"]["allowed_columns"]
+    assert contract["error"] is None

@@ -9,8 +9,10 @@ from app.services.week2_workflow import (
     Week2WorkflowNotFoundError,
     Week2WorkflowService,
 )
+from app.services.product_health_manual_run_contract import ProductHealthManualRunContractService
 
 TARGET_DATASET_HANDOFF_PIPELINE_ID = "pipeline_reviews_json_e2e"
+product_health_manual_run_contract_service = ProductHealthManualRunContractService()
 
 
 def create_target_dataset_run_router(
@@ -86,4 +88,9 @@ def execution_result_with_target_handoff(
         "runtime_output_dataset_id": runtime_output.get("dataset_id"),
         "runtime_pipeline_id": next_result.get("pipeline_id"),
     }
+    if product_health_manual_run_contract_service.applies_to(target_dataset):
+        next_result["product_health_manual_run_contract"] = product_health_manual_run_contract_service.build_contract(
+            execution_result=next_result,
+            target_dataset=target_dataset,
+        )
     return next_result

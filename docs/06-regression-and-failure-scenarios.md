@@ -118,6 +118,16 @@
 | Verification method | `backend/tests/test_target_dataset_run_handoff.py`, 데이터셋 화면 Target Dataset Review 저장 후 `Job Run 시작` smoke |
 | Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07`, C-4 `feature/target-dataset-run-handoff` |
 
+### Product Health Manual Run 계약이 실행 완료처럼 표시되는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | PR 5A의 Product Health Manual Run 계약은 PR 4/5B/6/7/8을 연결하는 pending handoff metadata이며, 실제 Gold 생성 완료를 주장하지 않는다. |
+| Failure condition | `product_health_manual_run_contract`가 빠지거나, `gold_output.storage_uri`, `row_count`, `catalog_payload.storage_uri`가 실제 실행 없이 채워져 Catalog/AI Query 완료처럼 보인다. |
+| Expected behavior | Product Health Target Dataset run은 `status=pending_product_health_execution`, `source_snapshot_inputs[].snapshot_status=pending_source_snapshot`, pending `quality_results[]`, pending `catalog_payload`를 보존한다. PR 5B가 실제 실행 후 이 값을 성공/실패 결과로 채운다. |
+| Verification method | `backend/tests/test_target_dataset_run_handoff.py::test_product_health_target_dataset_run_exposes_manual_run_contract`, `docs/03` Target Dataset Job Draft API 계약 확인 |
+| Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07`, PR 5A `feature/product-health-manual-run-contract` |
+
 ### Week 2 Airflow 실패가 local fallback 성공으로 가려지는 경우
 
 | 항목 | 내용 |
