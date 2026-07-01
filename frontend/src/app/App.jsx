@@ -463,7 +463,11 @@ function JobRunsPage({ setNotice }) {
         records: current.records.map((record) => (record.id === executed.id ? executed : record)),
       }));
       setExecuteState({ status: "executed", runId, error: "" });
-      setNotice(`${executed.gold_output} ${runOutputModeLabel(executed)} ${executed.status === "succeeded" ? "완료됐습니다." : "준비 상태로 기록됐습니다."}`);
+      setNotice(
+        `${executed.gold_output} ${runOutputModeLabel(executed)} ${
+          executed.status === "succeeded" ? "완료됐고 CatalogDataset도 자동 등록됐습니다." : "준비 상태로 기록됐습니다."
+        }`,
+      );
     } catch (error) {
       setExecuteState({ status: "error", runId, error: error.message });
       setNotice(`Local 실행 실패: ${error.message}`);
@@ -475,7 +479,7 @@ function JobRunsPage({ setNotice }) {
     try {
       const dataset = await publishTargetDatasetJobRunToCatalog(runId);
       setPublishState({ status: "published", runId, error: "" });
-      setNotice(`${dataset.name} CatalogMetadata 등록이 완료됐습니다. 데이터셋 > Gold Datasets에서 확인할 수 있습니다.`);
+      setNotice(`${dataset.name} CatalogMetadata 확인/등록이 완료됐습니다. 데이터셋 > Gold Datasets에서 확인할 수 있습니다.`);
     } catch (error) {
       setPublishState({ status: "error", runId, error: error.message });
       setNotice(`Catalog 등록 실패: ${error.message}`);
@@ -513,7 +517,7 @@ function JobRunsPage({ setNotice }) {
             onClick: () => executeRun(run.id),
           },
           {
-            label: isPublishing ? "등록 중" : "Catalog 등록",
+            label: isPublishing ? "확인 중" : "Catalog 확인",
             icon: Table2,
             disabled: isExecuting || isPublishing || run.status !== "succeeded",
             onClick: () => publishRun(run.id),

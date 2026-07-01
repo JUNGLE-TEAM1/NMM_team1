@@ -415,7 +415,7 @@ def create_source_catalog_router(
             result = TargetDatasetRuntimeExecutor().execute(run, draft)
         except TargetDatasetRuntimeExecutorError as error:
             raise HTTPException(status_code=400, detail=str(error)) from error
-        return metadata_store.update_target_dataset_job_run_materialization(
+        updated_run = metadata_store.update_target_dataset_job_run_materialization(
             run_id=run.id,
             status=result.status,
             run_note=result.run_note,
@@ -428,6 +428,15 @@ def create_source_catalog_router(
             source_evidence=result.source_evidence,
             runtime_evidence=result.runtime_evidence,
         )
+        if should_auto_publish_target_dataset_catalog(updated_run):
+            try:
+                metadata_store.publish_target_dataset_job_run_to_catalog(updated_run, draft)
+            except ValueError as error:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Target dataset job run succeeded but catalog auto publish failed: {error}",
+                ) from error
+        return updated_run
 
     @router.post(
         "/target-dataset-job-runs/{run_id}/publish-catalog",
@@ -493,6 +502,14 @@ def create_source_catalog_router(
         return gate
 
     return router
+
+
+def should_auto_publish_target_dataset_catalog(run: TargetDatasetJobRunRecord) -> bool:
+    return (
+        run.status == "succeeded"
+        and run.output_path is not None
+        and run.row_count is not None
+    )
 
 
 def with_source_file_evidence(dataset: SourceDatasetRecord) -> SourceDatasetRecord:
