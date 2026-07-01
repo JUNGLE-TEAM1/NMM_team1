@@ -52,6 +52,27 @@ def test_publish_succeeded_target_dataset_job_run_to_catalog() -> None:
     assert duplicate["id"] == dataset["id"]
 
 
+def test_execute_successful_target_dataset_job_run_auto_publishes_catalog() -> None:
+    client = make_client()
+    draft = client.post("/api/target-dataset-drafts", json=target_dataset_draft_payload()).json()
+    run = client.post(
+        "/api/target-dataset-job-runs",
+        json={"target_dataset_draft_id": draft["id"], "job_type": "gold_build", "triggered_by": "demo_user"},
+    ).json()
+
+    executed = client.post(f"/api/target-dataset-job-runs/{run['id']}/execute").json()
+
+    assert executed["status"] == "succeeded"
+    listed = client.get("/api/catalog/datasets").json()
+    assert len(listed) == 1
+    dataset = listed[0]
+    assert dataset["source_id"] == run["id"]
+    assert dataset["source_type"] == "target_dataset_job_run"
+    assert dataset["path"] == executed["output_path"]
+    assert dataset["row_count"] == executed["row_count"]
+    assert dataset["lineage"]["run_id"] == run["id"]
+
+
 def test_publish_prepared_gold_reference_to_catalog() -> None:
     client = make_client()
     payload = target_dataset_draft_payload("dataset_product_health")
