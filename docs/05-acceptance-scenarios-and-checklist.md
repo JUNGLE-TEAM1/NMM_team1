@@ -51,6 +51,7 @@ AskLake의 Target MVP 대표 성공 시나리오는 `Trusted Dataset -> Query/As
 - [ ] Week 2 상품 리스크 대표 경로는 `pipeline_product_health_e2e`가 5GB 이상 reviews/behavior/delivery fact input을 처리해 `dataset_product_health_gold` / `gold_product_health`를 생성하고, source별 row count, bytes, duration, output path, run id를 evidence로 남긴다.
 - [ ] `gold_product_health` output은 M5 Catalog에 등록되고, M6는 Gold output file을 SQL로 조회해 위험 상품군과 근거 지표를 `AIQueryResult`로 반환한다.
 - [ ] M6 `AIQueryResult`는 기존 `sql`, `query_result`, `rows`, `summary`, `evidence`를 유지하면서 `route`와 `retrieval_trace`로 어떤 경로와 CatalogMetadata 근거를 선택했는지 설명한다.
+- [ ] M6 AI Query는 Product Health live CatalogDataset 기준으로 `sql`, `hybrid`, `rag`, `unsupported` route를 구분하고, `answer_metadata.grounding_state`와 schema/metric/lineage trace를 함께 반환한다.
 - [ ] C-6에서 publish된 Gold CatalogDataset은 M6 AI Query 후보로 선택될 수 있고, `selected_datasets`, `evidence`, `retrieval_trace`, SQL table context가 같은 catalog/run을 가리킨다.
 - [ ] AI Query 화면 readiness panel은 publish된 Gold CatalogDataset이 있을 때 fixed Product Health catalog가 아니라 live catalog id, local path, schema columns, lineage를 표시한다.
 - [ ] registered CatalogDataset은 Gold Dataset 화면에서 read-only management boundary로 표시되고, metadata update/delete, file delete, cascade delete가 같은 액션으로 제공되지 않는다.
@@ -168,3 +169,8 @@ R1~R7은 아래 workstream alias로 유지한다.
 | C-42 Product Health External Source Contract | Product Health Source inventory가 `behavior_events=Kafka`, `product_catalog=PostgreSQL`, `reviews=MongoDB`, `delivery_trip_logs=S3/MinIO` runtime source를 primary로 표시하고 local/prepared artifact는 fallback evidence로 분리한다. |
 | C-43 Product Health Runtime Connection Seed | 연결 화면에서 Product Health용 Kafka/PostgreSQL/MongoDB/S3 connection metadata를 준비할 수 있고, secret 값 없이 readiness/fallback 경계를 표시한다. |
 | C-47 Product Health Runtime Seed Loaders | operator loader가 11GB 합성 데이터셋 split을 Kafka/PostgreSQL/MongoDB/MinIO target별로 dry-run 검증하고, 실제 실행 시 `ProductHealthRuntimeSeedLoadEvidence`에 target, row/bytes, status를 남기며 secret 값을 기록하지 않는다. |
+| C-48A Frontend Shell Split | `App.jsx`의 shell/router/page composition이 분리되고 `/connections`, `/datasets/*`, `/jobs/*`, `/runs`, `/catalog`, `/ask` 주요 경로가 기존과 동일하게 접근된다. |
+| C-48B Dataset Feature Boundary | Dataset workspace의 Connection/Source/Silver/Gold/Jobs state/action/model이 도메인별로 분리되고, 데이터셋 생성/수정/삭제/Run 준비 흐름이 기존대로 동작한다. |
+| C-49 Product Health Gold Lake Write-through | Product Health Gold 수동 실행은 prepared reference를 쓰더라도 `data/lake/gold/run_id=<run_id>/...parquet` output을 실제 생성하고, run record `output_path`, bytes, rows가 그 파일을 가리킨다. |
+| C-50 Product Health Lake Catalog Handoff | Catalog publish와 AI Query는 C-49의 lake output path/run id를 사용하고, `data/local_sources/product_health` prepared path를 최신 실행 결과로 표시하지 않는다. |
+| C-51 Manual Run Scheduler Boundary | 수동 실행은 실제 execute endpoint와 저장 output evidence로 표시되고, schedule placeholder는 자동 실행/scheduler 등록/Airflow DAG 성공처럼 표시되지 않는다. |

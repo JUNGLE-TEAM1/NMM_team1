@@ -101,6 +101,8 @@ report가 늘어나면 영역별 최신 report index를 작게 유지한다. 이
 | Target Dataset job draft | [`target-dataset-job-draft.md`](target-dataset-job-draft.md) | Target Dataset / ETL job draft metadata가 저장/조회되고 C-4 run handoff 입력이 준비됐는지 확인 |
 | Dataset draft overview | [`dataset-draft-overview.md`](dataset-draft-overview.md) | 저장된 External Connection / Source Dataset / Target Dataset draft가 데이터셋 시작 화면에서 보이는지 확인 |
 | Data Navigation Reframe | [`data-navigation-reframe.md`](data-navigation-reframe.md) | 좌측 메뉴가 연결/데이터셋/작업/실행 기록으로 분리되고 C-4 실행 진입점이 정리됐는지 확인 |
+| Frontend Shell Split | [`frontend-shell-split.md`](frontend-shell-split.md) | C-48A에서 App shell/sidebar/topbar와 route 기준을 분리하고 주요 route smoke를 통과했는지 확인 |
+| Dataset Feature Boundary | [`dataset-feature-boundary.md`](dataset-feature-boundary.md) | C-48B에서 App shell과 Dataset workspace entry를 분리하고 C-49 구현 표면을 줄였는지 확인 |
 | Target Dataset run handoff | [`target-dataset-run-handoff.md`](target-dataset-run-handoff.md) | Gold Build Job에서 queued Job Run record를 만들고 실행 기록에서 조회할 수 있는지 확인 |
 | Local runner materialization | [`local-runner-materialization.md`](local-runner-materialization.md) | queued Gold Build Job Run이 local Silver/Gold JSONL evidence와 output metrics를 남기는지 확인 |
 | Runtime evidence integration | [`runtime-evidence-integration.md`](runtime-evidence-integration.md) | local materialization run에 source-level/runtime evidence shape가 남는지 확인 |
@@ -143,6 +145,9 @@ report가 늘어나면 영역별 최신 report index를 작게 유지한다. 이
 | Catalog AI Query runtime E2E | [`catalog-ai-query-runtime-e2e.md`](catalog-ai-query-runtime-e2e.md) | runtime Gold output publish 뒤 live CatalogDataset을 AI Query가 DuckDB read-only SQL로 소비하는지 확인 |
 | Deep browser runtime E2E | [`deep-browser-runtime-e2e.md`](deep-browser-runtime-e2e.md) | persisted runtime 데이터 기준 Connection/Source/Silver/Gold/Run/Catalog/AI Query 전체 클릭 흐름과 Catalog handoff hotfix 확인 |
 | AI Query result persistence | [`ai-query-result-persistence.md`](ai-query-result-persistence.md) | AI Query 결과가 Catalog/Run 이동 후에도 browser session 안에서 복원되는지 확인 |
+| Product Health Gold Lake Write-through | [`product-health-gold-lake-write-through.md`](product-health-gold-lake-write-through.md) | C-49에서 prepared Product Health Gold parquet를 lake output으로 copy/write-through하고 Run output path를 고정했는지 확인 |
+| Product Health Lake Catalog Handoff | [`product-health-lake-catalog-handoff.md`](product-health-lake-catalog-handoff.md) | C-50에서 Product Health lake output을 CatalogDataset과 AI Query가 같은 catalog/run/path로 소비하는지 확인 |
+| Manual Run Scheduler Boundary | [`manual-run-scheduler-boundary.md`](manual-run-scheduler-boundary.md) | C-51에서 schedule metadata-only와 manual execute output evidence 경계를 UI/API/test로 고정했는지 확인 |
 | Gold input creation shortcuts | [`gold-input-creation-shortcuts.md`](gold-input-creation-shortcuts.md) | Gold Dataset 생성 중 입력 Source/Silver가 부족할 때 생성 wizard로 바로 이동하는 shortcut 확인 |
 | Gold input return flow | [`gold-input-return-flow.md`](gold-input-return-flow.md) | Gold shortcut으로 만든 Silver Dataset 저장 후 Gold 입력 선택 단계로 복귀하고 자동 선택되는지 확인 |
 | Source Silver Gold chain smoke | [`source-silver-gold-chain-smoke.md`](source-silver-gold-chain-smoke.md) | Gold shortcut에서 새 Source와 Silver metadata를 저장하고 새 Silver가 Gold 입력으로 자동 선택되는지 확인 |

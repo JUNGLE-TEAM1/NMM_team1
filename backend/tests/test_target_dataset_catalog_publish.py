@@ -68,7 +68,8 @@ def test_publish_prepared_gold_reference_to_catalog() -> None:
     assert response.status_code == 201
     dataset = response.json()
     assert dataset["name"] == "dataset_product_health"
-    assert dataset["path"] == "data/local_sources/product_health/gold/gold_product_health.parquet"
+    assert "data/lake/gold/run_id=" in dataset["path"]
+    assert dataset["path"].endswith("dataset_product_health.parquet")
     assert dataset["path"] == executed["output_path"]
     assert dataset["row_count"] == 1000
     assert dataset["metrics"]["row_count"] == 1000
@@ -76,8 +77,10 @@ def test_publish_prepared_gold_reference_to_catalog() -> None:
     assert dataset["storage"]["local_path"] == executed["output_path"]
     assert any(column["name"] == "internal_product_id" for column in dataset["schema"])
     assert any(column["name"] == "risk_score" for column in dataset["schema"])
-    assert dataset["runtime_evidence"]["materialization_mode"] == "prepared_gold_reference"
-    assert dataset["runtime_evidence"]["prepared_output"] is True
+    assert dataset["runtime_evidence"]["materialization_mode"] == "prepared_gold_write_through"
+    assert dataset["runtime_evidence"]["prepared_output"] is False
+    assert dataset["runtime_evidence"]["prepared_reference"] is True
+    assert dataset["runtime_evidence"]["reference_evidence"]["latest_output"] is False
     assert dataset["sample"]
     assert isinstance(dataset["sample"][0], dict)
     assert dataset["sample"][0]

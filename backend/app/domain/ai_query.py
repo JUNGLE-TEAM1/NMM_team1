@@ -57,6 +57,15 @@ class GuardrailResult(BaseModel):
     failure_message: str | None = None
 
 
+class AnswerMetadata(BaseModel):
+    source: Literal["internal", "template", "external"] = "internal"
+    provider: str = "m6"
+    fallback_used: bool = False
+    fallback_reason: str | None = None
+    used_evidence_indexes: list[int] = Field(default_factory=list)
+    grounding_state: Literal["grounded", "insufficient_evidence", "blocked"] = "insufficient_evidence"
+
+
 class ValidationResult(BaseModel):
     status: Literal["succeeded", "blocked", "failed"]
     guardrail: GuardrailResult
@@ -112,6 +121,7 @@ class AIQueryResult(BaseModel):
     query_result: QueryResult
     rows: list[dict[str, Any]]
     summary: str
+    answer_metadata: AnswerMetadata = Field(default_factory=AnswerMetadata)
     chart_spec: ChartSpec
     guardrail: GuardrailResult
     executed_at: str = Field(default_factory=now_iso)

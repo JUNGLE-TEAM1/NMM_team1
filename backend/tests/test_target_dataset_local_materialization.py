@@ -79,19 +79,33 @@ def test_execute_target_dataset_job_run_references_prepared_gold_when_available(
     executed = response.json()
     assert executed["status"] == "succeeded"
     assert executed["row_count"] == 1000
-    assert executed["output_path"] == "data/local_sources/product_health/gold/gold_product_health.parquet"
+    assert "data/lake/gold/run_id=" in executed["output_path"]
+    assert executed["output_path"].endswith("dataset_product_health.parquet")
+    assert executed["output_path"] != "data/local_sources/product_health/gold/gold_product_health.parquet"
     assert executed["output_bytes"] > 1000
     assert len(executed["silver_output_paths"]) == 2
-    assert executed["run_note"] == "Prepared Product Health Gold parquet referenced for Product Health run execution."
-    assert executed["runtime_evidence"]["materialization_mode"] == "prepared_gold_reference"
+    assert executed["run_note"] == "Prepared Product Health Gold parquet copied to lake Gold output for this run."
+    assert executed["runtime_evidence"]["materialization_mode"] == "prepared_gold_write_through"
     assert executed["runtime_evidence"]["output_format"] == "parquet"
-    assert executed["runtime_evidence"]["prepared_output"] is True
+    assert executed["runtime_evidence"]["prepared_output"] is False
+    assert executed["runtime_evidence"]["prepared_reference"] is True
+    assert executed["runtime_evidence"]["write_through"] is True
+    assert executed["runtime_evidence"]["output_path"] == executed["output_path"]
+    assert executed["runtime_evidence"]["reference_evidence"]["path"] == "data/local_sources/product_health/gold/gold_product_health.parquet"
+    assert executed["runtime_evidence"]["reference_evidence"]["latest_output"] is False
     assert executed["runtime_evidence"]["large_etl_rerun"] is False
     assert executed["runtime_evidence"]["catalog_publish_ready"] is True
-    assert executed["runtime_evidence"]["product_health_result_role"] == "gold_run_execution_evidence"
+    assert executed["runtime_evidence"]["product_health_result_role"] == "lake_gold_run_execution_evidence"
+    assert executed["runtime_evidence"]["object_storage"]["status"] == "not_uploaded"
     assert executed["runtime_evidence"]["schema_fields"] > 0
     assert executed["source_evidence"][0]["status"] == "referenced_prepared_silver"
     assert executed["source_evidence"][0]["format"] == "parquet"
+
+    output_path = Path(executed["output_path"])
+    assert output_path.exists()
+    assert output_path.stat().st_size == executed["output_bytes"]
+    rows = pq.ParquetFile(output_path).metadata.num_rows
+    assert rows == executed["row_count"]
 
 
 def test_execute_target_dataset_job_run_rejects_missing_run() -> None:

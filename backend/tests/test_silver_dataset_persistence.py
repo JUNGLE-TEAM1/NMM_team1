@@ -112,6 +112,7 @@ def test_update_silver_dataset_schedule_metadata() -> None:
     client = make_client()
     source = client.post("/api/source-datasets", json=source_dataset_payload()).json()
     dataset = client.post("/api/silver-datasets", json=silver_dataset_payload(source)).json()
+    before_materializations = client.get(f"/api/silver-datasets/{dataset['id']}/materializations").json()
 
     response = client.patch(
         f"/api/silver-datasets/{dataset['id']}/schedule",
@@ -124,6 +125,10 @@ def test_update_silver_dataset_schedule_metadata() -> None:
     assert updated["schedule"] == {"mode": "placeholder", "note": "weekday 09:00 transform window"}
     assert updated["created_at"] == dataset["created_at"]
     assert updated["updated_at"] >= dataset["updated_at"]
+    after_materializations = client.get(f"/api/silver-datasets/{dataset['id']}/materializations").json()
+    assert before_materializations == []
+    assert after_materializations == []
+    assert updated["status"] == dataset["status"]
 
 
 def test_update_missing_silver_dataset_schedule_returns_not_found() -> None:

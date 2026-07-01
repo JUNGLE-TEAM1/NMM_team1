@@ -2,12 +2,17 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
+from app.domain.retrieval_index import RetrievalIndexHit
+from app.ports.retrieval_index import RetrievalIndex
+from app.services.catalog_rag_index import CatalogRetrievalIndex
+
 
 @dataclass(frozen=True)
 class CatalogRetrievalResult:
     catalog: dict[str, Any]
     reason_terms: list[str]
     score: int
+    index_hits: list[RetrievalIndexHit]
 
 
 class CatalogRetriever:
@@ -22,11 +27,50 @@ class CatalogRetriever:
         "late_delivery_rate": ("배송", "지연", "지연율", "late", "delivery"),
     }
 
+    def __init__(self, retrieval_index: RetrievalIndex | None = None) -> None:
+        self.retrieval_index = retrieval_index or CatalogRetrievalIndex()
+
     def retrieve(self, question: str, catalogs: list[dict[str, Any]]) -> CatalogRetrievalResult:
         if not catalogs:
             raise ValueError("No CatalogMetadata entries are available for AI query.")
 
-        return max((self._score(question, catalog) for catalog in catalogs), key=lambda result: result.score)
+        index_hits = self.retrieval_index.search(question, catalogs, top_k=8)
+        index_scores = self._index_scores_by_dataset(index_hits)
+        selected = max(
+            (self._score(question, catalog) for catalog in catalogs),
+            key=lambda result: (
+                result.score
+                + index_scores.get(str(result.catalog.get("dataset_id")), 0.0)
+                + self._live_catalog_priority(result.catalog),
+                self._live_catalog_priority(result.catalog),
+                result.score,
+            ),
+        )
+        selected_dataset_id = str(selected.catalog.get("dataset_id"))
+        return CatalogRetrievalResult(
+            catalog=selected.catalog,
+            reason_terms=selected.reason_terms,
+            score=selected.score,
+            index_hits=[hit for hit in index_hits if hit.dataset_id == selected_dataset_id],
+        )
+
+    def _index_scores_by_dataset(self, index_hits: list[RetrievalIndexHit]) -> dict[str, float]:
+        scores: dict[str, float] = {}
+        for hit in index_hits:
+            scores[hit.dataset_id] = scores.get(hit.dataset_id, 0.0) + hit.score
+        return scores
+
+    def _live_catalog_priority(self, catalog: dict[str, Any]) -> int:
+        storage = catalog.get("storage", {})
+        path = str(storage.get("local_fallback_path") or storage.get("local_path") or catalog.get("path") or "")
+        lineage = catalog.get("lineage", {})
+        if catalog.get("source_type") == "target_dataset_job_run":
+            return 3
+        if lineage.get("target_dataset_draft_id"):
+            return 3
+        if path.startswith("data/lake/"):
+            return 2
+        return 0
 
     def _score(self, question: str, catalog: dict[str, Any]) -> CatalogRetrievalResult:
         normalized_question = question.lower()
@@ -55,6 +99,7 @@ class CatalogRetriever:
             catalog=catalog,
             reason_terms=reason_terms,
             score=score,
+            index_hits=[],
         )
 
     def _metadata_tokens(self, catalog: dict[str, Any]) -> set[str]:

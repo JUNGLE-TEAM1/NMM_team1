@@ -116,6 +116,7 @@ def test_update_target_dataset_draft_schedule_metadata() -> None:
     client = make_client()
     create_response = client.post("/api/target-dataset-drafts", json=target_dataset_draft_payload())
     draft = create_response.json()
+    before_runs = client.get("/api/target-dataset-job-runs").json()
 
     response = client.patch(
         f"/api/target-dataset-drafts/{draft['id']}/schedule",
@@ -128,6 +129,10 @@ def test_update_target_dataset_draft_schedule_metadata() -> None:
     assert updated["schedule"] == {"mode": "placeholder", "note": "weekday 10:00 gold build window"}
     assert updated["created_at"] == draft["created_at"]
     assert updated["updated_at"] >= draft["updated_at"]
+    after_runs = client.get("/api/target-dataset-job-runs").json()
+    assert before_runs == []
+    assert after_runs == []
+    assert "output_path" not in updated
 
 
 def test_update_missing_target_dataset_draft_schedule_returns_not_found() -> None:

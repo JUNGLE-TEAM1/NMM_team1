@@ -1,4 +1,5 @@
 import json
+import shutil
 from dataclasses import dataclass
 from pathlib import Path
 from time import perf_counter
@@ -204,7 +205,11 @@ class TargetDatasetLocalRunner:
         draft: TargetDatasetDraftRecord,
         gold_path: Path,
     ) -> TargetDatasetMaterializationResult:
-        metadata = parquet_metadata(gold_path)
+        prepared_metadata = parquet_metadata(gold_path)
+        lake_gold_path = gold_run_path(run.id, draft.gold_output)
+        lake_gold_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(gold_path, lake_gold_path)
+        lake_metadata = parquet_metadata(lake_gold_path)
         silver_paths = []
         source_evidence = []
         for silver_output in draft.silver_outputs:
@@ -240,35 +245,53 @@ class TargetDatasetLocalRunner:
             )
 
         duration_ms = max(1, int((perf_counter() - started) * 1000))
+        output_bytes = lake_gold_path.stat().st_size
+        object_uri = expected_gold_object_uri(run.id, draft.gold_output)
         return TargetDatasetMaterializationResult(
-            output_path=str(gold_path),
-            row_count=metadata["row_count"],
-            output_bytes=gold_path.stat().st_size,
+            output_path=str(lake_gold_path),
+            row_count=lake_metadata["row_count"],
+            output_bytes=output_bytes,
             silver_output_paths=silver_paths,
             logs=[
-                "prepared Product Health Gold parquet referenced",
+                "prepared Product Health Gold parquet used as read-only reference",
+                "prepared Product Health Gold parquet copied to lake Gold run output",
                 "local demo JSONL materializer skipped",
-                "large Product Health ETL rerun skipped for C-38",
-                "Airflow/Spark execution not triggered in C-38",
+                "large Product Health ETL rerun skipped for C-49",
+                "Airflow/Spark execution not triggered in C-49",
             ],
             duration_ms=duration_ms,
             source_evidence=source_evidence,
             runtime_evidence={
                 "runner": "local_runner",
-                "materialization_mode": "prepared_gold_reference",
+                "materialization_mode": "prepared_gold_write_through",
                 "output_format": "parquet",
-                "prepared_output": True,
+                "prepared_output": False,
+                "prepared_reference": True,
+                "write_through": True,
                 "status": "succeeded",
                 "duration_ms": duration_ms,
                 "source_count": len(draft.source_refs),
                 "silver_output_count": len(draft.silver_outputs),
-                "output_bytes": gold_path.stat().st_size,
-                "output_path": str(gold_path),
+                "output_bytes": output_bytes,
+                "output_path": str(lake_gold_path),
                 "row_count_status": "metadata",
-                "schema_fields": metadata["schema_fields"],
+                "schema_fields": lake_metadata["schema_fields"],
+                "reference_evidence": {
+                    "role": "prepared_gold_input_reference",
+                    "path": str(gold_path),
+                    "row_count": prepared_metadata["row_count"],
+                    "bytes": gold_path.stat().st_size,
+                    "schema_fields": prepared_metadata["schema_fields"],
+                    "latest_output": False,
+                },
                 "large_etl_rerun": False,
                 "catalog_publish_ready": True,
-                "product_health_result_role": "gold_run_execution_evidence",
+                "product_health_result_role": "lake_gold_run_execution_evidence",
+                "object_storage": {
+                    "status": "not_uploaded",
+                    "reason": "object upload is opt-in and not configured for this local demo run",
+                    "object_uri": object_uri,
+                },
             },
         )
 

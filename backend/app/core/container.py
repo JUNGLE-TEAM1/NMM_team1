@@ -4,17 +4,22 @@ from app.adapters.csv_source import CsvSourceConnector
 from app.adapters.duckdb_sql_engine import DuckDBSqlEngine
 from app.adapters.fixture_catalog_source import FixtureCatalogSource
 from app.adapters.local_result_store import LocalResultStore
+from app.adapters.openai_llm_adapter import OpenAILLMAdapter
 from app.adapters.sqlite_catalog_metadata_source import SQLiteCatalogMetadataSource
 from app.adapters.sqlite_metadata_store import SQLiteMetadataStore
+from app.adapters.template_llm_adapter import TemplateLLMAdapter
 from app.adapters.week2_catalog_store_source import Week2CatalogStoreSource
 from app.core.settings import Settings
 from app.fakes.fake_sql_engine import FakeSqlEngine
 from app.ports.catalog_source import CatalogSource
+from app.ports.llm_adapter import LLMAdapter
 from app.ports.metadata_store import MetadataStore
 from app.ports.result_store import ResultStore
 from app.ports.sql_engine import SqlEngineAdapter
 from app.ports.source_connector import SourceConnector
 from app.services.ai_query import Week2AIQueryService
+from app.services.catalog_rag_index import CatalogRetrievalIndex
+from app.services.catalog_retriever import CatalogRetriever
 from app.services.catalog_trust import CatalogTrustService
 from app.services.pipeline import PipelineService
 from app.services.source_catalog import SourceCatalogService
@@ -32,7 +37,9 @@ class AppContainer:
         self.week2_catalog_store = self.create_week2_catalog_store()
         self.week2_kafka_replay_evidence_service = self.create_week2_kafka_replay_evidence_service()
         self.catalog_source = self.create_catalog_source()
+        self.catalog_retriever = self.create_catalog_retriever()
         self.sql_engine = self.create_sql_engine()
+        self.llm_adapter = self.create_llm_adapter()
         self.catalog_trust_service = self.create_catalog_trust_service()
         self.source_catalog_service = self.create_source_catalog_service()
         self.pipeline_service = self.create_pipeline_service()
@@ -69,6 +76,23 @@ class AppContainer:
             return DuckDBSqlEngine()
         return FakeSqlEngine()
 
+    def create_catalog_retriever(self) -> CatalogRetriever:
+        return CatalogRetriever(
+            retrieval_index=CatalogRetrievalIndex(
+                persist_path=self.week2_output_root() / "_metadata" / "m6_catalog_rag_index.json",
+            )
+        )
+
+    def create_llm_adapter(self) -> LLMAdapter:
+        if self.settings.week2_llm_provider == "openai" and self.settings.openai_api_key:
+            return OpenAILLMAdapter(
+                api_key=self.settings.openai_api_key,
+                model=self.settings.openai_model,
+                base_url=self.settings.openai_base_url,
+                timeout_seconds=self.settings.openai_timeout_seconds,
+            )
+        return TemplateLLMAdapter()
+
     def create_catalog_trust_service(self) -> CatalogTrustService:
         return CatalogTrustService()
 
@@ -85,7 +109,12 @@ class AppContainer:
         )
 
     def create_ai_query_service(self) -> Week2AIQueryService:
-        return Week2AIQueryService(self.sql_engine, catalog_source=self.catalog_source)
+        return Week2AIQueryService(
+            self.sql_engine,
+            catalog_source=self.catalog_source,
+            catalog_retriever=self.catalog_retriever,
+            llm_adapter=self.llm_adapter,
+        )
 
     def week2_output_root(self) -> Path:
         return Path(self.settings.result_store_path) / "week2"

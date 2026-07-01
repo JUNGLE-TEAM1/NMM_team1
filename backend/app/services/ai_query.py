@@ -3,8 +3,10 @@ from pathlib import Path
 from typing import Any
 
 from app.adapters.fixture_catalog_source import FixtureCatalogSource
+from app.adapters.template_llm_adapter import TemplateLLMAdapter
 from app.domain.ai_query import (
     AIQueryResult,
+    AnswerMetadata,
     GuardrailResult,
     QueryEvidence,
     QueryResult,
@@ -12,11 +14,14 @@ from app.domain.ai_query import (
     SelectedDataset,
     SqlEngineContext,
 )
+from app.domain.llm_answer import LLMAnswer, LLMAnswerContext
 from app.domain.target_contracts import now_iso
 from app.ports.catalog_source import CatalogSource
+from app.ports.llm_adapter import LLMAdapter
 from app.ports.sql_engine import SqlEngineAdapter
 from app.services.catalog_retriever import CatalogRetriever
-from app.services.sql_planner import SqlPlan, SqlPlanner
+from app.services.query_router import QueryRouter
+from app.services.sql_planner import SqlPlanner
 
 
 class Week2AIQueryService:
@@ -26,12 +31,16 @@ class Week2AIQueryService:
         catalog_source: CatalogSource | None = None,
         catalog_retriever: CatalogRetriever | None = None,
         sql_planner: SqlPlanner | None = None,
+        query_router: QueryRouter | None = None,
+        llm_adapter: LLMAdapter | None = None,
         catalog_path: Path | None = None,
     ) -> None:
         self.sql_engine = sql_engine
         self.catalog_source = catalog_source or FixtureCatalogSource(catalog_path)
         self.catalog_retriever = catalog_retriever or CatalogRetriever()
         self.sql_planner = sql_planner or SqlPlanner()
+        self.query_router = query_router or QueryRouter()
+        self.llm_adapter = llm_adapter or TemplateLLMAdapter()
 
     def answer(self, question: str) -> AIQueryResult:
         retrieval = self.catalog_retriever.retrieve(question, self.catalog_source.list_catalogs())
@@ -39,8 +48,9 @@ class Week2AIQueryService:
         context = self._context_from_catalog(catalog)
         selected_dataset = self._select_dataset(catalog, retrieval.reason_terms)
         plan = self.sql_planner.plan(question, context)
+        route_decision = self.query_router.decide(question, plan)
 
-        if plan.intent == "unsupported":
+        if route_decision.route == "unsupported":
             query_result = QueryResult(
                 engine=self.sql_engine.health_check().engine,
                 sql=plan.sql,
@@ -52,10 +62,10 @@ class Week2AIQueryService:
             status = "blocked"
             guardrail = GuardrailResult(
                 validation_status="blocked",
-                failure_code=plan.failure_code,
-                failure_message=plan.failure_message,
+                failure_code=route_decision.failure_code,
+                failure_message=route_decision.failure_message,
             )
-        else:
+        elif route_decision.requires_sql:
             validation = self.sql_engine.validate(plan.sql, context)
             if validation.status == "succeeded":
                 query_result = self.sql_engine.execute(plan.sql, context)
@@ -72,36 +82,65 @@ class Week2AIQueryService:
                 )
                 status = "blocked"
                 guardrail = validation.guardrail
+        else:
+            query_result = QueryResult(
+                engine=self.sql_engine.health_check().engine,
+                sql="",
+                columns=[],
+                rows=[],
+                row_count=0,
+                duration_ms=0,
+            )
+            status = "succeeded"
+            guardrail = GuardrailResult(validation_status="passed")
 
-        evidence = self._evidence_from_catalog(catalog, retrieval.reason_terms)
-        route = self._route_from_plan(plan)
+        evidence = self._evidence_from_catalog(
+            catalog,
+            self._merged_terms(retrieval.reason_terms, route_decision.reason_terms),
+        )
+        retrieval_trace = self._retrieval_trace_from_catalog(
+            catalog=catalog,
+            reason_terms=retrieval.reason_terms,
+            score=retrieval.score,
+            evidence_index=0,
+            index_hits=retrieval.index_hits,
+        )
+        answer: LLMAnswer | None = None
+        summary = f"질문을 SQL로 실행하지 못했습니다: {guardrail.failure_message}"
+        if status == "succeeded" and guardrail.validation_status == "passed":
+            answer = self.llm_adapter.generate_summary(
+                LLMAnswerContext(
+                    question=question,
+                    route=route_decision.route,
+                    intent=plan.intent,
+                    status=status,
+                    sql=query_result.sql,
+                    query_result=query_result,
+                    rows=query_result.rows,
+                    evidence=self._llm_safe_evidence(evidence),
+                    retrieval_trace=retrieval_trace,
+                    guardrail=guardrail,
+                )
+            )
+            summary = answer.summary
 
         return AIQueryResult(
             tenant_id=catalog["tenant_id"],
             question=question,
             selected_datasets=[selected_dataset],
             evidence=evidence,
-            route=route,
-            retrieval_trace=self._retrieval_trace_from_catalog(
-                catalog=catalog,
-                reason_terms=retrieval.reason_terms,
-                score=retrieval.score,
-                evidence_index=0,
-            ),
+            route=route_decision.route,
+            retrieval_trace=retrieval_trace,
             status=status,
             sql=query_result.sql,
             query_result=query_result,
             rows=query_result.rows,
-            summary=self._summary(plan, query_result, guardrail, evidence[0]),
+            summary=summary,
+            answer_metadata=self._answer_metadata(answer, status, guardrail, evidence),
             chart_spec=plan.chart_spec,
             guardrail=guardrail,
             executed_at=now_iso(),
         )
-
-    def _route_from_plan(self, plan: SqlPlan) -> str:
-        if plan.intent == "unsupported":
-            return "unsupported"
-        return "sql"
 
     def _context_from_catalog(self, catalog: dict[str, Any]) -> SqlEngineContext:
         fields = catalog["schema"]["fields"]
@@ -122,6 +161,14 @@ class Week2AIQueryService:
             name=catalog["name"],
             reason=reason,
         )
+
+    def _merged_terms(self, *term_groups: list[str]) -> list[str]:
+        terms: list[str] = []
+        for term_group in term_groups:
+            for term in term_group:
+                if term not in terms:
+                    terms.append(term)
+        return terms
 
     def _evidence_from_catalog(self, catalog: dict[str, Any], reason_terms: list[str]) -> list[QueryEvidence]:
         lineage = catalog.get("lineage", {})
@@ -157,8 +204,9 @@ class Week2AIQueryService:
         reason_terms: list[str],
         score: int,
         evidence_index: int,
+        index_hits: list[Any] | None = None,
     ) -> list[RetrievalTraceItem]:
-        return [
+        trace = [
             RetrievalTraceItem(
                 source_type="catalog",
                 source_id=catalog["dataset_id"],
@@ -167,32 +215,58 @@ class Week2AIQueryService:
                 evidence_index=evidence_index,
             )
         ]
+        for hit in index_hits or []:
+            if hit.source_type == "catalog" and hit.source_id == catalog["dataset_id"]:
+                continue
+            trace.append(
+                RetrievalTraceItem(
+                    source_type=hit.source_type,
+                    source_id=hit.source_id,
+                    score=hit.score,
+                    matched_terms=hit.matched_terms,
+                    evidence_index=evidence_index,
+                )
+            )
+        return trace
 
-    def _summary(
+    def _llm_safe_evidence(self, evidence: list[QueryEvidence]) -> list[QueryEvidence]:
+        safe: list[QueryEvidence] = []
+        for item in evidence:
+            safe.append(item.model_copy(update={"storage": {}}))
+        return safe
+
+    def _answer_metadata(
         self,
-        plan: SqlPlan,
-        query_result: QueryResult,
+        answer: LLMAnswer | None,
+        status: str,
         guardrail: GuardrailResult,
-        evidence: QueryEvidence,
-    ) -> str:
-        if guardrail.validation_status != "passed":
-            return f"질문을 SQL로 실행하지 못했습니다: {guardrail.failure_message}"
+        evidence: list[QueryEvidence],
+    ) -> AnswerMetadata:
+        if status != "succeeded" or guardrail.validation_status != "passed":
+            return AnswerMetadata(
+                source="internal",
+                provider="m6",
+                used_evidence_indexes=[],
+                grounding_state="blocked",
+            )
 
-        if not query_result.rows:
-            return "SQL은 통과했지만 반환된 row가 없습니다."
+        if answer is None:
+            return AnswerMetadata(
+                source="internal",
+                provider="m6",
+                used_evidence_indexes=[],
+                grounding_state="insufficient_evidence",
+            )
 
-        first_row = query_result.rows[0]
-        product_id = first_row.get("product_id") or first_row.get("internal_product_id")
-        answer_by_intent = {
-            "top_count": f"{product_id} 상품의 리뷰가 {first_row.get('review_count')}개로 가장 많습니다.",
-            "top_rating": f"{product_id} 상품의 평균 평점이 {first_row.get('average_rating')}로 가장 높습니다.",
-            "top_risk": f"{product_id} 상품은 위험 점수 {first_row.get('risk_score')}로 우선 확인 대상입니다.",
-            "top_negative_review": f"{product_id} 상품은 부정 리뷰율 {first_row.get('negative_review_rate')}로 우선 확인 대상입니다.",
-            "low_conversion": f"{product_id} 상품은 전환율 {first_row.get('conversion_rate')}로 가장 낮아 확인이 필요합니다.",
-            "top_late_delivery": f"{product_id} 상품은 배송 지연율 {first_row.get('late_delivery_rate')}로 우선 확인 대상입니다.",
-        }
-        answer = answer_by_intent.get(plan.intent, f"{product_id} 상품이 선택된 지표에서 가장 우선순위가 높습니다.")
-        return self._grounded_summary(answer, evidence)
+        grounding_state = "grounded"
+        if not evidence or not answer.used_evidence_indexes:
+            grounding_state = "insufficient_evidence"
 
-    def _grounded_summary(self, answer: str, evidence: QueryEvidence) -> str:
-        return answer
+        return AnswerMetadata(
+            source=answer.source,
+            provider=answer.provider,
+            fallback_used=answer.fallback_used,
+            fallback_reason=answer.fallback_reason,
+            used_evidence_indexes=answer.used_evidence_indexes,
+            grounding_state=grounding_state,
+        )

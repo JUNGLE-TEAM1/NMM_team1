@@ -945,7 +945,7 @@ Minimum `AIQueryResult` route and retrieval trace shape:
 
 | Field | Required | Notes |
 | --- | --- | --- |
-| `route` | yes | `sql`, `rag`, `hybrid`, or `unsupported`. Current SQL-first M6 returns `sql` for supported SQL attempts and `unsupported` when no safe route exists. |
+| `route` | yes | `sql`, `rag`, `hybrid`, or `unsupported`. `sql` executes a safe SELECT, `hybrid` combines SQL rows with CatalogMetadata evidence, `rag` answers metadata/schema/lineage questions without SQL execution, and `unsupported` blocks unsafe or unsupported requests. |
 | `retrieval_trace[]` | yes | Ordered explanation of the retrieval/route evidence used by M6. It may be empty only when no catalog/evidence source was available and the response is blocked. |
 | `retrieval_trace[].source_type` | yes | `catalog`, `schema`, `metric`, `lineage`, or `chunk` |
 | `retrieval_trace[].source_id` | yes | dataset id, field name, metric key, lineage id, or chunk id |
@@ -953,7 +953,7 @@ Minimum `AIQueryResult` route and retrieval trace shape:
 | `retrieval_trace[].matched_terms` | yes | question terms, aliases, or metadata terms that contributed to the score |
 | `retrieval_trace[].evidence_index` | no | index into `AIQueryResult.evidence[]` when the trace item directly supports an evidence item |
 
-`route` and `retrieval_trace` are additive fields. Existing M1 consumers may continue reading `status`, `sql`, `query_result`, `rows`, `summary`, and `evidence`, while richer Week 2 displays can show why M6 selected a SQL/RAG/Hybrid/Unsupported path.
+`route` and `retrieval_trace` are additive fields. Existing M1 consumers may continue reading `status`, `sql`, `query_result`, `rows`, `summary`, and `evidence`, while richer Week 2 displays can show why M6 selected a SQL/RAG/Hybrid/Unsupported path. When a live Product Health `CatalogDataset` exists, retrieval prefers that live catalog over fixture fallback for generic metadata questions such as "이 데이터셋의 스키마와 lineage 근거".
 
 Minimum `AIQueryResult.evidence[]` grounding shape:
 
@@ -971,6 +971,19 @@ Minimum `AIQueryResult.evidence[]` grounding shape:
 | `retrieval_terms` | no | M6 retrieval/scoring terms that explain why the dataset was selected |
 
 The grounding fields are additive. Existing M1 consumers may continue reading `dataset_id`, `run_id`, `s3_uri`, and `freshness`, while richer Week 2 displays can show storage, schema, metric, lineage, and retrieval evidence without recomputing M6 scoring.
+
+Minimum `AIQueryResult.answer_metadata` shape:
+
+| Field | Required | Notes |
+| --- | --- | --- |
+| `source` | yes | `internal`, `template`, or `external` |
+| `provider` | yes | `m6`, `template`, `openai`, or provider identifier |
+| `fallback_used` | yes | true when external provider falls back to deterministic template answer |
+| `fallback_reason` | no | `no_api_key`, `provider_error`, `empty_output`, or provider-specific reason |
+| `used_evidence_indexes` | yes | evidence indexes used by answer generation |
+| `grounding_state` | yes | `grounded`, `insufficient_evidence`, or `blocked` |
+
+LLM answer generation must receive only safe evidence. `AIQueryResult.evidence[].storage.local_fallback_path` remains available for UI/SQL handoff verification, but external LLM context must exclude local paths, parquet/jsonl paths, credentials, tokens, and secret references.
 
 Minimum SQL guardrail failure shape:
 

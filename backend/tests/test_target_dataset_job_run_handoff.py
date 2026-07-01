@@ -90,6 +90,9 @@ def test_create_list_and_read_target_dataset_job_run_handoff() -> None:
     assert run["gold_output"] == "dataset_product_health_gold"
     assert run["job_type"] == "gold_build"
     assert run["status"] == "queued"
+    assert run["output_path"] is None
+    assert run["row_count"] is None
+    assert run["output_bytes"] is None
     assert run["executor_handoff"] == "local_runner"
     assert run["schedule"]["mode"] == "manual"
     assert run["source_count"] == 2
@@ -105,6 +108,7 @@ def test_create_list_and_read_target_dataset_job_run_handoff() -> None:
     detail_response = client.get(f"/api/target-dataset-job-runs/{run['id']}")
     assert detail_response.status_code == 200
     assert detail_response.json()["target_dataset_draft_id"] == draft["id"]
+    assert detail_response.json()["output_path"] is None
 
 
 def test_execute_airflow_target_dataset_job_run_records_readiness_only() -> None:

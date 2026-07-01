@@ -377,6 +377,57 @@ PYTHONPATH=backend .venv/bin/python scripts/week2_m2_product_health_l6_evidence.
 5. `evidence[0].run_id`가 C-38 run id이고 `evidence[0].storage.local_fallback_path`가 CatalogDataset `storage.local_path`와 같은지 확인한다.
 6. 화면의 evidence 카드가 local path를 보여주고, 오래된 fixture/fallback 결과를 최신 run처럼 표시하지 않는지 확인한다.
 
+### C-48 AI Query route/RAG/LLM 적용 점검
+
+1. Product Health Gold Run을 성공시키고 Catalog에 등록한다.
+2. `/query`에서 "위험 점수가 높은 상품 알려줘"를 실행해 `route=sql`, SQL rows, `answer_metadata.grounding_state=grounded`를 확인한다.
+3. "위험 점수가 높은 상품과 그 근거를 설명해줘"를 실행해 `route=hybrid`, schema/metric trace, CatalogMetadata 근거 summary를 확인한다.
+4. "이 데이터셋의 스키마와 lineage 근거를 알려줘"를 실행해 `route=rag`, SQL rows 없음, live Product Health CatalogDataset 선택을 확인한다.
+5. "다음 분기 매출을 예측하고 광고 문구까지 생성해줘"를 실행해 `route=unsupported`, blocked guardrail, `answer_metadata.grounding_state=blocked`를 확인한다.
+6. 브라우저 console error가 없고, 외부 LLM provider가 설정되지 않은 상태에서는 template provider/fallback-free 응답으로 동작하는지 확인한다.
+
+### C-48A Frontend Shell Split 점검
+
+1. frontend build를 실행한다.
+2. `/connections`, `/datasets/source`, `/datasets/silver`, `/datasets/gold`, `/jobs/silver-transform`, `/jobs/gold-build`, `/runs`, `/catalog`, `/query`를 브라우저에서 연다.
+3. 좌측 navigation과 하위 메뉴 펼침/선택 상태가 기존과 동일하게 동작하는지 확인한다.
+4. route alias `/`, `/datasets`, `/jobs`, `/ask`, `/catalog/<id>`가 기존 normalize 규칙대로 이동하는지 확인한다.
+5. 이 Phase가 API payload, 데이터 생성/실행 동작, 화면 copy를 의도적으로 바꾸지 않았는지 확인한다.
+
+### C-48B Dataset Feature Boundary 점검
+
+1. `/connections`에서 Product Health connection 목록과 생성/상세 modal이 열린다.
+2. `/datasets/source`에서 Source Dataset 목록/상세/수정/삭제와 Product Health source inventory가 동작한다.
+3. `/datasets/silver`에서 Silver 생성 wizard와 상세/수정/삭제가 동작한다.
+4. `/datasets/gold`에서 Gold wizard, Silver 선택, process/review 단계가 동작한다.
+5. `/jobs/silver-transform`와 `/jobs/gold-build`에서 schedule 수정, dataset 편집 이동, Run 준비가 기존처럼 동작한다.
+6. 리팩토링 후 console error가 없고, C-49 구현 전 lake write-through 같은 새 기능이 섞이지 않았는지 확인한다.
+
+### C-49 Product Health Gold Lake Write-through 점검
+
+1. `/datasets/gold`에서 Product Health Gold draft를 준비한다.
+2. `/jobs/gold-build` 또는 `/runs` 흐름에서 Gold Build Run을 만들고 수동 실행한다.
+3. Run 상세/API 응답의 `output_path`가 `data/lake/gold/run_id=<run_id>/...parquet`인지 확인한다.
+4. 해당 파일이 로컬에 실제 존재하고 row count, output bytes, schema evidence가 run record와 일치하는지 확인한다.
+5. prepared `data/local_sources/product_health/gold/gold_product_health.parquet`는 input/reference evidence로만 보이고 최신 output path처럼 표시되지 않는지 확인한다.
+6. 실행이 Airflow/Spark scheduler 성공 또는 full 5GB ETL 재실행으로 표현되지 않는지 확인한다.
+
+### C-50 Product Health Lake Catalog Handoff 점검
+
+1. C-49에서 성공한 Run을 `Catalog 등록`한다.
+2. `/catalog`에서 CatalogDataset의 storage local path가 C-49 run `output_path`와 같은지 확인한다.
+3. `/query`에서 Product Health 대표 질문을 실행한다.
+4. `selected_datasets`, `evidence`, `retrieval_trace`, SQL table context가 같은 CatalogDataset id, run id, lake output path를 가리키는지 확인한다.
+5. 화면에 `data/local_sources/product_health` prepared path가 최신 실행 결과처럼 노출되지 않는지 확인한다.
+
+### C-51 Manual Run Scheduler Boundary 점검
+
+1. `/jobs`에서 Connection/Silver/Gold job의 schedule metadata를 수정한다.
+2. schedule 저장만으로 새 Run이 생기거나 output path가 생성되지 않는지 확인한다.
+3. `manual` run 실행 버튼을 눌렀을 때만 execute endpoint가 호출되고, 성공 후 lake output evidence가 생기는지 확인한다.
+4. `placeholder` mode가 cron 등록, Airflow DAG trigger, Spark job success, retry/backfill 완료처럼 보이지 않는지 확인한다.
+5. UI 문구가 "스케줄 의도 저장"과 "수동 실행"을 명확히 구분하는지 확인한다.
+
 ### Query / Access 점검
 
 1. `Trusted` dataset에서 Query를 실행한다.

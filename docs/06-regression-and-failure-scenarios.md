@@ -124,9 +124,19 @@
 | --- | --- |
 | Must not break | `AIQueryResult.route`는 실제 실행 경로를 나타내고, `retrieval_trace`는 선택된 evidence와 연결되어야 한다. |
 | Failure condition | SQL 실행 응답인데 route가 `rag`로 표시되거나, unsupported 질문이 `sql`로 표시되거나, trace의 `evidence_index`가 없는 evidence를 가리킨다. |
-| Expected behavior | SQL-first 응답은 `route=sql`, 지원하지 않는 질문은 `route=unsupported`를 반환한다. Catalog 기반 trace는 `source_type=catalog`, `source_id=<dataset_id>`, score, matched_terms, evidence index를 포함한다. |
-| Verification method | `backend/tests/test_week2_ai_query.py` route/retrieval_trace regression과 `contracts/ai_query_result.sample.json`을 확인한다. |
+| Expected behavior | SQL 응답은 `route=sql`, SQL+근거 응답은 `route=hybrid`, schema/lineage metadata 응답은 `route=rag`, 지원하지 않는 질문은 `route=unsupported`를 반환한다. Catalog 기반 trace는 `source_type=catalog/schema/metric/lineage`, `source_id`, score, matched_terms, evidence index를 포함한다. |
+| Verification method | `backend/tests/test_query_router.py`, `backend/tests/test_catalog_retrieval_index.py`, `backend/tests/test_week2_ai_query.py`, `contracts/ai_query_result.sample.json`을 확인한다. |
 | Related docs/interface/Phase | `docs/03`, `docs/05`, `contracts/ai_query_result.sample.json`, M6 response contract |
+
+### 외부 LLM context에 local path 또는 secret이 섞이는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | `AIQueryResult.evidence[].storage.local_fallback_path`는 UI/SQL handoff evidence로 유지하지만, 외부 LLM 요청 payload에는 local path, parquet/jsonl path, credential, token, secret 값이 들어가지 않는다. |
+| Failure condition | OpenAI adapter request body에 `local_fallback_path`, `/tmp`, `.parquet`, `.jsonl`, API key, secret reference가 포함된다. |
+| Expected behavior | LLM adapter는 safe evidence view만 전송하고 provider 오류 또는 빈 응답은 template fallback으로 처리한다. |
+| Verification method | `backend/tests/test_openai_llm_adapter.py`, `backend/tests/test_week2_ai_query.py` LLM context regression을 확인한다. |
+| Related docs/interface/Phase | `docs/03`, C-48 AI Query route/RAG/LLM 적용 |
 
 ### Mock/Fake Boundary를 넘어 실제 접근으로 진행되는 경우
 
@@ -337,6 +347,58 @@
 | Expected behavior | 5GB 증거는 source/raw/bronze input bytes와 source별 evidence로 설명하고, Gold bytes는 집계 output 크기로 별도 표시한다. |
 | Verification method | 발표 문구, M1 evidence label, `ExecutionResult.bytes`, `CatalogMetadata.metrics.bytes` 의미가 `docs/03`과 일치하는지 확인한다. |
 | Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07`, M1/M5/M6 |
+
+### Product Health Gold 실행 결과가 prepared path만 참조하는 경우
+
+### Frontend shell 분리가 route/navigation을 깨뜨리는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | App shell refactor 후 기존 route alias, navigation, page entry가 동일하게 동작한다. |
+| Failure condition | `/`, `/datasets`, `/jobs`, `/query`, `/catalog/<id>` normalize가 바뀌거나, 주요 메뉴가 잘못 active 처리되거나, standalone page가 비어 보인다. |
+| Expected behavior | `App.jsx`는 shell/router composition을 분리하되 기존 route behavior와 API 호출 순서를 유지한다. |
+| Verification method | C-48A frontend build와 route browser smoke에서 주요 경로 접근, nav active state, console error를 확인한다. |
+| Related docs/interface/Phase | `docs/05`, `docs/07`, C-48A |
+
+### Dataset feature boundary 분리가 wizard/action 상태를 잃는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | Connection/Source/Silver/Gold/Jobs 화면의 생성, 상세, 수정, 삭제, Run 준비 흐름이 리팩토링 후에도 유지된다. |
+| Failure condition | hook/module 분리 후 wizard 단계가 초기화되거나, 저장 후 목록 refresh가 누락되거나, dataset edit 이동과 schedule modal이 깨진다. |
+| Expected behavior | Dataset workspace 내부 state/action/model은 분리되지만 API payload, user flow, route, UI copy는 behavior-preserving으로 유지된다. |
+| Verification method | C-48B focused frontend/browser smoke와 기존 dataset API focused tests를 실행한다. |
+| Related docs/interface/Phase | `docs/05`, `docs/07`, C-48B |
+
+### Product Health Gold 실행 결과가 prepared path만 참조하는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | 성공한 Product Health Gold Run은 실행별 `data/lake/gold/run_id=<run_id>/...parquet` output artifact를 남긴다. |
+| Failure condition | Run `output_path`가 `data/local_sources/product_health/gold/gold_product_health.parquet`만 가리키거나, prepared path가 Catalog publish 대상 최신 output처럼 표시된다. |
+| Expected behavior | prepared Gold parquet는 input/reference evidence로 남기고, local runner는 run별 lake output으로 copy/write-through 한다. Run rows/bytes/schema는 lake output 기준으로 계산한다. |
+| Verification method | C-49 backend test와 `/runs` 수동 실행 smoke에서 `output_path` 존재, row count, bytes, materialization mode, prepared source evidence를 확인한다. |
+| Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07`, C-49 |
+
+### Catalog와 AI Query가 lake output 대신 prepared source를 최신 결과로 읽는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | Product Health CatalogDataset과 AI Query evidence는 방금 실행한 lake output path와 run id를 기준으로 연결된다. |
+| Failure condition | Catalog `storage.local_path`, AI Query `evidence.storage.local_fallback_path`, SQL table context 중 하나가 `data/local_sources/product_health` prepared path를 최신 run output처럼 가리킨다. |
+| Expected behavior | Catalog publish는 C-49 run `output_path`를 storage path로 쓰고, prepared path는 lineage/reference evidence에만 남긴다. AI Query selected dataset, evidence, retrieval trace는 같은 catalog/run/lake path를 사용한다. |
+| Verification method | C-50 backend smoke와 `/catalog` -> `/query` browser smoke에서 dataset id, run id, local path 일치를 확인한다. |
+| Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07`, C-50 |
+
+### Schedule placeholder가 실제 스케줄러처럼 보이는 경우
+
+| 항목 | 내용 |
+| --- | --- |
+| Must not break | schedule metadata와 실제 run trigger는 분리된다. |
+| Failure condition | schedule 저장만으로 Run이 자동 생성/실행된 것처럼 보이거나, Airflow/Spark scheduler가 성공한 것처럼 UI/API가 표현한다. |
+| Expected behavior | `manual`은 수동 execute button으로만 실행하고, `placeholder`는 자동 실행 미구현 상태와 다음 필요 조건을 표시한다. 실제 scheduler 등록, DAG trigger, cron worker, retry/backfill은 별도 Phase로 남긴다. |
+| Verification method | C-51 UI/API smoke에서 schedule 수정 후 run count/output path가 자동 변경되지 않는지, 수동 실행 후에만 lake output이 생기는지 확인한다. |
+| Related docs/interface/Phase | `docs/03`, `docs/05`, `docs/07`, C-51 |
 
 ### Container App Health
 

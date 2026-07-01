@@ -141,15 +141,18 @@ def test_week2_ai_query_returns_fixture_backed_ai_query_result() -> None:
     assert "review_count" in payload["selected_datasets"][0]["reason"]
     assert payload["status"] == "succeeded"
     assert payload["route"] == "sql"
-    assert payload["retrieval_trace"] == [
-        {
-            "source_type": "catalog",
-            "source_id": "dataset_reviews_gold",
-            "score": 6.0,
-            "matched_terms": ["review_count", "product_id"],
-            "evidence_index": 0,
-        }
-    ]
+    assert payload["retrieval_trace"][0] == {
+        "source_type": "catalog",
+        "source_id": "dataset_reviews_gold",
+        "score": 6.0,
+        "matched_terms": ["review_count", "product_id"],
+        "evidence_index": 0,
+    }
+    assert any(
+        item["source_type"] == "schema"
+        and item["source_id"] == "dataset_reviews_gold.schema.product_id"
+        for item in payload["retrieval_trace"]
+    )
     assert payload["guardrail"]["validation_status"] == "passed"
     assert payload["sql"] == payload["query_result"]["sql"]
     assert payload["rows"] == payload["query_result"]["rows"]
